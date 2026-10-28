@@ -3,7 +3,7 @@ from psycopg2 import Error as PsycopgError
 from symbolchain.sc import TransactionType
 from zenlog import log
 
-from rest.db.SymbolTransactionDetail import SymbolDataUnavailable
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolTransactionNodeBacking import SymbolNodeNotFound, SymbolNodeUnavailable
 from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountView
 from rest.model.symbol.format import format_timestamp

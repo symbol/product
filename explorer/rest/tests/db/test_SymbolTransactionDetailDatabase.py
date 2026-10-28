@@ -10,7 +10,8 @@ from psycopg2 import Error as PsycopgError
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Network
 
-from rest.db.SymbolDatabase import SymbolDatabase, SymbolDataUnavailable
+from rest.db.SymbolDatabase import SymbolDatabase
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.db.SymbolTransactionDetail import TransactionHashLockRecord
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.facade.SymbolTransactionNodeBacking import SymbolTransactionNodeBacking
@@ -21,6 +22,8 @@ from ..test.SymbolMosaicTestUtils import create_symbol_mosaic
 from ..test.SymbolTransactionTestUtils import SIGNER_ADDRESS, create_symbol_namespace, create_symbol_transaction
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
+REVOCATION_SOURCE_ADDRESS = bytes.fromhex('98' + '03' * 23)
+RAW_SOURCE_DECOY_ADDRESS = bytes.fromhex('98' + '04' * 23)
 
 
 class PendingNodeConfig:
@@ -88,7 +91,9 @@ def _pending_detail_record(transaction_hash, **updates):
 	}
 	transaction.update(updates)
 	payload = {'meta': {'hash': transaction_hash}, 'transaction': transaction}
-	backing = SymbolTransactionNodeBacking(PendingNodeConfig(), Network.TESTNET)
+	backing = SymbolTransactionNodeBacking(
+		PendingNodeConfig(), Network.TESTNET, native_mosaic_info=NATIVE_MOSAIC_INFO,
+		transport=PendingTransport(transaction_hash))
 	return backing.to_detail_record(payload, 'unconfirmed', transaction_hash)
 
 
@@ -158,20 +163,32 @@ class SymbolTransactionDetailDatabaseTest(TestCase):
 			[create_symbol_block(1)]) as (db_config, _):
 			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable):
+				with self.assertRaises(SymbolDataUnavailable) as error:
 					database.supplement_transaction_detail(bytes.fromhex(transaction_hash), record)
 
-	def test_supplement_requires_native_mosaic_information(self):
+		# Assert:
+		self.assertEqual(
+			'Symbol transaction detail data is unavailable: sync state is unreadable', str(error.exception))
+
+	def test_supplement_rejects_node_hash_lock_in_non_public_states(self):
 		# Arrange:
-		transaction_hash = 'AB' * 32
-		record = _pending_detail_record(transaction_hash)
-		with symbol_test_database(
-			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
-			[create_symbol_block(1)]) as (db_config, _):
-			with SymbolDatabase(db_config) as database:
-				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable):
-					database.supplement_transaction_detail(bytes.fromhex(transaction_hash), record)
+		transaction_hash = 'AC' * 32
+		record = _pending_detail_record(transaction_hash)._replace(hash_lock=TransactionHashLockRecord(
+			bytes.fromhex(transaction_hash), SIGNER_ADDRESS, NATIVE_MOSAIC_INFO.id, 100, 20, 'unused', None, None, 1))
+		for status, dirty_state_from_height in (('repairing', None), ('healthy', 2)):
+			with self.subTest(status=status):
+				sync_state = create_symbol_sync_state(
+					last_synced_height=1, finalized_height=1, status=status,
+					dirty_state_from_height=dirty_state_from_height)
+				with symbol_test_database(sync_state, [create_symbol_block(1)]) as (db_config, _):
+					with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
+						# Act + Assert:
+						with self.assertRaises(SymbolDataUnavailable) as error:
+							database.supplement_transaction_detail(bytes.fromhex(transaction_hash), record)
+
+					self.assertEqual(
+						'Symbol transaction detail data is unavailable: current metadata is unsafe in dirty or repairing state',
+						str(error.exception))
 
 	def test_supplement_rejects_dirty_current_mosaic_metadata(self):
 		# Arrange:
@@ -183,8 +200,11 @@ class SymbolTransactionDetailDatabaseTest(TestCase):
 			[create_symbol_block(1)]) as (db_config, _):
 			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable):
+				with self.assertRaises(SymbolDataUnavailable) as error:
 					database.supplement_transaction_detail(bytes.fromhex(transaction_hash), nonnative_record)
+		self.assertEqual(
+			'Symbol transaction detail data is unavailable: current metadata is unsafe in dirty or repairing state',
+			str(error.exception))
 
 	def test_supplement_rejects_node_row_above_dirty_watermark(self):
 		# Arrange:
@@ -197,8 +217,10 @@ class SymbolTransactionDetailDatabaseTest(TestCase):
 			puller_database.upsert_transactions_for_height(5, [unsafe_transaction])
 			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable):
+				with self.assertRaises(SymbolDataUnavailable) as error:
 					database.supplement_transaction_detail(bytes.fromhex(transaction_hash), unsafe_record)
+		self.assertEqual(
+			'Symbol transaction detail data is unavailable: unsafe Node detail relation', str(error.exception))
 
 	def test_supplement_rejects_a_hash_that_selects_an_embedded_row(self):
 		# Arrange:
@@ -212,56 +234,88 @@ class SymbolTransactionDetailDatabaseTest(TestCase):
 			puller_database.upsert_transactions_for_height(4, [embedded])
 			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable):
+				with self.assertRaises(SymbolDataUnavailable) as error:
 					database.supplement_transaction_detail(transaction_hash, record)
+		self.assertEqual(
+			'Symbol transaction detail data is unavailable: hash selected an embedded row', str(error.exception))
 
-	def test_supplement_rejects_hash_lock_updated_above_the_snapshot(self):
+	def test_supplement_accepts_embedded_children_for_a_valid_node_aggregate(self):
 		# Arrange:
-		transaction_hash = 'AE' * 32
-		child = {
-			'network': Network.TESTNET.identifier,
-			'type': TransactionType.TRANSFER.value,
-			'version': 1,
-			'signerPublicKey': '02' * 32,
-			'signature': 'EF' * 64,
-			'size': 1,
-			'maxFee': '100',
-			'deadline': '1000',
-			'recipientAddress': '98' + '03' * 23,
-			'mosaics': []
-		}
+		transaction_hash = 'AF' * 32
+		parent = _complete_transaction(
+			4, 79, type=TransactionType.AGGREGATE_COMPLETE.value,
+			hash=bytes.fromhex(transaction_hash),
+			body={'version': 1, 'transactionsHash': 'AB' * 32, 'cosignatures': []},
+			raw_payload={'transaction': {'version': 1, 'signature': 'EF' * 64}})
+		child = _complete_transaction(4, 80, is_embedded=True, aggregate_hash=parent['hash'], embedded_index=0)
+		child_payload = {
+			'meta': {'aggregateHash': transaction_hash, 'index': 0},
+			'transaction': {
+				'network': Network.TESTNET.identifier, 'type': TransactionType.TRANSFER.value, 'version': 1,
+				'signerPublicKey': '02' * 32, 'recipientAddress': '98' + '03' * 23, 'mosaics': []}}
 		payload = {
 			'meta': {'hash': transaction_hash},
 			'transaction': {
-				'network': Network.TESTNET.identifier,
-				'type': TransactionType.AGGREGATE_BONDED.value,
-				'version': 1,
-				'signerPublicKey': '01' * 32,
-				'signature': 'CD' * 64,
-				'size': 1,
-				'maxFee': '100',
-				'deadline': '1000',
-				'transactionsHash': 'AB' * 32,
-				'cosignatures': [],
-				'mosaics': [],
-				'transactions': [{'meta': {'aggregateHash': transaction_hash, 'index': 0}, 'transaction': child}]
-			}
-		}
-		record = SymbolTransactionNodeBacking(PendingNodeConfig(), Network.TESTNET).to_detail_record(
-			payload, 'unconfirmed', transaction_hash)
-		record = record._replace(hash_lock=TransactionHashLockRecord(
-			bytes.fromhex(transaction_hash), SIGNER_ADDRESS, NATIVE_MOSAIC_INFO.id, 100, 20, 'unused', None, None, 2))
+				'network': Network.TESTNET.identifier, 'type': TransactionType.AGGREGATE_COMPLETE.value, 'version': 1,
+				'signerPublicKey': '01' * 32, 'signature': 'CD' * 64, 'size': 1, 'maxFee': '100',
+				'deadline': '1000', 'transactionsHash': 'AB' * 32, 'cosignatures': [], 'mosaics': [],
+				'transactions': [child_payload]}}
+		record = SymbolTransactionNodeBacking(
+			PendingNodeConfig(), Network.TESTNET, native_mosaic_info=NATIVE_MOSAIC_INFO,
+			transport=PendingTransport(transaction_hash)
+		).to_detail_record(payload, 'unconfirmed', transaction_hash)
 		with symbol_test_database(
-			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
-			[create_symbol_block(1)]) as (db_config, puller_database):
-			puller_database.upsert_hash_lock({
-				'hash': bytes.fromhex(transaction_hash), 'owner_address': SIGNER_ADDRESS,
-				'mosaic_id': NATIVE_MOSAIC_INFO.id, 'amount': 100, 'end_height': 20,
-				'status': 'unused', 'raw_payload': {}, 'updated_at_height': 2})
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			[create_symbol_block(4)]) as (db_config, puller_database):
+			puller_database.upsert_transactions_for_height(4, [parent, child])
+			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
+				# Act:
+				result = database.supplement_transaction_detail(bytes.fromhex(transaction_hash), record)
+
+		# Assert:
+		self.assertEqual(1, len(result.children))
+		self.assertEqual(0, result.children[0].embedded_index)
+		self.assertEqual(bytes.fromhex(transaction_hash), result.children[0].aggregate_hash)
+
+	def test_supplement_rejects_embedded_relation_above_dirty_readable_height_without_parent_hash(self):
+		# Arrange:
+		transaction_hash = 'B0' * 32
+		parent = _complete_transaction(
+			4, 81, type=TransactionType.AGGREGATE_COMPLETE.value,
+			hash=bytes.fromhex(transaction_hash),
+			body={'version': 1, 'transactionsHash': 'AB' * 32, 'cosignatures': []},
+			raw_payload={'transaction': {'version': 1, 'signature': 'EF' * 64}})
+		child = _complete_transaction(5, 82, is_embedded=True, aggregate_hash=parent['hash'], embedded_index=0)
+		child_payload = {
+			'meta': {'aggregateHash': transaction_hash, 'index': 0},
+			'transaction': {
+				'network': Network.TESTNET.identifier, 'type': TransactionType.TRANSFER.value, 'version': 1,
+				'signerPublicKey': '02' * 32, 'recipientAddress': '98' + '03' * 23, 'mosaics': []}}
+		payload = {
+			'meta': {'hash': transaction_hash},
+			'transaction': {
+				'network': Network.TESTNET.identifier, 'type': TransactionType.AGGREGATE_COMPLETE.value, 'version': 1,
+				'signerPublicKey': '01' * 32, 'signature': 'CD' * 64, 'size': 1, 'maxFee': '100',
+				'deadline': '1000', 'transactionsHash': 'AB' * 32, 'cosignatures': [], 'mosaics': [],
+				'transactions': [child_payload]}}
+		record = SymbolTransactionNodeBacking(
+			PendingNodeConfig(), Network.TESTNET, native_mosaic_info=NATIVE_MOSAIC_INFO,
+			transport=PendingTransport(transaction_hash)
+		).to_detail_record(payload, 'unconfirmed', transaction_hash)
+		with symbol_test_database(
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3, dirty_state_from_height=5),
+			[create_symbol_block(1), create_symbol_block(4), create_symbol_block(5)]) as (db_config, puller_database):
+			# The Node parent is pending, so the height-5 embedded child intentionally has no matching parent row.
+			puller_database.upsert_transactions_for_height(5, [child])
 			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable):
+				with self.assertRaises(SymbolDataUnavailable) as error:
 					database.supplement_transaction_detail(bytes.fromhex(transaction_hash), record)
+
+		# Assert:
+		self.assertEqual(
+			'Symbol transaction detail data is unavailable: unsafe Node detail relation',
+			str(error.exception))
 
 	def test_facade_releases_confirmed_lag_before_pending_node_fetch_and_supplement(self):  # pylint: disable=too-many-locals
 		# Arrange:
@@ -271,7 +325,7 @@ class SymbolTransactionDetailDatabaseTest(TestCase):
 		resume_request = Event()
 		transport = PendingTransport(transaction_hash, request_started, resume_request)
 		node_backing = SymbolTransactionNodeBacking(
-			PendingNodeConfig(), Network.TESTNET, transport=transport)
+			PendingNodeConfig(), Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 		with symbol_test_database(
 			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
 			[create_symbol_block(1), create_symbol_block(4)]) as (db_config, puller_database):
@@ -318,7 +372,11 @@ class SymbolTransactionDetailDatabaseTest(TestCase):
 				'network': Network.TESTNET.identifier, 'type': TransactionType.TRANSFER.value, 'version': 1,
 				'signerPublicKey': '01' * 32, 'signature': 'CD' * 64, 'size': 120, 'maxFee': '1000',
 				'deadline': '1000', 'recipientAddress': '98' + '02' * 23, 'mosaics': []}}
-		backing = SymbolTransactionNodeBacking(type('NodeConfig', (), {'base_url': 'http://node.test'})(), Network.TESTNET)
+		backing = SymbolTransactionNodeBacking(
+			type('NodeConfig', (), {'base_url': 'http://node.test'})(),
+			Network.TESTNET,
+			native_mosaic_info=NATIVE_MOSAIC_INFO, transport=PendingTransport(hash_value)
+		)
 		record = backing.to_detail_record(payload, 'unconfirmed', hash_value)
 		with symbol_test_database(
 			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
@@ -328,16 +386,16 @@ class SymbolTransactionDetailDatabaseTest(TestCase):
 					bytes.fromhex(hash_value), SIGNER_ADDRESS, NATIVE_MOSAIC_INFO.id, 100, 20, 'unused', None, None, 1))
 				# Act: preserve a validated Node lock when current DB state has no row.
 				missing = database.supplement_transaction_detail(bytes.fromhex(hash_value), lock_record)
-				self.assertEqual(lock_record.hash_lock.hash, missing.hash_lock.hash)
 				puller_database.upsert_hash_lock({
-					'hash': bytes.fromhex(hash_value), 'owner_address': SIGNER_ADDRESS,
-					'mosaic_id': NATIVE_MOSAIC_INFO.id, 'amount': 100, 'end_height': 20,
-					'status': 'unused', 'raw_payload': {}, 'updated_at_height': 1})
+					'hash': bytes.fromhex(hash_value), 'owner_address': bytes.fromhex('98' + '03' * 23),
+					'mosaic_id': '0000000000000001', 'amount': 999, 'end_height': 99,
+					'status': 'used', 'raw_payload': {}, 'updated_at_height': 2})
 				present = database.supplement_transaction_detail(bytes.fromhex(hash_value), lock_record)
 
 		# Assert:
 		self.assertEqual(record.transaction.hash, missing.transaction.hash)
-		self.assertEqual(lock_record.hash_lock.hash, present.hash_lock.hash)
+		self.assertEqual(lock_record.hash_lock, missing.hash_lock)
+		self.assertEqual(lock_record.hash_lock, present.hash_lock)
 
 	def test_supplement_pending_node_detail_uses_one_snapshot_for_mosaic_and_namespace_state(self):
 		# Arrange:
@@ -351,7 +409,9 @@ class SymbolTransactionDetailDatabaseTest(TestCase):
 				'signerPublicKey': '01' * 32, 'signature': 'CD' * 64, 'size': 120, 'maxFee': '1000',
 				'deadline': '1000', 'recipientAddress': '98' + '02' * 23, 'namespaceId': namespace_id,
 				'mosaics': [{'id': mosaic_id, 'amount': '100'}]}}
-		backing = SymbolTransactionNodeBacking(PendingNodeConfig(), Network.TESTNET)
+		backing = SymbolTransactionNodeBacking(
+			PendingNodeConfig(), Network.TESTNET, native_mosaic_info=NATIVE_MOSAIC_INFO,
+			transport=PendingTransport(hash_value))
 		record = backing.to_detail_record(payload, 'unconfirmed', hash_value)
 		initial_namespace = create_symbol_namespace(namespace_id=namespace_id, full_name='before.name')
 		with symbol_test_database(
@@ -427,12 +487,16 @@ class SymbolTransactionDetailDatabaseTest(TestCase):
 			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 				# Act + Assert:
 				result = database.get_transaction_detail(parent_hash)
+				puller_database.delete_hash_lock(TransactionHashLockRecord(
+					parent_hash, SIGNER_ADDRESS, NATIVE_MOSAIC_INFO.id, 100, 12, 'unused', None, None, 4))
+				result_without_lock = database.get_transaction_detail(parent_hash)
 
 		# Assert:
 		self.assertEqual([0, 1], [child.embedded_index for child in result.record.children])
 		self.assertEqual(parent_hash, result.record.hash_lock.hash)
 		self.assertEqual(SIGNER_ADDRESS, bytes(result.record.hash_lock.owner_address))
 		self.assertEqual(NATIVE_MOSAIC_INFO.id, result.record.hash_lock.mosaic_id)
+		self.assertIsNone(result_without_lock.record.hash_lock)
 
 	def test_get_transaction_detail_rejects_aggregate_revocation_child_without_sender_relation(self):
 		# Arrange:
@@ -456,8 +520,10 @@ class SymbolTransactionDetailDatabaseTest(TestCase):
 
 			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable):
+				with self.assertRaises(SymbolDataUnavailable) as error:
 					database.get_transaction_detail(parent['hash'])
+		self.assertEqual(
+			'Symbol transaction detail data is unavailable: revocation source is missing', str(error.exception))
 
 
 class SymbolTransactionDetailReadDatabaseTest(TestCase):
@@ -468,8 +534,9 @@ class SymbolTransactionDetailReadDatabaseTest(TestCase):
 			[create_symbol_block(4)]) as (db_config, _):
 			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable):
+				with self.assertRaises(SymbolDataUnavailable) as error:
 					database.get_transaction_detail(bytes.fromhex('AA' * 32))
+		self.assertEqual('Symbol transaction detail data is unavailable: unsafe miss', str(error.exception))
 
 	def test_get_transaction_detail_returns_clean_miss_with_snapshot_watermarks(self):
 		# Arrange:
@@ -545,7 +612,7 @@ class SymbolTransactionDetailReadDatabaseTest(TestCase):
 		transport.responses[pending_path]['transaction']['maxFee'] = '9000000'
 		fixed_time = 100.0
 		node_backing = SymbolTransactionNodeBacking(
-			PendingNodeConfig(), Network.TESTNET, transport=transport, clock=lambda: fixed_time)
+			PendingNodeConfig(), Network.TESTNET, transport=transport, clock=lambda: fixed_time, native_mosaic_info=NATIVE_MOSAIC_INFO)
 		with symbol_test_database(
 			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
 			[create_symbol_block(1), create_symbol_block(4)]) as (db_config, puller_database):
@@ -689,8 +756,9 @@ class SymbolTransactionDetailValidationDatabaseTest(TestCase):
 			puller_database.connection.commit()
 			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable):
+				with self.assertRaises(SymbolDataUnavailable) as error:
 					database.get_transaction_detail(transaction['hash'])
+		self.assertEqual('Symbol transaction detail data is unavailable: block is missing', str(error.exception))
 
 	def test_get_transaction_detail_rejects_misindexed_aggregate_child(self):
 		# Arrange:
@@ -846,7 +914,7 @@ class SymbolTransactionDetailSnapshotSafetyDatabaseTest(TestCase):
 			'amount': 100, 'end_height': 12, 'status': 'unused', 'raw_payload': {}, 'updated_at_height': 5
 		}
 		with symbol_test_database(
-			create_symbol_sync_state(last_synced_height=4, finalized_height=3, dirty_state_from_height=5),
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
 			[create_symbol_block(4)]) as (db_config, puller_database):
 			puller_database.upsert_transactions_for_height(4, [parent, child])
 			puller_database.upsert_hash_lock(lock)
@@ -857,21 +925,6 @@ class SymbolTransactionDetailSnapshotSafetyDatabaseTest(TestCase):
 					'Symbol transaction detail data is unavailable: hash lock is unsafe'
 				):
 					database.get_transaction_detail(parent['hash'])
-
-	def test_get_transaction_detail_requires_native_mosaic_information(self):
-		# Arrange:
-		transaction = _complete_transaction(4, 1)
-		with symbol_test_database(
-			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
-			[create_symbol_block(4)]) as (db_config, puller_database):
-			puller_database.upsert_transactions_for_height(4, [transaction])
-			with SymbolDatabase(db_config) as database:
-				# Act + Assert:
-				with self.assertRaisesRegex(
-					SymbolDataUnavailable,
-					'Symbol transaction detail data is unavailable: native mosaic is unavailable'
-				):
-					database.get_transaction_detail(transaction['hash'])
 
 	def test_get_transaction_detail_rejects_nonnative_mosaic_during_dirty_state(self):
 		# Arrange:
@@ -974,12 +1027,13 @@ class SymbolTransactionDetailSnapshotSafetyDatabaseTest(TestCase):
 		transaction = _complete_transaction(
 			4, 2,
 			type=TransactionType.MOSAIC_SUPPLY_REVOCATION.value,
+			source_address=RAW_SOURCE_DECOY_ADDRESS,
 			mosaic_rows=[{
 				'mosaic_id': NATIVE_MOSAIC_INFO.id, 'amount': 1, 'role': 'revocation', 'position': 0
 			}],
 			address_rows=[
 				{'address': SIGNER_ADDRESS, 'role': 'signer'},
-				{'address': SIGNER_ADDRESS, 'role': 'sender'}
+				{'address': REVOCATION_SOURCE_ADDRESS, 'role': 'sender'}
 			])
 		with symbol_test_database(
 			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
@@ -990,7 +1044,7 @@ class SymbolTransactionDetailSnapshotSafetyDatabaseTest(TestCase):
 				result = database.get_transaction_detail(transaction['hash'])
 
 		# Assert:
-		self.assertEqual(SIGNER_ADDRESS, result.record.transaction.source_address)
+		self.assertEqual(REVOCATION_SOURCE_ADDRESS, result.record.transaction.source_address)
 
 	def test_get_transaction_detail_rejects_malformed_message_payload(self):
 		# Arrange:
@@ -1003,8 +1057,11 @@ class SymbolTransactionDetailSnapshotSafetyDatabaseTest(TestCase):
 					puller_database.upsert_transactions_for_height(4, [transaction])
 					with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 						# Act + Assert:
-						with self.assertRaises(SymbolDataUnavailable):
+						with self.assertRaises(SymbolDataUnavailable) as error:
 							database.get_transaction_detail(transaction['hash'])
+					# Assert:
+					self.assertEqual(
+						'Symbol transaction detail data is unavailable: message payload is malformed', str(error.exception))
 
 	def test_get_transaction_detail_reads_namespace_and_mosaic_relations(self):
 		# Arrange:

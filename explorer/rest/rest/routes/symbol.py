@@ -21,12 +21,12 @@ from rest.db.SymbolDatabase import (
 	ReceiptQuery,
 	SortOrder,
 	SymbolDatabase,
-	SymbolDataUnavailable,
 	SymbolMosaicAliasNotFound,
 	TransactionQuery
 )
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
-from rest.facade.SymbolTransactionNodeBacking import SymbolNodeNotFound, SymbolTransactionNodeBacking
+from rest.facade.SymbolTransactionNodeBacking import AiohttpTransport, SymbolNodeNotFound, SymbolTransactionNodeBacking
 from rest.model.common import DatabaseConfig
 from rest.model.symbol.validation import SymbolDataInvalid
 
@@ -94,7 +94,8 @@ def setup_symbol_facade(app, clock=None):
 	)
 	node_config = SymbolNodeConfiguration.from_app_config(app.config)
 	node_config.assert_request_allowed(node_config.base_url)
-	node_backing = SymbolTransactionNodeBacking(node_config, network, native_mosaic_info=native_mosaic_info)
+	node_backing = SymbolTransactionNodeBacking(
+		node_config, network, native_mosaic_info, AiohttpTransport(node_config))
 
 	symbol_db = SymbolDatabase(db_params, native_mosaic_info, clock)
 	app.extensions['symbol_database'] = symbol_db

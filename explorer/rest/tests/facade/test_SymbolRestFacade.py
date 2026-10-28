@@ -9,15 +9,8 @@ from psycopg2 import Error as PsycopgError
 from psycopg2 import OperationalError
 from symbolchain.symbol.Network import Network
 
-from rest.db.SymbolDatabase import (
-	NamespaceQuery,
-	ReceiptQuery,
-	ReceiptRecord,
-	SortOrder,
-	SymbolDatabase,
-	SymbolDataUnavailable,
-	TransactionQuery
-)
+from rest.db.SymbolDatabase import NamespaceQuery, ReceiptQuery, ReceiptRecord, SortOrder, SymbolDatabase, TransactionQuery
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
 from ..test.SymbolHealthTestUtils import create_symbol_health

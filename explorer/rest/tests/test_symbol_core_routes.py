@@ -24,6 +24,7 @@ from symbolchain.symbol.Network import Address, Network
 from rest import create_app, setup_symbol_facade
 from rest.db.SymbolDatabase import SymbolDatabase
 from rest.facade.SymbolRestFacade import SymbolRestFacade
+from rest.facade.SymbolTransactionNodeBacking import AiohttpTransport
 from rest.model.common import DatabaseConfig
 from rest.routes.symbol import setup_symbol_routes
 
@@ -1756,6 +1757,9 @@ def test_symbol_facade_config(symbol_database_config):
 	assert NATIVE_MOSAIC_INFO == facade.native_mosaic_info
 	assert Network.TESTNET == facade.network
 	assert facade.node_config is facade.node_backing.node_config
+	assert facade.network is facade.node_backing.network
+	assert isinstance(facade.node_backing.transport, AiohttpTransport)
+	assert facade.node_config is facade.node_backing.transport.node_config
 	assert facade.native_mosaic_info is facade.node_backing.native_mosaic_info
 	app.extensions['symbol_database'].close()
 

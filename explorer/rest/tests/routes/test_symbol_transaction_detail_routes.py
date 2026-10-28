@@ -9,12 +9,12 @@ from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Network
 
 from rest import setup_error_handlers
+from rest.db.SymbolDatabaseCommon import TransactionMosaicRecord
 from rest.db.SymbolTransactionDetail import (
 	TransactionDetailBlockRecord,
 	TransactionDetailReadResult,
 	TransactionDetailRecord,
-	TransactionDetailTransactionRecord,
-	TransactionMosaicRecord
+	TransactionDetailTransactionRecord
 )
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.facade.SymbolTransactionNodeBacking import SymbolNodeNotFound, SymbolNodeUnavailable, SymbolTransactionNodeBacking
@@ -174,7 +174,7 @@ def _client(facade):
 def _facade(database, responses):
 	config = FakeNodeConfig()
 	backing = SymbolTransactionNodeBacking(
-		config, Network.TESTNET, transport=FakeTransport(responses))
+		config, Network.TESTNET, transport=FakeTransport(responses), native_mosaic_info=NATIVE_MOSAIC_INFO)
 	return SymbolRestFacade(database, config, NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing)
 
 
@@ -197,7 +197,7 @@ def test_hash_query_rejected_pre_io(query):
 	# Arrange:
 	database = FakeDatabase(TransactionDetailReadResult(None, 'miss', 10, 10))
 	transport = FakeTransport({})
-	backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport)
+	backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 	facade = SymbolRestFacade(
 		database, FakeNodeConfig(), NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing)
 	client = _client(facade)
@@ -219,7 +219,7 @@ def test_miss_status_then_pending_detail():
 	transport = FakeTransport({status_path: {'group': 'unconfirmed', 'hash': HASH}, detail_path: _transaction_payload()})
 	database = FakeDatabase(TransactionDetailReadResult(None, 'miss', 10, 10))
 	config = FakeNodeConfig()
-	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport)
+	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 	client = _client(SymbolRestFacade(database, config, NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing))
 
 	# Act:
@@ -244,7 +244,7 @@ def test_confirmed_status_503():
 	status_path = f'transactionStatus/{HASH}'
 	transport = FakeTransport({status_path: {'group': 'confirmed', 'hash': HASH, 'height': 11}})
 	database = FakeDatabase(TransactionDetailReadResult(None, 'miss', 10, 10))
-	backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport)
+	backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 	client = _client(SymbolRestFacade(database, FakeNodeConfig(), NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing))
 
 	# Act:
@@ -261,7 +261,7 @@ def test_confirmed_hit_skips_node():
 	transport = FakeTransport({})
 	database = FakeDatabase(TransactionDetailReadResult(_confirmed_record(), 'hit', 10, 10))
 	config = FakeNodeConfig()
-	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport)
+	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 	client = _client(SymbolRestFacade(database, config, NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing))
 
 	# Act:
@@ -280,7 +280,7 @@ def test_confirmed_lag_returns_503():
 	transport = FakeTransport({status_path: {'group': 'confirmed', 'hash': HASH, 'height': 11}})
 	database = FakeDatabase(TransactionDetailReadResult(None, 'confirmed_lag', 10, 10))
 	config = FakeNodeConfig()
-	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport)
+	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 	client = _client(SymbolRestFacade(database, config, NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing))
 
 	# Act:
@@ -314,7 +314,9 @@ def test_pending_detail_404_returns_503(group):
 	detail_path = f'transactions/{group}/{HASH}'
 	transport = FakeTransport({status_path: {'group': group, 'hash': HASH}, detail_path: SymbolNodeNotFound()})
 	database = FakeDatabase(TransactionDetailReadResult(None, 'miss', 10, 10))
-	backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport, clock=lambda: 100)
+	backing = SymbolTransactionNodeBacking(
+		FakeNodeConfig(), Network.TESTNET, transport=transport, clock=lambda: 100,
+		native_mosaic_info=NATIVE_MOSAIC_INFO)
 	client = _client(SymbolRestFacade(database, FakeNodeConfig(), NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing))
 
 	# Act:
@@ -352,7 +354,7 @@ def test_failed_status_hash_must_match(status_payload, expected_status, expected
 	status_path = f'transactionStatus/{HASH}'
 	transport = FakeTransport({status_path: status_payload})
 	config = FakeNodeConfig()
-	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport)
+	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 	database = FakeDatabase(TransactionDetailReadResult(None, 'miss', 10, 10))
 	client = _client(SymbolRestFacade(database, config, NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing))
 
@@ -370,7 +372,7 @@ def test_db_error_503_skips_node():
 	database = FailingDetailDatabase(None)
 	transport = FakeTransport({})
 	config = FakeNodeConfig()
-	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport)
+	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 	client = _client(SymbolRestFacade(database, config, NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing))
 
 	# Act:
@@ -405,6 +407,35 @@ def test_bad_message_hex_returns_503():
 	# Assert:
 	assert 503 == response.status_code
 	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+
+
+def test_bad_message_type_cache():
+	# Arrange:
+	status_path = f'transactionStatus/{HASH}'
+	detail_path = f'transactions/unconfirmed/{HASH}'
+	invalid_payload = _transaction_payload()
+	invalid_payload['transaction']['message'] = {'type': {'invalid': 'object'}, 'payload': 'AA'}
+	transport = FakeTransport({
+		status_path: {'group': 'unconfirmed', 'hash': HASH},
+		detail_path: invalid_payload
+	})
+	config = FakeNodeConfig()
+	backing = SymbolTransactionNodeBacking(
+		config, Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
+	database = FakeDatabase(TransactionDetailReadResult(None, 'miss', 10, 10))
+	client = _client(SymbolRestFacade(database, config, NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing))
+
+	# Act:
+	first = client.get(f'/api/symbol/transaction/{HASH}')
+	transport.responses[detail_path] = _transaction_payload()
+	transport.responses[detail_path]['transaction']['message'] = 'FF'
+	second = client.get(f'/api/symbol/transaction/{HASH}')
+
+	# Assert:
+	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (first.status_code, first.json)
+	assert 200 == second.status_code
+	assert {'type': None, 'text': 'FF'} == second.json['detail']['message']
+	assert [status_path, detail_path, detail_path] == transport.paths
 
 
 def test_bad_mosaic_flags_returns_503():
@@ -456,7 +487,7 @@ def test_bonded_lock_uses_parent_hash():
 	database = FakeDatabase(TransactionDetailReadResult(None, 'miss', 10, 10))
 	config = FakeNodeConfig()
 	transport = FakeTransport(responses)
-	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport)
+	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 	client = _client(SymbolRestFacade(database, config, NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing))
 
 	# Act:
@@ -491,13 +522,13 @@ def test_pending_mainnet_cosigner():
 	database = FakeDatabase(TransactionDetailReadResult(None, 'miss', 10, 10))
 	config = FakeNodeConfig()
 	transport = FakeTransport(responses)
-	backing = SymbolTransactionNodeBacking(config, mainnet, transport=transport)
+	backing = SymbolTransactionNodeBacking(config, mainnet, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 	client = _client(SymbolRestFacade(database, config, NATIVE_MOSAIC_INFO, mainnet, node_backing=backing))
 
 	# Act:
 	unconfirmed = client.get(f'/api/symbol/transaction/{HASH}')
 	responses[unconfirmed_status_path] = {'group': 'partial', 'hash': HASH}
-	partial_backing = SymbolTransactionNodeBacking(config, mainnet, transport=transport)
+	partial_backing = SymbolTransactionNodeBacking(config, mainnet, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 	partial_client = _client(SymbolRestFacade(database, config, NATIVE_MOSAIC_INFO, mainnet, node_backing=partial_backing))
 	partial = partial_client.get(f'/api/symbol/transaction/{HASH}')
 
@@ -518,7 +549,7 @@ def test_confirmed_mainnet_cosigner():
 	# Arrange:
 	database = FakeDatabase(TransactionDetailReadResult(_confirmed_mainnet_aggregate_record(), 'hit', 10, 10))
 	config = FakeNodeConfig()
-	backing = SymbolTransactionNodeBacking(config, Network.MAINNET, transport=FakeTransport({}))
+	backing = SymbolTransactionNodeBacking(config, Network.MAINNET, transport=FakeTransport({}), native_mosaic_info=NATIVE_MOSAIC_INFO)
 	client = _client(SymbolRestFacade(database, config, NATIVE_MOSAIC_INFO, Network.MAINNET, node_backing=backing))
 
 	# Act:
@@ -544,7 +575,7 @@ def test_pending_restriction_codes():
 	transport = FakeTransport({status_path: {'group': 'unconfirmed', 'hash': HASH}, detail_path: payload})
 	database = FakeDatabase(TransactionDetailReadResult(None, 'miss', 10, 10))
 	config = FakeNodeConfig()
-	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport)
+	backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 	client = _client(SymbolRestFacade(database, config, NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing))
 
 	# Act:
@@ -569,7 +600,7 @@ def test_pending_lock_mosaic_id_range():
 				'amount': '1000000', 'endHeight': '20', 'status': 0}}})
 		database = FakeDatabase(TransactionDetailReadResult(None, 'miss', 10, 10))
 		config = FakeNodeConfig()
-		backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport)
+		backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 		client = _client(SymbolRestFacade(database, config, NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing))
 
 		# Act:

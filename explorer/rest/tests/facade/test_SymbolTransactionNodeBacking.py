@@ -1,5 +1,7 @@
+# pylint: disable=too-many-lines  # Node transaction validation matrix shares one contract fixture.
+
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
+from threading import Event, Thread, current_thread
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
@@ -7,6 +9,7 @@ from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
 from symbolchain.sc import MosaicFlags, TransactionType
 from symbolchain.symbol.Network import Network
 
+from rest.db.SymbolDatabaseCommon import TransactionMosaicRecord
 from rest.facade.SymbolTransactionNodeBacking import (
 	AiohttpTransport,
 	AsyncLruCache,
@@ -116,6 +119,22 @@ def _validate_node_payload(response):
 
 
 class SymbolTransactionNodeBackingConversionTest(TestCase):
+	def test_rejects_missing_native_mosaic_information(self):
+		# Arrange:
+		# Act + Assert:
+		with self.assertRaises(ValueError) as error:
+			SymbolTransactionNodeBacking(
+				FakeNodeConfig(), Network.TESTNET, None, transport=FakeTransport({}))
+		self.assertEqual('Native mosaic information is required', str(error.exception))
+
+	def test_rejects_invalid_native_mosaic_information_type(self):
+		# Arrange:
+		# Act + Assert:
+		with self.assertRaises(ValueError) as error:
+			SymbolTransactionNodeBacking(
+				FakeNodeConfig(), Network.TESTNET, object(), transport=FakeTransport({}))
+		self.assertEqual('Native mosaic information is required', str(error.exception))
+
 	def test_detail_conversion_rejects_unknown_types_and_invalid_identity_fields(self):
 		# Arrange:
 		def payload(**updates):
@@ -173,7 +192,12 @@ class SymbolTransactionNodeBackingConversionTest(TestCase):
 		# Arrange:
 		payload = _transaction_payload()
 		payload['transaction'].update({'type': TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value, 'addressAdditions': {}})
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		# Act + Assert:
 		with self.assertRaises(SymbolNodeUnavailable):
@@ -185,7 +209,12 @@ class SymbolTransactionNodeBackingConversionTest(TestCase):
 		payload['transaction'].update({
 			'type': TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value,
 			'minApprovalDelta': 0, 'minRemovalDelta': 0, 'addressAdditions': {}, 'addressDeletions': []})
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		# Act + Assert:
 		with self.assertRaises(SymbolNodeUnavailable):
@@ -234,7 +263,12 @@ class SymbolTransactionNodeBackingConversionTest(TestCase):
 
 	def test_detail_conversion_rejects_missing_required_addresses_for_each_transaction_type(self):
 		# Arrange:
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 		required_addresses = (
 			(TransactionType.TRANSFER.value, 'recipientAddress'),
 			(TransactionType.SECRET_LOCK.value, 'recipientAddress'),
@@ -262,7 +296,12 @@ class SymbolTransactionNodeBackingConversionTest(TestCase):
 
 	def test_detail_conversion_rejects_invalid_message_hex(self):
 		# Arrange:
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		# Act + Assert:
 		for message in ('0', 'GG', '00GG', {'type': 'plain', 'payload': '0'}, {'type': 'plain', 'payload': None}):
@@ -440,7 +479,12 @@ class SymbolTransactionNodeBackingBodyValidationTest(TestCase):
 
 	def test_record_conversion_rejects_invalid_groups_and_aggregate_shapes(self):
 		# Arrange:
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		def payload(**updates):
 			result = _transaction_payload()
@@ -472,7 +516,12 @@ class SymbolTransactionNodeBackingBodyValidationTest(TestCase):
 
 	def test_record_conversion_rejects_malformed_identity_and_mosaic_payloads(self):  # pylint: disable=too-many-statements
 		# Arrange:
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		def payload(**updates):
 			result = _transaction_payload()
@@ -499,7 +548,12 @@ class SymbolTransactionNodeBackingBodyValidationTest(TestCase):
 
 	def test_record_conversion_preserves_message_hex_forms(self):
 		# Arrange:
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		def payload(**updates):
 			result = _transaction_payload()
@@ -517,7 +571,12 @@ class SymbolTransactionNodeBackingBodyValidationTest(TestCase):
 
 	def test_record_conversion_normalizes_mosaic_ids_and_roles(self):  # pylint: disable=too-many-statements
 		# Arrange:
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		def payload(**updates):
 			result = _transaction_payload()
@@ -550,11 +609,25 @@ class SymbolTransactionNodeBackingBodyValidationTest(TestCase):
 
 		# Assert:
 		self.assertEqual('0000000000000001', mosaic_record.mosaics[0].mosaic_id)
-		self.assertEqual([1] * len(role_cases), [len(record.mosaics) for record in role_records])
+		self.assertEqual(
+			(TransactionMosaicRecord('0000000000000001', 1, 'transfer', 0, None, None),), mosaic_record.mosaics)
+		self.assertEqual((
+			(TransactionMosaicRecord('1234567890ABCDEF', 0, 'definition', 0, None, None),),
+			(TransactionMosaicRecord('1234567890ABCDEF', 1, 'definition', 0, None, None),),
+			(TransactionMosaicRecord('1234567890ABCDEF', 0, 'restriction', 0, None, None),),
+			(TransactionMosaicRecord('1234567890ABCDEF', 0, 'restriction', 0, None, None),),
+			(TransactionMosaicRecord('1234567890ABCDEF', 1, 'revocation', 0, None, None),),
+			(TransactionMosaicRecord('1234567890ABCDEF', 0, 'metadata_target', 0, None, None),)
+		), tuple(record.mosaics for record in role_records))
 
 	def test_hash_lock_record_conversion_preserves_absence(self):
 		# Arrange:
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		# Act:
 		absent = backing.to_hash_lock_record(None)
@@ -564,7 +637,12 @@ class SymbolTransactionNodeBackingBodyValidationTest(TestCase):
 
 	def test_hash_lock_record_conversion_rejects_malformed_values(self):
 		# Arrange:
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		# Act + Assert:
 		with self.assertRaises(SymbolNodeUnavailable):
@@ -682,21 +760,160 @@ class AsyncLruCacheTest(TestCase):
 		# Assert:
 		self.assertEqual(['first', 'expired'], loader_calls)
 
-	def test_async_cache_keeps_threaded_access_within_capacity(self):
+	def test_async_cache_keeps_threaded_access_within_capacity(self):  # pylint: disable=too-many-locals,too-many-statements
 		# Arrange:
-		cache = AsyncLruCache(5, 2, lambda: 1)
+		read_clock_entered = Event()
+		release_read = Event()
+		pause_read = [False]
+
+		def clock():
+			if pause_read[0]:
+				pause_read[0] = False
+				read_clock_entered.set()
+				if not release_read.wait(timeout=5):
+					raise RuntimeError('timed out waiting for cache read release')
+
+			return 1
+
+		cache = AsyncLruCache(5, 2, clock)
+		loader_calls = []
 
 		async def load(value):
+			loader_calls.append(value)
 			return value
 
-		# Act:
-		with ThreadPoolExecutor(max_workers=4) as executor:
-			results = list(executor.map(
-				lambda _: asyncio.run(cache.get_or_load('shared', lambda: load('shared'))), range(4)))
+		asyncio.run(cache.get_or_load('A', lambda: load('A')))
+		asyncio.run(cache.get_or_load('B', lambda: load('B')))
+		pause_read[0] = True
+
+		results = {}
+		errors = []
+		insert_attempted = Event()
+		insert_lock_probe = []
+		read_done = Event()
+		insert_done = Event()
+		threads = []
+		started_threads = []
+		insert_thread = [None]
+		underlying_lock = cache.lock
+
+		class RecordingLock:
+			def __init__(self, lock):
+				self.lock = lock
+
+			def acquire(self, blocking=True):
+				return self.lock.acquire(blocking=blocking)
+
+			def release(self):
+				self.lock.release()
+
+			def __enter__(self):
+				if current_thread() is insert_thread[0]:
+					probe = self.acquire(blocking=False)
+					insert_lock_probe.append(probe)
+					insert_attempted.set()
+					if probe:
+						self.release()
+
+				self.acquire()
+				return self
+
+			def __exit__(self, _exception_type, _exception, _traceback):
+				self.release()
+
+		cache.lock = RecordingLock(underlying_lock)
+		try:
+			def read_a():
+				try:
+					results['read'] = asyncio.run(cache.get_or_load('A', lambda: load('unexpected-A')))
+				except Exception as error:  # pylint: disable=broad-exception-caught
+					errors.append(error)
+				finally:
+					read_done.set()
+
+			def insert_c():
+				insert_thread[0] = current_thread()
+				try:
+					results['insert'] = asyncio.run(cache.get_or_load('C', lambda: load('C')))
+				except Exception as error:  # pylint: disable=broad-exception-caught
+					errors.append(error)
+				finally:
+					insert_done.set()
+
+			threads = [Thread(target=read_a), Thread(target=insert_c)]
+			threads[0].start()
+			started_threads.append(threads[0])
+			self.assertTrue(read_clock_entered.wait(timeout=5))
+			threads[1].start()
+			started_threads.append(threads[1])
+			self.assertTrue(insert_attempted.wait(timeout=5))
+			self.assertEqual([False], insert_lock_probe)
+			self.assertFalse(read_done.is_set())
+			self.assertFalse(insert_done.is_set())
+			release_read.set()
+			for thread in started_threads:
+				thread.join(timeout=5)
+				self.assertFalse(thread.is_alive())
+		finally:
+			release_read.set()
+			for thread in started_threads:
+				thread.join(timeout=5)
 
 		# Assert:
-		self.assertEqual(['shared'] * 4, results)
-		self.assertLessEqual(len(cache.entries), 2)
+		self.assertEqual(['A', 'B', 'C'], loader_calls)
+		self.assertEqual([], errors)
+		self.assertEqual({'read': 'A', 'insert': 'C'}, results)
+		self.assertEqual(['A', 'C'], list(cache.entries))
+		self.assertEqual(2, len(cache.entries))
+
+	def test_async_cache_allows_other_key_while_loader_awaits(self):
+		# Arrange:
+		cache = AsyncLruCache(5, 2, lambda: 1)
+		loader_started = Event()
+		release_loader = Event()
+		other_finished = Event()
+		results = []
+		loader_calls = []
+		threads = []
+		started_threads = []
+
+		async def blocked_loader():
+			loader_calls.append('A')
+			loader_started.set()
+			if not release_loader.wait(timeout=5):
+				raise RuntimeError('timed out waiting for blocked cache loader')
+			return 'A'
+
+		async def other_loader():
+			loader_calls.append('B')
+			return 'B'
+
+		def load_a():
+			results.append(asyncio.run(cache.get_or_load('A', blocked_loader)))
+
+		def load_b():
+			results.append(asyncio.run(cache.get_or_load('B', other_loader)))
+			other_finished.set()
+
+		try:
+			# Act: keep A's loader suspended while B must complete independently.
+			threads = [Thread(target=load_a), Thread(target=load_b)]
+			threads[0].start()
+			started_threads.append(threads[0])
+			self.assertTrue(loader_started.wait(timeout=5))
+			threads[1].start()
+			started_threads.append(threads[1])
+			self.assertTrue(other_finished.wait(timeout=5))
+		finally:
+			release_loader.set()
+			for thread in started_threads:
+				thread.join(timeout=5)
+
+		# Assert:
+		self.assertTrue(all(not thread.is_alive() for thread in threads))
+		self.assertEqual(['A', 'B'], loader_calls)
+		self.assertEqual({'A', 'B'}, set(results))
+		self.assertEqual({'A', 'B'}, set(cache.entries))
 
 
 class SymbolTransactionNodeBackingStatusTest(TestCase):
@@ -714,13 +931,18 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 		for payload in invalid_statuses:
 			with self.subTest(status=payload):
 				backing = SymbolTransactionNodeBacking(
-					config, Network.TESTNET, transport=FakeTransport({f'transactionStatus/{HASH}': payload}))
+					config, Network.TESTNET, transport=FakeTransport({f'transactionStatus/{HASH}': payload}), native_mosaic_info=NATIVE_MOSAIC_INFO)
 				with self.assertRaises(SymbolNodeUnavailable):
 					asyncio.run(backing.get_status(HASH))
 
 	def test_transaction_get_rejects_missing_node_payload(self):
 		# Arrange:
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		# Act + Assert:
 		with self.assertRaises(SymbolNodeUnavailable):
@@ -735,7 +957,7 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 			with self.subTest(payload=payload):
 				backing = SymbolTransactionNodeBacking(
 					FakeNodeConfig(), Network.TESTNET,
-					transport=FakeTransport({f'transactions/unconfirmed/{HASH}': payload}))
+					transport=FakeTransport({f'transactions/unconfirmed/{HASH}': payload}), native_mosaic_info=NATIVE_MOSAIC_INFO)
 				with self.assertRaises(SymbolNodeUnavailable):
 					asyncio.run(backing.get_transaction('unconfirmed', HASH))
 
@@ -751,7 +973,7 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 			with self.subTest(payload=payload):
 				backing = SymbolTransactionNodeBacking(
 					FakeNodeConfig(), Network.TESTNET,
-					transport=FakeTransport({f'lock/hash/{HASH}': payload}))
+					transport=FakeTransport({f'lock/hash/{HASH}': payload}), native_mosaic_info=NATIVE_MOSAIC_INFO)
 				with self.assertRaises(SymbolNodeUnavailable):
 					asyncio.run(backing.try_get_hash_lock(HASH))
 
@@ -759,7 +981,7 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 		# Arrange:
 		path = f'transactionStatus/{HASH}'
 		transport = FakeTransport({path: {'group': 'failed', 'hash': HASH}})
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport)
+		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 
 		# Act + Assert:
 		with self.assertRaises(SymbolNodeNotFound):
@@ -774,7 +996,7 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 		# Arrange:
 		path = f'transactionStatus/{HASH}'
 		transport = FakeTransport({path: {'group': 'unconfirmed', 'hash': '00' * 32}})
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport)
+		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 
 		# Act + Assert:
 		with self.assertRaises(SymbolNodeUnavailable):
@@ -791,7 +1013,7 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 		invalid = _transaction_payload()
 		invalid['transaction']['message'] = '00GG'
 		transport = FakeTransport({path: invalid})
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport)
+		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 
 		# Act + Assert:
 		with self.assertRaises(SymbolNodeUnavailable):
@@ -802,6 +1024,38 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 		transport.responses[path]['transaction']['message'] = '00'
 		self.assertEqual('00', asyncio.run(backing.get_transaction('unconfirmed', HASH))['transaction']['message'])
 		self.assertEqual([path, path], transport.paths)
+
+	def test_invalid_message_type_is_not_cached_then_accepts_unknown_hex_marker(self):
+		# Arrange:
+		path = f'transactions/unconfirmed/{HASH}'
+		transport = FakeTransport({path: _transaction_payload()})
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(), Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
+
+		for message in (
+			{'type': {'invalid': 'object'}, 'payload': 'AA'},
+			{'type': 'GARBAGE', 'payload': 'AA'},
+			{'type': [], 'payload': 'AA'},
+			{'type': True, 'payload': 'AA'}):
+			transport.responses[path]['transaction']['message'] = message
+			# Act + Assert:
+			with self.assertRaises(SymbolNodeUnavailable):
+				asyncio.run(backing.get_transaction('unconfirmed', HASH))
+
+		# Act: an unknown hex marker is valid and must retain its original payload.
+		transport.responses[path] = _transaction_payload()
+		transport.responses[path]['transaction']['message'] = 'FF'
+		result = asyncio.run(backing.get_transaction('unconfirmed', HASH))
+		result['transaction']['message'] = 'mutated-result'
+		transport.responses[path] = _transaction_payload()
+		transport.responses[path]['transaction']['message'] = {'type': [], 'payload': 'AA'}
+		cached_result = asyncio.run(backing.get_transaction('unconfirmed', HASH))
+
+		# Assert:
+		self.assertEqual('mutated-result', result['transaction']['message'])
+		self.assertEqual('FF', cached_result['transaction']['message'])
+		self.assertEqual([path] * 5, transport.paths)
+		self.assertEqual(1, len(backing.caches['unconfirmed'].entries))
 
 	def test_invalid_mosaic_flags_are_not_cached(self):
 		# Arrange:
@@ -828,7 +1082,12 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 
 	def test_valid_message_hex_forms_are_preserved(self):
 		# Arrange:
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 		cases = (
 			('', None, ''),
 			('00', 'plain', ''),
@@ -850,7 +1109,13 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 			f'transactionStatus/{HASH}': {'group': 'unconfirmed', 'hash': HASH},
 			f'transactions/unconfirmed/{HASH}': _transaction_payload()
 		})
-		backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport, clock=lambda: 1)
+		backing = SymbolTransactionNodeBacking(
+			config,
+			Network.TESTNET,
+			transport=transport,
+			clock=lambda: 1,
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		# Act:
 		first_status = asyncio.run(backing.get_status(HASH.lower()))
@@ -873,7 +1138,13 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 		config = FakeNodeConfig()
 		transport = FakeTransport({f'transactionStatus/{HASH}': {'group': 'partial', 'hash': HASH}})
 		clock_value = [0]
-		backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport, clock=lambda: clock_value[0])
+		backing = SymbolTransactionNodeBacking(
+			config,
+			Network.TESTNET,
+			transport=transport,
+			clock=lambda: clock_value[0],
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		# Act:
 		asyncio.run(backing.get_status(HASH))
@@ -887,7 +1158,13 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 		config = FakeNodeConfig()
 		transport = FakeTransport({f'transactionStatus/{HASH}': {'group': 'partial', 'hash': HASH}})
 		clock_value = [0]
-		backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport, clock=lambda: clock_value[0])
+		backing = SymbolTransactionNodeBacking(
+			config,
+			Network.TESTNET,
+			transport=transport,
+			clock=lambda: clock_value[0],
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 		asyncio.run(backing.get_status(HASH))
 		clock_value[0] = 10
 		config.assert_request_allowed = lambda _url: (_ for _ in ()).throw(SymbolNodeConfigurationError('blocked'))
@@ -905,7 +1182,7 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 		transport = FakeTransport({
 			f'lock/hash/{HASH}': SymbolNodeNotFound()
 		})
-		backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport)
+		backing = SymbolTransactionNodeBacking(config, Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 
 		# Act:
 		self.assertIsNone(asyncio.run(backing.try_get_hash_lock(HASH)))
@@ -916,7 +1193,12 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 
 	def test_node_detail_is_converted_to_pending_record(self):
 		# Arrange:
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		# Act:
 		record = backing.to_detail_record(_transaction_payload(), 'unconfirmed', HASH)
@@ -930,7 +1212,12 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 
 	def test_node_detail_rejects_invalid_network(self):
 		# Arrange:
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.TESTNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 		invalid = _transaction_payload()
 		invalid['transaction']['network'] = Network.MAINNET.identifier
 
@@ -947,7 +1234,7 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 			'type': TransactionType.ADDRESS_ALIAS.value, 'namespaceId': '01', 'aliasAction': 1,
 			'address': ADDRESS})
 		transport = FakeTransport({f'transactions/unconfirmed/{HASH}': bad})
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport)
+		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 
 		# Act + Assert:
 		with self.assertRaises(SymbolNodeUnavailable):
@@ -981,7 +1268,7 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 		# Arrange:
 		for group in ([], {}):
 			transport = FakeTransport({f'transactionStatus/{HASH}': {'group': group, 'hash': HASH}})
-			backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport)
+			backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.TESTNET, transport=transport, native_mosaic_info=NATIVE_MOSAIC_INFO)
 
 			# Act + Assert:
 			with self.assertRaises(SymbolNodeUnavailable):
@@ -991,7 +1278,12 @@ class SymbolTransactionNodeBackingStatusTest(TestCase):
 		# Arrange:
 		payload = _transaction_payload()
 		payload['transaction']['network'] = Network.MAINNET.identifier
-		backing = SymbolTransactionNodeBacking(FakeNodeConfig(), Network.MAINNET, transport=FakeTransport({}))
+		backing = SymbolTransactionNodeBacking(
+			FakeNodeConfig(),
+			Network.MAINNET,
+			transport=FakeTransport({}),
+			native_mosaic_info=NATIVE_MOSAIC_INFO
+		)
 
 		# Act:
 		record = backing.to_detail_record(payload, 'partial', HASH)

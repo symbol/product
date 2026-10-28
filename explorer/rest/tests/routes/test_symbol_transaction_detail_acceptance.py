@@ -1,5 +1,7 @@
+import sys
 from pathlib import Path
 
+import pytest
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Network
 
@@ -12,6 +14,7 @@ from ..test.SymbolMosaicTestUtils import create_symbol_mosaic
 from ..test.SymbolTransactionTestUtils import RECIPIENT_ADDRESS, SIGNER_ADDRESS, create_symbol_transaction
 
 SENDER = 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI'
+REVOCATION_SOURCE = 'TABQGAYDAMBQGAYDAMBQGAYDAMBQGAYDAMBQGAY'
 RECIPIENT = 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ'
 TARGET = 'TABAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQ'
 ALIAS_ADDRESS = 'TAAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAI'
@@ -119,8 +122,8 @@ def _fixture_transaction(transaction_type, number, body, is_embedded=False, aggr
 		TransactionType.NAMESPACE_METADATA.value, TransactionType.MOSAIC_ADDRESS_RESTRICTION.value}:
 		transaction['target_address'] = bytes.fromhex('98' + '02' * 23)
 	if transaction_type == TransactionType.MOSAIC_SUPPLY_REVOCATION.value:
-		transaction['source_address'] = SIGNER_ADDRESS
-		transaction['address_rows'].append({'address': SIGNER_ADDRESS, 'role': 'sender'})
+		transaction['source_address'] = bytes.fromhex('98' + '03' * 23)
+		transaction['address_rows'].append({'address': transaction['source_address'], 'role': 'sender'})
 	return transaction
 
 
@@ -153,7 +156,7 @@ def _expected_detail(transaction_type):
 			'mosaicId': '0000000000000001', 'divisibility': 0, 'duration': '1', 'nonce': 1, 'supplyMutable': False,
 			'transferable': False, 'restrictable': False, 'revokable': False},
 		TransactionType.MOSAIC_SUPPLY_CHANGE.value: {'mosaicId': MOSAIC_ID, 'action': 'increase', 'delta': '1'},
-		TransactionType.MOSAIC_SUPPLY_REVOCATION.value: {'address': SENDER, 'mosaics': mos},
+		TransactionType.MOSAIC_SUPPLY_REVOCATION.value: {'address': REVOCATION_SOURCE, 'mosaics': mos},
 		TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value: {
 			'minApprovalDelta': 0, 'minRemovalDelta': 0, 'addressAdditions': [], 'addressDeletions': []},
 		TransactionType.ADDRESS_ALIAS.value: {
@@ -205,6 +208,7 @@ def _expected_response(
 	graphic_sender = SENDER
 	graphic_recipient = detail.get('recipient')
 	if transaction_type == TransactionType.MOSAIC_SUPPLY_REVOCATION.value:
+		graphic_sender = REVOCATION_SOURCE
 		graphic_recipient = SENDER
 	if transaction_type == TransactionType.ADDRESS_ALIAS.value:
 		graphic_recipient = ALIAS_ADDRESS
@@ -323,6 +327,65 @@ def test_missing_recipient_transfer_503(tmp_path):
 				response = client.get('/api/symbol/transaction/' + 'FF' * 32)
 			finally:
 				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert response.status_code == 503
+	assert response.json == {'status': 503, 'message': 'Symbol backend data is unavailable'}
+
+
+@pytest.mark.parametrize('malformed_location', ('body', 'raw'))
+def test_fractional_network_returns_503(tmp_path, malformed_location):
+	# Arrange:
+	transaction = _fixture_transaction(TransactionType.TRANSFER.value, 102, {})
+	transaction['hash'] = bytes.fromhex(('FC' if malformed_location == 'body' else 'FD') * 32)
+	if malformed_location == 'body':
+		transaction['body']['network'] = 152.9
+	else:
+		transaction['raw_payload']['transaction']['network'] = 152.9
+	with symbol_test_database(
+		create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+		[create_symbol_block(1)]) as (db_config, puller_database):
+		puller_database.upsert_transactions_for_height(1, [transaction])
+		app_path = _write_app_config(tmp_path, db_config)
+		with rest_settings_env(app_path):
+			app = create_app()
+			client = app.test_client()
+			try:
+				# Act:
+				response = client.get('/api/symbol/transaction/' + transaction['hash'].hex())
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	assert response.status_code == 503
+	assert response.json == {'status': 503, 'message': 'Symbol backend data is unavailable'}
+
+
+def test_oversized_duration_returns_503(tmp_path):
+	# Arrange:
+	if not hasattr(sys, 'get_int_max_str_digits') or not hasattr(sys, 'set_int_max_str_digits'):
+		pytest.skip('Python integer conversion limit API is unavailable')
+	previous_limit = sys.get_int_max_str_digits()
+	transaction = _fixture_transaction(
+		TransactionType.HASH_LOCK.value, 103, {'duration': '9' * 5000, 'hash': 'AA' * 32})
+	transaction['hash'] = bytes.fromhex('FE' * 32)
+	try:
+		sys.set_int_max_str_digits(640)
+		with symbol_test_database(
+			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+			[create_symbol_block(1)]) as (db_config, puller_database):
+			puller_database.upsert_transactions_for_height(1, [transaction])
+			app_path = _write_app_config(tmp_path, db_config)
+			with rest_settings_env(app_path):
+				app = create_app()
+				client = app.test_client()
+				try:
+					# Act:
+					response = client.get('/api/symbol/transaction/' + transaction['hash'].hex())
+				finally:
+					app.extensions['symbol_database'].close()
+	finally:
+		sys.set_int_max_str_digits(previous_limit)
 
 	# Assert:
 	assert response.status_code == 503

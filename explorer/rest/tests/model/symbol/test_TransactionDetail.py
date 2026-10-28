@@ -1,3 +1,6 @@
+# pylint: disable=too-many-lines  # one contract matrix covers all detail types
+
+import sys
 from datetime import datetime
 from unittest import TestCase
 
@@ -6,14 +9,14 @@ from symbolchain.CryptoTypes import PublicKey
 from symbolchain.sc import MosaicFlags, TransactionType
 from symbolchain.symbol.Network import Address, Network
 
+from rest.db.SymbolDatabaseCommon import TransactionMosaicRecord
 from rest.db.SymbolTransactionDetail import (
 	TransactionDetailBlockRecord,
 	TransactionDetailRecord,
 	TransactionDetailTransactionRecord,
-	TransactionHashLockRecord,
-	TransactionMosaicRecord
+	TransactionHashLockRecord
 )
-from rest.model.symbol.Transaction import SymbolTransactionDetailView
+from rest.model.symbol.Transaction import SymbolTransactionDetailView, is_aggregate_transaction_type
 from rest.model.symbol.validation import SymbolDataInvalid
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
@@ -21,6 +24,7 @@ SIGNER_ADDRESS = bytes.fromhex('98' + '01' * 23)
 RECIPIENT_ADDRESS = bytes.fromhex('98' + '02' * 23)
 SIGNER_PUBLIC_KEY = bytes.fromhex('01' * 32)
 SIGNATURE = bytes.fromhex('CD' * 64)
+SOURCE_ADDRESS = bytes.fromhex('98' + '03' * 23)
 
 
 def _create_transaction(transaction_type, body, mosaics=(), **overrides):
@@ -65,7 +69,7 @@ def _create_detail(transaction, children=(), hash_lock=None, namespace_names=Non
 		namespace_names or {})
 
 
-class SymbolTransactionDetailViewTest(TestCase):
+class SymbolTransactionDetailViewTest(TestCase):  # pylint: disable=too-many-public-methods  # grouped public DTO contract cases
 	def test_to_dict_returns_exact_transfer_envelope_and_list_compatible_values(self):
 		# Arrange:
 		transaction = _create_transaction(
@@ -207,19 +211,27 @@ class SymbolTransactionDetailViewTest(TestCase):
 		parent = _create_transaction(16705, {'transactionsHash': 'AA' * 32, 'cosignatures': [cosignature]})
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as error:
 			SymbolTransactionDetailView(_create_detail(parent, cosignatures=[cosignature])).to_dict(
 				NATIVE_MOSAIC_INFO, Network.TESTNET)
+		self.assertEqual('transaction.cosignatures.signature', error.exception.field_path)
+		self.assertEqual('expected 128-character hexadecimal value', error.exception.reason)
 
 	def test_to_dict_rejects_malformed_cosignature(self):
 		# Arrange:
 		parent = _create_transaction(16705, {'transactionsHash': 'AA' * 32})
-		bad_parent = parent._replace(body={'transactionsHash': 'AA' * 32, 'cosignatures': [{'signerPublicKey': 'bad'}]})
+		bad_parent = parent._replace(body={
+			'network': Network.TESTNET.identifier,
+			'transactionsHash': 'AA' * 32,
+			'cosignatures': [{'signerPublicKey': 'bad', 'signature': 'AB' * 64}]})
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as error:
 			SymbolTransactionDetailView(_create_detail(
-				bad_parent, cosignatures=[{'signerPublicKey': 'bad'}])).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				bad_parent, cosignatures=[{'signerPublicKey': 'bad', 'signature': 'AB' * 64}])).to_dict(
+					NATIVE_MOSAIC_INFO, Network.TESTNET)
+		self.assertEqual('transaction.cosignatures.signerPublicKey', error.exception.field_path)
+		self.assertEqual('expected 64-character hexadecimal value', error.exception.reason)
 
 	def test_to_dict_uses_original_supply_delta_and_fixed_width_mosaic_id(self):
 		# Arrange:
@@ -256,36 +268,129 @@ class SymbolTransactionDetailViewTest(TestCase):
 	def test_to_dict_rejects_non_decimal_or_out_of_range_numeric_values(self):
 		# Arrange:
 		cases = (
-			_create_transaction(16712, {'duration': 1.5, 'hash': 'AA' * 32}),
-			_create_transaction(16712, {'duration': str(2 ** 64), 'hash': 'AA' * 32}),
-			_create_transaction(
+			(_create_transaction(16712, {'duration': 1.5, 'hash': 'AA' * 32}), 'expected uint64 decimal value'),
+			(_create_transaction(16712, {'duration': str(2 ** 64), 'hash': 'AA' * 32}), 'uint64 value is out of range'),
+			(_create_transaction(
 				16973,
 				{'mosaicId': '01', 'action': 0, 'delta': -1},
-				mosaics=(TransactionMosaicRecord('0000000000001234', 0, 'definition', 0, 0, ()),))
+				mosaics=(TransactionMosaicRecord('0000000000001234', 0, 'definition', 0, 0, ()),)),
+				'expected uint64 decimal value')
 		)
 
 		# Act + Assert:
-		for transaction in cases:
+		for transaction, expected_reason in cases:
 			with self.subTest(transaction_type=transaction.transaction_type):
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as error:
 					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				self.assertEqual('transaction.decimal', error.exception.field_path)
+				self.assertEqual(expected_reason, error.exception.reason)
+
+	def test_to_dict_rejects_decimal_conversion_limit_values(self):
+		# Arrange:
+		if not hasattr(sys, 'get_int_max_str_digits') or not hasattr(sys, 'set_int_max_str_digits'):
+			self.skipTest('Python integer conversion limit API is unavailable')
+
+		previous_limit = sys.get_int_max_str_digits()
+		try:
+			sys.set_int_max_str_digits(640)
+			for duration in ('9' * 5000, 10 ** 5000):
+				transaction = _create_transaction(16712, {'duration': duration, 'hash': 'AA' * 32})
+
+				# Act + Assert:
+				with self.assertRaises(SymbolDataInvalid) as error:
+					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				self.assertEqual('transaction.decimal', error.exception.field_path)
+				self.assertEqual('expected uint64 decimal value', error.exception.reason)
+		finally:
+			sys.set_int_max_str_digits(previous_limit)
+
+	def test_to_dict_rejects_lossy_or_wrong_network_representations(self):
+		# Arrange:
+		cases = []
+		for configured_network in (Network.TESTNET, Network.MAINNET):
+			fractional_network = 104.9 if configured_network == Network.MAINNET else 152.9
+			cases.extend((
+				(configured_network, 'transaction.body.network', _create_transaction(
+					16724, {'network': fractional_network}, raw_payload={'transaction': {
+						'network': configured_network.identifier, 'version': 1, 'signature': 'CD' * 64}})),
+				(configured_network, 'transaction.rawPayload.transaction.network', _create_transaction(
+					16724,
+					{'network': configured_network.identifier},
+					raw_payload={'transaction': {
+						'network': fractional_network, 'version': 1, 'signature': 'CD' * 64}})),
+				(configured_network, 'transaction.body.network', _create_transaction(
+					16724, {'network': True}, raw_payload={'transaction': {
+						'network': configured_network.identifier, 'version': 1, 'signature': 'CD' * 64}})),
+				(configured_network, 'transaction.rawPayload.transaction.network', _create_transaction(
+					16724,
+					{'network': configured_network.identifier},
+					raw_payload={'transaction': {
+						'network': False, 'version': 1, 'signature': 'CD' * 64}})),
+				(configured_network, 'transaction.body.network', _create_transaction(
+					16724, {'network': 'not-a-network'}, raw_payload={'transaction': {
+						'network': configured_network.identifier, 'version': 1, 'signature': 'CD' * 64}})),
+				(configured_network, 'transaction.rawPayload.transaction.network', _create_transaction(
+					16724,
+					{'network': configured_network.identifier},
+					raw_payload={'transaction': {
+						'network': '', 'version': 1, 'signature': 'CD' * 64}}))
+			))
+
+		# Act + Assert:
+		for configured_network, field_path, transaction in cases:
+			with self.subTest(network=configured_network.name, field_path=field_path):
+				with self.assertRaises(SymbolDataInvalid) as error:
+					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, configured_network)
+				self.assertEqual(field_path, error.exception.field_path)
+				self.assertEqual('network does not match configured network', error.exception.reason)
+
+	def test_to_dict_rejects_network_integer_conversion_limit(self):
+		# Arrange:
+		if not hasattr(sys, 'get_int_max_str_digits') or not hasattr(sys, 'set_int_max_str_digits'):
+			self.skipTest('Python integer conversion limit API is unavailable')
+
+		previous_limit = sys.get_int_max_str_digits()
+		try:
+			sys.set_int_max_str_digits(640)
+			large_network = '9' * 5000
+			cases = (
+				('transaction.body.network', _create_transaction(16724, {'network': large_network})),
+				('transaction.rawPayload.transaction.network', _create_transaction(
+					16724,
+					{'network': Network.TESTNET.identifier},
+					raw_payload={'transaction': {
+						'network': large_network, 'version': 1, 'signature': 'CD' * 64}}))
+			)
+
+			# Act + Assert:
+			for field_path, transaction in cases:
+				with self.subTest(field_path=field_path):
+					with self.assertRaises(SymbolDataInvalid) as error:
+						SymbolTransactionDetailView(_create_detail(transaction)).to_dict(
+							NATIVE_MOSAIC_INFO, Network.TESTNET)
+					self.assertEqual(field_path, error.exception.field_path)
+					self.assertEqual('network does not match configured network', error.exception.reason)
+		finally:
+			sys.set_int_max_str_digits(previous_limit)
 
 	def test_to_dict_rejects_malformed_hex_identifiers(self):
 		# Arrange:
 		cases = (
-			_create_transaction(TransactionType.NAMESPACE_REGISTRATION.value, {
-				'id': '0000 0001', 'name': 'leaf', 'registrationType': 'root', 'parentId': '00', 'duration': 1
-			}),
-			_create_transaction(TransactionType.ADDRESS_ALIAS.value, {
+			(_create_transaction(TransactionType.NAMESPACE_REGISTRATION.value, {
+				'id': '0000 0001', 'name': 'leaf', 'registrationType': 'root', 'parentId': None, 'duration': 1
+			}), 'transaction.hex', 'invalid hexadecimal value'),
+			(_create_transaction(TransactionType.ADDRESS_ALIAS.value, {
 				'namespaceId': '01', 'aliasAction': 1, 'address': '98 ' + '01' * 23
-			})
+			}), 'transaction.address', 'invalid address')
 		)
 
 		# Act + Assert:
-		for transaction in cases:
+		for transaction, field_path, reason in cases:
 			with self.subTest(transaction_type=transaction.transaction_type):
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as error:
 					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				self.assertEqual(field_path, error.exception.field_path)
+				self.assertEqual(reason, error.exception.reason)
 
 	def test_to_dict_uses_current_address_alias_name_in_detail_and_graphic(self):
 		# Arrange:
@@ -346,15 +451,17 @@ class SymbolTransactionDetailViewTest(TestCase):
 			17229,
 			{'mosaicId': '01'},
 			mosaics=(TransactionMosaicRecord('0000000000001234', 1, 'revocation', 0, 0, ()),),
-			source_address=bytes.fromhex('98' + '03' * 23))
+			source_address=SOURCE_ADDRESS)
 
 		# Act + Assert:
 		result = SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 		# Assert:
 		graphic = result['graphic']['transactions'][0]
-		self.assertEqual(result['detail']['address'], graphic['sender'])
-		self.assertEqual(result['info']['sender'], graphic['recipient'])
+		self.assertEqual('TABQGAYDAMBQGAYDAMBQGAYDAMBQGAYDAMBQGAY', result['detail']['address'])
+		self.assertEqual('TABQGAYDAMBQGAYDAMBQGAYDAMBQGAYDAMBQGAY', graphic['sender'])
+		self.assertEqual('TAAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAI', result['info']['sender'])
+		self.assertEqual('TAAQCAIBAEAQCAIBAEAQCAIBAEAQCAIBAEAQCAI', graphic['recipient'])
 
 	def test_to_dict_preserves_exact_message_types_and_payloads(self):
 		# Arrange:
@@ -430,28 +537,36 @@ class SymbolTransactionDetailViewValidationTest(TestCase):
 	def test_to_dict_rejects_non_object_body_and_raw_transaction(self):
 		# Arrange:
 		cases = (
-			_create_transaction(16724, 'malformed body'),
-			_create_transaction(16724, {}, raw_payload={'transaction': 'malformed raw transaction'})
+			(_create_transaction(16724, 'malformed body'), 'transaction.body', 'expected object'),
+			(_create_transaction(16724, {}, raw_payload={'transaction': 'malformed raw transaction'}),
+				'transaction.rawPayload.transaction', 'expected object')
 		)
 
 		# Act + Assert:
-		for transaction in cases:
+		for transaction, field_path, reason in cases:
 			with self.subTest(transaction_type=transaction.transaction_type):
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as error:
 					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				self.assertEqual(field_path, error.exception.field_path)
+				self.assertEqual(reason, error.exception.reason)
 
 	def test_to_dict_rejects_malformed_saved_signature(self):
 		# Arrange:
 		cases = (
-			_create_transaction(16724, {}, raw_payload={'transaction': {'version': 1, 'signature': 'bad'}}),
-			_create_transaction(16724, {}, raw_payload={'transaction': {'version': 1, 'signature': ' ' + 'CD' * 63 + 'C'}})
+			_create_transaction(16724, {}, raw_payload={
+				'transaction': {'network': Network.TESTNET.identifier, 'version': 1, 'signature': 'bad'}}),
+			_create_transaction(16724, {}, raw_payload={
+				'transaction': {
+					'network': Network.TESTNET.identifier, 'version': 1, 'signature': ' ' + 'CD' * 63 + 'C'}})
 		)
 
 		# Act + Assert:
 		for transaction in cases:
 			with self.subTest(transaction_type=transaction.transaction_type):
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as error:
 					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				self.assertEqual('transaction.signature', error.exception.field_path)
+				self.assertEqual('invalid signature', error.exception.reason)
 
 	def test_to_dict_rejects_overlength_namespace_identifier(self):
 		# Arrange:
@@ -460,22 +575,27 @@ class SymbolTransactionDetailViewValidationTest(TestCase):
 		})
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as error:
 			SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+		self.assertEqual('transaction.hex16', error.exception.field_path)
+		self.assertEqual('value exceeds 16 hexadecimal characters', error.exception.reason)
 
 	def test_to_dict_rejects_invalid_common_fields(self):
 		# Arrange:
 		cases = (
-			_create_transaction(16724, {}, version='1'),
-			_create_transaction(16712, {'duration': True, 'hash': 'AA' * 32}),
-			_create_transaction(16705, {})
+			(_create_transaction(16724, {}, version='1'), 'transaction.version', 'expected integer'),
+			(_create_transaction(16712, {'duration': True, 'hash': 'AA' * 32}),
+				'transaction.decimal', 'expected uint64 decimal value'),
+			(_create_transaction(16705, {}), 'transaction.body.transactionsHash', 'missing required field')
 		)
 
 		# Act + Assert:
-		for transaction in cases:
+		for transaction, field_path, reason in cases:
 			with self.subTest(transaction_type=transaction.transaction_type):
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as error:
 					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				self.assertEqual(field_path, error.exception.field_path)
+				self.assertEqual(reason, error.exception.reason)
 
 	def test_to_dict_rejects_invalid_mosaic_definition_flags(self):
 		# Arrange:
@@ -492,8 +612,10 @@ class SymbolTransactionDetailViewValidationTest(TestCase):
 				transaction = _create_transaction(
 					TransactionType.MOSAIC_DEFINITION.value,
 					{'id': '01', 'divisibility': 0, 'duration': 1, 'nonce': 1, 'flags': flags})
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as error:
 					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				self.assertEqual('transaction.body.flags', error.exception.field_path)
+				self.assertEqual('expected integer' if isinstance(flags, (str, bool)) else 'invalid flags', error.exception.reason)
 
 	def test_to_dict_rejects_non_array_address_restriction_values(self):
 		# Arrange:
@@ -502,8 +624,10 @@ class SymbolTransactionDetailViewValidationTest(TestCase):
 			{'restrictionFlags': 1, 'restrictionAdditions': 'bad', 'restrictionDeletions': []})
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as error:
 			SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+		self.assertEqual('transaction.addresses', error.exception.field_path)
+		self.assertEqual('expected array', error.exception.reason)
 
 	def test_to_dict_rejects_malformed_mosaic_restriction_values(self):
 		# Arrange:
@@ -512,21 +636,27 @@ class SymbolTransactionDetailViewValidationTest(TestCase):
 			{'restrictionFlags': 2, 'restrictionAdditions': 'bad', 'restrictionDeletions': []})
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as error:
 			SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+		self.assertEqual('transaction.mosaics', error.exception.field_path)
+		self.assertEqual('expected array', error.exception.reason)
 
 	def test_to_dict_rejects_malformed_operation_restriction_values(self):
 		# Arrange:
 		cases = (
-			_create_transaction(17232, {'restrictionFlags': 4, 'restrictionAdditions': [99999], 'restrictionDeletions': []}),
-			_create_transaction(17232, {'restrictionFlags': 4, 'restrictionAdditions': 'bad', 'restrictionDeletions': []})
+			(_create_transaction(17232, {'restrictionFlags': 4, 'restrictionAdditions': [99999], 'restrictionDeletions': []}),
+				'transaction.restrictionAdditions', 'invalid transaction type'),
+			(_create_transaction(17232, {'restrictionFlags': 4, 'restrictionAdditions': 'bad', 'restrictionDeletions': []}),
+				'transaction.operations', 'expected array')
 		)
 
 		# Act + Assert:
-		for transaction in cases:
+		for transaction, field_path, reason in cases:
 			with self.subTest(transaction_type=transaction.transaction_type):
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as error:
 					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				self.assertEqual(field_path, error.exception.field_path)
+				self.assertEqual(reason, error.exception.reason)
 
 	def test_to_dict_rejects_invalid_address_restriction_flags(self):
 		# Arrange:
@@ -538,8 +668,10 @@ class SymbolTransactionDetailViewValidationTest(TestCase):
 		# Act + Assert:
 		for transaction in cases:
 			with self.subTest(transaction_type=transaction.transaction_type):
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as error:
 					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				self.assertEqual('transaction.restrictionFlags', error.exception.field_path)
+				self.assertEqual('invalid flags', error.exception.reason)
 
 	def test_to_dict_rejects_missing_mosaic_relations_for_supply_and_global_restrictions(self):
 		# Arrange:
@@ -554,32 +686,41 @@ class SymbolTransactionDetailViewValidationTest(TestCase):
 		# Act + Assert:
 		for transaction in cases:
 			with self.subTest(transaction_type=transaction.transaction_type):
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as error:
 					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				expected_path = 'transaction.mosaics.definition' if transaction.transaction_type == 16973 else 'transaction.mosaics.restriction'
+				self.assertEqual(expected_path, error.exception.field_path)
+				self.assertEqual('missing required mosaic relation', error.exception.reason)
 
 	def test_to_dict_rejects_malformed_type_specific_enum_values(self):
 		# Arrange:
 		definition_mosaic = (TransactionMosaicRecord('0000000000001234', 0, 'definition', 0, 0, ()),)
 		restriction_mosaic = (TransactionMosaicRecord('0000000000001234', 0, 'restriction', 0, 0, ()),)
 		cases = (
-			_create_transaction(16722, {'duration': 1, 'secret': 'AA' * 32, 'hashAlgorithm': 'invalid'}),
-			_create_transaction(16974, {'namespaceId': '01', 'aliasAction': 9, 'address': '98' + '01' * 23}),
-			_create_transaction(16716, {'linkAction': 'invalid', 'linkedPublicKey': '01' * 32}),
-			_create_transaction(16973, {'mosaicId': '01', 'action': 9, 'delta': 1}, mosaics=definition_mosaic),
-			_create_transaction(16721, {
+			(_create_transaction(16722, {'duration': 1, 'secret': 'AA' * 32, 'hashAlgorithm': 'invalid'}),
+				'transaction.hashAlgorithm', 'invalid hash algorithm'),
+			(_create_transaction(16974, {'namespaceId': '01', 'aliasAction': 9, 'address': '98' + '01' * 23}),
+				'transaction.aliasAction', 'invalid alias action'),
+			(_create_transaction(16716, {'linkAction': 'invalid', 'linkedPublicKey': '01' * 32}),
+				'transaction.enum', 'invalid enum value'),
+			(_create_transaction(16973, {'mosaicId': '01', 'action': 9, 'delta': 1}, mosaics=definition_mosaic),
+				'transaction.action', 'invalid supply action'),
+			(_create_transaction(16721, {
 				'mosaicId': '01', 'referenceMosaicId': '00', 'restrictionKey': '02', 'previousRestrictionType': 9,
 				'previousRestrictionValue': 0, 'newRestrictionType': 1, 'newRestrictionValue': 1
-			}, mosaics=restriction_mosaic),
-			_create_transaction(16718, {
+			}, mosaics=restriction_mosaic), 'transaction.restrictionType', 'invalid restriction type'),
+			(_create_transaction(16718, {
 				'id': '01', 'name': 'leaf', 'registrationType': 9, 'parentId': '00', 'duration': 1
-			})
+			}), 'transaction.registrationType', 'invalid registration type')
 		)
 
 		# Act + Assert:
-		for transaction in cases:
+		for transaction, field_path, reason in cases:
 			with self.subTest(transaction_type=transaction.transaction_type):
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as error:
 					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				self.assertEqual(field_path, error.exception.field_path)
+				self.assertEqual(reason, error.exception.reason)
 
 	def test_to_dict_accepts_optional_none_and_symbol_string_enum_values(self):
 		# Arrange:
@@ -618,6 +759,14 @@ class SymbolTransactionDetailViewValidationTest(TestCase):
 
 
 class SymbolTransactionDetailViewAdditionalTest(TestCase):
+	def test_is_aggregate_transaction_type_distinguishes_known_transaction_kinds(self):
+		# Arrange:
+		cases = ((16705, True), (16724, False))
+
+		# Act + Assert:
+		for transaction_type, expected in cases:
+			self.assertEqual(expected, is_aggregate_transaction_type(transaction_type))
+
 	def test_to_dict_serializes_root_namespace_with_null_parent(self):
 		# Arrange:
 		transaction = _create_transaction(TransactionType.NAMESPACE_REGISTRATION.value, {
@@ -639,8 +788,10 @@ class SymbolTransactionDetailViewAdditionalTest(TestCase):
 		view = SymbolTransactionDetailView(_create_detail(transaction))
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as error:
 			view.to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+		self.assertEqual('transaction.type', error.exception.field_path)
+		self.assertEqual('unsupported transaction type', error.exception.reason)
 
 	def test_to_dict_rejects_non_string_optional_hex(self):
 		# Arrange:
@@ -649,28 +800,39 @@ class SymbolTransactionDetailViewAdditionalTest(TestCase):
 		})
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as error:
 			SymbolTransactionDetailView(_create_detail(proof)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+		self.assertEqual('transaction.hex', error.exception.field_path)
+		self.assertEqual('invalid hexadecimal value', error.exception.reason)
 
 	def test_to_dict_rejects_malformed_namespace_registration_fields(self):
 		# Arrange:
 		cases = (
-			_create_transaction(
+			(_create_transaction(
 				TransactionType.NAMESPACE_REGISTRATION.value,
 				{'id': '01', 'name': 'root', 'registrationType': 'root'}),
-			_create_transaction(
+				'transaction.body.duration', 'missing required field'),
+			(_create_transaction(
 				TransactionType.NAMESPACE_REGISTRATION.value,
 				{'id': '01', 'name': 'child', 'registrationType': 'sub'}),
-			_create_transaction(
+				'transaction.body.parentId', 'missing required field'),
+			(_create_transaction(
 				TransactionType.NAMESPACE_REGISTRATION.value,
-				{'id': '01', 'name': 'child', 'registrationType': 'sub', 'parentId': '02', 'duration': 1})
+				{'id': '01', 'name': 'child', 'registrationType': 'sub', 'parentId': '02', 'duration': 1}),
+				'transaction.body.duration', 'field is not applicable'),
+			(_create_transaction(
+				TransactionType.NAMESPACE_REGISTRATION.value,
+				{'id': '01', 'name': 'root', 'registrationType': 'root', 'parentId': '02', 'duration': 1}),
+				'transaction.body.parentId', 'field is not applicable')
 		)
 
 		# Act + Assert:
-		for transaction in cases:
+		for transaction, field_path, reason in cases:
 			with self.subTest(transaction_type=transaction.transaction_type, body=transaction.body):
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as error:
 					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				self.assertEqual(field_path, error.exception.field_path)
+				self.assertEqual(reason, error.exception.reason)
 
 	def test_to_dict_rejects_malformed_namespace_hex_identifier(self):
 		# Arrange:
@@ -686,23 +848,29 @@ class SymbolTransactionDetailViewAdditionalTest(TestCase):
 		# Act + Assert:
 		for transaction in transactions:
 			with self.subTest(namespace_id=transaction.body.get('id')):
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as error:
 					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				self.assertEqual('transaction.hex', error.exception.field_path)
+				self.assertEqual('invalid hexadecimal value', error.exception.reason)
 
 	def test_to_dict_rejects_foreign_network_and_bad_saved_signature(self):
 		# Arrange:
 		transactions = (
-			_create_transaction(TransactionType.TRANSFER.value, {'network': Network.MAINNET.identifier}),
-			_create_transaction(
+			(_create_transaction(TransactionType.TRANSFER.value, {'network': Network.MAINNET.identifier}),
+				'transaction.body.network', 'network does not match configured network'),
+			(_create_transaction(
 				TransactionType.TRANSFER.value, {},
-				raw_payload={'transaction': {'network': Network.TESTNET.identifier, 'signature': 'bad'}})
+				raw_payload={'transaction': {'network': Network.TESTNET.identifier, 'signature': 'bad'}}),
+				'transaction.signature', 'invalid signature')
 		)
 
 		# Act + Assert:
-		for transaction in transactions:
+		for transaction, field_path, reason in transactions:
 			with self.subTest(transaction_type=transaction.transaction_type):
-				with self.assertRaises(SymbolDataInvalid):
+				with self.assertRaises(SymbolDataInvalid) as error:
 					SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+				self.assertEqual(field_path, error.exception.field_path)
+				self.assertEqual(reason, error.exception.reason)
 
 	def test_to_dict_rejects_invalid_operation_restriction_value(self):
 		# Arrange:
@@ -711,8 +879,10 @@ class SymbolTransactionDetailViewAdditionalTest(TestCase):
 			{'restrictionFlags': 4, 'restrictionAdditions': [65535], 'restrictionDeletions': []})
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as error:
 			SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+		self.assertEqual('transaction.restrictionAdditions', error.exception.field_path)
+		self.assertEqual('invalid transaction type', error.exception.reason)
 
 	def test_to_dict_rejects_negative_voting_key_epoch(self):
 		# Arrange:
@@ -721,8 +891,10 @@ class SymbolTransactionDetailViewAdditionalTest(TestCase):
 			{'linkAction': 1, 'linkedPublicKey': '01' * 32, 'startEpoch': -1, 'endEpoch': 1})
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as error:
 			SymbolTransactionDetailView(_create_detail(transaction)).to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+		self.assertEqual('transaction.body.startEpoch', error.exception.field_path)
+		self.assertEqual('expected integer in range', error.exception.reason)
 
 	def test_to_dict_rejects_invalid_aggregate_cosignature(self):
 		# Arrange:
@@ -730,9 +902,11 @@ class SymbolTransactionDetailViewAdditionalTest(TestCase):
 			TransactionType.AGGREGATE_COMPLETE.value, {'transactionsHash': 'AA' * 32})
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as error:
 			SymbolTransactionDetailView(_create_detail(aggregate, cosignatures=[{}])).to_dict(
 				NATIVE_MOSAIC_INFO, Network.TESTNET)
+		self.assertEqual('transaction.cosignatures', error.exception.field_path)
+		self.assertEqual('invalid cosignature', error.exception.reason)
 
 	def test_to_dict_maps_all_transaction_types_to_contract_detail_keys(self):
 		# Arrange:
@@ -860,8 +1034,10 @@ class SymbolTransactionDetailViewAdditionalTest(TestCase):
 			mosaics=(TransactionMosaicRecord('0000000000000001', 0, 'restriction', 0, 0, ()),))
 
 		# Act + Assert:
-		with self.assertRaises(SymbolDataInvalid):
+		with self.assertRaises(SymbolDataInvalid) as error:
 			SymbolTransactionDetailView(_create_detail(transaction), 'confirmed').to_dict(NATIVE_MOSAIC_INFO, Network.TESTNET)
+		self.assertEqual('transaction.mosaics.restriction', error.exception.field_path)
+		self.assertEqual('missing resolved reference mosaic relation', error.exception.reason)
 
 	def test_to_dict_uses_pending_global_reference_body_without_resolved_relation(self):
 		# Arrange:

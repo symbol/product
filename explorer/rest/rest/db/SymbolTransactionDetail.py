@@ -3,9 +3,16 @@ from collections import namedtuple
 from common.symbol.NativeMosaic import normalize_mosaic_id
 from symbolchain.sc import TransactionType
 
-TransactionMosaicRecord = namedtuple(
-	'TransactionMosaicRecord',
-	['mosaic_id', 'amount', 'role', 'position', 'divisibility', 'alias_names'])
+from rest.model.symbol.Transaction import is_aggregate_transaction_type
+
+from .SymbolDatabaseCommon import (
+	SymbolDataUnavailable,
+	TransactionMosaicRecord,
+	bytes_or_none,
+	is_non_public_state,
+	try_get_readable_height
+)
+
 TransactionDetailTransactionRecord = namedtuple(
 	'TransactionDetailTransactionRecord',
 	['transaction_id', 'hash', 'is_embedded', 'aggregate_hash', 'embedded_index', 'height', 'transaction_type',
@@ -24,58 +31,32 @@ TransactionHashLockRecord = namedtuple(
 	['hash', 'owner_address', 'mosaic_id', 'amount', 'end_height', 'status', 'divisibility', 'alias_names', 'updated_at_height'])
 
 
-class SymbolDataUnavailable(RuntimeError):
-	"""Raised when Symbol block data is not safely readable."""
-
-
-def _bytes_or_none(value):
-	return bytes(value) if value else None
-
-
-def _is_non_public_state(sync_state):
-	return sync_state['status'] == 'repairing' or sync_state['dirty_state_from_height'] is not None
-
-
-READABLE_BLOCK_STATUSES = frozenset(['healthy', 'repairing'])
-
-
-def _get_readable_height(sync_state):
-	if not sync_state or sync_state.get('status') not in READABLE_BLOCK_STATUSES:
-		return None
-	last_synced_height = sync_state.get('last_synced_height')
-	if not isinstance(last_synced_height, int) or last_synced_height < 1:
-		return None
-	dirty_state_from_height = sync_state.get('dirty_state_from_height')
-	if dirty_state_from_height is not None:
-		if not isinstance(dirty_state_from_height, int) or dirty_state_from_height < 1:
-			return None
-		last_synced_height = min(last_synced_height, dirty_state_from_height - 1)
-	return last_synced_height if last_synced_height >= 1 else None
-
-
 class SymbolTransactionDetailMixin:
 	def get_transaction_detail(self, transaction_hash):
 		"""Gets one confirmed transaction and snapshot visibility metadata.
 
 		The result status is ``hit``, ``miss`` (clean miss), or ``confirmed_lag``.
 		Both watermarks come from the same repeatable-read snapshot as the detail.
-	"""
+		"""
 
 		with self.connection() as connection:
 			with connection.cursor() as cursor:
 				self._start_detail_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
-				readable_height = _get_readable_height(sync_state)
+				readable_height = try_get_readable_height(sync_state)
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: sync state is unreadable')
+
 				candidate = self._fetch_transaction_detail_transaction(cursor, transaction_hash, sync_state, readable_height)
 				if isinstance(candidate, TransactionDetailReadResult):
 					return candidate
+
 				record = self._assemble_transaction_detail(cursor, candidate, sync_state, readable_height)
 				return TransactionDetailReadResult(
 					record, 'hit', sync_state['last_synced_height'], readable_height)
 
-	def supplement_transaction_detail(self, transaction_hash, record):
+	# Snapshot validation keeps all caller-visible relation state in one scope.
+	def supplement_transaction_detail(self, transaction_hash, record):  # pylint: disable=too-many-locals
 		"""Reads current display relations after a Node-backed detail fetch."""
 
 		if not isinstance(transaction_hash, bytes) or len(transaction_hash) != 32 \
@@ -86,26 +67,23 @@ class SymbolTransactionDetailMixin:
 			with connection.cursor() as cursor:
 				self._start_detail_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
-				readable_height = _get_readable_height(sync_state)
+				readable_height = try_get_readable_height(sync_state)
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: sync state is unreadable')
+
 				self._validate_node_detail_visibility(cursor, record, readable_height, sync_state)
 				all_transactions = (record.transaction, *record.children)
-				mosaic_ids = tuple(dict.fromkeys(
-					mosaic.mosaic_id for transaction in all_transactions for mosaic in transaction.mosaics))
-				if record.hash_lock:
-					mosaic_ids = tuple(dict.fromkeys((*mosaic_ids, record.hash_lock.mosaic_id)))
-					self._assert_current_hash_lock(cursor, record.hash_lock.hash, readable_height)
+				mosaics = tuple(mosaic for transaction in all_transactions for mosaic in transaction.mosaics)
+				mosaic_ids = self._transaction_detail_mosaic_ids(mosaics, record.hash_lock)
 				namespace_names = self._fetch_transaction_detail_namespace_names(
 					cursor, record.transaction, record.children)
-				if self.native_mosaic_info is None:
-					raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: native mosaic is unavailable')
 				needs_current_mosaic_state = any(
 					normalize_mosaic_id(mosaic_id) != self.native_mosaic_info.id for mosaic_id in mosaic_ids)
-				if _is_non_public_state(sync_state) and (needs_current_mosaic_state or namespace_names or record.hash_lock):
+				if is_non_public_state(sync_state) and (needs_current_mosaic_state or namespace_names or record.hash_lock):
 					raise SymbolDataUnavailable(
 						'Symbol transaction detail data is unavailable: current metadata is unsafe in dirty or repairing state')
-				mosaic_state = {} if _is_non_public_state(sync_state) else self._fetch_transaction_detail_mosaic_state(cursor, mosaic_ids)
+
+				mosaic_state = {} if is_non_public_state(sync_state) else self._fetch_transaction_detail_mosaic_state(cursor, mosaic_ids)
 				transaction = self._replace_transaction_detail_mosaics(
 					record.transaction, {record.transaction.transaction_id: record.transaction.mosaics}, mosaic_state)
 				children = tuple(self._replace_transaction_detail_mosaics(
@@ -113,6 +91,7 @@ class SymbolTransactionDetailMixin:
 				hash_lock = record.hash_lock
 				if hash_lock:
 					hash_lock = hash_lock._replace(**self._mosaic_state_for_lock(hash_lock, mosaic_state))
+
 				return record._replace(
 					transaction=transaction, children=children, hash_lock=hash_lock, namespace_names=namespace_names)
 
@@ -120,19 +99,15 @@ class SymbolTransactionDetailMixin:
 	def _validate_node_detail_visibility(cursor, record, readable_height, sync_state):
 		parent_hash = record.transaction.hash
 		cursor.execute(
-			'''SELECT height, is_embedded FROM symbol_transactions WHERE hash = %s''',
-			(parent_hash,))
-		parent_rows = cursor.fetchall()
-		if any(is_embedded for _height, is_embedded in parent_rows):
-			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: hash selected an embedded row')
-		rows = list(parent_rows)
-		cursor.execute(
-			'''SELECT height, is_embedded
-			FROM symbol_transactions WHERE aggregate_hash = %s''',
-			(parent_hash,))
-		rows.extend(cursor.fetchall())
-		for height, is_embedded in rows:
-			if height > readable_height and _is_non_public_state(sync_state):
+			'''SELECT hash, aggregate_hash, height, is_embedded
+			FROM symbol_transactions
+			WHERE hash = %s OR aggregate_hash = %s''',
+			(parent_hash, parent_hash))
+		for hash_value, _aggregate_hash, height, is_embedded in cursor.fetchall():
+			if bytes_or_none(hash_value) == parent_hash and is_embedded:
+				raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: hash selected an embedded row')
+
+			if height > readable_height and is_non_public_state(sync_state):
 				raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: unsafe Node detail relation')
 
 	@staticmethod
@@ -145,15 +120,20 @@ class SymbolTransactionDetailMixin:
 			(transaction_hash,))
 		transaction_row = cursor.fetchone()
 		if not transaction_row:
-			if _is_non_public_state(sync_state):
+			if is_non_public_state(sync_state):
 				raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: unsafe miss')
+
 			return TransactionDetailReadResult(None, 'miss', sync_state['last_synced_height'], readable_height)
+
 		if transaction_row[2]:
 			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: hash selected an embedded row')
+
 		if transaction_row[5] > readable_height:
-			if _is_non_public_state(sync_state):
+			if is_non_public_state(sync_state):
 				raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: unsafe transaction row')
+
 			return TransactionDetailReadResult(None, 'confirmed_lag', sync_state['last_synced_height'], readable_height)
+
 		transaction = SymbolTransactionDetailMixin._create_transaction_detail_record(transaction_row)
 		SymbolTransactionDetailMixin._assert_complete_transaction_detail(transaction)
 		return transaction
@@ -174,8 +154,9 @@ class SymbolTransactionDetailMixin:
 		block_row = cursor.fetchone()
 		if not block_row:
 			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: block is missing')
+
 		block = TransactionDetailBlockRecord(
-			height=block_row[0], hash=_bytes_or_none(block_row[1]), timestamp=block_row[2], fee_multiplier=block_row[3])
+			height=block_row[0], hash=bytes_or_none(block_row[1]), timestamp=block_row[2], fee_multiplier=block_row[3])
 		children = self._fetch_transaction_detail_children(cursor, transaction.hash, transaction.height)
 		addresses = self._fetch_transaction_detail_addresses(cursor, (transaction, *children))
 		transaction = self._replace_transaction_detail_addresses(transaction, addresses)
@@ -183,25 +164,30 @@ class SymbolTransactionDetailMixin:
 		revocations = [item for item in (transaction, *children) if item.transaction_type == TransactionType.MOSAIC_SUPPLY_REVOCATION.value]
 		if any(item.source_address is None for item in revocations):
 			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: revocation source is missing')
-		if transaction.transaction_type in (TransactionType.AGGREGATE_COMPLETE.value, TransactionType.AGGREGATE_BONDED.value):
+
+		if is_aggregate_transaction_type(transaction.transaction_type):
 			if not children or [child.embedded_index for child in children] != list(range(len(children))):
 				raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: aggregate children are invalid')
-			aggregate_types = (TransactionType.AGGREGATE_COMPLETE.value, TransactionType.AGGREGATE_BONDED.value)
-			if any(child.transaction_type in aggregate_types for child in children):
+
+			if any(is_aggregate_transaction_type(child.transaction_type) for child in children):
 				raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: nested aggregate child')
 		else:
 			if children:
 				raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: non-aggregate has children')
+
 			children = ()
+
 		cosignatures = self._create_transaction_detail_cosignatures(transaction.body)
-		if transaction.transaction_type in (TransactionType.AGGREGATE_COMPLETE.value, TransactionType.AGGREGATE_BONDED.value):
+		if is_aggregate_transaction_type(transaction.transaction_type):
 			if cosignatures is None:
 				raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: aggregate cosignatures are invalid')
 		else:
 			cosignatures = ()
-		hash_lock = self._fetch_transaction_detail_hash_lock(cursor, transaction, readable_height)
-		if transaction.transaction_type == TransactionType.AGGREGATE_BONDED.value and _is_non_public_state(sync_state):
+
+		if transaction.transaction_type == TransactionType.AGGREGATE_BONDED.value and is_non_public_state(sync_state):
 			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: hash lock is unsafe')
+
+		hash_lock = self._fetch_transaction_detail_hash_lock(cursor, transaction, readable_height)
 		return transaction, block, tuple(children), cosignatures, hash_lock
 
 	def _fetch_transaction_detail_current_relations(self, cursor, transaction, children, relation_context):
@@ -210,22 +196,21 @@ class SymbolTransactionDetailMixin:
 		sync_state = relation_context.sync_state
 		all_transactions = (transaction, *children)
 		transaction_mosaics = self._fetch_transaction_detail_mosaics(cursor, all_transactions)
-		transaction = self._replace_transaction_detail_mosaics(transaction, transaction_mosaics)
-		children = tuple(self._replace_transaction_detail_mosaics(child, transaction_mosaics) for child in children)
-		mosaic_ids = self._transaction_detail_mosaic_ids(transaction, children, hash_lock)
-		if self.native_mosaic_info is None:
-			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: native mosaic is unavailable')
+		mosaics = tuple(mosaic for transaction_mosaic in transaction_mosaics.values() for mosaic in transaction_mosaic)
+		mosaic_ids = self._transaction_detail_mosaic_ids(mosaics, hash_lock)
 		needs_current_mosaic_state = any(
 			normalize_mosaic_id(mosaic_id) != self.native_mosaic_info.id for mosaic_id in mosaic_ids)
-		if _is_non_public_state(sync_state) and (needs_current_mosaic_state or namespace_names):
+		if is_non_public_state(sync_state) and (needs_current_mosaic_state or namespace_names):
 			raise SymbolDataUnavailable(
 				'Symbol transaction detail data is unavailable: current metadata is unsafe in dirty or repairing state')
-		mosaic_state = {} if _is_non_public_state(sync_state) else self._fetch_transaction_detail_mosaic_state(cursor, mosaic_ids)
+
+		mosaic_state = {} if is_non_public_state(sync_state) else self._fetch_transaction_detail_mosaic_state(cursor, mosaic_ids)
 		transaction = self._replace_transaction_detail_mosaics(transaction, transaction_mosaics, mosaic_state)
 		children = tuple(self._replace_transaction_detail_mosaics(child, transaction_mosaics, mosaic_state) for child in children)
 		self._assert_transaction_detail_relations(transaction, children)
 		if hash_lock:
 			hash_lock = hash_lock._replace(**self._mosaic_state_for_lock(hash_lock, mosaic_state))
+
 		return transaction, tuple(children), hash_lock
 
 	@staticmethod
@@ -242,22 +227,23 @@ class SymbolTransactionDetailMixin:
 		raw_transaction = raw_payload.get('transaction') if raw_payload else None
 		if not isinstance(raw_transaction, dict):
 			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: rawPayload.transaction is malformed')
+
 		version = raw_transaction.get('version', body.get('version') if body else None)
 		signature = raw_transaction.get('signature') if not row[2] else None
 		return TransactionDetailTransactionRecord(
 			transaction_id=row[0],
-			hash=_bytes_or_none(row[1]),
+			hash=bytes_or_none(row[1]),
 			is_embedded=row[2],
-			aggregate_hash=_bytes_or_none(row[3]),
+			aggregate_hash=bytes_or_none(row[3]),
 			embedded_index=row[4],
 			height=row[5],
 			transaction_type=row[6],
 			type_name=str(row[7]) if row[7] is not None else None,
 			version=version,
-			signer_public_key=_bytes_or_none(row[8]),
-			signer_address=_bytes_or_none(row[9]),
-			recipient_address=_bytes_or_none(row[10]),
-			target_address=_bytes_or_none(row[11]),
+			signer_public_key=bytes_or_none(row[8]),
+			signer_address=bytes_or_none(row[9]),
+			recipient_address=bytes_or_none(row[10]),
+			target_address=bytes_or_none(row[11]),
 			source_address=None,
 			effective_fee=row[12], timestamp=row[13], deadline=row[14], max_fee=row[15], size=row[16], signature=signature,
 			message_type=str(row[17]) if row[17] is not None else None, message_payload=row[18], body=body, raw_payload=raw_payload,
@@ -283,9 +269,11 @@ class SymbolTransactionDetailMixin:
 				'size': transaction.size,
 				'signature': transaction.signature
 			})
+
 		missing = next((field for field, value in required.items() if value is None), None)
 		if missing:
 			raise SymbolDataUnavailable(f'Symbol transaction detail data is unavailable: missing {missing}')
+
 		required_addresses = {
 			TransactionType.TRANSFER.value: ('recipient_address',),
 			TransactionType.SECRET_LOCK.value: ('recipient_address',),
@@ -297,14 +285,18 @@ class SymbolTransactionDetailMixin:
 		}.get(transaction.transaction_type, ())
 		if any(getattr(transaction, field) is None for field in required_addresses):
 			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: required address is missing')
+
 		if transaction.message_payload is not None and (
 			not isinstance(transaction.message_payload, str) or len(transaction.message_payload) % 2):
 			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: message payload is malformed')
+
 		if transaction.message_payload is not None and any(
 			character not in '0123456789abcdefABCDEF' for character in transaction.message_payload):
 			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: message payload is malformed')
+
 		if not isinstance(transaction.version, int) or isinstance(transaction.version, bool):
 			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: version is malformed')
+
 		if not SymbolTransactionDetailMixin._is_fixed_hex(transaction.signature, 128) and not transaction.is_embedded:
 			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: signature is malformed')
 
@@ -327,6 +319,7 @@ class SymbolTransactionDetailMixin:
 		for child in children:
 			if not child.is_embedded or child.height != parent_height or child.aggregate_hash != parent_hash:
 				raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: embedded identity is invalid')
+
 			SymbolTransactionDetailMixin._assert_complete_transaction_detail(child)
 
 		return children
@@ -345,6 +338,7 @@ class SymbolTransactionDetailMixin:
 		for transaction_id, mosaic_id, amount, role, position in cursor.fetchall():
 			mosaics_by_transaction[transaction_id].append(TransactionMosaicRecord(
 				mosaic_id, amount, str(role), position, None, None))
+
 		return mosaics_by_transaction
 
 	@staticmethod
@@ -360,7 +354,8 @@ class SymbolTransactionDetailMixin:
 		addresses = {}
 		for transaction_id, address, role in cursor.fetchall():
 			if str(role) == 'sender':
-				addresses[transaction_id] = _bytes_or_none(address)
+				addresses[transaction_id] = bytes_or_none(address)
+
 		return addresses
 
 	@staticmethod
@@ -391,16 +386,7 @@ class SymbolTransactionDetailMixin:
 			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: hash lock is unsafe')
 
 		return TransactionHashLockRecord(
-			_bytes_or_none(row[0]), _bytes_or_none(row[1]), row[2], row[3], row[4], str(row[5]), None, None, row[6])
-
-	@staticmethod
-	def _assert_current_hash_lock(cursor, hash_value, readable_height):
-		cursor.execute(
-			'SELECT updated_at_height FROM symbol_hash_locks WHERE hash = %s',
-			(hash_value,))
-		row = cursor.fetchone()
-		if row and row[0] > readable_height:
-			raise SymbolDataUnavailable('Symbol transaction detail data is unavailable: hash lock is unsafe')
+			bytes_or_none(row[0]), bytes_or_none(row[1]), row[2], row[3], row[4], str(row[5]), None, None, row[6])
 
 	@staticmethod
 	def _fetch_transaction_detail_namespace_names(cursor, transaction, children):
@@ -409,10 +395,12 @@ class SymbolTransactionDetailMixin:
 			body = item.body or {}
 			if item.transaction_type == TransactionType.NAMESPACE_REGISTRATION.value:
 				continue
+
 			for field in ('namespaceId', 'targetNamespaceId'):
 				value = body.get(field)
 				if value is not None:
 					namespace_ids.add(str(value).upper())
+
 		if not namespace_ids:
 			return {}
 
@@ -424,12 +412,13 @@ class SymbolTransactionDetailMixin:
 		return result
 
 	@staticmethod
-	def _transaction_detail_mosaic_ids(transaction, children, hash_lock):
+	def _transaction_detail_mosaic_ids(mosaics, hash_lock):
 		ids = []
-		for item in (transaction, *children):
-			ids.extend(mosaic.mosaic_id for mosaic in item.mosaics)
+		ids.extend(mosaic.mosaic_id for mosaic in mosaics)
+
 		if hash_lock:
 			ids.append(hash_lock.mosaic_id)
+
 		return tuple(dict.fromkeys(ids))
 
 	@staticmethod
@@ -471,6 +460,7 @@ class SymbolTransactionDetailMixin:
 			if required_role and not any(mosaic.role == required_role for mosaic in item.mosaics):
 				raise SymbolDataUnavailable(
 					f'Symbol transaction detail data is unavailable: missing {required_role} mosaic relation')
+
 			if item.transaction_type == TransactionType.MOSAIC_GLOBAL_RESTRICTION.value \
 				and not any(mosaic.role == 'restriction' for mosaic in item.mosaics):
 				raise SymbolDataUnavailable(
