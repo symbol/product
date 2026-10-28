@@ -107,9 +107,10 @@ describe('utils/common', () => {
 
 	describe('dateToLocalDate', () => {
 		beforeEach(() => {
-			// Simulates a timezone with UTC+1 in winter and UTC+2 in summer.
+			// Simulates a timezone with UTC+2 from April to September and UTC+1 otherwise.
 			Date.prototype.getTimezoneOffset = function () {
-				return this.getTime() < Date.UTC(2024, 2, 31, 1) ? -60 : -120;
+				const month = this.getUTCMonth();
+				return 3 <= month && 8 >= month ? -120 : -60;
 			};
 		});
 
