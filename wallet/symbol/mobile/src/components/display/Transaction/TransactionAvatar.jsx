@@ -1,5 +1,4 @@
 import { Sizes } from '@/app/styles';
-import { transactionIconSourceMap } from '@/brand/assets/images/transactions/transaction-icon-source-map';
 import React from 'react';
 import { Image, StyleSheet } from 'react-native';
 
@@ -12,9 +11,25 @@ const AVATAR_SIZE_L = Sizes.Semantic.avatarHeight.l;
 const AVATAR_SIZE_XL = Sizes.Semantic.avatarHeight.xl;
 const DEFAULT_TRANSACTION_TYPE = 'default';
 
+const iconSourceMap = {
+	aggregate: require('@/brand/assets/images/transactions/aggregate.png'),
+	default: require('@/brand/assets/images/transactions/default.png'),
+	key: require('@/brand/assets/images/transactions/key.png'),
+	lock: require('@/brand/assets/images/transactions/lock.png'),
+	metadata: require('@/brand/assets/images/transactions/metadata.png'),
+	multisig: require('@/brand/assets/images/transactions/multisig.png'),
+	namespace: require('@/brand/assets/images/transactions/namespace.png'),
+	restriction: require('@/brand/assets/images/transactions/restriction.png'),
+	revert: require('@/brand/assets/images/transactions/revert.png'),
+	reward: require('@/brand/assets/images/transactions/reward.png'),
+	swap: require('@/brand/assets/images/transactions/swap.png'),
+	token: require('@/brand/assets/images/transactions/token.png'),
+	transfer: require('@/brand/assets/images/transactions/transfer.png')
+};
+
 /**
  * Valid icon name for the TransactionAvatar, derived from the transaction icon source map keys.
- * @typedef {keyof typeof transactionIconSourceMap} TransactioniconName
+ * @typedef {keyof typeof iconSourceMap} TransactioniconName
  */
 
 /**
@@ -27,7 +42,7 @@ const DEFAULT_TRANSACTION_TYPE = 'default';
  */
 export const TransactionAvatar = ({ iconName, size = DEFAULT_SIZE }) => {
 	// Image source
-	const imageSrc = transactionIconSourceMap[iconName] ?? transactionIconSourceMap[DEFAULT_TRANSACTION_TYPE];
+	const imageSrc = iconSourceMap[iconName] ?? iconSourceMap[DEFAULT_TRANSACTION_TYPE];
 
 	// Size style
 	const sizeStyleMap = {

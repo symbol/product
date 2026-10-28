@@ -10,7 +10,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 const ITEM_HEIGHT = Sizes.Semantic.navigationMenuHeight.m;
 const ICON_SIZE = Sizes.Semantic.spacing.xl;
 
-const ICON_SOURCE_MAP = {
+const iconSourceMap = {
 	[RouteName.Home]: {
 		default: require('@/brand/assets/images/navigation/home-default.png'),
 		active: require('@/brand/assets/images/navigation/home-active.png')
@@ -103,7 +103,7 @@ export const NavigationMenu = ({ currentRouteName }) => {
 	return (
 		<Animated.View style={styles.root} entering={FadeInDown}>
 			{TAB_CONFIG.map(tab => {
-				const icons = ICON_SOURCE_MAP[tab.name];
+				const icons = iconSourceMap[tab.name];
 				const isActive = tab.name === currentRouteName;
 
 				return (
