@@ -8,6 +8,7 @@ import pytest
 
 SCRIPT_DIRECTORY = Path(__file__).resolve().parents[1] / 'scripts' / 'ci'
 CONFIGURATION_NAMES = ('HOST', 'PORT', 'DATABASE', 'USER')
+JENKINS_DEFAULTS = ('127.0.0.1', '5432', 'explorer_rest_test', 'postgres')
 
 
 @pytest.fixture(name='script_environment')
@@ -21,7 +22,9 @@ def fixture_script_environment(tmp_path):
 			'#!/bin/bash\nprintf "%s\\n" "$(basename "$0") $*" >> "$COMMAND_LOG"\n'
 			'if [ "$(basename "$0")" = python3 ]; then\n'
 			'  printf "config %s %s %s %s\\n" "${EXPLORER_TEST_POSTGRES_HOST:-}" "${EXPLORER_TEST_POSTGRES_PORT:-}" '
-			'"${EXPLORER_TEST_POSTGRES_DATABASE:-}" "${EXPLORER_TEST_POSTGRES_USER:-}" >> "$COMMAND_LOG"\nfi\n'
+			'"${EXPLORER_TEST_POSTGRES_DATABASE:-}" "${EXPLORER_TEST_POSTGRES_USER:-}" >> "$COMMAND_LOG"\n'
+			'  printf "present %s %s %s %s\\n" "${EXPLORER_TEST_POSTGRES_HOST+x}" "${EXPLORER_TEST_POSTGRES_PORT+x}" '
+			'"${EXPLORER_TEST_POSTGRES_DATABASE+x}" "${EXPLORER_TEST_POSTGRES_USER+x}" >> "$COMMAND_LOG"\nfi\n'
 			'if [ "$(basename "$0")" = psql ]; then\n'
 			'  if [ "${PSQL_IGNORE_TERM:-}" = 1 ]; then trap "" TERM; exec /bin/sleep 5; fi\n'
 			'  if [ "${PSQL_HANG:-}" = 1 ]; then sleep 5; fi\n'
@@ -38,79 +41,100 @@ def fixture_script_environment(tmp_path):
 
 
 def _run_script(name, environment):
-	return subprocess.run(['bash', str(SCRIPT_DIRECTORY / name), 'test'], env=environment, capture_output=True, text=True, check=False)
+	return subprocess.run(['/bin/bash', str(SCRIPT_DIRECTORY / name), 'test'], env=environment, capture_output=True, text=True, check=False)
 
 
-def test_jenkins_defaults(script_environment):
+def _run_setup_then_test(environment):
+	setup = _run_script('setup_test.sh', environment)
+	test = _run_script('test.sh', environment) if setup.returncode == 0 else None
+	return setup, test
+
+
+def _config_string(values):
+	return 'config ' + ' '.join(values)
+
+
+def _set_configuration(environment, settings):
+	for name, value in settings.items():
+		environment[f'EXPLORER_TEST_POSTGRES_{name}'] = value
+
+
+@pytest.mark.parametrize('settings', [
+	pytest.param({}, id='all-unset'),
+	pytest.param(dict.fromkeys(CONFIGURATION_NAMES, ''), id='all-empty'),
+	pytest.param({'HOST': ''}, id='host-empty'),
+	pytest.param({'PORT': ''}, id='port-empty'),
+	pytest.param({'DATABASE': ''}, id='database-empty'),
+	pytest.param({'USER': ''}, id='user-empty'),
+])
+def test_jenkins_empty_prepares_db(script_environment, settings):
 	# Arrange:
 	environment, log_path = script_environment
+	_set_configuration(environment, settings)
 
 	# Act:
-	setup = _run_script('setup_test.sh', environment)
-	test = _run_script('test.sh', environment)
+	setup, test = _run_setup_then_test(environment)
 
 	# Assert:
 	assert 0 == setup.returncode
 	assert 0 == test.returncode
 	commands = log_path.read_text(encoding='utf8').splitlines()
-	assert commands[3] == 'psql -w -h 127.0.0.1 -p 5432 -U postgres --command CREATE USER ubuntu WITH SUPERUSER PASSWORD \'ubuntu\';'
-	assert commands[4] == 'createdb -w -h 127.0.0.1 -p 5432 -U postgres explorer_rest_test'
-	assert commands[5] == 'psql -w -h 127.0.0.1 -p 5432 -U postgres -d explorer_rest_test -v ON_ERROR_STOP=1 -c SELECT 1'
-	assert commands[6].startswith('python3 -m pytest ')
-	assert commands[7] == 'config 127.0.0.1 5432 explorer_rest_test postgres'
+	assert commands == [
+		'initdb -U postgres -D /var/lib/postgresql/data/pgdata',
+		'pg_ctl start --wait',
+		'pg_ctl status',
+		'psql -w -h 127.0.0.1 -p 5432 -U postgres --command CREATE USER ubuntu WITH SUPERUSER PASSWORD \'ubuntu\';',
+		'createdb -w -h 127.0.0.1 -p 5432 -U postgres explorer_rest_test',
+		'psql -w -h 127.0.0.1 -p 5432 -U postgres -d explorer_rest_test -v ON_ERROR_STOP=1 -c SELECT 1',
+		'python3 -m pytest --asyncio-mode=auto -v tests ../common/tests',
+		_config_string(JENKINS_DEFAULTS),
+		'present x x x x',
+	]
+	assert 1 == sum(line.startswith('psql ') for line in commands[5:])
 
 
-def test_prepared_database_overrides(script_environment):
+@pytest.mark.parametrize(('settings', 'expected_values'), [
+	pytest.param({'HOST': 'db.example'}, ('db.example', '5432', 'explorer_rest_test', 'postgres'), id='host-unset'),
+	pytest.param({'PORT': '6543'}, ('127.0.0.1', '6543', 'explorer_rest_test', 'postgres'), id='port-unset'),
+	pytest.param({'DATABASE': 'dedicated'}, ('127.0.0.1', '5432', 'dedicated', 'postgres'), id='database-unset'),
+	pytest.param({'USER': 'tester'}, ('127.0.0.1', '5432', 'explorer_rest_test', 'tester'), id='user-unset'),
+	pytest.param({'PORT': ' '}, ('127.0.0.1', ' ', 'explorer_rest_test', 'postgres'), id='whitespace-is-explicit'),
+	pytest.param(
+		{'HOST': 'db.example', 'PORT': '6543', 'DATABASE': 'dedicated', 'USER': 'tester'},
+		('db.example', '6543', 'dedicated', 'tester'), id='all-explicit'),
+	pytest.param(
+		{'HOST': 'db.example', 'PORT': '', 'DATABASE': '', 'USER': ''},
+		('db.example', '5432', 'explorer_rest_test', 'postgres'), id='host-nonempty-others-empty'),
+	pytest.param(
+		{'HOST': '', 'PORT': '6543', 'DATABASE': '', 'USER': ''},
+		('127.0.0.1', '6543', 'explorer_rest_test', 'postgres'), id='port-nonempty-others-empty'),
+	pytest.param(
+		{'HOST': '', 'PORT': '', 'DATABASE': 'dedicated', 'USER': ''},
+		('127.0.0.1', '5432', 'dedicated', 'postgres'), id='database-nonempty-others-empty'),
+	pytest.param(
+		{'HOST': '', 'PORT': '', 'DATABASE': '', 'USER': 'tester'},
+		('127.0.0.1', '5432', 'explorer_rest_test', 'tester'), id='user-nonempty-others-empty'),
+])
+def test_jenkins_nonempty_uses_external(script_environment, settings, expected_values):
 	# Arrange:
 	environment, log_path = script_environment
-	environment.update(
-		EXPLORER_TEST_POSTGRES_HOST='db.example', EXPLORER_TEST_POSTGRES_PORT='6543',
-		EXPLORER_TEST_POSTGRES_DATABASE='dedicated', EXPLORER_TEST_POSTGRES_USER='tester')
+	_set_configuration(environment, settings)
+	host, port, database, user = expected_values
 
 	# Act:
-	setup = _run_script('setup_test.sh', environment)
-	test = _run_script('test.sh', environment)
+	setup, test = _run_setup_then_test(environment)
 
 	# Assert:
 	assert 0 == setup.returncode
 	assert 0 == test.returncode
 	commands = log_path.read_text(encoding='utf8').splitlines()
-	assert commands[0] == 'psql -w -h db.example -p 6543 -U tester -d dedicated -v ON_ERROR_STOP=1 -c SELECT 1'
-	assert commands[1].startswith('python3 -m pytest ')
-	assert commands[2] == 'config db.example 6543 dedicated tester'
-
-
-def test_partial_override_uses_defaults(script_environment):
-	# Arrange:
-	environment, log_path = script_environment
-	environment['EXPLORER_TEST_POSTGRES_PORT'] = '6543'
-
-	# Act:
-	setup = _run_script('setup_test.sh', environment)
-	test = _run_script('test.sh', environment)
-
-	# Assert:
-	assert 0 == setup.returncode
-	assert 0 == test.returncode
-	assert log_path.read_text(encoding='utf8').splitlines() == [
-		'psql -w -h 127.0.0.1 -p 6543 -U postgres -d explorer_rest_test -v ON_ERROR_STOP=1 -c SELECT 1',
-		'python3 -m pytest --asyncio-mode=auto -v tests ../common/tests', 'config 127.0.0.1 6543 explorer_rest_test postgres']
-
-
-@pytest.mark.parametrize('name', CONFIGURATION_NAMES)
-def test_empty_setting_is_rejected(script_environment, name):
-	# Arrange:
-	environment, log_path = script_environment
-	environment[f'EXPLORER_TEST_POSTGRES_{name}'] = ''
-
-	# Act:
-	setup = _run_script('setup_test.sh', environment)
-	test = _run_script('test.sh', environment)
-
-	# Assert:
-	assert 0 != setup.returncode
-	assert 0 != test.returncode
-	assert not log_path.exists()
+	assert commands == [
+		f'psql -w -h {host} -p {port} -U {user} -d {database} -v ON_ERROR_STOP=1 -c SELECT 1',
+		'python3 -m pytest --asyncio-mode=auto -v tests ../common/tests',
+		_config_string(expected_values),
+		'present x x x x',
+	]
+	assert 1 == sum(line.startswith('psql ') for line in commands)
 
 
 def test_connection_failure(script_environment):
@@ -118,25 +142,31 @@ def test_connection_failure(script_environment):
 	environment, log_path = script_environment
 	environment.update(EXPLORER_TEST_POSTGRES_HOST='db.example', PSQL_STATUS='2')
 
-	# Act:
-	result = _run_script('test.sh', environment)
+	# Act: setup owns the connection check and starts test only after it succeeds.
+	setup, test = _run_setup_then_test(environment)
 
 	# Assert:
-	assert 2 == result.returncode
-	assert all(not line.startswith('python3 ') for line in log_path.read_text(encoding='utf8').splitlines())
+	assert 2 == setup.returncode
+	assert test is None
+	commands = log_path.read_text(encoding='utf8').splitlines()
+	assert commands == ['psql -w -h db.example -p 5432 -U postgres -d explorer_rest_test -v ON_ERROR_STOP=1 -c SELECT 1']
+	assert 0 == sum(line.startswith('python3 ') for line in commands)
 
 
-def test_test_times_out_hung_query(script_environment):
+def test_setup_times_out_hung_query(script_environment):
 	# Arrange:
 	environment, log_path = script_environment
 	environment.update(EXPLORER_TEST_POSTGRES_HOST='db.example', PSQL_HANG='1')
 
-	# Act:
-	result = _run_script('test.sh', environment)
+	# Act: setup owns the connection check and starts test only after it succeeds.
+	setup, test = _run_setup_then_test(environment)
 
 	# Assert:
-	assert 124 == result.returncode
-	assert all(not line.startswith('python3 ') for line in log_path.read_text(encoding='utf8').splitlines())
+	assert 124 == setup.returncode
+	assert test is None
+	commands = log_path.read_text(encoding='utf8').splitlines()
+	assert commands == ['psql -w -h db.example -p 5432 -U postgres -d explorer_rest_test -v ON_ERROR_STOP=1 -c SELECT 1']
+	assert 0 == sum(line.startswith('python3 ') for line in commands)
 
 
 def test_timeout_kills_stuck_process(script_environment):
@@ -144,43 +174,104 @@ def test_timeout_kills_stuck_process(script_environment):
 	environment, log_path = script_environment
 	environment.update(EXPLORER_TEST_POSTGRES_HOST='db.example', PSQL_IGNORE_TERM='1')
 
-	# Act:
-	result = _run_script('test.sh', environment)
+	# Act: setup owns the connection check and starts test only after it succeeds.
+	setup, test = _run_setup_then_test(environment)
 
 	# Assert:
-	assert 0 != result.returncode
-	assert all(not line.startswith('python3 ') for line in log_path.read_text(encoding='utf8').splitlines())
+	assert 0 != setup.returncode
+	assert test is None
+	commands = log_path.read_text(encoding='utf8').splitlines()
+	assert 0 == sum(line.startswith('python3 ') for line in commands)
 
 
-@pytest.mark.parametrize(('settings', 'expected_config'), [
-	({}, 'config    '),
-	({'PORT': '6543'}, 'config  6543  '),
-	({'DATABASE': 'custom'}, 'config   custom '),
-	({'USER': 'tester'}, 'config    tester'),
-	({'HOST': 'db.example'}, 'config db.example 5432 postgres postgres'),
-	({'HOST': 'db.example', 'PORT': '6543', 'DATABASE': 'custom', 'USER': 'tester'}, 'config db.example 6543 custom tester')
+@pytest.mark.parametrize(('settings', 'expected_values'), [
+	pytest.param({}, ('', '', '', ''), id='all-unset'),
+	pytest.param({'HOST': ''}, ('', '', '', ''), id='host-empty'),
+	pytest.param({'PORT': ''}, ('', '', '', ''), id='port-empty'),
+	pytest.param({'DATABASE': ''}, ('', '', '', ''), id='database-empty'),
+	pytest.param({'USER': ''}, ('', '', '', ''), id='user-empty'),
+	pytest.param({'PORT': '6543'}, ('', '6543', '', ''), id='port-only'),
+	pytest.param({'DATABASE': 'custom'}, ('', '', 'custom', ''), id='database-only'),
+	pytest.param({'USER': 'tester'}, ('', '', '', 'tester'), id='user-only'),
+	pytest.param({'HOST': '', 'PORT': '6543'}, ('', '6543', '', ''), id='host-empty-port-only'),
+	pytest.param({'HOST': '', 'DATABASE': 'custom'}, ('', '', 'custom', ''), id='host-empty-database-only'),
+	pytest.param({'HOST': '', 'USER': 'tester'}, ('', '', '', 'tester'), id='host-empty-user-only'),
 ])
-def test_local_selection(script_environment, settings, expected_config):
+def test_local_missing_host_skips_setup(script_environment, settings, expected_values):
 	# Arrange:
 	environment, log_path = script_environment
 	del environment['JENKINS_HOME']
-	for name, value in settings.items():
-		environment[f'EXPLORER_TEST_POSTGRES_{name}'] = value
+	_set_configuration(environment, settings)
 
-	# Act: both processes receive the original environment independently.
-	setup = _run_script('setup_test.sh', environment)
-	test = _run_script('test.sh', environment)
+	# Act: setup and test receive the original environment independently.
+	setup, test = _run_setup_then_test(environment)
 
 	# Assert:
 	assert 0 == setup.returncode
 	assert 0 == test.returncode
 	commands = log_path.read_text(encoding='utf8').splitlines()
-	assert commands[-1] == expected_config
-	assert sum(line.startswith('python3 -m pytest ') for line in commands) == 1
-	if 'HOST' not in settings:
-		assert not any(line.startswith(('psql ', 'initdb ', 'createdb ')) for line in commands)
-	else:
-		assert all('db.example' in line for line in commands if line.startswith('psql '))
+	assert commands == [
+		'python3 -m pytest --asyncio-mode=auto -v tests ../common/tests', _config_string(expected_values),
+		'present ' + ' '.join('x' if name in settings else '' for name in CONFIGURATION_NAMES),
+	]
+	assert 0 == sum(line.startswith('psql ') for line in commands)
+
+
+@pytest.mark.parametrize(('settings', 'expected_values'), [
+	pytest.param({'HOST': 'db.example'}, ('db.example', '5432', 'postgres', 'postgres'), id='host-only'),
+	pytest.param(
+		{'HOST': 'db.example', 'PORT': '', 'DATABASE': '', 'USER': ''},
+		('db.example', '5432', 'postgres', 'postgres'), id='host-nonempty-others-empty'),
+	pytest.param(
+		{'HOST': 'db.example', 'PORT': '6543', 'DATABASE': 'custom', 'USER': 'tester'},
+		('db.example', '6543', 'custom', 'tester'), id='all-explicit'),
+])
+def test_local_host_uses_external(script_environment, settings, expected_values):
+	# Arrange:
+	environment, log_path = script_environment
+	del environment['JENKINS_HOME']
+	_set_configuration(environment, settings)
+	host, port, database, user = expected_values
+
+	# Act: setup and test receive the original environment independently.
+	setup, test = _run_setup_then_test(environment)
+
+	# Assert:
+	assert 0 == setup.returncode
+	assert 0 == test.returncode
+	commands = log_path.read_text(encoding='utf8').splitlines()
+	assert commands == [
+		f'psql -w -h {host} -p {port} -U {user} -d {database} -v ON_ERROR_STOP=1 -c SELECT 1',
+		'python3 -m pytest --asyncio-mode=auto -v tests ../common/tests',
+		_config_string(expected_values),
+		'present x x x x',
+	]
+	assert 1 == sum(line.startswith('psql ') for line in commands)
+
+
+@pytest.mark.parametrize(('jenkins', 'expected_values'), [
+	pytest.param(True, ('db.example', '5432', 'explorer_rest_test', 'postgres'), id='jenkins'),
+	pytest.param(False, ('db.example', '5432', 'postgres', 'postgres'), id='local'),
+])
+def test_test_script_does_not_ping(script_environment, jenkins, expected_values):
+	# Arrange:
+	environment, log_path = script_environment
+	environment['EXPLORER_TEST_POSTGRES_HOST'] = 'db.example'
+	if not jenkins:
+		del environment['JENKINS_HOME']
+
+	# Act: test.sh is invoked without setup_test.sh.
+	result = _run_script('test.sh', environment)
+
+	# Assert:
+	assert 0 == result.returncode
+	commands = log_path.read_text(encoding='utf8').splitlines()
+	assert commands == [
+		'python3 -m pytest --asyncio-mode=auto -v tests ../common/tests',
+		_config_string(expected_values),
+		'present x x x x',
+	]
+	assert 0 == sum(line.startswith('psql ') for line in commands)
 
 
 def test_check_without_timeout_command(tmp_path):
@@ -239,12 +330,14 @@ def test_python_timeout_stops_process(tmp_path):
 	# Act:
 	started = time.monotonic()
 	result = subprocess.run(
-		['/bin/bash', str(SCRIPT_DIRECTORY / 'test.sh'), 'test'], env=environment,
+		['/bin/bash', str(SCRIPT_DIRECTORY / 'setup_test.sh'), 'test'], env=environment,
 		capture_output=True, text=True, check=False, timeout=4)
+	test = _run_script('test.sh', environment) if result.returncode == 0 else None
 	elapsed = time.monotonic() - started
 
 	# Assert:
 	assert 124 == result.returncode
+	assert test is None
 	assert elapsed < 4
 	assert '30' == deadline_file.read_text(encoding='utf8')
 	assert not event_log.exists()
