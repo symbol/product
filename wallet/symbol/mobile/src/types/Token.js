@@ -38,4 +38,18 @@
  * @property {string|null} amount - The token amount.
  */
 
+/**
+ * Size configuration bundle for token image - maps size identifiers to image names.
+ * @typedef {object} TokenImageNames
+ * @property {string} small - Image name for the small size.
+ * @property {string} medium - Image name for the medium size.
+ * @property {string} large - Image name for the large size.
+ */
+
+/**
+ * Token image config of a brand.
+ * @typedef {object} TokenImageConfig
+ * @property {Record<string, TokenImageNames>} images - image id to size bundle map.
+ */
+
 export {};
