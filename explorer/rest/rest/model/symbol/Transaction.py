@@ -2,7 +2,8 @@ from common.symbol.NativeMosaic import normalize_mosaic_id
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address
 
-from rest.model.symbol.format import format_amount, format_timestamp, to_hex_or_none
+from rest.model.format import format_timestamp
+from rest.model.symbol.format import format_amount, to_hex_or_none
 
 
 class SymbolTransactionView:

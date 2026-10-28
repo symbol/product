@@ -2,9 +2,9 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from zenlog import log
 
+from rest.model.format import format_timestamp
 from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountView
 from rest.model.symbol.Block import SymbolBlockStatisticsView
-from rest.model.symbol.format import format_timestamp
 from rest.model.symbol.Receipt import SymbolReceiptView
 from rest.model.symbol.Transaction import SymbolTransactionView
 
