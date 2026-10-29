@@ -1,10 +1,7 @@
-import { SymbolTransactionType, TransactionGroup } from '@/app/constants';
-import { getTransactionTypeInfo } from '@/app/lib/transaction';
+import { TransactionGroup } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { Colors } from '@/app/styles';
-import { FilterType } from '@/app/types/Filter';
-
-const SYMBOL_CHAIN_NAME = 'symbol';
+import { historyScreenConfig } from '@/brand/config/history-screen-config';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 
@@ -20,47 +17,13 @@ export const SectionType = {
  * Returns the filter configuration for the history screen.
  * @returns {object[]} Filter configuration array.
  */
-export const getHistoryFilterConfig = () => [
-	{
-		name: 'type',
-		title: $t('screen_history_chip_type'),
-		type: FilterType.SELECT,
-		options: [
-			{
-				label: $t(getTransactionTypeInfo(SymbolTransactionType.TRANSFER, SYMBOL_CHAIN_NAME).localeKey),
-				value: [SymbolTransactionType.TRANSFER]
-			},
-			{
-				label: $t(getTransactionTypeInfo(SymbolTransactionType.AGGREGATE_BONDED, SYMBOL_CHAIN_NAME).localeKey),
-				value: [SymbolTransactionType.AGGREGATE_BONDED]
-			},
-			{
-				label: $t(getTransactionTypeInfo(SymbolTransactionType.AGGREGATE_COMPLETE, SYMBOL_CHAIN_NAME).localeKey),
-				value: [SymbolTransactionType.AGGREGATE_COMPLETE]
-			}
-		]
-	},
-	{
-		name: 'from',
-		title: $t('screen_history_chip_from'),
-		type: FilterType.ADDRESS
-	},
-	{
-		name: 'to',
-		title: $t('screen_history_chip_to'),
-		type: FilterType.ADDRESS
-	},
-	{
-		name: 'harvested',
-		title: $t('screen_history_chip_harvested'),
-		type: FilterType.BOOLEAN
-	},
-	{
-		name: 'blocked',
-		title: $t('screen_history_chip_blocked'),
-		type: FilterType.BOOLEAN
-	}
-];
+export const getHistoryFilterConfig = () => historyScreenConfig.filters.map(filter => ({
+	name: filter.name,
+	title: $t(filter.titleKey),
+	type: filter.type,
+	options: filter.options?.map(option => ({ label: $t(option.labelKey), value: option.value })),
+	value: filter.value
+}));
 
 /**
  * Creates a section object for the SectionList.

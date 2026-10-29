@@ -8,10 +8,11 @@
 /**
  * Configuration for a single filter chip (name, title, interaction type, and options).
  * @typedef {object} FilterItem
- * @property {string} name - Unique identifier for the filter.
+ * @property {string} name - Unique identifier for the filter. Actual filter key.
  * @property {string} title - Display title for the filter chip.
- * @property {'boolean'|'select'|'address'} type - Type of filter interaction.
+ * @property {'boolean'|'select'|'address'|'choice'} type - Type of filter interaction.
  * @property {FilterOption[]} [options] - Options for select type filters.
+ * @property {*} [value] - Filter value defined for choice type filters.
  */
 
 /**
@@ -27,5 +28,6 @@
 export const FilterType = {
 	BOOLEAN: 'boolean',
 	SELECT: 'select',
-	ADDRESS: 'address'
+	ADDRESS: 'address',
+	CHOICE: 'choice'
 };
