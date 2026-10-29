@@ -1,8 +1,9 @@
-import { Button, ButtonPlain, DialogBox, Screen, Spacer, Stack, StyledText, SymbolLogo } from '@/app/components';
+import { DialogBox, Stack, StyledText } from '@/app/components';
 import { termsAndPrivacy } from '@/app/config';
 import { useToggle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
+import { WelcomeView } from '@/brand/screens/onboarding/components/WelcomeView';
 
 export const Welcome = () => {
 	const [isTermsAndPrivacyShown, toggleTermsAndPrivacy] = useToggle(true);
@@ -11,39 +12,22 @@ export const Welcome = () => {
 	const importWallet = Router.goToImportWallet;
 
 	return (
-		<Screen backgroundImageSrc={require('@/app/assets/images/art/welcome.png')}>
-			<Screen.Upper>
-				<Spacer top='xxl'>
-					<Stack>
-						<SymbolLogo />
-						<StyledText type="title" size="l">
-							{$t('screen_onboarding_title_welcome')}
-						</StyledText>
-					</Stack>
-				</Spacer>
-			</Screen.Upper>
-			<Screen.Bottom>
-				<Spacer>
-					<Stack>
-						<Button text={$t('button_walletCreate')} onPress={createWallet} />
-						<ButtonPlain icon="block-explorer" text={$t('button_walletImport')} isCentered onPress={importWallet} />
-					</Stack>
-				</Spacer>
-				<DialogBox
-					type="accept"
-					isVisible={isTermsAndPrivacyShown}
-					onSuccess={toggleTermsAndPrivacy}
-					title={$t('screen_onboarding_dialog_termsAndPrivacy_title')}
-				>
-					<Stack gap="s">
-						<StyledText type="title" size="s">{$t('screen_onboarding_title_termsAndConditions')}</StyledText>
-						<StyledText type="body">{termsAndPrivacy.terms}</StyledText>
-						<StyledText type="title" />
-						<StyledText type="title" size="s">{$t('screen_onboarding_title_privacyPolicy')}</StyledText>
-						<StyledText type="body">{termsAndPrivacy.privacy}</StyledText>
-					</Stack>
-				</DialogBox>
-			</Screen.Bottom>
-		</Screen >
+		<>
+			<WelcomeView onCreateWalletPress={createWallet} onImportWalletPress={importWallet} />
+			<DialogBox
+				type="accept"
+				isVisible={isTermsAndPrivacyShown}
+				onSuccess={toggleTermsAndPrivacy}
+				title={$t('screen_onboarding_dialog_termsAndPrivacy_title')}
+			>
+				<Stack gap="s">
+					<StyledText type="title" size="s">{$t('screen_onboarding_title_termsAndConditions')}</StyledText>
+					<StyledText type="body">{termsAndPrivacy.terms}</StyledText>
+					<StyledText type="title" />
+					<StyledText type="title" size="s">{$t('screen_onboarding_title_privacyPolicy')}</StyledText>
+					<StyledText type="body">{termsAndPrivacy.privacy}</StyledText>
+				</Stack>
+			</DialogBox>
+		</>
 	);
 };
