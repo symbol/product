@@ -47,6 +47,7 @@ def _set_configuration(environment, settings):
 @pytest.mark.parametrize('jenkins', [False, True], ids=['local', 'jenkins'])
 @pytest.mark.parametrize(('settings', 'pgdata', 'expected'), [
 	pytest.param({}, None, DEFAULTS, id='unset'),
+	pytest.param({}, '/var/lib/postgresql/data', DEFAULTS, id='image-default'),
 	pytest.param(dict.fromkeys(CONFIGURATION_NAMES, ''), '', DEFAULTS, id='empty'),
 	pytest.param(
 		{'HOST': 'db.example', 'PORT': '6543', 'DATABASE': 'custom', 'USER': 'tester'},
@@ -206,3 +207,24 @@ def test_coverage_runner(script_environment):
 		'coverage run --append --source=rest,../common/symbol -m pytest --asyncio-mode=auto -v tests ../common/tests',
 		'config ' + '|'.join(DEFAULTS),
 	]
+
+
+@pytest.mark.parametrize(('pgdata', 'expected'), [
+	(None, '/var/lib/postgresql/data/pgdata'),
+	('', '/var/lib/postgresql/data/pgdata'),
+	('/var/lib/postgresql/data', '/var/lib/postgresql/data/pgdata'),
+	('/tmp/custom', '/tmp/custom'),
+])
+def test_initdb_uses_effective_pgdata(script_environment, pgdata, expected):
+	# Arrange: stop at initdb so the recorded directory is the setup entrypoint's actual choice.
+	environment, log_path = script_environment
+	environment['FAIL_COMMAND'] = 'initdb'
+	if pgdata is not None:
+		environment['PGDATA'] = pgdata
+
+	# Act:
+	result = _run_script('setup_test.sh', environment)
+
+	# Assert:
+	assert 7 == result.returncode
+	assert [f'initdb -U postgres -D {expected}'] == log_path.read_text(encoding='utf8').splitlines()
