@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo, NativeMosaicValidationError
-from common.symbol.NodeConfiguration import SymbolNodeConfiguration, SymbolNodeConfigurationError
+from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
 from common.tests.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_configuration, drop_symbol_block_tables_if_present
 from flask import Flask
 from psycopg2 import OperationalError
@@ -25,6 +25,7 @@ from rest import create_app, setup_symbol_facade
 from rest.db.SymbolDatabase import SymbolDatabase
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.model.common import DatabaseConfig
+from rest.model.symbol.HarvestingBalanceRange import HarvestingBalanceRange
 from rest.routes.symbol import setup_symbol_routes
 
 from .test.EnvTestUtils import rest_settings_env
@@ -193,6 +194,8 @@ def _create_app_config(
 			app_config_file.write(f'SYMBOL_NATIVE_MOSAIC_ID={native_mosaic_id!r}\n')
 		app_config_file.write('SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200\n')
 		app_config_file.write('SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7\n')
+		app_config_file.write('SYMBOL_HARVESTING_MIN_BALANCE=0\n')
+		app_config_file.write('SYMBOL_HARVESTING_MAX_BALANCE=18446744073709551615\n')
 		if symbol_node_url:
 			app_config_file.write(f'SYMBOL_NODE_URL="{symbol_node_url}"\n')
 		app_config_file.write('SYMBOL_NODE_ALLOWED_HOSTS="localhost:3000"\n')
@@ -1791,8 +1794,8 @@ def test_symbol_facade_config(symbol_database_config):
 	# Assert:
 	assert isinstance(facade, SymbolRestFacade)
 	assert facade.symbol_db is app.extensions['symbol_database']
-	assert 'http://localhost:3000' == facade.node_config.base_url
 	assert NATIVE_MOSAIC_INFO == facade.native_mosaic_info
+	assert HarvestingBalanceRange(0, 18446744073709551615) == facade.harvesting_balance_range
 	assert Network.TESTNET == facade.network
 	app.extensions['symbol_database'].close()
 
@@ -2194,6 +2197,97 @@ def test_list_window_invalid_setup(setting, expected_message):
 			assert expected_message == str(exception_info.value)
 
 
+@pytest.mark.parametrize('setting,value,expected_message', [
+	pytest.param('SYMBOL_HARVESTING_MIN_BALANCE', None, 'SYMBOL_HARVESTING_MIN_BALANCE is required', id='minimum-missing'),
+	pytest.param('SYMBOL_HARVESTING_MAX_BALANCE', None, 'SYMBOL_HARVESTING_MAX_BALANCE is required', id='maximum-missing'),
+	pytest.param(
+		'SYMBOL_HARVESTING_MIN_BALANCE', True,
+		'SYMBOL_HARVESTING_MIN_BALANCE must be an integer between 0 and 2**64 - 1', id='minimum-bool'),
+	pytest.param(
+		'SYMBOL_HARVESTING_MAX_BALANCE', False,
+		'SYMBOL_HARVESTING_MAX_BALANCE must be an integer between 0 and 2**64 - 1', id='maximum-bool'),
+	pytest.param(
+		'SYMBOL_HARVESTING_MIN_BALANCE', '0',
+		'SYMBOL_HARVESTING_MIN_BALANCE must be an integer between 0 and 2**64 - 1', id='minimum-string'),
+	pytest.param(
+		'SYMBOL_HARVESTING_MAX_BALANCE', '10',
+		'SYMBOL_HARVESTING_MAX_BALANCE must be an integer between 0 and 2**64 - 1', id='maximum-string'),
+	pytest.param(
+		'SYMBOL_HARVESTING_MIN_BALANCE', 0.0,
+		'SYMBOL_HARVESTING_MIN_BALANCE must be an integer between 0 and 2**64 - 1', id='minimum-float'),
+	pytest.param(
+		'SYMBOL_HARVESTING_MAX_BALANCE', 10.0,
+		'SYMBOL_HARVESTING_MAX_BALANCE must be an integer between 0 and 2**64 - 1', id='maximum-float'),
+	pytest.param(
+		'SYMBOL_HARVESTING_MIN_BALANCE', -1,
+		'SYMBOL_HARVESTING_MIN_BALANCE must be an integer between 0 and 2**64 - 1', id='minimum-negative'),
+	pytest.param(
+		'SYMBOL_HARVESTING_MAX_BALANCE', -1,
+		'SYMBOL_HARVESTING_MAX_BALANCE must be an integer between 0 and 2**64 - 1', id='maximum-negative'),
+	pytest.param(
+		'SYMBOL_HARVESTING_MIN_BALANCE', 18446744073709551616,
+		'SYMBOL_HARVESTING_MIN_BALANCE must be an integer between 0 and 2**64 - 1', id='minimum-overflow'),
+	pytest.param(
+		'SYMBOL_HARVESTING_MAX_BALANCE', 18446744073709551616,
+		'SYMBOL_HARVESTING_MAX_BALANCE must be an integer between 0 and 2**64 - 1', id='maximum-overflow'),
+	pytest.param(
+		'SYMBOL_HARVESTING_MIN_BALANCE', 201,
+		'SYMBOL_HARVESTING_MIN_BALANCE must be at most SYMBOL_HARVESTING_MAX_BALANCE', id='reversed')
+])
+def test_invalid_harvest_balance(setting, value, expected_message):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=create_unreachable_db_configuration())
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		config = Path(app_config_path).read_text(encoding='utf8')
+		if value == 201:
+			config = config.replace('SYMBOL_HARVESTING_MAX_BALANCE=18446744073709551615\n', 'SYMBOL_HARVESTING_MAX_BALANCE=200\n')
+		if setting == 'SYMBOL_HARVESTING_MIN_BALANCE':
+			config = config.replace('SYMBOL_HARVESTING_MIN_BALANCE=0\n', '')
+		else:
+			config = config.replace('SYMBOL_HARVESTING_MAX_BALANCE=18446744073709551615\n', '')
+		if value is not None:
+			config += f'{setting}={value!r}\n'
+		Path(app_config_path).write_text(config, encoding='utf8')
+
+		with patch('rest.db.DatabaseConnection.pool.SimpleConnectionPool') as create_pool:
+			with rest_settings_env(app_config_path):
+				# Act + Assert:
+				with pytest.raises(ValueError) as exception_info:
+					create_app()
+
+	# Assert:
+	assert expected_message == str(exception_info.value)
+	assert 0 == create_pool.call_count
+
+
+@pytest.mark.parametrize(('minimum', 'maximum'), [
+	pytest.param(0, 0, id='equal-zero'),
+	pytest.param(0, 18446744073709551615, id='full-uint64-range')
+])
+def test_valid_harvest_balance_bounds(symbol_database_config, minimum, maximum):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		config = Path(app_config_path).read_text(encoding='utf8')
+		config = config.replace('SYMBOL_HARVESTING_MIN_BALANCE=0\n', f'SYMBOL_HARVESTING_MIN_BALANCE={minimum}\n')
+		config = config.replace(
+			'SYMBOL_HARVESTING_MAX_BALANCE=18446744073709551615\n',
+			f'SYMBOL_HARVESTING_MAX_BALANCE={maximum}\n')
+		Path(app_config_path).write_text(config, encoding='utf8')
+
+		with rest_settings_env(app_config_path):
+			# Act:
+			app = create_app()
+		try:
+			# Assert:
+			assert minimum == app.config['SYMBOL_HARVESTING_MIN_BALANCE']
+			assert maximum == app.config['SYMBOL_HARVESTING_MAX_BALANCE']
+		finally:
+			app.extensions['symbol_database'].close()
+
+
 @contextmanager
 def _account_list_create_app_client(database_config):
 	"""Creates the real configured app and closes its database after the request sequence."""
@@ -2298,8 +2392,8 @@ def _account_list_http_client(config, database_type=SymbolDatabase, clock=None):
 	with database_type(config, NATIVE_MOSAIC_INFO, clock or (lambda: REFRESH_COMPLETED_AT + timedelta(seconds=7200))) as database:
 		app = Flask(__name__)
 		facade = SymbolRestFacade(
-			database, SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
-			NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7)
+			database, NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
+			HarvestingBalanceRange(0, 18446744073709551615))
 		setup_symbol_routes(app, facade)
 		yield app.test_client(), database
 
@@ -2674,15 +2768,19 @@ def test_list_http_recovers_fixed_dto(symbol_database_config, statement, paramet
 			cursor.execute(statement, parameters)
 		writer.connection.commit()
 		with _account_list_create_app_client(symbol_database_config) as client:
+			# Exclude startup logs whose temporary config path can contain the malformed input marker.
+			caplog.clear()
+
 			# Act: read the malformed data through create_app wiring.
 			with caplog.at_level(logging.ERROR, logger='pythonConfig'):
 				failed = client.get('/api/symbol/accounts')
+			error_log = '\n'.join(record.getMessage() for record in caplog.records if record.levelno >= logging.ERROR)
 
 			# Assert:
 			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
-			assert 'SELECT' not in caplog.text
-			assert any('Invalid Symbol backend data at ' in record.getMessage() for record in caplog.records)
-			assert 'bad' not in caplog.text
+			assert 'SELECT' not in error_log
+			assert 'Invalid Symbol backend data at ' in error_log
+			assert 'bad' not in error_log
 
 			# Arrange: restore snapshot inputs and current metadata before reusing the same app.
 			seed_refresh_run(writer, 'selected-run', entries, completed_at=datetime.now(timezone.utc))
