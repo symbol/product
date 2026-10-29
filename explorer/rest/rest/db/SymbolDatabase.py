@@ -13,7 +13,7 @@ from zenlog import log
 from rest.model.symbol.Block import BLOCK_STATISTICS_WINDOW, SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
 from rest.model.symbol.Namespace import SymbolNamespaceView
-from rest.model.symbol.UnconfirmedTransaction import AGGREGATE_TYPES, SymbolUnconfirmedTransactionView, create_unconfirmed_record
+from rest.model.symbol.TransactionView import AGGREGATE_TYPES, SymbolTransactionView, create_unconfirmed_record
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -1552,7 +1552,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 			embedded_records = ()
 			if record.transaction_type in AGGREGATE_TYPES:
 				embedded_records = sorted(embedded_by_hash_map.get(record.transaction_hash, []), key=lambda child: child.embedded_index)
-			views.append(SymbolUnconfirmedTransactionView(record, mosaic_divisibility_map, embedded_records))
+			views.append(SymbolTransactionView(record, mosaic_divisibility_map, embedded_records))
 
 		return views
 

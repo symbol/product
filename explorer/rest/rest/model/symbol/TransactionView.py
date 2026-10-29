@@ -21,9 +21,12 @@ PAYLOAD_EXCLUDED_FIELDS = frozenset({
 	'size',
 	'recipientAddress'
 })
-AGGREGATE_TYPES = (TransactionType.AGGREGATE_COMPLETE, TransactionType.AGGREGATE_BONDED)
 MESSAGE_TYPE_ID_MAP = {label: type_id for type_id, label in MESSAGE_TYPE_LABELS.items()}
-UnconfirmedTransactionRecord = namedtuple('UnconfirmedTransactionRecord', [
+AGGREGATE_TYPES = (TransactionType.AGGREGATE_COMPLETE, TransactionType.AGGREGATE_BONDED)
+
+# Records carry display-ready addresses, hex strings, and relative fees.
+# Payload and mosaics are prepared by the source-specific adapter.
+TransactionViewRecord = namedtuple('TransactionViewRecord', [
 	'transaction_hash',
 	'aggregate_hash',
 	'embedded_index',
@@ -36,7 +39,10 @@ UnconfirmedTransactionRecord = namedtuple('UnconfirmedTransactionRecord', [
 	'signature',
 	'size',
 	'version',
-])
+	'fee',
+	'height',
+	'timestamp',
+], defaults=(None, 0, None))
 
 
 def create_unconfirmed_record(item_map, network):
@@ -47,31 +53,11 @@ def create_unconfirmed_record(item_map, network):
 		transaction_map = item_map['transaction']
 		transaction_type = TransactionType(transaction_map['type'])
 		recipient = transaction_map.get('recipientAddress')
-		payload_map = {
-			key: value
-			for key, value in transaction_map.items()
-			if key not in PAYLOAD_EXCLUDED_FIELDS
-		}
-		_format_payload_addresses(payload_map, transaction_type)
-		payload = []
-		mosaics = ()
-		if transaction_type == TransactionType.TRANSFER:
-			message = payload_map.pop('message', None)
-			if message:
-				message_type, message_payload = parse_message(message.upper())
-				payload.append({'message': {
-					'type': MESSAGE_TYPE_ID_MAP.get(message_type),
-					'payload': message_payload,
-				}})
-			mosaics = tuple(
-				(normalize_mosaic_id(mosaic_map['id']), int(mosaic_map['amount']))
-				for mosaic_map in payload_map.pop('mosaics', []))
-		if payload_map:
-			payload.append(payload_map)
+		payload, mosaics = create_transaction_payload(transaction_map, transaction_type)
 
 		is_embedded = 'aggregateHash' in meta_map
 		deadline = None if is_embedded else network.datetime_converter.to_datetime(int(transaction_map['deadline']))
-		return UnconfirmedTransactionRecord(
+		return TransactionViewRecord(
 			transaction_hash=None if is_embedded else meta_map['hash'],
 			aggregate_hash=meta_map['aggregateHash'] if is_embedded else None,
 			embedded_index=int(meta_map['index']) if is_embedded else None,
@@ -86,6 +72,37 @@ def create_unconfirmed_record(item_map, network):
 			version=transaction_map['version'])
 	except (KeyError, TypeError, ValueError) as error:
 		raise SymbolDataInvalid('unconfirmed_transaction', 'invalid node response') from error
+
+
+def create_transaction_payload(transaction_map, transaction_type):
+	"""Builds display payload and transfer mosaics from Symbol transaction fields.
+
+	Address and message fields use the node's hex representation. Database
+	adapters must supply those same field representations before calling.
+	"""
+
+	payload_map = {
+		key: value
+		for key, value in transaction_map.items()
+		if key not in PAYLOAD_EXCLUDED_FIELDS
+	}
+	_format_payload_addresses(payload_map, transaction_type)
+	payload = []
+	mosaics = ()
+	if transaction_type == TransactionType.TRANSFER:
+		message = payload_map.pop('message', None)
+		if message:
+			message_type, message_payload = parse_message(message.upper())
+			payload.append({'message': {
+				'type': MESSAGE_TYPE_ID_MAP.get(message_type),
+				'payload': message_payload,
+			}})
+		mosaics = tuple(
+			(normalize_mosaic_id(mosaic_map['id']), int(mosaic_map['amount']))
+			for mosaic_map in payload_map.pop('mosaics', []))
+	if payload_map:
+		payload.append(payload_map)
+	return payload, mosaics
 
 
 def _format_payload_addresses(payload_map, transaction_type):
@@ -104,8 +121,8 @@ def _format_payload_addresses(payload_map, transaction_type):
 			payload_map[field_name] = [str(Address(bytes.fromhex(address))) for address in payload_map[field_name]]
 
 
-class SymbolUnconfirmedTransactionView:
-	"""Formats unconfirmed Symbol transactions for the Explorer API."""
+class SymbolTransactionView:
+	"""Formats normalized Symbol transaction records for the Explorer API."""
 
 	def __init__(self, transaction, mosaic_divisibility_map, embedded_transactions=()):
 		self.transaction = transaction
@@ -121,12 +138,12 @@ class SymbolUnconfirmedTransactionView:
 			'toAddress': transaction.to_address,
 			'value': self._value(),
 			'embeddedTransactions': [
-				SymbolUnconfirmedTransactionView(embedded_transaction, self.mosaic_divisibility_map).to_dict()
+				SymbolTransactionView(embedded_transaction, self.mosaic_divisibility_map).to_dict()
 				for embedded_transaction in self.embedded_transactions
 			] or None,
-			'fee': None,
-			'height': 0,
-			'timestamp': None,
+			'fee': transaction.fee,
+			'height': transaction.height,
+			'timestamp': format_timestamp(transaction.timestamp),
 			'deadline': format_timestamp(transaction.deadline),
 			'signature': transaction.signature,
 			'size': transaction.size,

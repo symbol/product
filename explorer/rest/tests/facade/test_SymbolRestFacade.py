@@ -22,7 +22,7 @@ from rest.db.SymbolDatabase import (
 )
 from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
-from rest.model.symbol.UnconfirmedTransaction import SymbolUnconfirmedTransactionView
+from rest.model.symbol.TransactionView import SymbolTransactionView
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
 from ..test.SymbolUnconfirmedTransactionTestUtils import get_unconfirmed_transaction
@@ -778,7 +778,7 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Arrange:
 		transactions = [get_unconfirmed_transaction(TransactionType.TRANSFER)]
 
-		view = create_autospec(SymbolUnconfirmedTransactionView, instance=True, spec_set=True)
+		view = create_autospec(SymbolTransactionView, instance=True, spec_set=True)
 		view.to_dict.return_value = {'transactionType': 'TRANSFER', 'value': []}
 
 		symbol_db = create_autospec(SymbolDatabase, instance=True, spec_set=True)
