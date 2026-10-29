@@ -1,7 +1,7 @@
-/** @typedef {import('@/app/types/Token').TokenImageConfig} TokenImageConfig */
+/** @typedef {import('@/app/types/Token').TokenAvatarConfig} TokenAvatarConfig */
 
-/** @type {TokenImageConfig} */
-export const tokenImageConfig = {
+/** @type {TokenAvatarConfig} */
+export const tokenAvatarConfig = {
 	images: {
 		default: {
 			small: 'default-small',

@@ -207,24 +207,19 @@ export const Components = {
 	},
 	statusCard: {
 		neutral: {
-			background: Semantic.role.neutral.default,
-			text: Semantic.content.primary.inverse
+			background: Semantic.role.neutral.default
 		},
 		info: {
-			background: Semantic.role.info.default,
-			text: Semantic.content.primary.inverse
+			background: Semantic.role.info.default
 		},
 		success: {
-			background: Semantic.role.success.default,
-			text: Semantic.content.primary.inverse
+			background: Semantic.role.success.default
 		},
 		warning: {
-			background: Semantic.role.warning.default,
-			text: Semantic.content.primary.inverse
+			background: Semantic.role.warning.default
 		},
 		danger: {
-			background: Semantic.role.danger.default,
-			text: Semantic.content.primary.inverse
+			background: Semantic.role.danger.default
 		}
 	},
 	statusLabel: {

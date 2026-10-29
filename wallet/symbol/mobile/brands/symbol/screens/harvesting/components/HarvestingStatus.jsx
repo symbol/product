@@ -23,19 +23,23 @@ export const HarvestingStatus = ({ statusViewModel, isLoading = false }) => {
 				icon={statusDisplay.icon}
 				isLoading={isLoading}
 			>
-				{nodeUrl && (
-					<Field title={$t('fieldTitle_nodeUrl')} inverse>
-						<CopyButtonContainer value={nodeUrl} inverse>
-							<StyledText inverse>
-								{nodeUrl}
+				{({ inverse }) => (
+					<>
+						{nodeUrl && (
+							<Field title={$t('fieldTitle_nodeUrl')} inverse={inverse}>
+								<CopyButtonContainer value={nodeUrl} inverse={inverse}>
+									<StyledText inverse={inverse}>
+										{nodeUrl}
+									</StyledText>
+								</CopyButtonContainer>
+							</Field>
+						)}
+						{warning.isVisible && (
+							<StyledText inverse={inverse}>
+								{warning.text}
 							</StyledText>
-						</CopyButtonContainer>
-					</Field>
-				)}
-				{warning.isVisible && (
-					<StyledText inverse>
-						{warning.text}
-					</StyledText>
+						)}
+					</>
 				)}
 			</StatusCard>
 		</Stack>

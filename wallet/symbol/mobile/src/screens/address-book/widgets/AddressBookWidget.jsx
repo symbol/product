@@ -2,10 +2,12 @@ import { Spacer, Stack, WidgetContainer } from '@/app/components';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { ContactCompactItem } from '@/app/screens/address-book/components';
+import { addressBookWidgetConfig } from '@/brand/config/address-book-widget-config';
 import React from 'react';
 import { ScrollView } from 'react-native';
 
 const ICON_ADD_CONTACT = 'account-add';
+const ICON_VARIANT_ADD_CONTACT = addressBookWidgetConfig.addContactButton.iconVariant;
 
 /** @typedef {import('wallet-common-core').Contact} Contact */
 
@@ -32,6 +34,7 @@ export const AddressBookWidget = ({ contacts }) => {
 					<Stack gap="s" direction="row">
 						<ContactCompactItem
 							icon={ICON_ADD_CONTACT}
+							iconVariant={ICON_VARIANT_ADD_CONTACT}
 							caption={$t('button_addContact')}
 							onPress={handleAddContactPress}
 						/>

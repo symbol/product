@@ -47,9 +47,9 @@
  */
 
 /**
- * Token image config of a brand.
- * @typedef {object} TokenImageConfig
- * @property {Record<string, TokenImageNames>} images - image id to size bundle map.
+ * Token avatar config of a brand.
+ * @typedef {object} TokenAvatarConfig
+ * @property {Record<string, TokenImageNames>} images - Image id to size bundle map.
  */
 
 export {};

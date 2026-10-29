@@ -1,10 +1,17 @@
 import { Card, Icon, LoadingIndicator, Spacer, Stack, StyledText } from '@/app/components';
 import { Colors, Sizes } from '@/app/styles';
+import { statusCardConfig } from '@/brand/config/status-card-config';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 const ICON_SIZE = 'm';
 const ICON_SIZE_VALUE = Sizes.Semantic.iconSize[ICON_SIZE];
+
+/**
+ * Values a StatusCard passes to its content.
+ * @typedef {object} StatusCardContentProps
+ * @property {boolean} inverse - Whether the content uses the inverse color scheme.
+ */
 
 /**
  * StatusCard component. A card component for displaying status information with an icon,
@@ -15,12 +22,15 @@ const ICON_SIZE_VALUE = Sizes.Semantic.iconSize[ICON_SIZE];
  * @param {string} props.statusText - Text to display as the primary status message.
  * @param {string} props.icon - Icon name to display alongside the status text.
  * @param {boolean} [props.isLoading=false] - Whether to show a loading spinner instead of the icon.
- * @param {React.ReactNode} [props.children] - Additional content to display below the status row.
+ * @param {function(StatusCardContentProps): React.ReactNode} [props.children] - Renders additional content
+ * below the status row.
  * @returns {React.ReactNode} StatusCard component.
  */
 export const StatusCard = ({ variant = 'neutral', statusText, icon, isLoading, children }) => {
 	const pallette = Colors.Components.statusCard[variant];
-	const textStyle = { color: pallette.text };
+	const { contentColorVariant } = statusCardConfig;
+	const isContentInverse = contentColorVariant === 'inverse';
+	const contentColor = Colors.Semantic.content.primary[contentColorVariant];
 
 	return (
 		<Card color={pallette.background} style={styles.root}>
@@ -31,19 +41,19 @@ export const StatusCard = ({ variant = 'neutral', statusText, icon, isLoading, c
 							<Icon
 								name={icon}
 								size={ICON_SIZE}
-								variant="inverse"
+								variant={contentColorVariant}
 							/>
 						)}
 						{isLoading && (
 							<View style={styles.loadingIndicator}>
-								<LoadingIndicator size="sm" color={pallette.text} />
+								<LoadingIndicator size="sm" color={contentColor} />
 							</View>
 						)}
-						<StyledText size="xl" style={textStyle}>
+						<StyledText size="xl" inverse={isContentInverse}>
 							{statusText}
 						</StyledText>
 					</View>
-					{children}
+					{children?.({ inverse: isContentInverse })}
 				</Stack>
 			</Spacer>
 		</Card>

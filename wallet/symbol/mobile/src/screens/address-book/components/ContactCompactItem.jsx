@@ -7,17 +7,19 @@ const WIDTH = Sizes.Semantic.spacing.m * 12;
 const AVATAR_SIZE = Sizes.Semantic.avatarHeight.xl;
 
 /** @typedef {import('wallet-common-core').Contact} Contact */
+/** @typedef {import('@/app/types/ColorVariants').IconColorVariants} IconColorVariants */
 
 /**
  * ContactCompactItem component. Displays a compact contact with avatar and caption.
  * @param {object} props - Component props.
  * @param {string} [props.address] - The contact address.
  * @param {string} [props.icon] - Icon name if no address is provided.
+ * @param {IconColorVariants} [props.iconVariant] - Icon variant of the custom icon.
  * @param {string} props.caption - The contact caption.
  * @param {() => void} [props.onPress] - Callback when the item is pressed.
  * @returns {React.ReactNode} ContactCompactItem component.
  */
-export const ContactCompactItem = ({ address, icon, caption, onPress }) => {
+export const ContactCompactItem = ({ address, icon, iconVariant, caption, onPress }) => {
 	const isAccountAvatarVisible = Boolean(address);
 	const isCustomIconVisible = Boolean(icon) && !isAccountAvatarVisible;
 
@@ -28,7 +30,7 @@ export const ContactCompactItem = ({ address, icon, caption, onPress }) => {
 			)}
 			{isCustomIconVisible && (
 				<View style={styles.customIconContainer}>
-					<Icon name={icon} size="s" />
+					<Icon name={icon} size="s" variant={iconVariant} />
 				</View>
 			)}
 			<StyledText size="m">
