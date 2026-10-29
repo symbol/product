@@ -6,7 +6,8 @@ import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from symbolchain.symbol.Network import Address
 
-from rest.db.SymbolDatabase import NamespaceQuery, SortOrder, SymbolDatabase, SymbolDataInvalid, SymbolDataUnavailable
+from rest.db.SymbolDatabase import NamespaceQuery, SortOrder, SymbolDatabase, SymbolDataInvalid
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state
 from ..test.SymbolDatabaseTestUtils import PausingAfterSyncStateReadSymbolDatabase, read_during_database_snapshot, symbol_test_database

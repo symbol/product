@@ -10,15 +10,8 @@ from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Network
 
 from rest import setup_error_handlers
-from rest.db.SymbolDatabase import (
-	AccountListQuery,
-	AccountSortField,
-	ReceiptQuery,
-	SortOrder,
-	SymbolDataUnavailable,
-	SymbolMosaicAliasNotFound,
-	TransactionQuery
-)
+from rest.db.SymbolDatabase import AccountListQuery, AccountSortField, ReceiptQuery, SortOrder, SymbolMosaicAliasNotFound, TransactionQuery
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.model.symbol.validation import SymbolDataInvalid
 from rest.routes.symbol import setup_symbol_routes
 

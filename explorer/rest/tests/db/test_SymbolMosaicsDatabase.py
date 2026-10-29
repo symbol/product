@@ -3,7 +3,8 @@ from unittest import TestCase
 
 from psycopg2 import Error as PsycopgError
 
-from rest.db.SymbolDatabase import SortOrder, SymbolDatabase, SymbolDataUnavailable
+from rest.db.SymbolDatabase import SortOrder, SymbolDatabase
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state
 from ..test.SymbolDatabaseTestUtils import (

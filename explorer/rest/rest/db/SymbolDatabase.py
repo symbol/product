@@ -16,6 +16,14 @@ from rest.model.symbol.Namespace import SymbolNamespaceView
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
+from .SymbolDatabaseCommon import (
+	SymbolDataUnavailable,
+	TransactionMosaicRecord,
+	bytes_or_none,
+	is_non_public_state,
+	try_get_readable_height
+)
+from .SymbolTransactionDetail import SymbolTransactionDetailMixin
 
 BLOCK_COLUMNS = '''
 	height,
@@ -75,7 +83,6 @@ SYNC_STATE_COLUMNS = [
 	'dirty_state_from_height',
 	'updated_at'
 ]
-READABLE_BLOCK_STATUSES = frozenset(['healthy', 'repairing'])
 TRANSACTION_STATISTICS_WINDOW = 240
 TransactionStatisticsHead = namedtuple('TransactionStatisticsHead', ['height', 'timestamp', 'block_hash', 'published_hash', 'updated_at'])
 ReceiptQuery = namedtuple(
@@ -86,10 +93,6 @@ ReceiptRecord = namedtuple(
 	'ReceiptRecord',
 	['height', 'receipt_type', 'receipt_group', 'version', 'sender_address', 'recipient_address', 'target_address',
 		'mosaic_id', 'amount', 'artifact_id', 'mosaic_divisibility'])
-
-
-class SymbolDataUnavailable(RuntimeError):
-	"""Raised when Symbol block data is not safely readable."""
 
 
 class SymbolMosaicAliasNotFound(RuntimeError):
@@ -115,9 +118,6 @@ TransactionQuery = namedtuple(
 	['limit', 'offset', 'height', 'transaction_types', 'address', 'signer_public_key', 'recipient_address',
 		'transfer_mosaic_id', 'include_embedded', 'sender_address'],
 	defaults=(10, 0, None, (), None, None, None, None, False, None))
-TransactionMosaicRecord = namedtuple(
-	'TransactionMosaicRecord',
-	['mosaic_id', 'amount', 'role', 'position', 'divisibility', 'alias_names'])
 TransactionStatisticsRecord = namedtuple(
 	'TransactionStatisticsRecord', ['total', 'last30_day', 'last24_hours', 'average_per_block'])
 TransactionRangeRecord = namedtuple('TransactionRangeRecord', ['period', 'total_transactions'])
@@ -159,33 +159,8 @@ AccountStatisticsRecord = namedtuple(
 INT64_MAX = 9223372036854775807
 
 
-def _bytes_or_none(value):
-	return bytes(value) if value else None
-
-
 def _address(value):
 	return str(Address(bytes(value)))
-
-
-def _get_readable_height(sync_state):
-	if not sync_state or sync_state.get('status') not in READABLE_BLOCK_STATUSES:
-		return None
-
-	last_synced_height = sync_state.get('last_synced_height')
-	if not isinstance(last_synced_height, int) or last_synced_height < 1:
-		return None
-
-	dirty_state_from_height = sync_state.get('dirty_state_from_height')
-	if dirty_state_from_height is not None:
-		if not isinstance(dirty_state_from_height, int) or dirty_state_from_height < 1:
-			return None
-		last_synced_height = min(last_synced_height, dirty_state_from_height - 1)
-
-	return last_synced_height if last_synced_height >= 1 else None
-
-
-def _is_non_public_state(sync_state):
-	return sync_state['status'] == 'repairing' or sync_state['dirty_state_from_height'] is not None
 
 
 def _is_generic_page_range_unavailable(sync_state):
@@ -205,7 +180,7 @@ def _create_sync_state(columns, result):
 	return dict(zip(columns, result))
 
 
-class SymbolDatabase(DatabaseConnectionPool):
+class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 	"""Database access for Symbol Explorer data."""
 
 	def __init__(self, db_config, native_mosaic_info=None, clock=None):
@@ -260,13 +235,13 @@ class SymbolDatabase(DatabaseConnectionPool):
 			with connection.cursor() as cursor:
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
-				readable_height = _get_readable_height(sync_state)
+				readable_height = try_get_readable_height(sync_state)
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol block data is unavailable')
 				if height > readable_height:
 					# Clean state returns None outside the published range, so HTTP returns 404.
 					# Dirty or repairing state raises because it cannot be safely served, so HTTP returns 503.
-					if _is_non_public_state(sync_state):
+					if is_non_public_state(sync_state):
 						raise SymbolDataUnavailable('Symbol block data is unavailable')
 					return None
 
@@ -283,13 +258,13 @@ class SymbolDatabase(DatabaseConnectionPool):
 			with connection.cursor() as cursor:
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
-				readable_height = _get_readable_height(sync_state)
+				readable_height = try_get_readable_height(sync_state)
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol receipt data is unavailable: sync state is unreadable')
 
 				if query.height is not None:
 					if query.height > readable_height:
-						if _is_non_public_state(sync_state):
+						if is_non_public_state(sync_state):
 							raise SymbolDataUnavailable(
 								'Symbol receipt data is unavailable: requested height is above the readable height '
 								'in dirty or repairing state')
@@ -349,7 +324,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 				if query.height is None and _is_generic_page_range_unavailable(sync_state):
 					raise SymbolDataUnavailable(
 						'Symbol receipt data is unavailable: unbounded receipt query range is unsafe')
-				if _is_non_public_state(sync_state) and self._requires_current_receipt_metadata(results):
+				if is_non_public_state(sync_state) and self._requires_current_receipt_metadata(results):
 					raise SymbolDataUnavailable(
 						'Symbol receipt data is unavailable: non-native mosaic metadata is unsafe '
 						'in dirty or repairing state')
@@ -375,7 +350,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 			with connection.cursor() as cursor:
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
-				readable_height = _get_readable_height(sync_state)
+				readable_height = try_get_readable_height(sync_state)
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol transaction data is unavailable: sync state is unreadable')
 
@@ -899,7 +874,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 		if not is_mosaic_alias(int(mosaic_id, 16)):
 			return mosaic_id.upper()
 
-		if _is_non_public_state(sync_state):
+		if is_non_public_state(sync_state):
 			raise SymbolDataUnavailable(
 				'Symbol data is unavailable: Mosaic alias state is unsafe in dirty or repairing state')
 
@@ -925,7 +900,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 	@staticmethod
 	def _fetch_transaction_rows(cursor, query, sync_state, readable_height):
 		if query.height is not None and query.height > readable_height:
-			if _is_non_public_state(sync_state):
+			if is_non_public_state(sync_state):
 				raise SymbolDataUnavailable(
 					'Symbol transaction data is unavailable: requested height is above the readable height '
 					'in dirty or repairing state')
@@ -1011,13 +986,13 @@ class SymbolDatabase(DatabaseConnectionPool):
 			''',
 			(transaction_ids,))
 		transaction_mosaic_rows = cursor.fetchall()
-		if _is_non_public_state(sync_state) and self._requires_current_transaction_metadata(transaction_mosaic_rows):
+		if is_non_public_state(sync_state) and self._requires_current_transaction_metadata(transaction_mosaic_rows):
 			raise SymbolDataUnavailable(
 				'Symbol transaction data is unavailable: mosaic display depends on current state '
 				'in dirty or repairing state')
 
 		excluded_native_mosaic_id = None
-		if _is_non_public_state(sync_state) and self.native_mosaic_info:
+		if is_non_public_state(sync_state) and self.native_mosaic_info:
 			excluded_native_mosaic_id = self.native_mosaic_info.id
 
 		mosaic_state_by_id = SymbolDatabase._fetch_transaction_mosaic_state(
@@ -1073,7 +1048,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
 				# Current-state rows cannot be reconstructed from the clean block prefix during repair.
-				if _get_readable_height(sync_state) is None or _is_non_public_state(sync_state):
+				if try_get_readable_height(sync_state) is None or is_non_public_state(sync_state):
 					raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
 
 				cursor.execute(
@@ -1533,7 +1508,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 			with connection.cursor() as cursor:
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
-				if _get_readable_height(sync_state) is None or _is_non_public_state(sync_state):
+				if try_get_readable_height(sync_state) is None or is_non_public_state(sync_state):
 					raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
 
 				try:
@@ -1562,13 +1537,13 @@ class SymbolDatabase(DatabaseConnectionPool):
 			with connection.cursor() as cursor:
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
-				readable_height = _get_readable_height(sync_state)
+				readable_height = try_get_readable_height(sync_state)
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol block data is unavailable')
 
 				local_height = sync_state['last_synced_height']
 				finalized_height = sync_state['finalized_height']
-				is_non_public = _is_non_public_state(sync_state)
+				is_non_public = is_non_public_state(sync_state)
 				if is_non_public and from_height is not None and from_height > readable_height:
 					raise SymbolDataUnavailable('Symbol block data is unavailable')
 				start_height, end_height = self._calculate_height_range(
@@ -1601,7 +1576,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 			with connection.cursor() as cursor:
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
-				readable_height = _get_readable_height(sync_state)
+				readable_height = try_get_readable_height(sync_state)
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol block statistics are unavailable')
 
@@ -1656,8 +1631,8 @@ class SymbolDatabase(DatabaseConnectionPool):
 	def _create_block_view(result, finalized_height):
 		return SymbolBlockView(
 			height=result[0],
-			block_hash=_bytes_or_none(result[1]),
-			previous_hash=_bytes_or_none(result[2]),
+			block_hash=bytes_or_none(result[1]),
+			previous_hash=bytes_or_none(result[2]),
 			timestamp=result[3],
 			network_timestamp=result[4],
 			total_fee=result[5],
@@ -1668,19 +1643,19 @@ class SymbolDatabase(DatabaseConnectionPool):
 			block_type=result[10],
 			harvester=_address(result[11]),
 			beneficiary_address=_address(result[12]),
-			signature=_bytes_or_none(result[13]),
+			signature=bytes_or_none(result[13]),
 			size=result[14],
-			proof_gamma=_bytes_or_none(result[15]),
-			proof_verification_hash=_bytes_or_none(result[16]),
-			proof_scalar=_bytes_or_none(result[17]),
-			state_hash=_bytes_or_none(result[18]),
-			transactions_hash=_bytes_or_none(result[19]),
-			receipts_hash=_bytes_or_none(result[20]),
+			proof_gamma=bytes_or_none(result[15]),
+			proof_verification_hash=bytes_or_none(result[16]),
+			proof_scalar=bytes_or_none(result[17]),
+			state_hash=bytes_or_none(result[18]),
+			transactions_hash=bytes_or_none(result[19]),
+			receipts_hash=bytes_or_none(result[20]),
 			state_hash_sub_cache_roots=result[21],
 			voting_eligible_accounts_count=result[22],
 			harvesting_eligible_accounts_count=result[23],
 			total_voting_balance=result[24],
-			previous_importance_block_hash=_bytes_or_none(result[25]),
+			previous_importance_block_hash=bytes_or_none(result[25]),
 			block_reward=result[26],
 			is_finalized=bool(finalized_height and result[0] <= finalized_height)
 		)

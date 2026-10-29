@@ -4,7 +4,8 @@ from unittest import TestCase
 from psycopg2 import Error as PsycopgError
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 
-from rest.db.SymbolDatabase import SymbolDatabase, SymbolDataUnavailable
+from rest.db.SymbolDatabase import SymbolDatabase
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.TtlCache import TtlCache
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state

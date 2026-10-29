@@ -1,3 +1,4 @@
+import asyncio
 from datetime import date, datetime, timedelta, timezone
 from unittest import TestCase
 from unittest.mock import create_autospec
@@ -14,11 +15,11 @@ from rest.db.SymbolDatabase import (
 	ReceiptRecord,
 	SortOrder,
 	SymbolDatabase,
-	SymbolDataUnavailable,
 	TransactionQuery,
 	TransactionRangeRecord,
 	TransactionStatisticsRecord
 )
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
@@ -279,11 +280,11 @@ class ReceiptReadErrorSymbolDatabase:
 
 
 def _create_configured_facade():
-	return SymbolRestFacade(HealthySymbolDatabase(), NATIVE_MOSAIC_INFO, Network.TESTNET)
+	return SymbolRestFacade(HealthySymbolDatabase(), object(), NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 
 def _create_facade_with_database(symbol_db):
-	return SymbolRestFacade(symbol_db, NATIVE_MOSAIC_INFO, Network.TESTNET)
+	return SymbolRestFacade(symbol_db, object(), NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 
 class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
@@ -299,6 +300,41 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		self.assertEqual(expected, result)
 		self.assertEqual(NamespaceQuery(), database.query)
+
+	def test_get_transaction_detail_rejects_an_unreadable_database_status_without_node_fallback(self):
+		# Arrange:
+		class Database:
+			@staticmethod
+			def get_transaction_detail(_transaction_hash):
+				return type('ReadResult', (), {'status': 'unsafe'})()
+
+		class NodeBacking:
+			@staticmethod
+			async def get_status(_transaction_hash):
+				raise AssertionError('Node must not be queried for an unsafe database status')
+
+		facade = SymbolRestFacade(
+			Database(), object(), NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=NodeBacking())
+
+		# Act + Assert:
+		with self.assertRaisesRegex(
+			SymbolDataUnavailable,
+			'Symbol transaction detail data is unavailable: confirmed row is not readable'
+		):
+			asyncio.run(facade.get_transaction_detail('AB' * 32))
+
+	def test_constructor_keeps_the_injected_node_backing_and_its_configuration(self):
+		# Arrange:
+		sentinel = object()
+		backing = type('NodeBacking', (), {'native_mosaic_info': sentinel})()
+
+		# Act:
+		facade = SymbolRestFacade(
+			HealthySymbolDatabase(), object(), NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing)
+
+		# Assert:
+		self.assertIs(backing, facade.node_backing)
+		self.assertIs(sentinel, backing.native_mosaic_info)
 
 	def test_get_transactions_passes_query(self):
 		# Arrange:
@@ -366,17 +402,22 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 			ValueError,
 			'Symbol database is required'
 		):
-			SymbolRestFacade(None, NATIVE_MOSAIC_INFO, Network.TESTNET)
+			SymbolRestFacade(None, object(), NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 	def test_rejects_missing_native_mosaic_info(self):
 		# Arrange + Act + Assert:
 		with self.assertRaisesRegex(ValueError, 'Native mosaic information is required'):
-			SymbolRestFacade(object(), None, Network.TESTNET)
+			SymbolRestFacade(object(), object(), None, Network.TESTNET)
+
+	def test_rejects_missing_node_config(self):
+		# Arrange + Act + Assert:
+		with self.assertRaisesRegex(ValueError, 'Symbol node configuration is required'):
+			SymbolRestFacade(object(), None, NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 	def test_rejects_missing_network(self):
 		# Arrange + Act + Assert:
 		with self.assertRaises(ValueError) as exception_info:
-			SymbolRestFacade(object(), NATIVE_MOSAIC_INFO, None)
+			SymbolRestFacade(object(), object(), NATIVE_MOSAIC_INFO, None)
 		self.assertIs(ValueError, type(exception_info.exception))
 		self.assertEqual('Symbol network is required', str(exception_info.exception))
 
