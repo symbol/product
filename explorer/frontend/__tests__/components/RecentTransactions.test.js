@@ -55,4 +55,21 @@ describe('components/RecentTransactions', () => {
 		expect(screen.queryByText(/value_transactionConfirmationTime/)).not.toBeInTheDocument();
 		expect(screen.queryByText('label_awaitingCosignatures')).not.toBeInTheDocument();
 	});
+
+	it('shows the error message instead of the empty list message', () => {
+		// Act:
+		render(<RecentTransactions data={[]} blockTime={blockTime} errorMessage="Unable to load" />);
+
+		// Assert:
+		expect(screen.getByText('Unable to load')).toBeInTheDocument();
+		expect(screen.queryByText('message_emptyTable')).not.toBeInTheDocument();
+	});
+
+	it('shows the empty list message when there is no error', () => {
+		// Act:
+		render(<RecentTransactions data={[]} blockTime={blockTime} />);
+
+		// Assert:
+		expect(screen.getByText('message_emptyTable')).toBeInTheDocument();
+	});
 });
