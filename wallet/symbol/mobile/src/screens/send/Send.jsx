@@ -131,7 +131,6 @@ export const Send = props => {
 		getConfirmationPreview
 	} = useSendTransaction({
 		walletController,
-		senderAddress,
 		senderPublicKey,
 		recipientAddress,
 		tokens,

@@ -2,6 +2,8 @@ import {
 	EMPTY_AGGREGATE_HASH,
 	HASH_LOCK_AMOUNT,
 	HASH_LOCK_DURATION,
+	MessageKind,
+	MessageType,
 	TransactionBundleType,
 	TransactionType
 } from '../../src/constants';
@@ -16,6 +18,7 @@ import {
 	encodeDelegatedHarvestingMessage,
 	encodePlainMessage,
 	encryptMessage,
+	getMessageKind,
 	getUnresolvedIdsFromTransactions,
 	isAggregateTransaction,
 	isHarvestingServiceTransaction,
@@ -36,6 +39,7 @@ import { currentAccount, walletStorageAccounts } from '../__fixtures__/local/wal
 import { TransactionBundle } from 'wallet-common-core';
 
 const DELEGATED_HARVESTING_MESSAGE_TYPE = 254;
+const UNKNOWN_MESSAGE_TYPE = 3;
 const ACCOUNT_KEY_LINK_TRANSACTION_TYPE = 16716;
 const VRF_KEY_LINK_TRANSACTION_TYPE = 16963;
 const NODE_KEY_LINK_TRANSACTION_TYPE = 16972;
@@ -369,6 +373,43 @@ describe('utils/transaction', () => {
 			// Assert:
 			expect(result).toBe(expectedResult);
 		});
+	});
+
+	describe('getMessageKind', () => {
+		const runGetMessageKindTest = (description, config, expected) => {
+			it(description, () => {
+				// Act:
+				const result = getMessageKind(config.type);
+
+				// Assert:
+				expect(result).toBe(expected.kind);
+			});
+		};
+
+		const getMessageKindTests = [
+			{
+				description: 'returns plain for the plain text type',
+				config: { type: MessageType.PlainText },
+				expected: { kind: MessageKind.PLAIN }
+			},
+			{
+				description: 'returns encrypted for the encrypted text type',
+				config: { type: MessageType.EncryptedText },
+				expected: { kind: MessageKind.ENCRYPTED }
+			},
+			{
+				description: 'returns raw for the delegated harvesting type',
+				config: { type: DELEGATED_HARVESTING_MESSAGE_TYPE },
+				expected: { kind: MessageKind.RAW }
+			},
+			{
+				description: 'returns raw for an unknown type',
+				config: { type: UNKNOWN_MESSAGE_TYPE },
+				expected: { kind: MessageKind.RAW }
+			}
+		];
+
+		getMessageKindTests.forEach(test => runGetMessageKindTest(test.description, test.config, test.expected));
 	});
 
 	describe('encodeDelegatedHarvestingMessage', () => {

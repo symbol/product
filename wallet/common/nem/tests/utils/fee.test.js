@@ -24,7 +24,7 @@ const recipientAddress = accounts.bob.address;
 
 const nativeToken = amount => ({ id: tokenId, name, amount, divisibility });
 const createTransfer = props => ({ type: TransactionType.TRANSFER, recipientAddress, ...props });
-const createMessage = byteLength => ({ payload: '00'.repeat(byteLength), native: { type: 1 } });
+const createMessage = byteLength => ({ payload: '00'.repeat(byteLength), type: 1 });
 
 // Mosaics exercising the per-mosaic fee branches: a flat-priced small-business mosaic, a supply-bearing
 // mosaic priced with the full formula, one transferring (near) the whole XEM range to hit the cap, and one

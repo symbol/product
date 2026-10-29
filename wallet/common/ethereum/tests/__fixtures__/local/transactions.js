@@ -296,6 +296,8 @@ export const bridgeTransaction = {
 	tokens: [{ id: targetTokenAddress, name: 'bXYM', divisibility: 6, amount: '0.02' }],
 	recipientAddress: bridgeRecipientAddress,
 	message: {
+		type: null,
+		kind: 'raw',
 		payload: '982C69A051A72BFBE31AEDA7250AC6C747B7570B3E9C00B6',
 		text: 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ'
 	}

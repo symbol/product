@@ -22,10 +22,10 @@ export const outgoingTransfer = {
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
 	message: {
-		type: 'plain',
+		type: 1,
+		kind: 'plain',
 		text: 'Good luck!',
-		payload: '476f6f64206c75636b21',
-		native: { type: 1 }
+		payload: '476f6f64206c75636b21'
 	},
 	tokens: [{
 		id: 'nem.xem',
@@ -101,10 +101,10 @@ export const encryptedTransfer = {
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
 	message: {
-		type: 'encrypted',
+		type: 2,
+		kind: 'encrypted',
 		text: null,
-		payload: 'deadbeefcafe',
-		native: { type: 2 }
+		payload: 'deadbeefcafe'
 	},
 	tokens: [{
 		id: 'nem.xem',

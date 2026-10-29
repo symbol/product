@@ -2,7 +2,6 @@
 import {
 	MULTISIG_TRANSACTION_DEADLINE_HOURS,
 	MessageType,
-	NativeMessageType,
 	SINGLE_TRANSACTION_DEADLINE_HOURS,
 	TransactionBundleType,
 	TransactionType
@@ -14,6 +13,7 @@ import {
 	createTransactionFee,
 	createTransactionFeeTiers,
 	encodePlainMessage,
+	getMessageKind,
 	isIncomingTransaction,
 	isOutgoingTransaction
 } from '../utils';
@@ -48,8 +48,8 @@ export class TransferModule {
 	 * @param {object} options - Transfer options.
 	 * @param {string} options.recipientAddress - Recipient NEM address.
 	 * @param {object[]} options.tokens - Tokens to transfer.
-	 * @param {string} [options.message] - Message text.
-	 * @param {boolean} [options.isEncrypted] - Whether to encrypt the message.
+	 * @param {string} [options.messageText] - Message text.
+	 * @param {boolean} [options.isMessageEncrypted] - Whether to encrypt the message.
 	 * @param {string} [options.senderPublicKey] - Sender (multisig account) public key. When it differs from the
 	 * current account, the transfer is wrapped in a multisig transaction signed by the current account (cosignatory).
 	 * @param {object} [options.fee] - The fee object. If omitted, defaults to 0.
@@ -60,8 +60,8 @@ export class TransferModule {
 		const {
 			recipientAddress,
 			tokens,
-			message,
-			isEncrypted,
+			messageText,
+			isMessageEncrypted,
 			fee
 		} = options;
 
@@ -70,22 +70,22 @@ export class TransferModule {
 		const isMultisig = senderPublicKey !== currentAccount.publicKey;
 
 		let messagePayload = null;
-		if (message) {
-			if (isEncrypted) {
+		if (messageText) {
+			if (isMessageEncrypted) {
 				const recipientPublicKey = await this.#resolveRecipientPublicKey(networkProperties, recipientAddress);
-				const encryptedHex = await this.#walletController.encryptMessage(message, recipientPublicKey, password);
+				const encryptedHex = await this.#walletController.encryptMessage(messageText, recipientPublicKey, password);
 				messagePayload = {
-					type: MessageType.ENCRYPTED,
-					text: message,
-					payload: encryptedHex,
-					native: { type: NativeMessageType.EncryptedText }
+					type: MessageType.EncryptedText,
+					kind: getMessageKind(MessageType.EncryptedText),
+					text: messageText,
+					payload: encryptedHex
 				};
 			} else {
 				messagePayload = {
-					type: MessageType.PLAIN,
-					text: message,
-					payload: encodePlainMessage(message),
-					native: { type: NativeMessageType.PlainText }
+					type: MessageType.PlainText,
+					kind: getMessageKind(MessageType.PlainText),
+					text: messageText,
+					payload: encodePlainMessage(messageText)
 				};
 			}
 		}
@@ -160,7 +160,7 @@ export class TransferModule {
 
 		const { message, recipientAddress, signerPublicKey } = transaction;
 
-		if (message.type !== MessageType.ENCRYPTED)
+		if (message.type !== MessageType.EncryptedText)
 			return message.text ?? '';
 
 		if (isIncomingTransaction(transaction, currentAccount))

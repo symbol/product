@@ -1,5 +1,7 @@
 import { transactionToNem } from './transaction-to-nem';
 import {
+	MessageKind,
+	MessageType,
 	NEM_EPOCH,
 	NETWORK_CURRENCY_DIVISIBILITY,
 	NETWORK_CURRENCY_ID,
@@ -10,6 +12,7 @@ import { PrivateKey, PublicKey } from 'symbol-sdk';
 import { MessageEncoder, NemFacade, calculateTransactionFee, models } from 'symbol-sdk/nem';
 import { SdkError, TransactionBundle } from 'wallet-common-core';
 
+/** @typedef {import('wallet-common-core/src/types/Transaction').MessageKind} MessageKind */
 /** @typedef {import('../types/Transaction').SignedTransaction} SignedTransaction */
 /** @typedef {import('../types/Transaction').CosignedTransaction} CosignedTransaction */
 /** @typedef {import('../types/Transaction').Deadline} Deadline */
@@ -97,6 +100,21 @@ export const decodePlainMessage = messagePayloadHex => {
 	const bytes = Buffer.from(messagePayloadHex, 'hex');
 
 	return bytes.toString('utf-8');
+};
+
+/**
+ * Maps the NEM transaction message type to a generic message kind.
+ * @param {number} type - The message type.
+ * @returns {MessageKind} The message kind.
+ */
+export const getMessageKind = type => {
+	if (type === MessageType.PlainText)
+		return MessageKind.PLAIN;
+
+	if (type === MessageType.EncryptedText)
+		return MessageKind.ENCRYPTED;
+
+	return MessageKind.RAW;
 };
 
 /**

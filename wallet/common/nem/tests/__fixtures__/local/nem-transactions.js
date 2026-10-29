@@ -78,14 +78,13 @@ const transferXemJson = {
 	mosaics: []
 };
 
-// Transfer carrying a plain-text message. payload is the raw on-chain message bytes (no type marker);
-// the native message-type code is carried in message.native.type.
+// Transfer carrying a plain-text message.
 const transferWithMessage = {
 	type: 257,
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
 	tokens: [nativeToken('10')],
-	message: { type: 'plain', text: 'Good luck!', payload: '476f6f64206c75636b21', native: { type: 1 } },
+	message: { type: 1, kind: 'plain', text: 'Good luck!', payload: '476f6f64206c75636b21' },
 	fee: createFee('0.15'),
 	deadline: standardDeadline
 };
@@ -563,7 +562,7 @@ const transferXemRead = {
 const transferWithMessageRead = {
 	...transferXemRead,
 	fee: createFee('0.15'),
-	message: { type: 'plain', text: 'Good luck!', payload: '476f6f64206c75636b21', native: { type: 1 } }
+	message: { type: 1, kind: 'plain', text: 'Good luck!', payload: '476f6f64206c75636b21' }
 };
 
 const transferWithMosaicRead = {

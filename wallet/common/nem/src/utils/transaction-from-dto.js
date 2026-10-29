@@ -1,7 +1,7 @@
 import { addressFromPublicKey } from './account';
 import { createTransactionFee } from './fee';
 import { getMosaicProperty, getTokenAmount, tokenIdFromRaw, tokenListFromDTO } from './token';
-import { decodePlainMessage, isIncomingTransaction, isOutgoingTransaction, nemTimestampToDate } from './transaction';
+import { decodePlainMessage, getMessageKind, isIncomingTransaction, isOutgoingTransaction, nemTimestampToDate } from './transaction';
 import {
 	LinkActionMessage,
 	MessageType,
@@ -10,9 +10,7 @@ import {
 	MosaicTransferFeeTypeMessage,
 	MultisigAccountModificationType,
 	NETWORK_CURRENCY_ID,
-	NativeMessageType,
-	TransactionType,
-	nativeToCommonMessageType
+	TransactionType
 } from '../constants';
 import { absoluteToRelativeAmount } from 'wallet-common-core';
 
@@ -168,15 +166,15 @@ const transferTransactionFromDTO = (transactionDTO, config) => {
 	};
 
 	if (transaction.message?.payload) {
-		const nativeType = transaction.message.type;
+		const messageType = transaction.message.type;
 		const { payload } = transaction.message;
-		const text = nativeType === NativeMessageType.PlainText ? decodePlainMessage(payload) : null;
+		const text = messageType === MessageType.PlainText ? decodePlainMessage(payload) : null;
 
 		transactionBody.message = {
-			type: nativeToCommonMessageType[nativeType] ?? MessageType.RAW,
+			type: messageType,
+			kind: getMessageKind(messageType),
 			text,
-			payload,
-			native: { type: nativeType }
+			payload
 		};
 	}
 

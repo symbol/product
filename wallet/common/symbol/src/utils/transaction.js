@@ -5,6 +5,7 @@ import {
 	HASH_LOCK_DURATION,
 	MULTISIG_BUNDLE_TYPES,
 	MULTISIG_TRANSACTION_DEADLINE_HOURS,
+	MessageKind,
 	MessageType,
 	SINGLE_TRANSACTION_DEADLINE_HOURS,
 	TransactionType
@@ -13,6 +14,7 @@ import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk';
 import { MessageEncoder, SymbolFacade, models } from 'symbol-sdk/symbol';
 import { SdkError, TransactionBundle, absoluteToRelativeAmount } from 'wallet-common-core';
 
+/** @typedef {import('wallet-common-core/src/types/Transaction').MessageKind} MessageKind */
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Account').UnresolvedAddressWithLocation} UnresolvedAddressWithLocation */
 /** @typedef {import('wallet-common-core/src/types/Token').Token} BaseToken */
@@ -185,6 +187,21 @@ export const decodePlainMessage = messagePayloadHex => {
 	const messageBytes = Buffer.from(messagePayloadHex, 'hex');
 
 	return Buffer.from(messageBytes.subarray(1)).toString();
+};
+
+/**
+ * Maps the Symbol  transaction message type to a generic message kind.
+ * @param {number} type - The message type.
+ * @returns {MessageKind} The message kind.
+ */
+export const getMessageKind = type => {
+	if (type === MessageType.PlainText)
+		return MessageKind.PLAIN;
+
+	if (type === MessageType.EncryptedText)
+		return MessageKind.ENCRYPTED;
+
+	return MessageKind.RAW;
 };
 
 /**

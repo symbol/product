@@ -1,7 +1,7 @@
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
 import { TransactionFixtureBuilder } from '__fixtures__/local/TransactionFixtureBuilder';
-import { MessageType, TransactionType } from 'wallet-common-symbol/src/constants';
+import { MessageKind, MessageType, TransactionType } from 'wallet-common-symbol/src/constants';
 
 const EMPTY_TRANSFER_FIXTURE = {
 	type: TransactionType.TRANSFER,
@@ -102,7 +102,7 @@ export class TransferTransactionFixtureBuilder extends TransactionFixtureBuilder
 	/**
 	 * Sets the message for the transfer.
 	 * 
-	 * @param {object|null} message - The message object with { type, text, payload } shape.
+	 * @param {object|null} message - The message object with { type, kind, text, payload } shape.
 	 * @returns {TransferTransactionFixtureBuilder} The builder instance.
 	 */
 	setMessage = message => {
@@ -122,6 +122,7 @@ export class TransferTransactionFixtureBuilder extends TransactionFixtureBuilder
 
 		this._data.message = {
 			type: MessageType.PlainText,
+			kind: MessageKind.PLAIN,
 			text,
 			payload
 		};
@@ -138,6 +139,7 @@ export class TransferTransactionFixtureBuilder extends TransactionFixtureBuilder
 	setEncryptedMessage = payload => {
 		this._data.message = {
 			type: MessageType.EncryptedText,
+			kind: MessageKind.ENCRYPTED,
 			text: null,
 			payload
 		};
@@ -154,6 +156,7 @@ export class TransferTransactionFixtureBuilder extends TransactionFixtureBuilder
 	setDelegatedHarvestingMessage = payload => {
 		this._data.message = {
 			type: MessageType.DelegatedHarvesting,
+			kind: MessageKind.RAW,
 			text: '',
 			payload
 		};

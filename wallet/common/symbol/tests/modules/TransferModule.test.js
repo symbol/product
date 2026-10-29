@@ -1,4 +1,4 @@
-import { MessageType, TransactionBundleType, TransactionType } from '../../src/constants';
+import { MessageKind, MessageType, TransactionBundleType, TransactionType } from '../../src/constants';
 import { TransferModule } from '../../src/modules/TransferModule';
 import {
 	createDeadline,
@@ -133,7 +133,8 @@ describe('TransferModule', () => {
 				message: {
 					text: messageText,
 					payload: encodePlainMessage(messageText),
-					type: MessageType.PlainText
+					type: MessageType.PlainText,
+					kind: MessageKind.PLAIN
 				},
 				fee: defaultFee
 			};
@@ -204,7 +205,8 @@ describe('TransferModule', () => {
 				message: {
 					text: 'Alias transfer',
 					payload: encodePlainMessage('Alias transfer'),
-					type: MessageType.PlainText
+					type: MessageType.PlainText,
+					kind: MessageKind.PLAIN
 				},
 				fee: defaultFee
 			};
@@ -248,7 +250,8 @@ describe('TransferModule', () => {
 				message: {
 					text: messageText,
 					payload: `ENC(${messageText})-with-${recipientAccount.publicKey}`,
-					type: MessageType.EncryptedText
+					type: MessageType.EncryptedText,
+					kind: MessageKind.ENCRYPTED
 				},
 				fee: defaultFee
 			};

@@ -13,15 +13,6 @@
  */
 
 /**
- * @typedef {Object} TransactionMessage
- * @property {string} payload - The message payload HEX.
- * @property {string} type - Common message kind ('plain' | 'encrypted' | 'raw').
- * @property {string|null} text - Decoded UTF-8 text.
- * @property {Object} native - Chain-specific message metadata, opaque to the UI.
- * @property {number} native.type - The NEM protocol message-type code (1=plain, 2=encrypted).
- */
-
-/**
  * @typedef {Object} Deadline
  * @property {number} timestamp - UI-ready expiry time (Unix ms).
  * @property {{ timestamp: number, deadline: number }} adjusted - SDK-ready NEM times (seconds since the NEM

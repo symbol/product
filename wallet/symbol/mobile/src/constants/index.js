@@ -5,12 +5,6 @@ export const NetworkIdentifier = {
 	TEST_NET: 'testnet'
 };
 
-export const MessageType = {
-	PLAIN_TEXT: 0,
-	ENCRYPTED_TEXT: 1,
-	DELEGATED_HARVESTING: 254
-};
-
 export const ActivityStatus = {
 	PENDING: 'pending',
 	COMPLETE: 'complete',
@@ -59,7 +53,7 @@ export { TransactionType as SymbolTransactionType } from 'wallet-common-symbol/s
 
 export { TransactionType as EthereumTransactionType } from 'wallet-common-ethereum/src/constants';
 
-export { TransactionGroup } from 'wallet-common-core/src/constants';
+export { MessageKind, TransactionGroup } from 'wallet-common-core/src/constants';
 export {
 	TransactionAnnounceGroup,
 	AliasAction,

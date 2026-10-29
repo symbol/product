@@ -1,19 +1,22 @@
-import { MessageType, SymbolTransactionType } from '@/app/constants';
+import { MessageKind, TransactionKind } from '@/app/constants';
 import { useAsyncManager } from '@/app/hooks';
+import { getTransactionTypeInfo } from '@/app/lib/transaction';
 import { useEffect } from 'react';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 
 /**
  * Determines whether a transaction is a transfer carrying an encrypted message
  * that has not been decrypted yet.
  * @param {Transaction} transaction - Transaction to inspect.
+ * @param {ChainName} chainName - Chain the transaction belongs to.
  * @returns {boolean} True when the transaction has an undecrypted encrypted message.
  */
-const hasUndecryptedMessage = transaction =>
-	transaction?.type === SymbolTransactionType.TRANSFER
-	&& transaction.message?.type === MessageType.ENCRYPTED_TEXT
+const hasUndecryptedMessage = (transaction, chainName) =>
+	getTransactionTypeInfo(transaction?.type, chainName).kind === TransactionKind.TRANSFER
+	&& transaction.message?.kind === MessageKind.ENCRYPTED
 	&& !transaction.message.text;
 
 /**
@@ -34,18 +37,19 @@ export const useDecryptedTransaction = (walletController, transaction) => {
 	});
 
 	const { call, reset, data: decryptedText } = decryptManager;
+	const { chainName } = walletController;
 	const hash = transaction?.hash;
 	const payload = transaction?.message?.payload;
 
 	useEffect(() => {
-		if (hasUndecryptedMessage(transaction))
+		if (hasUndecryptedMessage(transaction, chainName))
 			call().catch(() => { /* failure handled by useAsyncManager; keep the encrypted label */ });
 		else
 			reset();
 	}, [hash, payload]);
 
 	// Merge the decrypted text into the current transaction.
-	if (hasUndecryptedMessage(transaction) && decryptedText) {
+	if (hasUndecryptedMessage(transaction, chainName) && decryptedText) {
 		return { 
 			...transaction, 
 			message: { 

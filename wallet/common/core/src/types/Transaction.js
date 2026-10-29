@@ -12,10 +12,13 @@
  * @property {string} [hash] - The transaction hash.
  */
 
+/** @typedef {'plain'|'encrypted'|'raw'} MessageKind */
+
 /**
  * @typedef {Object} TransactionMessage
  * @property {string} payload - The message payload HEX.
- * @property {number} type - The message type.
+ * @property {number|string|null} type - The raw chain message type. Null when the message has no type.
+ * @property {MessageKind} kind - The generic message kind.
  * @property {string} text - Utf-8 decoded payload.
  */
 

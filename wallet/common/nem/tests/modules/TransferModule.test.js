@@ -1,7 +1,7 @@
 import {
 	MULTISIG_TRANSACTION_DEADLINE_HOURS,
+	MessageKind,
 	MessageType,
-	NativeMessageType,
 	SINGLE_TRANSACTION_DEADLINE_HOURS,
 	TransactionBundleType,
 	TransactionType
@@ -29,17 +29,17 @@ const nativeTokens = (amount = '10') => [{ id: 'nem.xem', name: 'XEM', amount, d
 const createFee = amount => createTransactionFee(networkProperties, amount);
 
 const plainMessage = text => ({
-	type: MessageType.PLAIN,
+	type: MessageType.PlainText,
+	kind: MessageKind.PLAIN,
 	text,
-	payload: encodePlainMessage(text),
-	native: { type: NativeMessageType.PlainText }
+	payload: encodePlainMessage(text)
 });
 
 const encryptedMessage = (text, payload) => ({
-	type: MessageType.ENCRYPTED,
+	type: MessageType.EncryptedText,
+	kind: MessageKind.ENCRYPTED,
 	text,
-	payload,
-	native: { type: NativeMessageType.EncryptedText }
+	payload
 });
 
 // NEM fees are deterministic, so all tiers (fast, medium, slow) carry the same fee.
@@ -119,8 +119,8 @@ describe('modules/TransferModule', () => {
 					options: {
 						recipientAddress: RECIPIENT_ADDRESS,
 						tokens: nativeTokens('10'),
-						message: 'Good luck!',
-						isEncrypted: false,
+						messageText: 'Good luck!',
+						isMessageEncrypted: false,
 						fee: createFee('1')
 					}
 				},
@@ -186,8 +186,8 @@ describe('modules/TransferModule', () => {
 					options: {
 						recipientAddress: RECIPIENT_ADDRESS,
 						tokens: nativeTokens('10'),
-						message: 'Secret',
-						isEncrypted: true,
+						messageText: 'Secret',
+						isMessageEncrypted: true,
 						fee: createFee('3')
 					},
 					mock: { recipientPublicKey: bob.publicKey, password: 'p@ss' }
@@ -239,8 +239,8 @@ describe('modules/TransferModule', () => {
 					options: {
 						recipientAddress: RECIPIENT_ADDRESS,
 						tokens: nativeTokens('10'),
-						message: 'Secret',
-						isEncrypted: true,
+						messageText: 'Secret',
+						isMessageEncrypted: true,
 						fee: createFee('0.1')
 					},
 					mock: { recipientPublicKey: null, password: 'p@ss' }
@@ -278,7 +278,7 @@ describe('modules/TransferModule', () => {
 			signerPublicKey: bob.publicKey,
 			signerAddress: bob.address,
 			recipientAddress: currentAccount.address,
-			message: { type: MessageType.ENCRYPTED, text: null, payload: 'encryptedIncoming' }
+			message: { type: MessageType.EncryptedText, kind: MessageKind.ENCRYPTED, text: null, payload: 'encryptedIncoming' }
 		};
 
 		const outgoingEncryptedTransfer = {
@@ -286,7 +286,7 @@ describe('modules/TransferModule', () => {
 			signerPublicKey: currentAccount.publicKey,
 			signerAddress: currentAccount.address,
 			recipientAddress: RECIPIENT_ADDRESS,
-			message: { type: MessageType.ENCRYPTED, text: null, payload: 'encryptedOutgoing' }
+			message: { type: MessageType.EncryptedText, kind: MessageKind.ENCRYPTED, text: null, payload: 'encryptedOutgoing' }
 		};
 
 		const incomingPlainTransfer = {
@@ -294,7 +294,7 @@ describe('modules/TransferModule', () => {
 			signerPublicKey: bob.publicKey,
 			signerAddress: bob.address,
 			recipientAddress: currentAccount.address,
-			message: { type: MessageType.PLAIN, text: 'Good luck!', payload: encodePlainMessage('Good luck!') }
+			message: { type: MessageType.PlainText, kind: MessageKind.PLAIN, text: 'Good luck!', payload: encodePlainMessage('Good luck!') }
 		};
 
 		const runGetDecryptedMessageTextTest = (description, config, expected) => {
@@ -362,7 +362,7 @@ describe('modules/TransferModule', () => {
 				config: {
 					transaction: {
 						type: TransactionType.MULTISIG,
-						message: { type: MessageType.ENCRYPTED, payload: 'x' },
+						message: { type: MessageType.EncryptedText, payload: 'x' },
 						recipientAddress: RECIPIENT_ADDRESS,
 						signerPublicKey: currentAccount.publicKey
 					}
@@ -383,7 +383,7 @@ describe('modules/TransferModule', () => {
 						signerPublicKey: bob.publicKey,
 						signerAddress: bob.address,
 						recipientAddress: carol.address,
-						message: { type: MessageType.ENCRYPTED, payload: 'encrypted' }
+						message: { type: MessageType.EncryptedText, payload: 'encrypted' }
 					}
 				},
 				expected: {
