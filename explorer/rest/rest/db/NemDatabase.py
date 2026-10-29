@@ -1,5 +1,6 @@
 # pylint: disable=too-many-lines
 from binascii import hexlify
+from datetime import datetime
 
 from common.nem.Constants import NEM_NAMESPACE_DURATION
 from symbolchain.CryptoTypes import PublicKey
@@ -7,6 +8,7 @@ from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 
 from rest.model.common import DEFAULT_HARVESTING_ACTIVE_WINDOW_DAYS
+from rest.model.format import format_timestamp
 from rest.model.nem.Account import AccountView
 from rest.model.nem.Block import BlockView
 from rest.model.nem.Harvest import HarvestView
@@ -39,6 +41,12 @@ def _format_relative(amount, divisibility):
 	return amount / (10 ** divisibility)
 
 
+def _format_json_timestamp(timestamp):
+	"""Parse a timestamp string from PostgreSQL JSON output and format it with `format_timestamp`."""
+
+	return format_timestamp(datetime.fromisoformat(timestamp)) if timestamp is not None else None
+
+
 class NemDatabase(DatabaseConnectionPool):
 	"""Database containing Nem blockchain data."""
 
@@ -66,7 +74,7 @@ class NemDatabase(DatabaseConnectionPool):
 
 		return BlockView(
 			height=height,
-			timestamp=str(timestamp),
+			timestamp=format_timestamp(timestamp),
 			total_fees=_format_xem_relative(total_fee),
 			total_transactions=total_transactions,
 			difficulty=difficulty,
@@ -157,7 +165,7 @@ class NemDatabase(DatabaseConnectionPool):
 			root_namespace=root_namespace,
 			owner=self._format_public_key_to_address(owner),
 			registered_height=registered_height,
-			registered_timestamp=str(registered_timestamp),
+			registered_timestamp=format_timestamp(registered_timestamp),
 			expiration_height=expiration_height,
 			sub_namespaces=sub_namespaces,
 			mosaics=[{
@@ -165,7 +173,7 @@ class NemDatabase(DatabaseConnectionPool):
 				'total_supply': mosaic['total_supply'],
 				'divisibility': mosaic['divisibility'],
 				'registered_height': mosaic['registered_height'],
-				'registered_timestamp': mosaic['registered_timestamp']
+				'registered_timestamp': _format_json_timestamp(mosaic['registered_timestamp'])
 			} for mosaic in mosaics]
 		)
 
@@ -201,7 +209,7 @@ class NemDatabase(DatabaseConnectionPool):
 			description=description,
 			creator=self._format_public_key_to_address(creator),
 			mosaic_registered_height=mosaic_registered_height,
-			mosaic_registered_timestamp=str(mosaic_registered_timestamp),
+			mosaic_registered_timestamp=format_timestamp(mosaic_registered_timestamp),
 			initial_supply=initial_supply,
 			total_supply=total_supply,
 			divisibility=divisibility,
@@ -212,7 +220,7 @@ class NemDatabase(DatabaseConnectionPool):
 			levy_fee=_format_relative(levy_fee, levy_divisibility) if levy_type else None,
 			levy_recipient=_format_address_bytes_to_string(levy_recipient) if levy_recipient else None,
 			root_namespace_registered_height=root_namespace_registered_height,
-			root_namespace_registered_timestamp=str(root_namespace_registered_timestamp),
+			root_namespace_registered_timestamp=format_timestamp(root_namespace_registered_timestamp),
 			root_namespace_expiration_height=root_namespace_expiration_height,
 		)
 
@@ -267,8 +275,8 @@ class NemDatabase(DatabaseConnectionPool):
 			embedded_transactions=embedded_transaction or None,
 			fee=_format_xem_relative(transaction.fee),
 			height=transaction.height,
-			timestamp=str(transaction.timestamp),
-			deadline=str(transaction.deadline),
+			timestamp=format_timestamp(transaction.timestamp),
+			deadline=format_timestamp(transaction.deadline),
 			signature=_format_bytes(transaction.signature),
 			size=transaction.size,
 			version=transaction.version
@@ -396,7 +404,7 @@ class NemDatabase(DatabaseConnectionPool):
 					'total_supply', ms.total_supply,
 					'divisibility', ms.divisibility,
 					'registered_height', ms.registered_height,
-					'registered_timestamp', mb.timestamp::text
+					'registered_timestamp', mb.timestamp
 				) ORDER BY ms.namespace_name) AS mosaics
 				FROM mosaics ms
 				LEFT JOIN blocks mb
@@ -582,7 +590,7 @@ class NemDatabase(DatabaseConnectionPool):
 			cursor.execute(sql, (address.bytes, pagination.limit, pagination.offset))
 
 			return [
-				HarvestView(height=height, timestamp=str(timestamp), amount=_format_xem_relative(total_fee))
+				HarvestView(height=height, timestamp=format_timestamp(timestamp), amount=_format_xem_relative(total_fee))
 				for height, timestamp, total_fee in cursor.fetchall()
 			]
 
@@ -1070,7 +1078,7 @@ class NemDatabase(DatabaseConnectionPool):
 		return [self._create_transaction_view(transaction) for transaction in transactions]
 
 	def _convert_timestamp_to_datetime(self, timestamp):
-		return self.network.datetime_converter.to_datetime(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+		return self.network.datetime_converter.to_datetime(timestamp)
 
 	def _create_unconfirmed_mosaic_records(self, mosaics, amount):
 		if not mosaics:
@@ -1133,8 +1141,8 @@ class NemDatabase(DatabaseConnectionPool):
 				'signatures': [
 					{
 						'transaction_type': signature.transaction_type,
-						'timestamp': self._convert_timestamp_to_datetime(signature.timestamp),
-						'deadline': self._convert_timestamp_to_datetime(signature.deadline),
+						'timestamp': format_timestamp(self._convert_timestamp_to_datetime(signature.timestamp)),
+						'deadline': format_timestamp(self._convert_timestamp_to_datetime(signature.deadline)),
 						'fee': signature.fee,
 						'other_hash': signature.other_hash,
 						'other_account': str(signature.other_account),

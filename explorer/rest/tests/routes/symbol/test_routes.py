@@ -31,6 +31,12 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 		self.height = None
 		self.blocks_error = None
 		self.block_error = None
+		self.block_statistics_result = {
+			'blockTimeChart': [], 'blockFeeChart': [], 'blockDifficultyChart': [],
+			'blockTime': None, 'blockFee': 0, 'blockDifficulty': '0.00'
+		}
+		self.block_statistics_error = None
+		self.block_statistics_call_count = 0
 		self.receipts_result = [{'version': 1}]
 		self.receipts_query = None
 		self.receipts_error = None
@@ -55,6 +61,13 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 			raise self.block_error
 
 		return self.block_result
+
+	def get_block_statistics(self):
+		self.block_statistics_call_count += 1
+		if self.block_statistics_error:
+			raise self.block_statistics_error
+
+		return self.block_statistics_result
 
 	def get_receipts(self, query):
 		self.receipts_query = query
@@ -113,6 +126,16 @@ class SymbolTransactionStatisticsFacade:
 		return {'periodType': period_type.lower(), 'data': [{'period': period, 'totalTransactions': 2}]}
 
 
+def _create_account_statistics_result():
+	return {
+		'total': 1, 'harvesting': 1, 'eligibleForHarvesting': 1,
+		'top10AccountsImportance': 100.0, 'harvestingAccountsPercentage': 100.0,
+		'importanceBreakdown': [[100.0, 'TDUMMY']],
+		'harvestingAccountsChart': [[100.0, 'Harvesting'], [0.0, 'Not harvesting']],
+		'pendingVerification': []
+	}
+
+
 class SymbolAccountFacade:
 	"""Recording facade for Account route validation tests."""
 
@@ -124,6 +147,7 @@ class SymbolAccountFacade:
 		self.accounts_query = None
 		self.accounts_result = [{'address': 'TDUMMY'}]
 		self.accounts_error = None
+		self.account_statistics_error = None
 
 	def get_accounts(self, query):
 		self.accounts_query = query
@@ -138,6 +162,12 @@ class SymbolAccountFacade:
 			raise self.account_error
 
 		return self.account_result
+
+	def get_account_statistics(self):
+		if self.account_statistics_error:
+			raise self.account_statistics_error
+
+		return _create_account_statistics_result()
 
 
 def _create_symbol_test_client(facade):
@@ -170,6 +200,77 @@ def _assert_not_found_response(response):
 		'status': 404,
 		'message': 'Resource not found'
 	} == response.json
+
+
+def test_account_stats_full_response():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+	expected_result = {
+		'total': 1, 'harvesting': 1, 'eligibleForHarvesting': 1,
+		'top10AccountsImportance': 100.0, 'harvestingAccountsPercentage': 100.0,
+		'importanceBreakdown': [[100.0, 'TDUMMY']],
+		'harvestingAccountsChart': [[100.0, 'Harvesting'], [0.0, 'Not harvesting']],
+		'pendingVerification': []
+	}
+
+	# Act:
+	response = client.get('/api/symbol/account/statistics')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert expected_result == response.json
+	assert isinstance(response.json['total'], int) and not isinstance(response.json['total'], bool)
+	assert isinstance(response.json['harvesting'], int) and not isinstance(response.json['harvesting'], bool)
+	assert isinstance(response.json['eligibleForHarvesting'], int) and not isinstance(response.json['eligibleForHarvesting'], bool)
+	assert isinstance(response.json['top10AccountsImportance'], float)
+	assert isinstance(response.json['harvestingAccountsPercentage'], float)
+	assert isinstance(response.json['importanceBreakdown'], list)
+	assert isinstance(response.json['importanceBreakdown'][0][0], float)
+	assert isinstance(response.json['importanceBreakdown'][0][1], str)
+	assert isinstance(response.json['harvestingAccountsChart'], list)
+	assert isinstance(response.json['harvestingAccountsChart'][0][0], float)
+	assert isinstance(response.json['harvestingAccountsChart'][0][1], str)
+	assert isinstance(response.json['pendingVerification'], list)
+
+
+def test_account_stats_rejects_params():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/account/statistics?limit=1')
+
+	# Assert:
+	_assert_bad_request_response(response, 'Unsupported query parameter: limit')
+	assert facade.account_statistics_error is None
+
+
+def test_account_stats_unavailable():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	facade.account_statistics_error = SymbolDataUnavailable('refresh unavailable')
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/account/statistics')
+
+	# Assert:
+	_assert_symbol_backend_unavailable_response(response)
+
+
+def test_account_stats_database_error():
+	# Arrange:
+	facade = SymbolAccountFacade()
+	facade.account_statistics_error = OperationalError('database unavailable')
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/account/statistics')
+
+	# Assert:
+	_assert_symbol_backend_unavailable_response(response)
 
 
 def test_valid_address_bytes_to_facade():
@@ -305,6 +406,57 @@ def test_blocks_uses_cursor_sort():
 	assert 200 == response.status_code
 	assert [{'height': 2}] == response.json
 	assert (10, 5, SortOrder.ASC) == facade.blocks_query
+
+
+def test_block_stats_200_dispatch_once():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	facade.block_statistics_result = {
+		'blockTimeChart': [[1, 30.123]],
+		'blockFeeChart': [[1, 0]],
+		'blockDifficultyChart': [[1, '12.35']],
+		'blockTime': 30,
+		'blockFee': 0,
+		'blockDifficulty': '12.35'
+	}
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/block/statistics')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert facade.block_statistics_result == response.json
+	assert 1 == facade.block_statistics_call_count
+	assert facade.height is None
+
+
+def test_block_query_400_no_dispatch():
+	# Arrange:
+	facade = SymbolBlockFacade()
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/block/statistics?limit=1')
+
+	# Assert:
+	_assert_bad_request_response(response, 'Unsupported query parameter: limit')
+	assert 0 == facade.block_statistics_call_count
+
+
+@pytest.mark.parametrize('error', [
+	pytest.param(SymbolDataUnavailable(), id='symbol-data-unavailable'),
+	pytest.param(OperationalError('database unavailable'), id='database-operational-error')
+])
+def test_block_stats_backend_503(error):
+	# Arrange:
+	facade = SymbolBlockFacade()
+	facade.block_statistics_error = error
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/block/statistics')
+
+	# Assert:
+	_assert_symbol_backend_unavailable_response(response)
+	assert 1 == facade.block_statistics_call_count
 
 
 def test_blocks_rejects_limit():

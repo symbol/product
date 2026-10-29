@@ -4,8 +4,10 @@ from zenlog import log
 
 from rest.facade.TtlCache import TtlCache
 from rest.model.common import STATISTICS_CACHE_MAX_ENTRIES, STATISTICS_CACHE_TTL_SECONDS
-from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountView
-from rest.model.symbol.format import format_timestamp
+from rest.model.format import format_timestamp
+from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountStatisticsView, SymbolAccountView
+from rest.model.symbol.Block import SymbolBlockStatisticsView
+from rest.model.symbol.HarvestingBalanceRange import HarvestingBalanceRange
 from rest.model.symbol.Receipt import SymbolReceiptView
 from rest.model.symbol.Transaction import SymbolTransactionView
 
@@ -17,15 +19,13 @@ class SymbolRestFacade:
 
 	# The facade constructor owns each independently configured REST dependency.
 	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-		self, symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds=None,
-		harvesting_active_window_days=None):
-		"""Creates a Symbol facade with its required database and node dependencies."""
+		self, symbol_db, native_mosaic_info, network, account_refresh_max_age_seconds=None,
+		harvesting_active_window_days=None, harvesting_balance_range=None):
+		"""Creates a Symbol facade with its required database and immutable settings."""
 
 		if symbol_db is None:
 			raise ValueError('Symbol database is required')
 
-		if node_config is None:
-			raise ValueError('Symbol node configuration is required')
 		if not isinstance(native_mosaic_info, NativeMosaicInfo):
 			raise ValueError('Native mosaic information is required')
 
@@ -33,11 +33,11 @@ class SymbolRestFacade:
 			raise ValueError('Symbol network is required')
 
 		self.symbol_db = symbol_db
-		self.node_config = node_config
 		self.native_mosaic_info = native_mosaic_info
 		self.network = network
 		self.account_refresh_max_age_seconds = account_refresh_max_age_seconds
 		self.harvesting_active_window_days = harvesting_active_window_days
+		self.harvesting_balance_range = harvesting_balance_range
 		self.statistics_cache = TtlCache(STATISTICS_CACHE_TTL_SECONDS, STATISTICS_CACHE_MAX_ENTRIES)
 
 	def get_health(self):
@@ -110,6 +110,12 @@ class SymbolRestFacade:
 
 		blocks = self.symbol_db.get_blocks(from_height, limit, sort)
 		return [block.to_dict(self.native_mosaic_info) for block in blocks]
+
+	def get_block_statistics(self):
+		"""Gets Symbol block statistics."""
+
+		blocks = self.symbol_db.get_block_statistics()
+		return SymbolBlockStatisticsView(blocks).to_dict(self.native_mosaic_info)
 
 	def get_mosaics(self, limit, offset, sort):
 		"""Gets a current mosaic page."""
@@ -214,3 +220,19 @@ class SymbolRestFacade:
 		accounts = self.symbol_db.get_account_list(
 			query, self.account_refresh_max_age_seconds, self.harvesting_active_window_days)
 		return [SymbolAccountListView(account, self.network, self.native_mosaic_info).to_dict() for account in accounts]
+
+	def get_account_statistics(self):
+		"""Gets aggregate statistics from the configured account refresh snapshot."""
+
+		if self.account_refresh_max_age_seconds is None:
+			raise ValueError('Symbol account refresh max age is required')
+
+		if self.harvesting_active_window_days is None:
+			raise ValueError('Symbol harvesting active window is required')
+
+		if not isinstance(self.harvesting_balance_range, HarvestingBalanceRange):
+			raise ValueError('Symbol harvesting balance range is required')
+
+		statistics = self.symbol_db.get_account_statistics(
+			self.account_refresh_max_age_seconds, self.harvesting_active_window_days, self.harvesting_balance_range)
+		return SymbolAccountStatisticsView(statistics).to_dict()

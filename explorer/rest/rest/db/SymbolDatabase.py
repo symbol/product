@@ -10,7 +10,7 @@ from symbolchain.symbol.IdGenerator import is_mosaic_alias
 from symbolchain.symbol.Network import Address
 from zenlog import log
 
-from rest.model.symbol.Block import SymbolBlockView
+from rest.model.symbol.Block import BLOCK_STATISTICS_WINDOW, SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
 from rest.model.symbol.Namespace import SymbolNamespaceView
 from rest.model.symbol.validation import SymbolDataInvalid
@@ -132,6 +132,7 @@ TransactionRecord = namedtuple(
 	'TransactionRecord',
 	['transaction_id', 'hash', 'is_embedded', 'aggregate_hash', 'embedded_index', 'height', 'transaction_type',
 		'signer_address', 'recipient_address', 'effective_fee', 'timestamp', 'message_type', 'message_payload', 'mosaics'])
+BlockStatisticsRecord = namedtuple('BlockStatisticsRecord', ['height', 'timestamp', 'total_fee', 'difficulty'])
 AccountRecord = namedtuple(
 	'AccountRecord',
 	['address', 'public_key', 'account_type', 'address_height', 'importance_percentage', 'linked_public_key',
@@ -152,6 +153,9 @@ AccountListPageContext = namedtuple(
 	'AccountListPageContext', ['last_synced_height', 'now', 'harvesting_active_window_days'])
 AccountListEnrichment = namedtuple(
 	'AccountListEnrichment', ['display_relations', 'harvesting_by_address', 'multisig_rows'])
+AccountStatisticsRecord = namedtuple(
+	'AccountStatisticsRecord',
+	['total', 'harvesting', 'eligible_for_harvesting', 'harvesting_eligible', 'total_importance', 'top_accounts'])
 INT64_MAX = 9223372036854775807
 
 
@@ -556,6 +560,66 @@ class SymbolDatabase(DatabaseConnectionPool):
 				return self._create_account_list_records(
 					query.mosaic_id or self.native_mosaic_info.id, page_addresses, account_rows, mosaic_rows,
 					AccountListEnrichment((namespaces, mosaic_aliases), harvesting_by_address, multisig_rows))
+
+	def get_account_statistics(self, max_age_seconds, harvesting_active_window_days, harvesting_balance_range):
+		"""Gets account statistics from one successful refresh run and read snapshot."""
+
+		with self.connection() as connection:
+			with connection.cursor() as cursor:
+				self._start_read_transaction(cursor)
+				cursor.execute('SET TRANSACTION READ ONLY')
+				sync_state = self._fetch_sync_state(cursor)
+				self._assert_current_state_readable(sync_state)
+				refresh_state = self._fetch_account_refresh_state(cursor)
+				now = self._clock()
+				now = now.replace(tzinfo=timezone.utc) if now.tzinfo is None else now.astimezone(timezone.utc)
+				run_id = self._assert_account_refresh_readable(refresh_state, max_age_seconds, now)
+				cutoff = now - timedelta(days=harvesting_active_window_days)
+				cutoff = cutoff.replace(tzinfo=None)
+
+				cursor.execute(
+					'''WITH snapshot AS (
+						SELECT address, address_text, importance_percentage
+						FROM symbol_account_refresh_accounts
+						WHERE refresh_run_id = %s
+					), classified AS (
+						SELECT snapshot.address, snapshot.importance_percentage,
+							EXISTS (
+								SELECT 1
+								FROM symbol_blocks AS blocks
+								WHERE blocks.beneficiary_address = snapshot.address
+									AND blocks.timestamp >= %s
+									AND blocks.height <= %s
+							) AS is_active,
+							COALESCE(harvesting_mosaics.amount, 0) >= %s
+								AND COALESCE(harvesting_mosaics.amount, 0) <= %s AS is_eligible
+						FROM snapshot
+						LEFT JOIN symbol_account_refresh_mosaics AS harvesting_mosaics
+							ON harvesting_mosaics.refresh_run_id = %s
+							AND harvesting_mosaics.address = snapshot.address
+							AND harvesting_mosaics.mosaic_id = %s
+					), statistics AS (
+					SELECT COUNT(*) AS total,
+						COUNT(*) FILTER (WHERE is_active) AS harvesting,
+						COUNT(*) FILTER (WHERE is_eligible) AS eligible_for_harvesting,
+						COUNT(*) FILTER (WHERE is_active AND is_eligible) AS harvesting_eligible,
+						COALESCE(SUM(importance_percentage), 0) AS total_importance
+					FROM classified
+					)
+					SELECT statistics.*, top_accounts.importance_percentage, top_accounts.address_text
+					FROM statistics
+					LEFT JOIN LATERAL (
+						SELECT importance_percentage, address_text, address
+						FROM snapshot
+						ORDER BY importance_percentage DESC, address ASC
+						LIMIT 10
+					) AS top_accounts ON TRUE
+					ORDER BY top_accounts.importance_percentage DESC, top_accounts.address ASC''',
+					(run_id, cutoff, sync_state['last_synced_height'], harvesting_balance_range.minimum_balance,
+						harvesting_balance_range.maximum_balance, run_id, self.native_mosaic_info.id))
+				rows = cursor.fetchall()
+				top_accounts = tuple((row[5], row[6]) for row in rows if row[6] is not None)
+				return AccountStatisticsRecord(*rows[0][:5], top_accounts)
 
 	@staticmethod
 	def _fetch_account_refresh_state(cursor):
@@ -1529,6 +1593,33 @@ class SymbolDatabase(DatabaseConnectionPool):
 				results = cursor.fetchall()
 
 				return [self._create_block_view(result, finalized_height) for result in results]
+
+	def get_block_statistics(self):
+		"""Gets the latest statistics window and its preceding block, if present."""
+
+		with self.connection() as connection:
+			with connection.cursor() as cursor:
+				self._start_read_transaction(cursor)
+				sync_state = self._fetch_sync_state(cursor)
+				readable_height = _get_readable_height(sync_state)
+				if readable_height is None:
+					raise SymbolDataUnavailable('Symbol block statistics are unavailable')
+
+				# Include the preceding block to calculate the first target block time, yielding at most 241 rows.
+				start_height = max(1, readable_height - BLOCK_STATISTICS_WINDOW)
+				cursor.execute(
+					'''
+					SELECT height, timestamp, total_fee, difficulty
+					FROM symbol_blocks
+					WHERE height BETWEEN %s AND %s
+					ORDER BY height ASC
+					''',
+					(start_height, readable_height))
+				results = cursor.fetchall()
+				if len(results) != readable_height - start_height + 1:
+					raise SymbolDataUnavailable('Symbol block statistics are unavailable')
+
+				return [BlockStatisticsRecord(*result) for result in results]
 
 	@staticmethod
 	def _start_read_transaction(cursor):
