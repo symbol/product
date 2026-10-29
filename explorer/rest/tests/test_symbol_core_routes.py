@@ -1181,6 +1181,8 @@ def test_symbol_blocks_reads_db(symbol_database_config):
 
 
 def test_transaction_stats_counts(symbol_database_config):
+	"""Verifies summary JSON types, embedded counts, exact cutoffs and the published height bound."""
+
 	# Arrange:
 	head_timestamp = datetime(2026, 3, 31, 23, 59, 59, 123456, tzinfo=timezone.utc)
 	blocks = [
@@ -1235,6 +1237,8 @@ def test_transaction_stats_counts(symbol_database_config):
 
 
 def test_tx_stats_range_follow_sync(symbol_database_config):
+	"""Verifies summary and range responses follow the published watermark across sync updates."""
+
 	# Arrange:
 	blocks = [
 		create_symbol_block(
@@ -1345,6 +1349,8 @@ def test_tx_stats_range_follow_sync(symbol_database_config):
 
 
 def test_tx_range_day_month_responses(symbol_database_config):
+	"""Verifies real database day and month responses retain zero-count block periods."""
+
 	# Arrange:
 	head_timestamp = datetime(2024, 3, 31, 12, 0, tzinfo=timezone.utc)
 	blocks = [
@@ -1384,6 +1390,41 @@ def test_tx_range_day_month_responses(symbol_database_config):
 		assert all(item['totalTransactions'] >= 0 for item in response.json['data'])
 
 
+@pytest.mark.parametrize('statement', [
+	"UPDATE symbol_sync_state SET status = 'unhealthy'",
+	'DELETE FROM symbol_blocks'
+])
+def test_tx_cache_rejects_unsafe_state(symbol_database_config, statement):
+	"""Returns HTTP 503 after cached success when synchronization or the required head becomes unavailable."""
+
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
+		app_config_path = _create_app_config(temp_directory, db_config_path)
+		_seed_symbol_block_tables(
+			symbol_database_config, create_symbol_sync_state(1, 1),
+			[create_symbol_block(1, transactions_count=2, total_transactions_count=10)])
+		with rest_settings_env(app_config_path):
+			app = _create_symbol_app()
+			try:
+				client = app.test_client()
+				first = client.get('/api/symbol/transaction/statistics')
+				assert (200, {'total': 10, 'last30Days': 10, 'last24Hours': 10, 'averagePerBlock': 2.0}) == (
+					first.status_code, first.json)
+
+				# Act:
+				with PullerSymbolDatabase(symbol_database_config) as writer:
+					with writer.connection.cursor() as cursor:
+						cursor.execute(statement)
+					writer.connection.commit()
+				response = client.get('/api/symbol/transaction/statistics')
+			finally:
+				app.extensions['symbol_database'].close()
+
+	# Assert:
+	_assert_unavailable_json(response)
+
+
 @pytest.mark.parametrize('path', [
 	'/api/symbol/transaction/statistics',
 	'/api/symbol/transaction/statistics/range?startDate=2024-01-01&endDate=2024-12-31&periodType=day'
@@ -1397,6 +1438,8 @@ def test_tx_range_day_month_responses(symbol_database_config):
 		id='missing-height')
 ])
 def test_tx_endpoints_bad_state_503(symbol_database_config, sync_state, path):
+	"""Rejects unsafe synchronization states through both statistics HTTP endpoints."""
+
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
@@ -1419,6 +1462,8 @@ def test_tx_endpoints_bad_state_503(symbol_database_config, sync_state, path):
 	'/api/symbol/transaction/statistics/range?startDate=2024-01-01&endDate=2024-12-31&periodType=day'
 ])
 def test_tx_head_block_missing_503(symbol_database_config, path):
+	"""Returns HTTP 503 when the published head block is absent."""
+
 	# Arrange:
 	sync_state = create_symbol_sync_state(last_synced_height=1, finalized_height=1)
 
@@ -1434,6 +1479,8 @@ def test_tx_head_block_missing_503(symbol_database_config, path):
 	'/api/symbol/transaction/statistics/range?startDate=2024-01-01&endDate=2024-12-31&periodType=day'
 ])
 def test_tx_sync_state_missing_503(symbol_database_config, path):
+	"""Returns HTTP 503 when required synchronization state is absent."""
+
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)
@@ -1457,6 +1504,8 @@ def test_tx_sync_state_missing_503(symbol_database_config, path):
 	'/api/symbol/transaction/statistics/range?startDate=2024-01-01&endDate=2024-12-31&periodType=day'
 ])
 def test_tx_database_error_503(symbol_database_config, path):
+	"""Maps real PostgreSQL read failures to HTTP 503 for both statistics endpoints."""
+
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		db_config_path = _create_config_file(temp_directory, database_config=symbol_database_config)

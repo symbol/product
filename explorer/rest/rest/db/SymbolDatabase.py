@@ -77,6 +77,7 @@ SYNC_STATE_COLUMNS = [
 ]
 READABLE_BLOCK_STATUSES = frozenset(['healthy', 'repairing'])
 TRANSACTION_STATISTICS_WINDOW = 240
+TransactionStatisticsHead = namedtuple('TransactionStatisticsHead', ['height', 'timestamp', 'block_hash', 'published_hash', 'updated_at'])
 ReceiptQuery = namedtuple(
 	'ReceiptQuery',
 	['limit', 'offset', 'height', 'receipt_group', 'receipt_type', 'included_receipt_types', 'target_address', 'sender_address'],
@@ -381,43 +382,53 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 				return self._fetch_transaction_records(cursor, transaction_rows, sync_state)
 
-	def get_transaction_statistics(self):
-		"""Gets transaction statistics from one healthy, repeatable-read snapshot."""
+	def get_transaction_statistics(self, cache=None):
+		"""Gets statistics, validating publication before cache lookup in the aggregation snapshot."""
 
 		with self._read_snapshot() as cursor:
-			last_synced_height, head_timestamp = self._fetch_transaction_statistics_head(cursor)
-			cursor.execute(
-				'''
-				WITH bounded_blocks AS NOT MATERIALIZED (
-					SELECT blocks.height, blocks.timestamp AS block_timestamp,
-						blocks.transactions_count, blocks.total_transactions_count,
-						%s::timestamp AS head_timestamp
-					FROM symbol_blocks AS blocks
-					WHERE blocks.height <= %s
-				), latest_blocks AS (
-					SELECT height, transactions_count
+			head = self._fetch_transaction_statistics_head(cursor)
+			if cache is None:
+				return self._fetch_transaction_statistics(cursor, head)
+
+			# The key and loader share this snapshot: a concurrent publication cannot label old totals with a new head.
+			return cache.get_or_load(head, lambda: self._fetch_transaction_statistics(cursor, head))
+
+	@staticmethod
+	def _fetch_transaction_statistics(cursor, head):
+		"""Aggregates totals and the latest block average independently within the published bounds."""
+
+		cursor.execute(
+			'''
+			WITH bounded_blocks AS NOT MATERIALIZED (
+				SELECT blocks.height, blocks.timestamp AS block_timestamp,
+					blocks.transactions_count, blocks.total_transactions_count
+				FROM symbol_blocks AS blocks
+				WHERE blocks.height <= %s
+			), totals AS (
+				SELECT
+					COALESCE(SUM(total_transactions_count), 0)::bigint AS total,
+					COALESCE(SUM(total_transactions_count) FILTER (
+						WHERE block_timestamp > %s::timestamp - %s
+							AND block_timestamp <= %s), 0)::bigint AS last30_day,
+					COALESCE(SUM(total_transactions_count) FILTER (
+						WHERE block_timestamp > %s::timestamp - %s
+							AND block_timestamp <= %s), 0)::bigint AS last24_hours
+				FROM bounded_blocks
+			), avg_latest AS (
+				SELECT COALESCE(AVG(transactions_count)::double precision, 0.0) AS average_per_block
+				FROM (
+					SELECT transactions_count
 					FROM bounded_blocks
 					ORDER BY height DESC
 					LIMIT %s
-				), totals AS (
-					SELECT
-						COALESCE(SUM(total_transactions_count), 0)::bigint AS total,
-						COALESCE(SUM(total_transactions_count) FILTER (
-							WHERE block_timestamp > head_timestamp - %s
-								AND block_timestamp <= head_timestamp), 0)::bigint AS last30_day,
-						COALESCE(SUM(total_transactions_count) FILTER (
-							WHERE block_timestamp > head_timestamp - %s
-								AND block_timestamp <= head_timestamp), 0)::bigint AS last24_hours
-					FROM bounded_blocks
-				)
-				SELECT totals.total, totals.last30_day, totals.last24_hours,
-					COALESCE(AVG(latest_blocks.transactions_count)::double precision, 0.0)
-				FROM totals CROSS JOIN latest_blocks
-				GROUP BY totals.total, totals.last30_day, totals.last24_hours
-				''',
-				(head_timestamp, last_synced_height, TRANSACTION_STATISTICS_WINDOW, timedelta(days=30), timedelta(hours=24)))
-			result = cursor.fetchone()
-			return TransactionStatisticsRecord(*result)
+				) AS latest_blocks
+			)
+			SELECT totals.total, totals.last30_day, totals.last24_hours, avg_latest.average_per_block
+			FROM totals, avg_latest
+			''',
+			(head.height, head.timestamp, timedelta(days=30), head.timestamp,
+				head.timestamp, timedelta(hours=24), head.timestamp, TRANSACTION_STATISTICS_WINDOW))
+		return TransactionStatisticsRecord(*cursor.fetchone())
 
 	def get_transaction_statistics_range(self, start_date, end_date, period_type):
 		"""Aggregates existing blocks in the requested period and published snapshot."""
@@ -427,7 +438,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 
 		period_format = 'YYYY-MM-DD' if period_type == 'DAY' else 'YYYY-MM'
 		with self._read_snapshot() as cursor:
-			last_synced_height, head_timestamp = self._fetch_transaction_statistics_head(cursor)
+			head = self._fetch_transaction_statistics_head(cursor)
 			cursor.execute(
 				"""
 				SELECT to_char(date_trunc(%s, blocks.timestamp), %s),
@@ -440,7 +451,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 				GROUP BY 1
 				ORDER BY 1
 				""",
-				(period_type, period_format, last_synced_height, start_date, end_date, head_timestamp))
+				(period_type, period_format, head.height, start_date, end_date, head.timestamp))
 			return [TransactionRangeRecord(*row) for row in cursor.fetchall()]
 
 	@contextmanager
@@ -459,7 +470,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 			connection.commit()
 
 	def _fetch_transaction_statistics_head(self, cursor):
-		"""Returns the exact published height and its timestamp when statistics are safe to read."""
+		"""Returns the validated published head and revision used to identify cached statistics."""
 
 		sync_state = self._fetch_sync_state(cursor)
 		if not sync_state:
@@ -472,12 +483,16 @@ class SymbolDatabase(DatabaseConnectionPool):
 		if isinstance(last_synced_height, bool) or not isinstance(last_synced_height, int) or last_synced_height < 1:
 			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
 
-		cursor.execute('SELECT timestamp FROM symbol_blocks WHERE height = %s', (last_synced_height,))
+		cursor.execute('SELECT timestamp, hash FROM symbol_blocks WHERE height = %s', (last_synced_height,))
 		result = cursor.fetchone()
 		if not result or not isinstance(result[0], datetime):
 			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
 
-		return last_synced_height, result[0]
+		# Include both block identity and publication revision, so same-height replacement and republishing miss the cache.
+		return TransactionStatisticsHead(
+			last_synced_height, result[0], bytes(result[1]),
+			bytes(sync_state['last_synced_block_hash']) if sync_state['last_synced_block_hash'] is not None else None,
+			sync_state['updated_at'])
 
 	def try_get_account(self, address=None, public_key=None):
 		"""Gets one current-state Symbol account and its detail relations."""

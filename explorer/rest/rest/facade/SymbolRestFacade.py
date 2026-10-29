@@ -2,6 +2,8 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from zenlog import log
 
+from rest.facade.TtlCache import TtlCache
+from rest.model.common import STATISTICS_CACHE_MAX_ENTRIES, STATISTICS_CACHE_TTL_SECONDS
 from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountView
 from rest.model.symbol.format import format_timestamp
 from rest.model.symbol.Receipt import SymbolReceiptView
@@ -36,6 +38,7 @@ class SymbolRestFacade:
 		self.network = network
 		self.account_refresh_max_age_seconds = account_refresh_max_age_seconds
 		self.harvesting_active_window_days = harvesting_active_window_days
+		self.statistics_cache = TtlCache(STATISTICS_CACHE_TTL_SECONDS, STATISTICS_CACHE_MAX_ENTRIES)
 
 	def get_health(self):
 		"""Gets health of the Symbol backend core foundation."""
@@ -177,7 +180,7 @@ class SymbolRestFacade:
 	def get_transaction_statistics(self):
 		"""Gets Symbol transaction statistics."""
 
-		statistics = self.symbol_db.get_transaction_statistics()
+		statistics = self.symbol_db.get_transaction_statistics(self.statistics_cache)
 		return {
 			'total': statistics.total,
 			'last30Days': statistics.last30_day,

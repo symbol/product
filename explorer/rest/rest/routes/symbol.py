@@ -133,6 +133,8 @@ def _create_required_positive_integer_setting(app_config, setting):
 
 
 def setup_symbol_routes(app, symbol_api_facade):
+	"""Registers Symbol API routes and their shared database error boundary."""
+
 	def _run_symbol_query(query_fn, error_log):
 		try:
 			return None, query_fn()
@@ -353,8 +355,12 @@ def _setup_symbol_namespace_routes(app, symbol_api_facade, run_symbol_query):
 
 
 def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
+	"""Registers confirmed transaction search with canonical query parsing."""
+
 	@app.route('/api/symbol/transactions')
 	def api_get_symbol_transactions():
+		"""Validates transaction filters and returns the confirmed transaction page."""
+
 		try:
 			_validate_allowed_query_parameters(TRANSACTION_QUERY_PARAMETERS)
 			query = _parse_transaction_query()
@@ -375,8 +381,12 @@ def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
 
 
 def _setup_symbol_transaction_statistics_routes(app, symbol_api_facade, run_symbol_query):
+	"""Registers summary and calendar-range transaction statistics endpoints."""
+
 	@app.route('/api/symbol/transaction/statistics')
 	def api_get_symbol_tx_statistics():
+		"""Returns statistics for the healthy published Symbol chain."""
+
 		_validate_allowed_query_parameters(TRANSACTION_STATISTICS_QUERY_PARAMETERS)
 
 		error, result = run_symbol_query(
@@ -389,6 +399,8 @@ def _setup_symbol_transaction_statistics_routes(app, symbol_api_facade, run_symb
 
 	@app.route('/api/symbol/transaction/statistics/range')
 	def api_get_symbol_tx_statistics_range():
+		"""Validates inclusive calendar dates and returns totals grouped by day or month."""
+
 		start_date = request.args.get('startDate', '').strip()
 		end_date = request.args.get('endDate', '').strip()
 		period_type = request.args.get('periodType', '').strip().upper()
@@ -402,6 +414,7 @@ def _setup_symbol_transaction_statistics_routes(app, symbol_api_facade, run_symb
 
 		if start_date > end_date:
 			abort(400, 'start date must be less than or equal to end date')
+
 		if period_type not in ('DAY', 'MONTH'):
 			abort(400, 'Period type must be either DAY or MONTH')
 

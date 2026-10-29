@@ -75,6 +75,8 @@ class SymbolTransactionStatisticsFacade:
 	"""Recording facade for transaction statistics route tests."""
 
 	def __init__(self):
+		"""Creates isolated responses, failures and call records for statistics routes."""
+
 		self.statistics_result = {
 			'total': 12,
 			'last30Days': 8,
@@ -88,9 +90,13 @@ class SymbolTransactionStatisticsFacade:
 
 	@staticmethod
 	def get_health():
+		"""Supplies healthy backing state for route registration tests."""
+
 		return {'isHealthy': True, 'errors': []}
 
 	def get_transaction_statistics(self):
+		"""Records summary dispatch and returns its response or configured failure."""
+
 		self.statistics_calls += 1
 		if self.statistics_error:
 			raise self.statistics_error
@@ -98,6 +104,8 @@ class SymbolTransactionStatisticsFacade:
 		return self.statistics_result
 
 	def get_transaction_statistics_range(self, start_date, end_date, period_type):
+		"""Records normalized range arguments and returns a period-shaped response."""
+
 		self.range_query = (start_date, end_date, period_type)
 		if self.range_error:
 			raise self.range_error
@@ -1273,6 +1281,8 @@ def test_accounts_accepts_page_limits():
 
 
 def test_tx_stats_response_fields():
+	"""Verifies the summary route response and exactly one facade dispatch."""
+
 	# Arrange:
 	facade = SymbolTransactionStatisticsFacade()
 	client = _create_symbol_test_client(facade)
@@ -1297,6 +1307,8 @@ def test_tx_stats_response_fields():
 	pytest.param('?limit=1', id='limit'),
 ])
 def test_tx_stats_route_rejects_queries(query):
+	"""Rejects unsupported summary parameters before dispatching to the facade."""
+
 	# Arrange:
 	facade = SymbolTransactionStatisticsFacade()
 	client = _create_symbol_test_client(facade)
@@ -1310,6 +1322,8 @@ def test_tx_stats_route_rejects_queries(query):
 
 
 def test_tx_stats_maps_503():
+	"""Maps unavailable summary data to the shared HTTP 503 response."""
+
 	# Arrange:
 	facade = SymbolTransactionStatisticsFacade()
 	facade.statistics_error = SymbolDataUnavailable('backend unavailable')
@@ -1325,6 +1339,8 @@ def test_tx_stats_maps_503():
 @pytest.mark.parametrize('period, expected, expected_period', [
 	(' day ', 'DAY', '2026-01-01'), ('mOnTh', 'MONTH', '2026-01')])
 def test_tx_range_normalizes_input(period, expected, expected_period):
+	"""Preserves NEM-compatible trimming, period normalization and first-value query handling."""
+
 	# Arrange:
 	facade = SymbolTransactionStatisticsFacade()
 	client = _create_symbol_test_client(facade)
@@ -1352,6 +1368,8 @@ def test_tx_range_normalizes_input(period, expected, expected_period):
 	{'startDate': '2026-01-01', 'endDate': '2026-01-31', 'periodType': ' '},
 ])
 def test_tx_range_rejects_invalid(query):
+	"""Rejects missing or invalid range arguments before facade dispatch."""
+
 	# Arrange:
 	facade = SymbolTransactionStatisticsFacade()
 	client = _create_symbol_test_client(facade)
@@ -1366,6 +1384,8 @@ def test_tx_range_rejects_invalid(query):
 
 @pytest.mark.parametrize('error', [SymbolDataUnavailable('unavailable'), OperationalError('database error')])
 def test_tx_range_maps_503(error):
+	"""Maps unavailable range data and database failures to the shared HTTP 503 response."""
+
 	# Arrange:
 	facade = SymbolTransactionStatisticsFacade()
 	facade.range_error = error

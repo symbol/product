@@ -229,14 +229,20 @@ class TransactionSymbolDatabase:
 
 class TransactionStatisticsSymbolDatabase:
 	def __init__(self):
+		"""Creates independent summary and range records for facade serialization tests."""
+
 		self.statistics = TransactionStatisticsRecord(12, 8, 3, 1.5)
 		self.range_query = None
 		self.range_rows = [TransactionRangeRecord('2026-01-01', 2)]
 
-	def get_transaction_statistics(self):
+	def get_transaction_statistics(self, _cache):
+		"""Returns the summary record supplied to the facade."""
+
 		return self.statistics
 
 	def get_transaction_statistics_range(self, start_date, end_date, period_type):
+		"""Records the canonical date query and returns the configured period records."""
+
 		self.range_query = (start_date, end_date, period_type)
 		return self.range_rows
 
@@ -301,6 +307,8 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([], result)
 
 	def test_get_transaction_statistics_formats_contract_fields(self):
+		"""Verifies that summary record fields map to the public statistics response."""
+
 		# Arrange:
 		symbol_db = TransactionStatisticsSymbolDatabase()
 		facade = _create_facade_with_database(symbol_db)
@@ -317,6 +325,8 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		}, result)
 
 	def test_get_transaction_range_formats_fields(self):
+		"""Verifies range query forwarding and the public period response fields."""
+
 		# Arrange:
 		symbol_db = TransactionStatisticsSymbolDatabase()
 		facade = _create_facade_with_database(symbol_db)
@@ -329,6 +339,8 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual((date(2026, 1, 1), date(2026, 1, 31), 'DAY'), symbol_db.range_query)
 
 	def test_get_transaction_range_formats_empty_data(self):
+		"""Keeps an empty range as an empty data array with its requested period type."""
+
 		# Arrange:
 		symbol_db = TransactionStatisticsSymbolDatabase()
 		symbol_db.range_rows = []
