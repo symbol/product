@@ -228,3 +228,91 @@ def test_initdb_uses_effective_pgdata(script_environment, pgdata, expected):
 	# Assert:
 	assert 7 == result.returncode
 	assert [f'initdb -U postgres -D {expected}'] == log_path.read_text(encoding='utf8').splitlines()
+
+
+@pytest.mark.parametrize(('state', 'expected'), [
+	((0, 0, 0), (0, True, ['status', 'stop'], '')),
+	((0, 0, 7), (7, True, ['status', 'stop'], '')),
+	((3, 0, 0), (0, True, ['status'], '')),
+	((0, 124, 0), (1, False, ['status', 'stop'], 'PostgreSQL shutdown failed; preserving')),
+	((3, 0, 7), (7, True, ['status'], '')),
+	((0, 1, 0), (1, False, ['status', 'stop'], 'PostgreSQL shutdown failed; preserving')),
+	((0, 1, 7), (7, False, ['status', 'stop'], 'PostgreSQL shutdown failed; preserving')),
+	((4, 0, 0), (1, False, ['status'], 'PostgreSQL status could not be determined (exit 4); preserving')),
+	((4, 0, 7), (7, False, ['status'], 'PostgreSQL status could not be determined (exit 4); preserving')),
+])
+def test_smoke_cleanup(tmp_path, state, expected):
+	# Arrange: use a real directory and stub only the PostgreSQL control boundary.
+	status, stop_status, original_status = state
+	expected_status, is_removed, expected_commands, error = expected
+	cluster = tmp_path / 'cluster'
+	cluster.mkdir()
+	(cluster / 'PG_VERSION').write_text('15', encoding='utf8')
+	log_path = tmp_path / 'commands'
+	pg_ctl = tmp_path / 'pg_ctl'
+	pg_ctl.write_text(
+		'#!/bin/bash\nprintf "%s\\n" "$3" >> "$COMMAND_LOG"\n'
+		'if [ "$3" = status ]; then exit "$STATUS_RESULT"; fi\n'
+		'printf "stop diagnostic\\n" >&2\nexit "$STOP_RESULT"\n', encoding='utf8')
+	pg_ctl.chmod(0o755)
+	environment = dict(
+		os.environ, PATH=f'{tmp_path}:{os.environ["PATH"]}', COMMAND_LOG=str(log_path),
+		STATUS_RESULT=str(status), STOP_RESULT=str(stop_status))
+
+	# Act: execute the smoke script's cleanup as an EXIT trap, including primary exit status.
+	result = subprocess.run(
+		['/bin/bash', '-c', 'source "$1"; trap \'cleanup "$?" "$2"\' EXIT; exit "$3"', '_',
+			str(SCRIPT_DIRECTORY / 'test_postgres_setup.sh'), str(cluster), str(original_status)],
+		env=environment, capture_output=True, text=True, check=False)
+
+	# Assert:
+	assert expected_status == result.returncode
+	assert is_removed == (not cluster.exists())
+	assert expected_commands == log_path.read_text(encoding='utf8').splitlines()
+	if not is_removed:
+		assert '15' == (cluster / 'PG_VERSION').read_text(encoding='utf8')
+	if error:
+		assert f'{error} {cluster}.' in result.stderr
+	if 'stop' in expected_commands:
+		assert 'stop diagnostic' in result.stderr
+
+
+def test_cleanup_before_init(tmp_path):
+	# Arrange: initdb failed without creating the directory.
+	cluster = tmp_path / 'absent'
+
+	# Act:
+	result = subprocess.run(
+		['/bin/bash', '-c', 'source "$1"; trap \'cleanup "$?" "$2"\' EXIT; exit 7', '_',
+			str(SCRIPT_DIRECTORY / 'test_postgres_setup.sh'), str(cluster)],
+		capture_output=True, text=True, check=False)
+
+	# Assert:
+	assert 7 == result.returncode
+	assert '' == result.stderr
+	assert not cluster.exists()
+
+
+@pytest.mark.parametrize(('original_status', 'expected_status'), [(0, 1), (7, 7)])
+def test_cleanup_removal_failure(tmp_path, original_status, expected_status):
+	# Arrange: PostgreSQL is stopped, but the directory cannot be removed.
+	cluster = tmp_path / 'cluster'
+	cluster.mkdir()
+	bin_path = tmp_path / 'bin'
+	bin_path.mkdir()
+	for name, status in [('pg_ctl', 3), ('rm', 1)]:
+		command = bin_path / name
+		command.write_text(f'#!/bin/bash\nexit {status}\n', encoding='utf8')
+		command.chmod(0o755)
+	environment = dict(os.environ, PATH=f'{bin_path}:{os.environ["PATH"]}')
+
+	# Act:
+	result = subprocess.run(
+		['/bin/bash', '-c', 'source "$1"; trap \'cleanup "$?" "$2"\' EXIT; exit "$3"', '_',
+			str(SCRIPT_DIRECTORY / 'test_postgres_setup.sh'), str(cluster), str(original_status)],
+		env=environment, capture_output=True, text=True, check=False)
+
+	# Assert:
+	assert expected_status == result.returncode
+	assert cluster.is_dir()
+	assert f'PostgreSQL cluster removal failed: {cluster}.\n' == result.stderr
