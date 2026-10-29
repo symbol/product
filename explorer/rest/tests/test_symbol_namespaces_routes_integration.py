@@ -59,6 +59,8 @@ def _write_config(directory, database_config):
 		f'SYMBOL_NATIVE_MOSAIC_ID={NATIVE_MOSAIC_INFO.id!r}\n'
 		'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200\n'
 		'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7\n'
+		'SYMBOL_HARVESTING_MIN_BALANCE=0\n'
+		'SYMBOL_HARVESTING_MAX_BALANCE=18446744073709551615\n'
 		'SYMBOL_NODE_URL="http://127.0.0.1:1"\n'
 		'SYMBOL_NODE_ALLOWED_HOSTS="127.0.0.1:1"\n'
 		'SYMBOL_NODE_ALLOW_LOOPBACK="true"\n'
@@ -996,7 +998,7 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 		try:
 			def setup_facade(app):
 				app.extensions['symbol_database'] = database
-				return SymbolRestFacade(database, object(), NATIVE_MOSAIC_INFO, Network.TESTNET)
+				return SymbolRestFacade(database, NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 			def update_related_data():
 				# pylint: disable=protected-access

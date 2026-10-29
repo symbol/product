@@ -1,16 +1,13 @@
-import asyncio
-import time
 from decimal import Decimal
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
-from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from flask import Flask
 from symbolchain.symbol.Network import Network
 
 from rest.db.SymbolDatabase import AccountListRecord, AccountRecord, AccountStatisticsRecord
-from rest.facade.HarvestingProperties import HarvestingProperties, HarvestingPropertiesUnavailable, load_harvesting_properties
 from rest.facade.SymbolRestFacade import SymbolRestFacade
+from rest.model.symbol.HarvestingBalanceRange import HarvestingBalanceRange
 from rest.routes.symbol import setup_symbol_routes
 
 
@@ -56,8 +53,8 @@ class RecordingAccountDatabase:
 		self.account_list_query = (query, max_age_seconds, harvesting_active_window_days)
 		return [self.account_list_record]
 
-	def get_account_statistics(self, max_age_seconds, harvesting_active_window_days, harvesting_properties):
-		self.account_statistics_query = (max_age_seconds, harvesting_active_window_days, harvesting_properties)
+	def get_account_statistics(self, max_age_seconds, harvesting_active_window_days, harvesting_balance_range):
+		self.account_statistics_query = (max_age_seconds, harvesting_active_window_days, harvesting_balance_range)
 		return self.account_statistics_record
 
 
@@ -67,90 +64,43 @@ class SymbolRestFacadeAccountTest(TestCase):
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
 			database,
-			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
 			NativeMosaicInfo('72C0212E67A08BCE', 6),
 			Network.TESTNET,
 			7200,
 			7,
-			harvesting_properties_loader=lambda _: HarvestingProperties(1, 2))
+			HarvestingBalanceRange(1, 2))
 
 		# Act:
 		result = facade.get_account_statistics()
 
 		# Assert:
-		self.assertEqual((7200, 7, HarvestingProperties(1, 2)), database.account_statistics_query)
+		self.assertEqual((7200, 7, HarvestingBalanceRange(1, 2)), database.account_statistics_query)
 		self.assertEqual(1, result['total'])
 		self.assertEqual(0.0, result['top10AccountsImportance'])
 		self.assertEqual([], result['pendingVerification'])
 
-	def test_statistics_http_reports_node_failure_as_unavailable(self):
+	def test_statistics_requests_reuse_configured_balance_range_without_node_access(self):
 		# Arrange:
 		database = RecordingAccountDatabase()
-
-		def unavailable(_node_config):
-			raise HarvestingPropertiesUnavailable('node unavailable')
-
 		facade = SymbolRestFacade(
-			database, SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
-			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, 7200, 7,
-			harvesting_properties_loader=unavailable)
+			database, NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, 7200, 7,
+			HarvestingBalanceRange(100, 200))
 		app = Flask(__name__)
 		setup_symbol_routes(app, facade)
+		client = app.test_client()
 
 		# Act:
-		response = app.test_client().get('/api/symbol/account/statistics')
+		responses = [client.get('/api/symbol/account/statistics') for _ in range(2)]
 
 		# Assert:
-		self.assertEqual(503, response.status_code)
-		self.assertEqual({'status': 503, 'message': 'Symbol backend data is unavailable'}, response.get_json())
-		self.assertIsNone(database.account_statistics_query)
-
-	def test_statistics_http_reports_dns_timeout_without_querying_database(self):
-		# Arrange: the real loader uses an injected resolver that blocks until cancelled.
-		class SlowResolver:
-			def __init__(self):
-				self.cancelled = False
-				self.closed = False
-
-			async def resolve(self, host, port, family):  # pylint: disable=unused-argument
-				try:
-					await asyncio.sleep(10)
-				except asyncio.CancelledError:
-					self.cancelled = True
-					raise
-
-			async def close(self):
-				self.closed = True
-
-		database = RecordingAccountDatabase()
-		resolver = SlowResolver()
-		facade = SymbolRestFacade(
-			database, SymbolNodeConfiguration.from_url('http://node.test:3000', timeout_seconds=1),
-			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, 7200, 7,
-			harvesting_properties_loader=lambda config: load_harvesting_properties(config, resolver_factory=lambda: resolver))
-		app = Flask(__name__)
-		setup_symbol_routes(app, facade)
-		started = time.monotonic()
-
-		# Act:
-		response = app.test_client().get('/api/symbol/account/statistics')
-
-		# Assert: shutdown completes within the deadline plus scheduling allowance.
-		elapsed = time.monotonic() - started
-		self.assertGreaterEqual(elapsed, 0.8)
-		self.assertLess(elapsed, 2.5)
-		self.assertEqual(503, response.status_code)
-		self.assertEqual({'status': 503, 'message': 'Symbol backend data is unavailable'}, response.get_json())
-		self.assertIsNone(database.account_statistics_query)
-		self.assertTrue(resolver.cancelled)
-		self.assertTrue(resolver.closed)
+		self.assertEqual([200, 200], [response.status_code for response in responses])
+		self.assertEqual((7200, 7, HarvestingBalanceRange(100, 200)), database.account_statistics_query)
 
 	def test_get_accounts_formats_snapshot_list_and_passes_refresh_age(self):
 		# Arrange:
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
 			database,
-			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
 			NativeMosaicInfo('72C0212E67A08BCE', 6),
 			Network.TESTNET,
 			7200,
@@ -179,7 +129,6 @@ class SymbolRestFacadeAccountTest(TestCase):
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
 			database,
-			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
 			NativeMosaicInfo('72C0212E67A08BCE', 6),
 			Network.TESTNET)
 
@@ -200,7 +149,6 @@ class SymbolRestFacadeAccountTest(TestCase):
 			bytes.fromhex('00' * 32))
 		facade = SymbolRestFacade(
 			database,
-			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
 			NativeMosaicInfo('72C0212E67A08BCE', 6),
 			Network.MAINNET)
 
@@ -222,7 +170,6 @@ class SymbolRestFacadeAccountListConfigurationTest(TestCase):
 		# Arrange:
 		facade = SymbolRestFacade(
 			RecordingAccountDatabase(),
-			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
 			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET)
 
 		# Act:
@@ -236,7 +183,6 @@ class SymbolRestFacadeAccountListConfigurationTest(TestCase):
 		# Arrange:
 		facade = SymbolRestFacade(
 			RecordingAccountDatabase(),
-			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
 			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, 7200)
 
 		# Act:
@@ -253,7 +199,6 @@ class SymbolRestFacadeAccountStatisticsConfigurationTest(TestCase):
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
 			database,
-			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
 			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET,
 			harvesting_active_window_days=7)
 
@@ -270,7 +215,6 @@ class SymbolRestFacadeAccountStatisticsConfigurationTest(TestCase):
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
 			database,
-			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
 			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, account_refresh_max_age_seconds=7200)
 
 		# Act:
@@ -279,4 +223,18 @@ class SymbolRestFacadeAccountStatisticsConfigurationTest(TestCase):
 
 		# Assert:
 		self.assertEqual('Symbol harvesting active window is required', str(context.exception))
+		self.assertIsNone(database.account_statistics_query)
+
+	def test_get_account_statistics_requires_configured_harvesting_balance_range(self):
+		# Arrange:
+		database = RecordingAccountDatabase()
+		facade = SymbolRestFacade(
+			database, NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, 7200, 7)
+
+		# Act:
+		with self.assertRaises(ValueError) as context:
+			facade.get_account_statistics()
+
+		# Assert:
+		self.assertEqual('Symbol harvesting balance range is required', str(context.exception))
 		self.assertIsNone(database.account_statistics_query)

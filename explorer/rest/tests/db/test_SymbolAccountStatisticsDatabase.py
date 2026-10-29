@@ -1,18 +1,21 @@
+import tempfile
 from datetime import timedelta, timezone
 from decimal import Decimal
+from pathlib import Path
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
-from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from flask import Flask
 from psycopg2 import Error as PsycopgError
 from symbolchain.symbol.Network import Address, Network
 
+from rest import create_app
 from rest.db.SymbolDatabase import AccountStatisticsRecord, SymbolDatabase, SymbolDataUnavailable
-from rest.facade.HarvestingProperties import HarvestingProperties
 from rest.facade.SymbolRestFacade import SymbolRestFacade
+from rest.model.symbol.HarvestingBalanceRange import HarvestingBalanceRange
 from rest.routes.symbol import setup_symbol_routes
 
+from ..test.EnvTestUtils import rest_settings_env
 from ..test.SymbolAccountListTestUtils import (
 	CUSTOM_MOSAIC_ID,
 	NATIVE_MOSAIC_ID,
@@ -26,7 +29,7 @@ from ..test.SymbolDatabaseTestUtils import PausingAfterSyncStateReadSymbolDataba
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo(NATIVE_MOSAIC_ID, 6)
 NOW = REFRESH_COMPLETED_AT + timedelta(hours=2)
-HARVESTING_PROPERTIES = HarvestingProperties(10_000_000_000, 49_999_999_999_999)
+HARVESTING_BALANCE_RANGE = HarvestingBalanceRange(10_000_000_000, 49_999_999_999_999)
 
 
 def create_statistics_entries(run_id='selected-run'):
@@ -44,7 +47,57 @@ def create_statistics_entries(run_id='selected-run'):
 	]
 
 
-class SymbolAccountStatisticsDatabaseTest(TestCase):
+def _write_rest_app_config(directory, database_config, minimum_balance, maximum_balance):
+	db_config_path = Path(directory) / 'database.ini'
+	db_config_path.write_text(f'''[symbol_db]
+database = {database_config.database}
+user = {database_config.user}
+password = {database_config.password}
+host = {database_config.host}
+port = {database_config.port}
+''', encoding='utf8')
+	app_config_path = Path(directory) / 'rest.config'
+	app_config_path.write_text(f'''REST_CHAIN="symbol"
+DATABASE_CONFIG_FILEPATH="{db_config_path}"
+SYMBOL_NODE_URL="http://127.0.0.1:3000"
+SYMBOL_NODE_ALLOWED_HOSTS="127.0.0.1:3000"
+SYMBOL_NODE_ALLOW_LOOPBACK="true"
+SYMBOL_NATIVE_MOSAIC_ID="{NATIVE_MOSAIC_ID}"
+SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200
+SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7
+SYMBOL_HARVESTING_MIN_BALANCE={minimum_balance}
+SYMBOL_HARVESTING_MAX_BALANCE={maximum_balance}
+NETWORK_NAME="testnet"
+''', encoding='utf8')
+	return app_config_path
+
+
+def _get_two_app_balance_responses(database_config):
+	with tempfile.TemporaryDirectory() as first_directory, tempfile.TemporaryDirectory() as second_directory:
+		first_config = _write_rest_app_config(first_directory, database_config, 100, 200)
+		second_config = _write_rest_app_config(second_directory, database_config, 300, 400)
+		with rest_settings_env(first_config):
+			first_app = create_app()
+		with rest_settings_env(second_config):
+			second_app = create_app()
+
+		first_database = first_app.extensions['symbol_database']
+		second_database = second_app.extensions['symbol_database']
+		first_database._clock = lambda: NOW  # pylint: disable=protected-access
+		second_database._clock = lambda: NOW  # pylint: disable=protected-access
+		try:
+			first_client = first_app.test_client()
+			second_client = second_app.test_client()
+			return (
+				first_client.get('/api/symbol/account/statistics'),
+				second_client.get('/api/symbol/account/statistics'),
+				first_client.get('/api/symbol/account/statistics'))
+		finally:
+			first_database.close()
+			second_database.close()
+
+
+class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	@staticmethod
 	def _create_database(db_config, native_mosaic_info=NATIVE_MOSAIC_INFO, clock=lambda: NOW):
 		return SymbolDatabase(db_config, native_mosaic_info, clock=clock)
@@ -78,7 +131,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			seed_refresh_run(writer, 'selected-run', entries)
 			with SymbolDatabase(config, NativeMosaicInfo(CUSTOM_MOSAIC_ID, 6), clock=lambda: NOW) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7, HarvestingProperties(100, 200))
+				result = database.get_account_statistics(7200, 7, HarvestingBalanceRange(100, 200))
 
 		# Assert: both bounds and their interior are eligible, without divisibility scaling.
 		self.assertEqual(7, result.total)
@@ -90,7 +143,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			seed_refresh_run(writer, 'selected-run', [create_refresh_entry('selected-run', 1, 0, 1)])
 			with self._create_database(config) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7, HarvestingProperties(0, 200))
+				result = database.get_account_statistics(7200, 7, HarvestingBalanceRange(0, 200))
 
 		# Assert:
 		self.assertEqual(1, result.eligible_for_harvesting)
@@ -107,9 +160,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			writer.upsert_blocks([create_symbol_block(1, timestamp=NOW, beneficiary_address=account_address(1))])
 			with self._create_database(config) as database:
 				facade = SymbolRestFacade(
-					database, SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
-					NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
-					harvesting_properties_loader=lambda _: HarvestingProperties(100, 200))
+					database, NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7, HarvestingBalanceRange(100, 200))
 				app = Flask(__name__)
 				setup_symbol_routes(app, facade)
 				# Act:
@@ -124,6 +175,63 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 		self.assertEqual(50.0, body['harvestingAccountsPercentage'])
 		self.assertEqual([[50.0, 'Harvesting'], [50.0, 'Not harvesting']], body['harvestingAccountsChart'])
 
+	def test_create_app_uses_isolated_harvesting_balance_ranges(self):
+		# Arrange:
+		entries = [
+			create_refresh_entry('selected-run', identity, identity, 1, mosaic_rows=[(NATIVE_MOSAIC_ID, amount)])
+			for identity, amount in [(1, 150), (2, 180), (3, 350)]
+		]
+		with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+			seed_refresh_run(writer, 'selected-run', entries)
+			responses = _get_two_app_balance_responses(config)
+
+		# Assert: creating the second app does not change either response from the first app.
+		self.assertEqual([200, 200, 200], [response.status_code for response in responses])
+		self.assertEqual([2, 1, 2], [response.get_json()['eligibleForHarvesting'] for response in responses])
+
+	def test_statistics_http_rejects_refresh_that_ages_between_requests(self):
+		# Arrange:
+		clock = [NOW]
+		with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+			seed_refresh_run(writer, 'selected-run', create_statistics_entries(), completed_at=NOW)
+			with self._create_database(config, clock=lambda: clock[0]) as database:
+				facade = SymbolRestFacade(
+					database, NATIVE_MOSAIC_INFO, Network.TESTNET, 10, 7, HarvestingBalanceRange(0, 200))
+				app = Flask(__name__)
+				setup_symbol_routes(app, facade)
+				client = app.test_client()
+
+				# Act:
+				first_response = client.get('/api/symbol/account/statistics')
+				clock[0] += timedelta(seconds=11)
+				second_response = client.get('/api/symbol/account/statistics')
+
+		# Assert:
+		self.assertEqual(200, first_response.status_code)
+		self.assertEqual(503, second_response.status_code)
+		self.assertEqual({'status': 503, 'message': 'Symbol backend data is unavailable'}, second_response.get_json())
+
+	def test_statistics_http_rejects_sync_state_that_becomes_unhealthy_between_requests(self):
+		# Arrange:
+		with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+			seed_refresh_run(writer, 'selected-run', create_statistics_entries())
+			with self._create_database(config) as database:
+				facade = SymbolRestFacade(
+					database, NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7, HarvestingBalanceRange(0, 200))
+				app = Flask(__name__)
+				setup_symbol_routes(app, facade)
+				client = app.test_client()
+
+				# Act:
+				first_response = client.get('/api/symbol/account/statistics')
+				writer.upsert_sync_state(create_symbol_sync_state(100, 100, status='unhealthy'))
+				second_response = client.get('/api/symbol/account/statistics')
+
+		# Assert:
+		self.assertEqual(200, first_response.status_code)
+		self.assertEqual(503, second_response.status_code)
+		self.assertEqual({'status': 503, 'message': 'Symbol backend data is unavailable'}, second_response.get_json())
+
 	def test_get_account_statistics_computes_all_snapshot_cohorts_and_bounds_activity(self):
 		# Arrange: account 1 is active+eligible, 2 active-only, 3 eligible-only, and 4 neither.
 		with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
@@ -136,7 +244,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			writer.connection.commit()
 			with self._create_database(config) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
+				result = database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE)
 
 		# Assert: repeated beneficiaries count once; signer-only, outsider, and above-watermark rows do not count.
 		self.assertEqual(4, result.total)
@@ -166,7 +274,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			seed_refresh_run(writer, 'selected-run', entries, native_mosaic_id=CUSTOM_MOSAIC_ID)
 			with self._create_database(config, configured_mosaic_info) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7, HarvestingProperties(10_000_000_000, 49_999_999_999_999))
+				result = database.get_account_statistics(7200, 7, HarvestingBalanceRange(10_000_000_000, 49_999_999_999_999))
 
 		# Assert: the configured mosaic yields two eligible accounts; the default-mosaic decoy yields one.
 		self.assertEqual(3, result.total)
@@ -186,7 +294,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			seed_refresh_run(writer, 'selected-run', entries)
 			with self._create_database(config, configured_mosaic_info) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7, HarvestingProperties(10_000_000, 49_999_999_999))
+				result = database.get_account_statistics(7200, 7, HarvestingBalanceRange(10_000_000, 49_999_999_999))
 
 		# Assert: three accounts meet [10,000,000, 50,000,000,000); six-digit bounds count two instead.
 		self.assertEqual(3, result.eligible_for_harvesting)
@@ -207,7 +315,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			])
 			with self._create_database(config) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 3, HARVESTING_PROPERTIES)
+				result = database.get_account_statistics(7200, 3, HARVESTING_BALANCE_RANGE)
 
 		# Assert: only the two-day beneficiary is active for three days; a seven-day hardcode counts both.
 		self.assertEqual(1, result.harvesting)
@@ -231,7 +339,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 						cursor.execute("SET TIME ZONE 'America/New_York'")
 					connection.commit()
 				# Act:
-				result = database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
+				result = database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE)
 
 		# Assert: UTC storage includes exactly the two boundary-or-later blocks.
 		self.assertEqual(2, result.harvesting)
@@ -248,9 +356,9 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			])
 			with self._create_database(config, clock=lambda: clock[0]) as database:
 				# Act:
-				at_boundary = database.get_account_statistics(7201, 7, HARVESTING_PROPERTIES)
+				at_boundary = database.get_account_statistics(7201, 7, HARVESTING_BALANCE_RANGE)
 				clock[0] += timedelta(seconds=1)
-				after_boundary = database.get_account_statistics(7201, 7, HARVESTING_PROPERTIES)
+				after_boundary = database.get_account_statistics(7201, 7, HARVESTING_BALANCE_RANGE)
 
 		# Assert: the exact cutoff is active, but becomes older after the clock advances.
 		self.assertEqual(2, at_boundary.harvesting)
@@ -270,7 +378,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			seed_refresh_run(writer, 'selected-run', entries)
 			with self._create_database(config) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
+				result = database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE)
 
 		# Assert: tied importance uses address order, including the tie that straddles rank ten.
 		expected_identities = sorted(
@@ -287,7 +395,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			seed_refresh_run(writer, 'empty-run', [])
 			with self._create_database(config) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
+				result = database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE)
 
 		# Assert:
 		self.assertEqual(AccountStatisticsRecord(0, 0, 0, 0, Decimal(0), ()), result)
@@ -298,7 +406,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			with self._create_database(config) as database:
 				# Act:
 				with self.assertRaises(SymbolDataUnavailable) as context:
-					database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
+					database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE)
 
 		# Assert:
 		self.assertEqual('Symbol account refresh data is unavailable', str(context.exception))
@@ -312,7 +420,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 				with self._create_database(config) as database:
 					# Act:
 					with self.assertRaises(SymbolDataUnavailable) as context:
-						database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
+						database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE)
 				# Assert:
 				self.assertEqual('Symbol account refresh data is unavailable', str(context.exception))
 
@@ -324,7 +432,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			with self._create_database(config) as database:
 				# Act:
 				with self.assertRaises(SymbolDataUnavailable) as context:
-					database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
+					database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE)
 
 		# Assert:
 		self.assertEqual('Symbol account refresh data is unavailable', str(context.exception))
@@ -336,7 +444,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 				writer, 'selected-run', create_statistics_entries(), completed_at=NOW - timedelta(seconds=7200))
 			with self._create_database(config) as database:
 				# Act:
-				result = database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
+				result = database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE)
 
 		# Assert:
 		self.assertEqual(4, result.total)
@@ -348,7 +456,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 			with self._create_database(config) as database:
 				# Act:
 				with self.assertRaises(SymbolDataUnavailable) as context:
-					database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
+					database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE)
 
 		# Assert:
 		self.assertEqual('Symbol account data is unavailable', str(context.exception))
@@ -364,7 +472,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 					connection.commit()
 				# Act:
 				with self.assertRaises(PsycopgError):
-					database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
+					database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE)
 
 	def test_get_account_statistics_reads_refresh_run_and_watermark_from_one_snapshot(self):
 		# Arrange:
@@ -406,9 +514,9 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):
 				# Act:
 				old_result = read_during_database_snapshot(
 					database,
-					lambda: database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES),
+					lambda: database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE),
 					switch_successful_run_and_watermark)
-				new_result = database.get_account_statistics(7200, 7, HARVESTING_PROPERTIES)
+				new_result = database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE)
 
 		# Assert:
 		self.assertEqual((2, 1, 1, 1, Decimal('1')), old_result[:5])

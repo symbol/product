@@ -443,7 +443,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 					query.mosaic_id or self.native_mosaic_info.id, page_addresses, account_rows, mosaic_rows,
 					AccountListEnrichment((namespaces, mosaic_aliases), harvesting_by_address, multisig_rows))
 
-	def get_account_statistics(self, max_age_seconds, harvesting_active_window_days, harvesting_properties):
+	def get_account_statistics(self, max_age_seconds, harvesting_active_window_days, harvesting_balance_range):
 		"""Gets account statistics from one successful refresh run and read snapshot."""
 
 		with self.connection() as connection:
@@ -497,8 +497,8 @@ class SymbolDatabase(DatabaseConnectionPool):
 						LIMIT 10
 					) AS top_accounts ON TRUE
 					ORDER BY top_accounts.importance_percentage DESC, top_accounts.address ASC''',
-					(run_id, cutoff, sync_state['last_synced_height'], harvesting_properties.minimum_balance,
-						harvesting_properties.maximum_balance, run_id, self.native_mosaic_info.id))
+					(run_id, cutoff, sync_state['last_synced_height'], harvesting_balance_range.minimum_balance,
+						harvesting_balance_range.maximum_balance, run_id, self.native_mosaic_info.id))
 				rows = cursor.fetchall()
 				top_accounts = tuple((row[5], row[6]) for row in rows if row[6] is not None)
 				return AccountStatisticsRecord(*rows[0][:5], top_accounts)

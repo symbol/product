@@ -3,7 +3,6 @@ from unittest import TestCase
 from unittest.mock import create_autospec
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
-from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from psycopg2 import Error as PsycopgError
 from psycopg2 import OperationalError
 from symbolchain.symbol.Network import Network
@@ -22,12 +21,7 @@ from rest.facade.SymbolRestFacade import SymbolRestFacade
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
 
-NODE_URL = 'http://127.0.0.1:3000'
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
-
-
-def _create_node_config():
-	return SymbolNodeConfiguration.from_url(NODE_URL, allow_loopback=True)
 
 
 class FailingSymbolDatabase:
@@ -263,11 +257,11 @@ class ReceiptReadErrorSymbolDatabase:
 
 
 def _create_configured_facade():
-	return SymbolRestFacade(HealthySymbolDatabase(), _create_node_config(), NATIVE_MOSAIC_INFO, Network.TESTNET)
+	return SymbolRestFacade(HealthySymbolDatabase(), NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 
 def _create_facade_with_database(symbol_db):
-	return SymbolRestFacade(symbol_db, _create_node_config(), NATIVE_MOSAIC_INFO, Network.TESTNET)
+	return SymbolRestFacade(symbol_db, NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 
 class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
@@ -299,32 +293,22 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 
 	def test_rejects_missing_database(self):
 		# Arrange:
-		node_config = _create_node_config()
-
 		# Act + Assert:
 		with self.assertRaisesRegex(
 			ValueError,
 			'Symbol database is required'
 		):
-			SymbolRestFacade(None, node_config, NATIVE_MOSAIC_INFO, Network.TESTNET)
-
-	def test_rejects_missing_node_config(self):
-		# Act + Assert:
-		with self.assertRaisesRegex(
-			ValueError,
-			'Symbol node configuration is required'
-		):
-			SymbolRestFacade(object(), None, NATIVE_MOSAIC_INFO, Network.TESTNET)
+			SymbolRestFacade(None, NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 	def test_rejects_missing_native_mosaic_info(self):
 		# Arrange + Act + Assert:
 		with self.assertRaisesRegex(ValueError, 'Native mosaic information is required'):
-			SymbolRestFacade(object(), _create_node_config(), None, Network.TESTNET)
+			SymbolRestFacade(object(), None, Network.TESTNET)
 
 	def test_rejects_missing_network(self):
 		# Arrange + Act + Assert:
 		with self.assertRaises(ValueError) as exception_info:
-			SymbolRestFacade(object(), _create_node_config(), NATIVE_MOSAIC_INFO, None)
+			SymbolRestFacade(object(), NATIVE_MOSAIC_INFO, None)
 		self.assertIs(ValueError, type(exception_info.exception))
 		self.assertEqual('Symbol network is required', str(exception_info.exception))
 
