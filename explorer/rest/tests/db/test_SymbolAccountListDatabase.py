@@ -7,14 +7,8 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from symbolchain.symbol.Network import Address
 
-from rest.db.SymbolDatabase import (
-	AccountListQuery,
-	AccountListRecord,
-	AccountSortField,
-	MosaicRecord,
-	SymbolDatabase,
-	SymbolDataUnavailable
-)
+from rest.db.SymbolDatabase import AccountListQuery, AccountListRecord, AccountSortField, MosaicRecord, SymbolDatabase
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 
 from ..test.SymbolAccountListTestUtils import (
 	CUSTOM_MOSAIC_ID,

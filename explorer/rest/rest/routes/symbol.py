@@ -21,11 +21,12 @@ from rest.db.SymbolDatabase import (
 	ReceiptQuery,
 	SortOrder,
 	SymbolDatabase,
-	SymbolDataUnavailable,
 	SymbolMosaicAliasNotFound,
 	TransactionQuery
 )
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
+from rest.facade.SymbolTransactionNodeBacking import AiohttpTransport, SymbolNodeNotFound, SymbolTransactionNodeBacking
 from rest.model.common import DatabaseConfig
 from rest.model.symbol.HarvestingBalanceRange import HarvestingBalanceRange
 from rest.model.symbol.validation import SymbolDataInvalid
@@ -66,7 +67,8 @@ HARVESTING_MIN_BALANCE_SETTING = 'SYMBOL_HARVESTING_MIN_BALANCE'
 HARVESTING_MAX_BALANCE_SETTING = 'SYMBOL_HARVESTING_MAX_BALANCE'
 
 
-def setup_symbol_facade(app, clock=None):
+# Validate settings before database allocation; this setup boundary owns both settings and REST dependencies.
+def setup_symbol_facade(app, clock=None):  # pylint: disable=too-many-locals
 	"""Creates the Symbol facade after validating configuration against the UTC setup clock."""
 
 	network = _create_symbol_network(app.config)
@@ -98,11 +100,14 @@ def setup_symbol_facade(app, clock=None):
 		symbol_db_config['host'],
 		symbol_db_config['port']
 	)
+	node_backing = SymbolTransactionNodeBacking(
+		node_config, network, native_mosaic_info, AiohttpTransport(node_config))
+
 	symbol_db = SymbolDatabase(db_params, native_mosaic_info, clock)
 	app.extensions['symbol_database'] = symbol_db
 	return SymbolRestFacade(
-		symbol_db, native_mosaic_info, network, account_refresh_max_age_seconds, harvesting_active_window_days,
-		harvesting_balance_range)
+		symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds, harvesting_active_window_days,
+		harvesting_balance_range=harvesting_balance_range, node_backing=node_backing)
 
 
 def _create_symbol_network(app_config):
@@ -416,6 +421,27 @@ def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
 
 		return jsonify(result)
 
+	_setup_symbol_transaction_detail_route(app, symbol_api_facade)
+
+
+def _setup_symbol_transaction_detail_route(app, symbol_api_facade):
+	@app.route('/api/symbol/transaction/<transaction_hash>')
+	async def api_get_symbol_transaction_detail(transaction_hash):
+		try:
+			transaction_hash = _parse_transaction_hash(transaction_hash)
+			_validate_allowed_query_parameters(frozenset())
+		except ValueError as error:
+			abort(400, error)
+
+		try:
+			result = await symbol_api_facade.get_transaction_detail(transaction_hash)
+		except SymbolNodeNotFound:
+			abort(404)
+		except (PsycopgError, SymbolDataUnavailable, SymbolDataInvalid):
+			return _service_unavailable('Symbol backend data is unavailable')
+
+		return jsonify(result)
+
 
 def _validate_allowed_query_parameters(allowed_parameters):
 	unsupported_parameters = sorted(set(request.args.keys()) - allowed_parameters)
@@ -429,6 +455,13 @@ def _parse_block_height(raw_height):
 		raise ValueError('Height must be greater than or equal to 1')
 
 	return height
+
+
+def _parse_transaction_hash(value):
+	if not re.fullmatch(r'[0-9A-Fa-f]{64}', value or '', re.ASCII):
+		raise ValueError('Hash must be a 64-character hexadecimal string')
+
+	return value.upper()
 
 
 def _parse_receipt_query(height=None):

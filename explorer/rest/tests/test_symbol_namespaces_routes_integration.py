@@ -998,7 +998,7 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 		try:
 			def setup_facade(app):
 				app.extensions['symbol_database'] = database
-				return SymbolRestFacade(database, NATIVE_MOSAIC_INFO, Network.TESTNET)
+				return SymbolRestFacade(database, object(), NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 			def update_related_data():
 				# pylint: disable=protected-access

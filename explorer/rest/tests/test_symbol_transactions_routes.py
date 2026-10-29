@@ -744,6 +744,7 @@ def _create_transaction_test_client(db_config):
 		setup_error_handlers(app)
 		facade = SymbolRestFacade(
 			database,
+			object(),
 			NATIVE_MOSAIC_INFO,
 			Network.TESTNET,
 			None,

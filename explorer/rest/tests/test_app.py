@@ -280,6 +280,7 @@ def test_injected_db_errors_return_503(rest_config_path, url):
 	def setup_facade(_app):
 		return SymbolRestFacade(
 			FailingDatabase(),
+			object(),
 			NativeMosaicInfo('72C0212E67A08BCE', 6),
 			Network.TESTNET)
 
