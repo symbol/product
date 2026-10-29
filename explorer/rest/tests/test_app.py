@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo
-from common.symbol.NodeConfiguration import SymbolNodeConfiguration, SymbolNodeConfigurationError
+from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from flask import Flask, abort, jsonify
 from psycopg2 import OperationalError
@@ -48,6 +48,8 @@ SYMBOL_NODE_ALLOW_PRIVATE="false"
 SYMBOL_NATIVE_MOSAIC_ID="72C0212E67A08BCE"
 SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200
 SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7
+SYMBOL_HARVESTING_MIN_BALANCE=0
+SYMBOL_HARVESTING_MAX_BALANCE=18446744073709551615
 NETWORK_NAME="testnet"
 ''')
 	return app_config_path
@@ -278,7 +280,7 @@ def test_injected_db_errors_return_503(rest_config_path, url):
 	def setup_facade(_app):
 		return SymbolRestFacade(
 			FailingDatabase(),
-			SymbolNodeConfiguration.from_url('http://127.0.0.1:3000', allow_loopback=True),
+			object(),
 			NativeMosaicInfo('72C0212E67A08BCE', 6),
 			Network.TESTNET)
 
@@ -433,6 +435,8 @@ SYMBOL_NODE_ALLOW_LOOPBACK="true"
 SYMBOL_NATIVE_MOSAIC_ID="72C0212E67A08BCE"
 SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200
 SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7
+SYMBOL_HARVESTING_MIN_BALANCE=0
+SYMBOL_HARVESTING_MAX_BALANCE=18446744073709551615
 NETWORK_NAME="testnet"
 ''')
 
@@ -461,6 +465,8 @@ DATABASE_CONFIG_FILEPATH="{db_config_path}"
 SYMBOL_NATIVE_MOSAIC_ID="72C0212E67A08BCE"
 SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200
 SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7
+SYMBOL_HARVESTING_MIN_BALANCE=0
+SYMBOL_HARVESTING_MAX_BALANCE=18446744073709551615
 NETWORK_NAME="testnet"
 ''')
 
@@ -492,6 +498,8 @@ SYMBOL_NODE_ALLOW_LOOPBACK="true"
 SYMBOL_NATIVE_MOSAIC_ID="72C0212E67A08BCE"
 SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200
 SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7
+SYMBOL_HARVESTING_MIN_BALANCE=0
+SYMBOL_HARVESTING_MAX_BALANCE=18446744073709551615
 NETWORK_NAME="testnet"
 ''')
 

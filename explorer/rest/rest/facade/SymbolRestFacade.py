@@ -6,8 +6,9 @@ from zenlog import log
 from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolTransactionNodeBacking import SymbolNodeNotFound, SymbolNodeUnavailable
 from rest.model.format import format_timestamp
-from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountView
+from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountStatisticsView, SymbolAccountView
 from rest.model.symbol.Block import SymbolBlockStatisticsView
+from rest.model.symbol.HarvestingBalanceRange import HarvestingBalanceRange
 from rest.model.symbol.Receipt import SymbolReceiptView
 from rest.model.symbol.Transaction import SymbolTransactionDetailView, SymbolTransactionView
 from rest.model.symbol.validation import SymbolDataInvalid
@@ -21,8 +22,8 @@ class SymbolRestFacade:
 	# The setup boundary owns independently configured REST dependencies.
 	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self, symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds=None,
-		harvesting_active_window_days=None, node_backing=None):
-		"""Creates a Symbol facade with its required database and node dependencies."""
+		harvesting_active_window_days=None, harvesting_balance_range=None, node_backing=None):
+		"""Creates a Symbol facade with its database, node dependencies, and account settings."""
 
 		if symbol_db is None:
 			raise ValueError('Symbol database is required')
@@ -41,6 +42,7 @@ class SymbolRestFacade:
 		self.network = network
 		self.account_refresh_max_age_seconds = account_refresh_max_age_seconds
 		self.harvesting_active_window_days = harvesting_active_window_days
+		self.harvesting_balance_range = harvesting_balance_range
 		self.node_backing = node_backing
 
 	def get_health(self):
@@ -233,3 +235,19 @@ class SymbolRestFacade:
 		accounts = self.symbol_db.get_account_list(
 			query, self.account_refresh_max_age_seconds, self.harvesting_active_window_days)
 		return [SymbolAccountListView(account, self.network, self.native_mosaic_info).to_dict() for account in accounts]
+
+	def get_account_statistics(self):
+		"""Gets aggregate statistics from the configured account refresh snapshot."""
+
+		if self.account_refresh_max_age_seconds is None:
+			raise ValueError('Symbol account refresh max age is required')
+
+		if self.harvesting_active_window_days is None:
+			raise ValueError('Symbol harvesting active window is required')
+
+		if not isinstance(self.harvesting_balance_range, HarvestingBalanceRange):
+			raise ValueError('Symbol harvesting balance range is required')
+
+		statistics = self.symbol_db.get_account_statistics(
+			self.account_refresh_max_age_seconds, self.harvesting_active_window_days, self.harvesting_balance_range)
+		return SymbolAccountStatisticsView(statistics).to_dict()

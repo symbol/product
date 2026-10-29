@@ -28,6 +28,7 @@ from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.facade.SymbolTransactionNodeBacking import AiohttpTransport, SymbolNodeNotFound, SymbolTransactionNodeBacking
 from rest.model.common import DatabaseConfig
+from rest.model.symbol.HarvestingBalanceRange import HarvestingBalanceRange
 from rest.model.symbol.validation import SymbolDataInvalid
 
 BLOCK_LIST_QUERY_PARAMETERS = frozenset(['limit', 'fromHeight', 'sort'])
@@ -62,21 +63,27 @@ MAX_NAMESPACE_DEPTH = 3
 XYM_DIVISIBILITY = 6
 ACCOUNT_REFRESH_MAX_AGE_SETTING = 'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS'
 HARVESTING_ACTIVE_WINDOW_SETTING = 'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS'
+HARVESTING_MIN_BALANCE_SETTING = 'SYMBOL_HARVESTING_MIN_BALANCE'
+HARVESTING_MAX_BALANCE_SETTING = 'SYMBOL_HARVESTING_MAX_BALANCE'
 
 
-def setup_symbol_facade(app, clock=None):
+# Validate settings before database allocation; this setup boundary owns both settings and REST dependencies.
+def setup_symbol_facade(app, clock=None):  # pylint: disable=too-many-locals
 	"""Creates the Symbol facade after validating configuration against the UTC setup clock."""
 
 	network = _create_symbol_network(app.config)
 	native_mosaic_info = _create_native_mosaic_info(app.config)
 	account_refresh_max_age_seconds = _create_required_positive_integer_setting(app.config, ACCOUNT_REFRESH_MAX_AGE_SETTING)
 	harvesting_active_window_days = _create_required_positive_integer_setting(app.config, HARVESTING_ACTIVE_WINDOW_SETTING)
+	harvesting_balance_range = _create_harvesting_balance_range(app.config)
 	# Bound subtraction by datetime.min, not just timedelta's much larger range.
 	# Later UTC request dates can represent at least this many whole days.
 	setup_now = clock() if clock is not None else datetime.now(timezone.utc)
 	max_harvesting_window_days = setup_now.astimezone(timezone.utc).toordinal() - datetime.min.toordinal()
 	if harvesting_active_window_days > max_harvesting_window_days:
 		raise ValueError(f'{HARVESTING_ACTIVE_WINDOW_SETTING} must be at most {max_harvesting_window_days} days at setup')
+	node_config = SymbolNodeConfiguration.from_app_config(app.config)
+	node_config.assert_request_allowed(node_config.base_url)
 
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_CONFIG_FILEPATH'))
@@ -93,8 +100,6 @@ def setup_symbol_facade(app, clock=None):
 		symbol_db_config['host'],
 		symbol_db_config['port']
 	)
-	node_config = SymbolNodeConfiguration.from_app_config(app.config)
-	node_config.assert_request_allowed(node_config.base_url)
 	node_backing = SymbolTransactionNodeBacking(
 		node_config, network, native_mosaic_info, AiohttpTransport(node_config))
 
@@ -102,7 +107,7 @@ def setup_symbol_facade(app, clock=None):
 	app.extensions['symbol_database'] = symbol_db
 	return SymbolRestFacade(
 		symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds, harvesting_active_window_days,
-		node_backing=node_backing)
+		harvesting_balance_range=harvesting_balance_range, node_backing=node_backing)
 
 
 def _create_symbol_network(app_config):
@@ -134,6 +139,22 @@ def _create_required_positive_integer_setting(app_config, setting):
 		raise ValueError(f'{setting} must be a positive integer')
 
 	return value
+
+
+def _create_harvesting_balance_range(app_config):
+	values = {}
+	for setting in (HARVESTING_MIN_BALANCE_SETTING, HARVESTING_MAX_BALANCE_SETTING):
+		if setting not in app_config:
+			raise ValueError(f'{setting} is required')
+		value = app_config[setting]
+		if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 2 ** 64 - 1:
+			raise ValueError(f'{setting} must be an integer between 0 and 2**64 - 1')
+		values[setting] = value
+
+	if values[HARVESTING_MIN_BALANCE_SETTING] > values[HARVESTING_MAX_BALANCE_SETTING]:
+		raise ValueError(f'{HARVESTING_MIN_BALANCE_SETTING} must be at most {HARVESTING_MAX_BALANCE_SETTING}')
+
+	return HarvestingBalanceRange(values[HARVESTING_MIN_BALANCE_SETTING], values[HARVESTING_MAX_BALANCE_SETTING])
 
 
 def setup_symbol_routes(app, symbol_api_facade):
@@ -254,6 +275,18 @@ def _setup_symbol_block_receipts_route(app, symbol_api_facade, run_symbol_query)
 
 
 def _setup_symbol_account_routes(app, symbol_api_facade, run_symbol_query):
+	@app.route('/api/symbol/account/statistics')
+	def api_get_symbol_account_statistics():
+		_validate_allowed_query_parameters(frozenset())
+
+		error, result = run_symbol_query(
+			symbol_api_facade.get_account_statistics,
+			'Failed to get Symbol account statistics')
+		if error:
+			return error
+
+		return jsonify(result)
+
 	@app.route('/api/symbol/accounts')
 	def api_get_symbol_accounts():
 		try:
