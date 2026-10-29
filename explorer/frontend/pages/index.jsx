@@ -24,6 +24,14 @@ import { useCallback } from 'react';
 const RECENT_BLOCK_COUNT = 50;
 
 export const getServerSideProps = async ({ locale }) => {
+	const optionalRequests = Promise.allSettled([
+		fetchTransactionPage({ pageSize: 5, group: TRANSACTION_GROUP.UNCONFIRMED }),
+		fetchMarketData(),
+		fetchTransactionStats(),
+		fetchNodeStats(),
+		fetchTransactionChart({ isPerDay: true }),
+		fetchBlockStats()
+	]);
 	const [blocksPage, latestTransactionsPage] = await Promise.all([
 		fetchBlockPage({ pageSize: RECENT_BLOCK_COUNT }),
 		fetchTransactionPage({ pageSize: 5 })
@@ -35,14 +43,7 @@ export const getServerSideProps = async ({ locale }) => {
 		nodeStatsPromise,
 		transactionChartPromise,
 		blockStatsPromise
-	] = await Promise.allSettled([
-		fetchTransactionPage({ pageSize: 5, group: TRANSACTION_GROUP.UNCONFIRMED }),
-		fetchMarketData(),
-		fetchTransactionStats(),
-		fetchNodeStats(),
-		fetchTransactionChart({ isPerDay: true }),
-		fetchBlockStats()
-	]);
+	] = await optionalRequests;
 
 	return {
 		props: {
