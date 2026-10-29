@@ -48,14 +48,15 @@ def create_statistics_entries(run_id='selected-run'):
 
 
 def _write_rest_app_config(directory, database_config, minimum_balance, maximum_balance):
+	assert '' == database_config.password
 	db_config_path = Path(directory) / 'database.ini'
-	db_config_path.write_text(f'''[symbol_db]
-database = {database_config.database}
-user = {database_config.user}
-password = {database_config.password}
-host = {database_config.host}
-port = {database_config.port}
-''', encoding='utf8')
+	db_config_path.write_text(
+		'[symbol_db]\n'
+		f'database = {database_config.database}\n'
+		f'user = {database_config.user}\n'
+		'password =\n'
+		f'host = {database_config.host}\n'
+		f'port = {database_config.port}\n', encoding='utf8')
 	app_config_path = Path(directory) / 'rest.config'
 	app_config_path.write_text(f'''REST_CHAIN="symbol"
 DATABASE_CONFIG_FILEPATH="{db_config_path}"
