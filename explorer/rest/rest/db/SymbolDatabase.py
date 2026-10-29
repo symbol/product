@@ -439,18 +439,19 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 						SELECT address, address_text, importance_percentage
 						FROM symbol_account_refresh_accounts
 						WHERE refresh_run_id = %s
+					), active_beneficiaries AS MATERIALIZED (
+						SELECT DISTINCT beneficiary_address
+						FROM symbol_blocks
+						WHERE timestamp >= %s
+							AND height <= %s
 					), classified AS (
 						SELECT snapshot.address, snapshot.importance_percentage,
-							EXISTS (
-								SELECT 1
-								FROM symbol_blocks AS blocks
-								WHERE blocks.beneficiary_address = snapshot.address
-									AND blocks.timestamp >= %s
-									AND blocks.height <= %s
-							) AS is_active,
+							active.beneficiary_address IS NOT NULL AS is_active,
 							COALESCE(harvesting_mosaics.amount, 0) >= %s
 								AND COALESCE(harvesting_mosaics.amount, 0) <= %s AS is_eligible
 						FROM snapshot
+						LEFT JOIN active_beneficiaries AS active
+							ON active.beneficiary_address = snapshot.address
 						LEFT JOIN symbol_account_refresh_mosaics AS harvesting_mosaics
 							ON harvesting_mosaics.refresh_run_id = %s
 							AND harvesting_mosaics.address = snapshot.address
