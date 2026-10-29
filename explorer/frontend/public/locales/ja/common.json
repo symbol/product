@@ -190,6 +190,7 @@
 	"message_tooManyTransactionsToVisualize": "トランザクションが多すぎるため表示できません。",
 	"message_noLinkedKeys": "リンクされたキーはありません。",
 	"message_nothingFound": "何も見つかりませんでした。",
+	"message_pendingTransactionsUnavailable": "保留中の取引を読み込めません。",
 	"message_404": "お探しのリソースが見つかりません。",
 	"message_500": "内部サーバーエラー。",
 	"message_healthGenericError": "一時的なサーバーの中断です。",

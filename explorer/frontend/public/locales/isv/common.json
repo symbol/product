@@ -186,6 +186,7 @@
 	"message_tooManyTransactionsToVisualize": "Previše transakcij za vizualizaciju.",
 	"message_noLinkedKeys": "Ne ma svězanyh klučev",
 	"message_nothingFound": "Ničto najdeno.",
+	"message_pendingTransactionsUnavailable": "Nepodtvrđene transakcije ne mogut byti zagruženy.",
 	"message_404": "Ne možem najti resurs kotory iskate.",
 	"message_500": "Interna Greška Servera.",
 	"message_healthGenericError": "Vremennaja serverna narušenosť.",
