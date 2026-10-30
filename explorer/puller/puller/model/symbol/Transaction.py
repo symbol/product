@@ -1,3 +1,4 @@
+from common.symbol.Transaction import parse_message
 from symbolchain.sc import TransactionType
 
 from puller.model.symbol.format import address_from_public_key, camel_case_enum_name, label_for_type, timestamp_from_network_value
@@ -7,12 +8,6 @@ TRANSACTION_TYPE_LABELS = {
 	transaction_type.value: camel_case_enum_name(transaction_type.name)
 	for transaction_type in TransactionType
 }
-MESSAGE_TYPE_LABELS = {
-	0: 'plain',
-	1: 'encrypted',
-	254: 'persistentDelegationHarvesting'
-}
-DELEGATION_MARKER = 'FE2A8061577301E2'
 BODY_EXCLUDED_FIELDS = frozenset({
 	'signerPublicKey',
 	'maxFee',
@@ -157,23 +152,6 @@ def create_transaction_address_rows(transaction_type, transaction, signer_addres
 	return unique_address_rows(rows)
 
 
-def _parse_message(transaction):
-	message = transaction.get('message')
-	if not message:
-		return None, None
-
-	if message.startswith(DELEGATION_MARKER):
-		return MESSAGE_TYPE_LABELS[254], message[len(DELEGATION_MARKER):]
-
-	if '01' == message[:2]:
-		return MESSAGE_TYPE_LABELS[1], message[2:]
-
-	if '00' == message[:2]:
-		return MESSAGE_TYPE_LABELS[0], message[2:]
-
-	return None, message
-
-
 def _target_address(transaction_type, transaction):
 	if transaction_type in (
 		TransactionType.ACCOUNT_METADATA.value,
@@ -222,7 +200,7 @@ def create_transaction_row(item, network, epoch_adjustment_seconds):
 	transaction_type = int(transaction['type'])
 	signer_public_key = bytes.fromhex(transaction['signerPublicKey'])
 	signer_address = address_from_public_key(signer_public_key, network)
-	message_type, message_payload = _parse_message(transaction)
+	message_type, message_payload = parse_message(transaction.get('message'))
 	variable_fields = _top_level_or_embedded_fields(meta, transaction, is_embedded, epoch_adjustment_seconds)
 
 	return {
