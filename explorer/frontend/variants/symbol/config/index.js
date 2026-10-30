@@ -1,20 +1,23 @@
 // Runtime public configuration follows the window.appConfig delivery contract.
-const marketDataUrl = typeof window === 'undefined'
-	? process.env.PUBLIC_SYMBOL_MARKET_DATA_URL
-	: window.appConfig?.PUBLIC_SYMBOL_MARKET_DATA_URL;
-
-let parsedMarketDataUrl;
-try {
-	parsedMarketDataUrl = new URL(marketDataUrl);
-} catch {
-	throw new Error('PUBLIC_SYMBOL_MARKET_DATA_URL must be a valid HTTP(S) URL');
-}
-
-if (!['http:', 'https:'].includes(parsedMarketDataUrl.protocol))
-	throw new Error('PUBLIC_SYMBOL_MARKET_DATA_URL must be a valid HTTP(S) URL');
-
 const config = {
-	PUBLIC_SYMBOL_MARKET_DATA_URL: marketDataUrl
+	PUBLIC_SYMBOL_MARKET_DATA_URL: typeof window === 'undefined'
+		? process.env.PUBLIC_SYMBOL_MARKET_DATA_URL
+		: window.appConfig?.PUBLIC_SYMBOL_MARKET_DATA_URL,
+	PUBLIC_SYMBOL_HISTORICAL_PRICE_URL: typeof window === 'undefined'
+		? process.env.PUBLIC_SYMBOL_HISTORICAL_PRICE_URL
+		: window.appConfig?.PUBLIC_SYMBOL_HISTORICAL_PRICE_URL
 };
+
+Object.entries(config).forEach(([name, value]) => {
+	let url;
+	try {
+		url = new URL(value);
+	} catch {
+		throw new Error(`${name} must be a valid HTTP(S) URL`);
+	}
+
+	if (!['http:', 'https:'].includes(url.protocol))
+		throw new Error(`${name} must be a valid HTTP(S) URL`);
+});
 
 export default config;

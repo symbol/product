@@ -17,7 +17,7 @@ import * as StatsService from '@/app/api/stats';
 import * as TransactionService from '@/app/api/transactions';
 import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
 import { truncateString } from '@/app/utils';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 
 // Mocks
 
@@ -385,4 +385,62 @@ describe('AccountInfo', () => {
 			});
 		});
 	});
+});
+
+describe('AccountInfo daily conversion', () => {
+	it('passes the current date and selected currency to the price service', async () => {
+		// Arrange:
+		const now = jest.spyOn(Date, 'now').mockReturnValue(1793232000000);
+
+		// Act:
+		await act(async () => {
+			render(<AccountInfo accountInfo={cosignatoryAccount} preloadedTransactions={accountTransactionPage.data} />);
+		});
+
+		// Assert:
+		expect(StatsService.fetchPriceByDate).toHaveBeenCalledWith(1793232000000, 'USD');
+		now.mockRestore();
+	});
+
+	it.each(['missing', 'failure'])('renders unavailable for %s prices', async state => {
+		// Arrange:
+		if (state === 'failure')
+			StatsService.fetchPriceByDate.mockRejectedValue(new Error('Network Error'));
+		else
+			StatsService.fetchPriceByDate.mockResolvedValue(null);
+
+		// Act:
+		await act(async () => {
+			render(<AccountInfo accountInfo={cosignatoryAccount} preloadedTransactions={accountTransactionPage.data} />);
+		});
+
+		// Assert:
+		expect(screen.getByText('—')).toBeInTheDocument();
+		expect(screen.queryByText('~0 USD')).not.toBeInTheDocument();
+	});
+
+	it('renders a valid zero price as zero', async () => {
+		// Arrange:
+		StatsService.fetchPriceByDate.mockResolvedValue(0);
+
+		// Act:
+		await act(async () => {
+			render(<AccountInfo accountInfo={cosignatoryAccount} preloadedTransactions={accountTransactionPage.data} />);
+		});
+
+		// Assert:
+		expect(screen.getByText('~0 USD')).toBeInTheDocument();
+	});
+});
+
+it('renders a zero account balance as zero without requesting a price', async () => {
+	// Arrange:
+	const accountInfo = { ...cosignatoryAccount, balance: 0 };
+
+	// Act:
+	await act(async () => { render(<AccountInfo accountInfo={accountInfo} preloadedTransactions={[]} />); });
+
+	// Assert:
+	expect(screen.getByText('~0 USD')).toBeInTheDocument();
+	expect(StatsService.fetchPriceByDate).not.toHaveBeenCalled();
 });

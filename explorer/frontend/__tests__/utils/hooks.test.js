@@ -591,3 +591,88 @@ describe('utils/hooks', () => {
 		});
 	});
 });
+
+describe('daily currency conversion availability', () => {
+	it.each([[0, 0], [null, null], [undefined, null], [NaN, null]])('handles price %s', async (price, expected) => {
+		// Arrange:
+		const fetchPrice = jest.fn().mockResolvedValue(price);
+		let hook;
+
+		// Act:
+		await act(async () => { hook = renderHook(() => useUserCurrencyAmount(fetchPrice, 10, 'USD', 123456)); });
+
+		// Assert:
+		expect(hook.result.current).toBe(expected);
+		expect(fetchPrice).toHaveBeenCalledWith(123456, 'USD');
+	});
+
+	it('leaves a failed request unavailable', async () => {
+		// Arrange:
+		const fetchPrice = jest.fn().mockRejectedValue(new Error('Network Error'));
+		let hook;
+
+		// Act:
+		await act(async () => { hook = renderHook(() => useUserCurrencyAmount(fetchPrice, 10, 'USD')); });
+
+		// Assert:
+		expect(hook.result.current).toBeNull();
+	});
+
+	it.each([null, undefined])('keeps missing amount %s unavailable', async amount => {
+		// Arrange:
+		const fetchPrice = jest.fn();
+
+		// Act:
+		const { result } = renderHook(() => useUserCurrencyAmount(fetchPrice, amount, 'USD'));
+
+		// Assert:
+		expect(result.current).toBeNull();
+		expect(fetchPrice).not.toHaveBeenCalled();
+	});
+
+	it('ignores an old currency response after the selection changes', async () => {
+		// Arrange:
+		let resolveOld;
+		const fetchPrice = jest.fn().mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve; }))
+			.mockResolvedValueOnce(2);
+		const { result, rerender } = renderHook(({ currency }) => useUserCurrencyAmount(fetchPrice, 10, currency, 123456), {
+			initialProps: { currency: 'USD' }
+		});
+
+		// Act:
+		await act(async () => { rerender({ currency: 'JPY' }); });
+		await act(async () => { resolveOld(99); });
+
+		// Assert:
+		expect(result.current).toBe(20);
+	});
+});
+
+describe('daily conversion selection changes', () => {
+	it('clears the previous conversion while a new date is unavailable', async () => {
+		// Arrange:
+		let rejectNew;
+		const fetchPrice = jest.fn().mockResolvedValueOnce(2)
+			.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectNew = reject; }));
+		let hook;
+		await act(async () => {
+			hook = renderHook(({ timestamp }) => useUserCurrencyAmount(fetchPrice, 10, 'USD', timestamp), {
+				initialProps: { timestamp: 123456 }
+			});
+		});
+		// Sanity check: the first date has a completed conversion.
+		expect(hook.result.current).toBe(20);
+
+		// Act:
+		await act(async () => { hook.rerender({ timestamp: 999999 }); });
+
+		// Assert:
+		expect(hook.result.current).toBeNull();
+
+		// Act:
+		await act(async () => { rejectNew(new Error('No historical data')); });
+
+		// Assert:
+		expect(hook.result.current).toBeNull();
+	});
+});

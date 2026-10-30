@@ -9,7 +9,7 @@ import { runGetServerSidePropsTests, runRenderScenarioTests } from '../test-util
 import * as StatsService from '@/app/api/stats';
 import * as TransactionService from '@/app/api/transactions';
 import TransactionInfo, { getServerSideProps } from '@/app/pages/transactions/[hash]';
-import { render } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 
 // Mocks
 
@@ -324,5 +324,45 @@ describe('TransactionInfo', () => {
 
 			runRenderScenarioTests({ renderPage, cases: feesBreakdownCases });
 		});
+	});
+});
+
+describe('TransactionInfo daily conversion', () => {
+	it('passes the transaction timestamp and selected currency to the price service', async () => {
+		// Arrange:
+		const now = jest.spyOn(Date, 'now').mockReturnValue(1793232000000);
+
+		// Act:
+		await act(async () => { render(<TransactionInfo transactionInfo={transferConfirmedTransaction} />); });
+
+		// Assert:
+		expect(StatsService.fetchPriceByDate).toHaveBeenCalledWith(transferConfirmedTransaction.timestamp, 'USD');
+		now.mockRestore();
+	});
+
+	it.each(['missing', 'failure'])('renders unavailable for %s prices', async state => {
+		// Arrange:
+		if (state === 'failure')
+			StatsService.fetchPriceByDate.mockRejectedValue(new Error('Network Error'));
+		else
+			StatsService.fetchPriceByDate.mockResolvedValue(null);
+
+		// Act:
+		await act(async () => { render(<TransactionInfo transactionInfo={transferConfirmedTransaction} />); });
+
+		// Assert:
+		expect(screen.getByText('—')).toBeInTheDocument();
+		expect(screen.queryByText('~0')).not.toBeInTheDocument();
+	});
+
+	it('renders a valid zero price as zero', async () => {
+		// Arrange:
+		StatsService.fetchPriceByDate.mockResolvedValue(0);
+
+		// Act:
+		await act(async () => { render(<TransactionInfo transactionInfo={transferConfirmedTransaction} />); });
+
+		// Assert:
+		expect(screen.getByText('~0')).toBeInTheDocument();
 	});
 });

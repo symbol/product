@@ -42,7 +42,8 @@ const envMock = {
 	PUBLIC_NEM_HISTORICAL_PRICE_URL: 'https://historical.price',
 	PUBLIC_NEM_SUPERNODE_API_URL: 'https://supernode.backend',
 	PUBLIC_NEM_MARKET_DATA_URL: 'https://market.data',
-	PUBLIC_SYMBOL_MARKET_DATA_URL: 'https://symbol.market.data?vs_currency=usd&ids=symbol'
+	PUBLIC_SYMBOL_MARKET_DATA_URL: 'https://symbol.market.data?vs_currency=usd&ids=symbol',
+	PUBLIC_SYMBOL_HISTORICAL_PRICE_URL: 'https://symbol.history'
 };
 process.env = {
 	...originalEnv,

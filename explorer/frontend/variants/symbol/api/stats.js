@@ -40,4 +40,29 @@ export const fetchMarketData = async () => {
 		marketCap: data.market_cap > 0 ? data.market_cap : null
 	};
 };
-export const fetchPriceByDate = () => Promise.resolve(0.031);
+// Match NEM's local-calendar date selection; this is a daily snapshot, not an intraday quote.
+export const fetchPriceByDate = async (timestamp, currency) => {
+	const date = new Date(timestamp);
+	const day = String(date.getDate()).padStart(2, '0');
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const formattedDate = `${day}-${month}-${date.getFullYear()}`;
+	const response = await makeRequest(`${config.PUBLIC_SYMBOL_HISTORICAL_PRICE_URL}?date=${formattedDate}`);
+
+	if (!response || response.id !== 'symbol' || response.symbol !== 'xym')
+		throw new Error('Invalid Symbol historical price response');
+
+	const marketData = response.market_data;
+	const prices = marketData?.current_price;
+	if ((marketData != null && (typeof marketData !== 'object' || Array.isArray(marketData)))
+		|| (prices != null && (typeof prices !== 'object' || Array.isArray(prices))))
+		throw new Error('Invalid Symbol historical price response');
+
+	const price = prices?.[currency.toLowerCase()];
+	if (price == null)
+		return null;
+
+	if (!Number.isFinite(price) || price < 0)
+		throw new Error('Invalid Symbol historical price');
+
+	return price;
+};

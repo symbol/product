@@ -298,16 +298,23 @@ export const useUserCurrencyAmount = (fetchPrice, amount, currency, timestamp) =
 	const [amountInUserCurrency, setAmountInUserCurrency] = useState(null);
 
 	useEffect(() => {
-		const fetchUserCurrencyAmount = async () => {
-			const price = await fetchPrice(timestamp || Date.now(), currency);
+		let isActive = true;
+		setAmountInUserCurrency(amount === 0 ? 0 : null);
 
-			setAmountInUserCurrency(amount * price);
+		const fetchUserCurrencyAmount = async () => {
+			try {
+				const price = await fetchPrice(timestamp || Date.now(), currency);
+				if (isActive && Number.isFinite(price))
+					setAmountInUserCurrency(amount * price);
+			} catch {
+				// Leave the conversion unavailable; never substitute a fixed or different day's price.
+			}
 		};
 
-		if (amount)
+		if (Number.isFinite(amount) && amount !== 0)
 			fetchUserCurrencyAmount();
-		else
-			setAmountInUserCurrency(0);
+
+		return () => { isActive = false; };
 	}, [fetchPrice, amount, currency, timestamp]);
 
 	return amountInUserCurrency;

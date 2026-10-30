@@ -3,7 +3,7 @@ import { marketDataResult } from '../../../../__fixtures__/local/symbol/market-d
 import { runApiRequestTests, runApiResultTests } from '../../../test-utils/api';
 import config from '@/app/config';
 import * as utils from '@/app/utils/server';
-import { fetchMarketData } from '@/app/variants/symbol/api/stats';
+import { fetchMarketData, fetchPriceByDate } from '@/app/variants/symbol/api/stats';
 import axios from 'axios';
 
 jest.mock('axios');
@@ -129,5 +129,95 @@ describe('Symbol fetchMarketData', () => {
 		expect(axios).toHaveBeenCalledWith({
 			method: 'get', url: config.PUBLIC_SYMBOL_MARKET_DATA_URL, data: undefined, timeout: config.PUBLIC_REQUEST_TIMEOUT
 		});
+	});
+});
+
+describe('Symbol fetchPriceByDate', () => {
+	const response = {
+		id: 'symbol', symbol: 'xym',
+		market_data: { current_price: { usd: 0.0025956685909754164, jpy: 0.40968605422230936 } }
+	};
+
+	it.each([
+		['2026-01-02T00:00:00', '02-01-2026', '02-01-2026'],
+		['2026-01-31T23:59:59', '31-01-2026', '31-01-2026'],
+		['2026-02-01T00:00:00', '01-02-2026', '01-02-2026'],
+		['2026-01-01T00:30:00+09:00', '31-12-2025', '01-01-2026'],
+		['2025-12-31T23:30:00-05:00', '01-01-2026', '01-01-2026']
+	])('requests the local-calendar date for %s', async (timestamp, utcDate, tokyoDate) => {
+		// Arrange: explicit expectations for the standard UTC and separate Asia/Tokyo runs.
+		const date = process.env.TZ === 'Asia/Tokyo' ? tokyoDate : utcDate;
+		const request = jest.spyOn(utils, 'makeRequest').mockResolvedValue(response);
+
+		// Act:
+		await fetchPriceByDate(timestamp, 'USD');
+
+		// Assert:
+		expect(request).toHaveBeenCalledWith(`https://symbol.history?date=${date}`);
+	});
+
+	it.each([
+		['USD', 0.0025956685909754164], ['jPy', 0.40968605422230936], ['UNKNOWN', null]
+	])('returns the selected %s price without changing precision', async (currency, expected) => {
+		// Arrange:
+		jest.spyOn(utils, 'makeRequest').mockResolvedValue(response);
+
+		// Act:
+		const result = await fetchPriceByDate('2026-10-29', currency);
+
+		// Assert:
+		expect(result).toBe(expected);
+	});
+
+	it.each([[0, 0], [null, null], [undefined, null]])('handles price %s without substituting a fixed price', async (price, expected) => {
+		// Arrange:
+		jest.spyOn(utils, 'makeRequest').mockResolvedValue({ ...response, market_data: { current_price: { usd: price } } });
+
+		// Act:
+		const result = await fetchPriceByDate('2026-10-29', 'USD');
+
+		// Assert:
+		expect(result).toBe(expected);
+	});
+
+	it('returns unavailable when the daily market data is absent', async () => {
+		// Arrange:
+		jest.spyOn(utils, 'makeRequest').mockResolvedValue({ id: 'symbol', symbol: 'xym' });
+
+		// Act + Assert:
+		await expect(fetchPriceByDate('2026-10-29', 'USD')).resolves.toBeNull();
+	});
+
+	it.each([
+		null, [], {}, { id: 'nem', symbol: 'xem' },
+		{ id: 'symbol', symbol: 'xym', market_data: 'invalid' },
+		{ id: 'symbol', symbol: 'xym', market_data: { current_price: [] } }
+	])('rejects invalid history response %j', async data => {
+		// Arrange:
+		jest.spyOn(utils, 'makeRequest').mockResolvedValue(data);
+
+		// Act + Assert:
+		await expect(fetchPriceByDate('2026-10-29', 'USD')).rejects.toThrow('Invalid Symbol historical price response');
+	});
+
+	it.each(['0.1', true, -1, NaN, Infinity])('rejects invalid history price %s', async price => {
+		// Arrange:
+		jest.spyOn(utils, 'makeRequest').mockResolvedValue({ ...response, market_data: { current_price: { usd: price } } });
+
+		// Act + Assert:
+		await expect(fetchPriceByDate('2026-10-29', 'USD')).rejects.toThrow('Invalid Symbol historical price');
+	});
+
+	it.each([
+		['401', { response: { status: 401 } }], ['429', { response: { status: 429 } }],
+		['503', { response: { status: 503 } }], ['network', new Error('Network Error')],
+		['timeout', Object.assign(new Error('timeout'), { code: 'ECONNABORTED' })]
+	])('propagates %s without fallback or retry', async (name, error) => {
+		// Arrange:
+		axios.mockRejectedValue(error);
+
+		// Act + Assert:
+		await expect(fetchPriceByDate('2026-10-29', 'USD')).rejects.toBe(error);
+		expect(axios).toHaveBeenCalledTimes(1);
 	});
 });
