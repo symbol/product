@@ -12,6 +12,9 @@ export const fetchNodeList = async () => {
 		makeRequest(`${baseURL}/api`)
 	]);
 
+	if (!Array.isArray(peerNodes) || !Array.isArray(apiNodes))
+		throw new TypeError('Invalid Nodewatch node list response');
+
 	return [...peerNodes, ...apiNodes].map(nodeInfoFromDTO);
 };
 

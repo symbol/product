@@ -56,11 +56,23 @@ describe('variants/symbol/api/nodes', () => {
 			// Arrange:
 			const error = new Error('Nodewatch request failed');
 			jest.spyOn(serverUtils, 'makeRequest').mockImplementation(url => (
-				url === failingURL ? Promise.reject(error) : Promise.resolve(emptyNodeListResponse)
+				url === failingURL ? Promise.reject(error) : Promise.resolve(peerNodeListResponse)
 			));
 
 			// Act + Assert:
 			await expect(fetchNodeList()).rejects.toBe(error);
+		});
+
+		it.each([
+			['peer', nodewatchPeerNodesURL],
+			['API-only', nodewatchApiNodesURL]
+		])('rejects a malformed %s node list response', async (description, failingURL) => {
+			// Arrange:
+			jest.spyOn(serverUtils, 'makeRequest').mockImplementation(url =>
+				Promise.resolve(url === failingURL ? '' : peerNodeListResponse));
+
+			// Act + Assert:
+			await expect(fetchNodeList()).rejects.toThrow('Invalid Nodewatch node list response');
 		});
 	});
 });
