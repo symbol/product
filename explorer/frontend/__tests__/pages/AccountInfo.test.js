@@ -11,15 +11,19 @@ import {
 	runTableErrorTest,
 	toggleFilterChip
 } from '../test-utils/page';
-import { describeVariant } from '../test-utils/variants';
+import { describeVariant, itVariant } from '../test-utils/variants';
 import * as AccountService from '@/app/api/accounts';
 import * as StatsService from '@/app/api/stats';
 import * as TransactionService from '@/app/api/transactions';
 import AccountInfo, { getServerSideProps } from '@/app/pages/accounts/[address]';
 import { truncateString } from '@/app/utils';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fetchPriceByDate as fetchSymbolPriceByDate } from '@/app/variants/symbol/api/stats';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import axios from 'axios';
 
 // Mocks
+
+jest.mock('axios');
 
 jest.mock('@/app/api/transactions', () => {
 	return {
@@ -385,4 +389,65 @@ describe('AccountInfo', () => {
 			});
 		});
 	});
+});
+
+describe('AccountInfo daily conversion', () => {
+	it('passes the current date and selected currency to the price service', async () => {
+		// Arrange:
+		const now = jest.spyOn(Date, 'now').mockReturnValue(1793232000000);
+
+		// Act:
+		await act(async () => {
+			render(<AccountInfo accountInfo={cosignatoryAccount} preloadedTransactions={accountTransactionPage.data} />);
+		});
+
+		// Assert:
+		expect(StatsService.fetchPriceByDate).toHaveBeenCalledWith(1793232000000, 'USD');
+		now.mockRestore();
+	});
+
+	it.each(['missing', 'failure'])('renders unavailable for %s prices', async state => {
+		// Arrange:
+		if (state === 'failure')
+			StatsService.fetchPriceByDate.mockRejectedValue(new Error('Network Error'));
+		else
+			StatsService.fetchPriceByDate.mockResolvedValue(null);
+
+		// Act:
+		await act(async () => {
+			render(<AccountInfo accountInfo={cosignatoryAccount} preloadedTransactions={accountTransactionPage.data} />);
+		});
+
+		// Assert:
+		expect(screen.getByText('—')).toBeInTheDocument();
+		expect(screen.queryByText('~0 USD')).not.toBeInTheDocument();
+	});
+
+	itVariant('symbol')('renders a zero API price as unavailable through the Symbol adapter', async () => {
+		// Arrange:
+		StatsService.fetchPriceByDate.mockImplementation(fetchSymbolPriceByDate);
+		axios.mockResolvedValue({ data: { id: 'symbol', symbol: 'xym', market_data: { current_price: { usd: 0 } } } });
+
+		// Act:
+		await act(async () => {
+			render(<AccountInfo accountInfo={cosignatoryAccount} preloadedTransactions={accountTransactionPage.data} />);
+		});
+
+		// Assert:
+		expect(screen.getByText('—')).toBeInTheDocument();
+		expect(screen.queryByText('~0 USD')).not.toBeInTheDocument();
+		expect(axios).toHaveBeenCalledWith(expect.objectContaining({ method: 'get' }));
+	});
+});
+
+it('renders a zero account balance as zero without requesting a price', async () => {
+	// Arrange:
+	const accountInfo = { ...cosignatoryAccount, balance: 0 };
+
+	// Act:
+	await act(async () => { render(<AccountInfo accountInfo={accountInfo} preloadedTransactions={[]} />); });
+
+	// Assert:
+	expect(screen.getByText('~0 USD')).toBeInTheDocument();
+	expect(StatsService.fetchPriceByDate).not.toHaveBeenCalled();
 });
