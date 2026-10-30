@@ -1,6 +1,7 @@
 import { ButtonPlain, CopyButton } from '@/app/components';
 import { $t } from '@/app/localization';
 import { Colors, Sizes, Typography } from '@/app/styles';
+import { mnemonicViewConfig } from '@/brand/config/mnemonic-view-config';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -17,15 +18,18 @@ const PLACEHOLDER_TEXT = Array(PLACEHOLDER_LENGTH).fill('*').join('');
  * @returns {React.ReactNode} MnemonicView component.
  */
 export const MnemonicView = ({ isShown, mnemonic, onShowPress }) => {
+	const { contentColorVariant } = mnemonicViewConfig;
+	const isContentInverse = contentColorVariant === 'inverse';
+	const contentColor = Colors.Semantic.content.primary[contentColorVariant];
 	const placeholder = PLACEHOLDER_TEXT;
 	const mnemonicText = isShown ? mnemonic : placeholder;
-	const styleMnemonicText = [styles.textMnemonic, !isShown && styles.hidden];
+	const styleMnemonicText = [styles.textMnemonic, { color: contentColor }, !isShown && styles.hidden];
 
 	return (
 		<View style={styles.root}>
 			<Text style={styleMnemonicText}>{mnemonicText}</Text>
 			{isShown && (
-				<CopyButton content={mnemonicText} style={styles.copy} />
+				<CopyButton content={mnemonicText} style={styles.copy} inverse={isContentInverse} />
 			)}
 			{!isShown && (
 				<View style={styles.buttonContainer}>
@@ -55,7 +59,6 @@ const styles = StyleSheet.create({
 	textMnemonic: {
 		...Typography.Semantic.mnemonic.m,
 		marginVertical: Sizes.Semantic.spacing.m,
-		color: Colors.Components.control.default.default.text,
 		textAlign: 'center',
 		padding: Sizes.Semantic.spacing.l
 	},

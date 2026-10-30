@@ -158,7 +158,7 @@ export const Components = {
 		text: Semantic.content.primary.default
 	},
 	dataContainer: {
-		background: Semantic.background.primary.default
+		background: Semantic.background.tertiary.darker
 	},
 	divider: {
 		default: {
