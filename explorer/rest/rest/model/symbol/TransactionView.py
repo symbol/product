@@ -7,7 +7,8 @@ from symbolchain.CryptoTypes import PublicKey
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address
 
-from rest.model.symbol.format import format_amount, format_timestamp
+from rest.model.format import format_timestamp
+from rest.model.symbol.format import format_amount
 from rest.model.symbol.validation import SymbolDataInvalid
 
 PAYLOAD_EXCLUDED_FIELDS = frozenset({
