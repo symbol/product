@@ -1,5 +1,5 @@
 import { useDualColorTransition } from '@/app/hooks';
-import { Colors, Sizes, Typography } from '@/app/styles';
+import { Colors, Shadows, Sizes, Typography } from '@/app/styles';
 import React, { useRef } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -128,7 +128,8 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		borderRadius: Sizes.Components.control.borderRadius,
 		borderWidth: CONTAINER_BORDER_WIDTH,
-		borderStyle: 'solid'
+		borderStyle: 'solid',
+		boxShadow: Shadows.Components.control
 	},
 	inputContainer: {
 		alignSelf: 'stretch',

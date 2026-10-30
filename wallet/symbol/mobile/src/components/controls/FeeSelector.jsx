@@ -3,7 +3,7 @@
 
 import { useToggle } from '@/app/hooks';
 import { $t } from '@/app/localization';
-import { Colors, Sizes, Typography } from '@/app/styles';
+import { Colors, Shadows, Sizes, Typography } from '@/app/styles';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -155,7 +155,8 @@ const styles = StyleSheet.create({
 		borderRadius: Sizes.Components.control.borderRadius,
 		borderWidth: CONTAINER_BORDER_WIDTH,
 		borderBottomColor: Colors.Components.control.default.default.border,
-		backgroundColor: Colors.Components.control.default.default.background
+		backgroundColor: Colors.Components.control.default.default.background,
+		boxShadow: Shadows.Components.control
 	},
 	inputContainer: {
 		width: '100%',

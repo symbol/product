@@ -1,6 +1,6 @@
 import { ButtonClose, EmptyListMessage, Icon, StyledText } from '@/app/components';
 import { useColorTransition } from '@/app/hooks';
-import { Colors, Sizes, Typography } from '@/app/styles';
+import { Colors, Shadows, Sizes, Typography } from '@/app/styles';
 import React, { useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -173,7 +173,8 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		borderRadius: Sizes.Components.control.borderRadius,
 		borderWidth: CONTAINER_BORDER_WIDTH,
-		borderStyle: 'solid'
+		borderStyle: 'solid',
+		boxShadow: Shadows.Components.control
 	},
 	inputContainer: {
 		alignSelf: 'stretch',
