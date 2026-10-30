@@ -41,7 +41,8 @@ const envMock = {
 	PUBLIC_NEM_BLOCKCHAIN_UNWIND_LIMIT: 360,
 	PUBLIC_NEM_HISTORICAL_PRICE_URL: 'https://historical.price',
 	PUBLIC_NEM_SUPERNODE_API_URL: 'https://supernode.backend',
-	PUBLIC_NEM_MARKET_DATA_URL: 'https://market.data'
+	PUBLIC_NEM_MARKET_DATA_URL: 'https://market.data',
+	PUBLIC_SYMBOL_MARKET_DATA_URL: 'https://symbol.market.data?vs_currency=usd&ids=symbol'
 };
 process.env = {
 	...originalEnv,

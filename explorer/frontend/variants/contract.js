@@ -85,7 +85,7 @@ export const CONFIG_CONTRACT = {
 		'PUBLIC_NEM_SUPERNODE_API_URL',
 		'PUBLIC_NEM_MARKET_DATA_URL'
 	],
-	symbol: []
+	symbol: ['PUBLIC_SYMBOL_MARKET_DATA_URL']
 };
 
 // Shared stylesheet roots whose $tokens must exist in every variant theme.

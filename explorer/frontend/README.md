@@ -38,7 +38,9 @@ NEXT_PUBLIC_EXPLORER_VARIANT=nem npm run build && NEXT_PUBLIC_EXPLORER_VARIANT=n
 NEXT_PUBLIC_EXPLORER_VARIANT=symbol npm run build && NEXT_PUBLIC_EXPLORER_VARIANT=symbol npm run start
 
 # Per-variant Docker image
-docker build --build-arg NEXT_PUBLIC_EXPLORER_VARIANT=symbol -t explorer-frontend-symbol .
+docker build --build-arg NEXT_PUBLIC_EXPLORER_VARIANT=symbol \
+  --build-arg PUBLIC_SYMBOL_MARKET_DATA_URL='https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=symbol' \
+  -t explorer-frontend-symbol .
 ```
 
 ## Environment Variables
@@ -56,6 +58,15 @@ encodes **visibility** (build-time vs runtime, client vs server) and **scope** (
 
 `NEXT_PUBLIC_*` values are baked into the build. `PUBLIC_*` values stay runtime-configurable and are exposed through `window.appConfig`. Variant-scoped keys should be read only inside `variants/<variant>/`.
 
+
+### Symbol market data
+
+Set `PUBLIC_SYMBOL_MARKET_DATA_URL` to
+`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=symbol`
+when building and running the Symbol variant. The URL is required and validated when configuration loads;
+it is public, so do not include credentials. Home requests it once during SSR using `PUBLIC_REQUEST_TIMEOUT`.
+Missing or zero circulating supply and market cap display as `—`; a failed request displays unavailable market fields
+without a stub fallback or automatic retry. Other variants retain their own market configuration.
 
 ### Known Accounts
 
