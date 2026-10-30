@@ -346,13 +346,13 @@ export const Components = {
 				text: Semantic.content.primary.inverse
 			},
 			pressed: {
-				border: Semantic.role.warning.default,
-				background: Semantic.role.warning.default,
+				border: Semantic.role.secondary.strong,
+				background: Semantic.role.secondary.stronger,
 				text: Semantic.content.primary.inverse
 			},
 			disabled: {
-				border: Semantic.background.tertiary.lighter,
-				background: Semantic.background.tertiary.lighter,
+				border: Semantic.role.secondary.muted,
+				background: Semantic.role.secondary.muted,
 				text: Semantic.content.primary.inverse
 			}
 		},
