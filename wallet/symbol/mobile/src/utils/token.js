@@ -92,7 +92,7 @@ export const getAvailableBalance = (token, nativeTokenId, transactionFeeTiers, s
 	return safeOperationWithRelativeAmounts(
 		divisibility,
 		[tokenTotalBalance, totalFee],
-		(a, b) => a - b
+		(balance, fee) => (balance > fee ? balance - fee : 0n)
 	);
 };
 
