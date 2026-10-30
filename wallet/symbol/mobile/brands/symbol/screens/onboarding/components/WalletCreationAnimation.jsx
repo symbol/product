@@ -1,9 +1,16 @@
 import { Colors, Sizes, Typography } from '@/app/styles';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
+
+/** @typedef {import('@/app/screens/onboarding/types/Onboarding').WalletCreationAnimationProps} WalletCreationAnimationProps */
 
 const ANIMATION_DURATION = 10;
 
+/**
+ * WalletCreationAnimation component. Shows the loading steps in animated way.
+ * @param {WalletCreationAnimationProps} props - Component props.
+ * @returns {React.ReactNode} WalletCreationAnimation component.
+ */
 export const WalletCreationAnimation = props => {
 	const { steps, currentStep } = props;
 	const [timer, setTimer] = useState(null);
@@ -26,7 +33,7 @@ export const WalletCreationAnimation = props => {
 
 	return (
 		<View style={styles.root}>
-			<Image source={require('@/app/assets/images/art/symbol-ascii.png')} style={styles.logo} />
+			<Image source={require('../../../assets/images/art/symbol-ascii.png')} style={styles.logo} />
 			<View style={styles.terminal}>
 				{typedLines.map((line, index) => (
 					<Text style={styles.line} key={'la' + index}>

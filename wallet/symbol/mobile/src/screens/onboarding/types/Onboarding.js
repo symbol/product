@@ -10,6 +10,14 @@
  * @typedef {object} ImportWalletScreenConfig
  * @property {boolean} isLogoVisible - Whether the logo is shown at the top of the screen.
  */
+
+/**
+ * Wallet creation animation props.
+ * @typedef {object} WalletCreationAnimationProps
+ * @property {string[]} steps - List of all steps text.
+ * @property {number} currentStep - Current step number (starting from 1).
+ */
+
 /**
  * Welcome view props.
  * @typedef {object} WelcomeViewProps

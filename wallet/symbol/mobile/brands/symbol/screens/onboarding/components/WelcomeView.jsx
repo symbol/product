@@ -1,4 +1,4 @@
-import { Button, ButtonPlain, Screen, Spacer, Stack, StyledText, SymbolLogo } from '@/app/components';
+import { AppLogo, Button, ButtonPlain, Screen, Spacer, Stack, StyledText } from '@/app/components';
 import { $t } from '@/app/localization';
 import React from 'react';
 
@@ -17,7 +17,7 @@ export const WelcomeView = props => {
 			<Screen.Upper>
 				<Spacer top='xxl'>
 					<Stack>
-						<SymbolLogo />
+						<AppLogo />
 						<StyledText type="title" size="l">
 							{$t('screen_onboarding_title_welcome')}
 						</StyledText>
