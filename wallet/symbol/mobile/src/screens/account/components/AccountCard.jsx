@@ -9,7 +9,7 @@ import {
 	StyledText
 } from '@/app/components';
 import { $t } from '@/app/localization';
-import { Colors, Shadows, Sizes } from '@/app/styles';
+import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { BounceIn } from 'react-native-reanimated';
@@ -163,8 +163,7 @@ const styles = StyleSheet.create({
 		width: '100%',
 		borderRadius: Sizes.Components.accountCard.borderRadius,
 		borderWidth: Sizes.Semantic.borderWidth.m,
-		overflow: 'hidden',
-		boxShadow: Shadows.Components.accountCard
+		overflow: 'hidden'
 	},
 	root__inactive: {
 		backgroundColor: Colors.Components.accountCard.default.default.background,

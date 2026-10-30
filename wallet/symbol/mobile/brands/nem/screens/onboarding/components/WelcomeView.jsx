@@ -10,7 +10,6 @@ const LOGO_SIZE = Sizes.Primitives.spacing1600;
 
 /**
  * WelcomeView component. Represents the Welcome screen for this brand. Used in the common Welcome screen.
- * import wallet buttons.
  * @param {WelcomeViewProps} props - Component props.
  * @returns {React.ReactNode} WelcomeView component.
  */

@@ -1,4 +1,4 @@
-import { Colors, Sizes } from '@/app/styles';
+import { Colors, Shadows, Sizes } from '@/app/styles';
 import { View } from 'react-native';
 
 /** @typedef {import('react')} React */
@@ -19,7 +19,8 @@ export const Card = ({
 }) => {
 	const dynamicStyle = {
 		backgroundColor: color,
-		borderRadius: Sizes.Components.card.borderRadius
+		borderRadius: Sizes.Components.card.borderRadius,
+		boxShadow: Shadows.Components.card
 	};
 
 	return (

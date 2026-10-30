@@ -37,6 +37,7 @@ export const Components = {
 	accountCard: Semantic.none,
 	accountCardWidget: Semantic.none,
 	buttonCircle: Semantic.s.bottom,
+	card: Semantic.none,
 	filter: Semantic.none,
 	header: Semantic.none,
 	listItem: Semantic.none,
