@@ -1,7 +1,4 @@
-import { Primitives as ColorPrimitives } from '../colors/primitives';
-import { Primitives as SizePrimitives } from '../sizes/primitives';
-
-const SHADOW_OFFSET_Y = SizePrimitives.spacing025 / 2; // 1px
+const SHADOW_OFFSET_Y = 1;
 
 /**
  * Creates the top, center and bottom options for shadow level.
@@ -12,7 +9,7 @@ const SHADOW_OFFSET_Y = SizePrimitives.spacing025 / 2; // 1px
  */
 const createDirections = ({ blurRadius, color }) => {
 	const createShadow = offsetY => [{
-		offsetX: SizePrimitives.spacing0,
+		offsetX: 0,
 		offsetY,
 		blurRadius,
 		color
@@ -20,29 +17,21 @@ const createDirections = ({ blurRadius, color }) => {
 
 	return {
 		top: createShadow(-SHADOW_OFFSET_Y),
-		center: createShadow(SizePrimitives.spacing0),
+		center: createShadow(0),
 		bottom: createShadow(SHADOW_OFFSET_Y)
 	};
 };
 
 export const Semantic = {
 	none: [],
-	xs: createDirections({
-		blurRadius: SizePrimitives.spacing025, // 2px
-		color: ColorPrimitives.blackOpacity3
-	}),
-	s: createDirections({
-		blurRadius: SizePrimitives.spacing025, // 2px
-		color: ColorPrimitives.blackOpacity10
-	}),
-	m: createDirections({
-		blurRadius: SizePrimitives.spacing200, // 16px
-		color: ColorPrimitives.blackOpacity3
-	})
+	xs: createDirections({ blurRadius: 2, color: 'rgba(0, 0, 0, 0.033)' }),
+	s: createDirections({ blurRadius: 2, color: 'rgba(0, 0, 0, 0.1)' }),
+	m: createDirections({ blurRadius: 4, color: 'rgba(0, 0, 0, 0.05)' }),
+	l: createDirections({ blurRadius: 8, color: 'rgba(0, 0, 0, 0.1)' })
 };
 
 export const Components = {
-	accountCard: Semantic.s.bottom,
+	accountCard: Semantic.l.bottom,
 	accountCardWidget: Semantic.m.bottom,
 	buttonCircle: Semantic.s.bottom,
 	card: Semantic.m.bottom,
@@ -52,5 +41,5 @@ export const Components = {
 	listItem: Semantic.m.bottom,
 	navigationMenu: Semantic.m.top,
 	settingsListItem: Semantic.m.bottom,
-	widget: Semantic.m.bottom
+	widget: Semantic.l.bottom
 };

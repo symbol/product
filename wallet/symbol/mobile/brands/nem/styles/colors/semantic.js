@@ -92,7 +92,7 @@ export const Components = {
 		background: Semantic.background.tertiary.default
 	},
 	main: {
-		background: Semantic.background.primary.darker,
+		background: Semantic.background.primary.default,
 		text: Semantic.content.primary.default
 	},
 	title: {
@@ -105,10 +105,10 @@ export const Components = {
 		background: Semantic.background.secondary.default
 	},
 	card: {
-		background: Semantic.background.primary.default
+		background: Semantic.background.tertiary.default
 	},
 	cardHeader: {
-		background: Semantic.background.primary.lighter
+		background: Semantic.background.tertiary.default
 	},
 	accountCard: {
 		default: {
@@ -147,14 +147,14 @@ export const Components = {
 	},
 	actionCard: {
 		default: {
-			background: Semantic.background.primary.default
+			background: Semantic.background.tertiary.default
 		},
 		pressed: {
-			background: Semantic.background.primary.lighter
+			background: Semantic.background.tertiary.default
 		}
 	},
 	actionCardContent: {
-		background: Semantic.background.primary.default,
+		background: Semantic.background.tertiary.default,
 		text: Semantic.content.primary.default
 	},
 	dataContainer: {

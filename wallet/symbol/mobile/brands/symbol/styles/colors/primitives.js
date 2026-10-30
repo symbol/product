@@ -12,7 +12,6 @@ export const Primitives = {
 	whiteOpacity70: 'rgba(255, 255, 255, 0.7)',
 	whiteOpacity80: 'rgba(255, 255, 255, 0.8)',
 	whiteOpacity90: 'rgba(255, 255, 255, 0.9)',
-	blackOpacity30: 'rgba(0, 0, 0, 0.3)',
 	blackOpacity70: 'rgba(0, 0, 0, 0.7)',
 
 	purple0: '#F5EAFA',

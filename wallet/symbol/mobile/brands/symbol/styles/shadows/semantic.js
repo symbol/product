@@ -1,7 +1,4 @@
-import { Primitives as ColorPrimitives } from '../colors/primitives';
-import { Primitives as SizePrimitives } from '../sizes/primitives';
-
-const SHADOW_OFFSET_Y = SizePrimitives.spacing025; // 2px
+const SHADOW_OFFSET_Y = 2;
 
 /**
  * Creates the top, center and bottom versions of one shadow level.
@@ -12,7 +9,7 @@ const SHADOW_OFFSET_Y = SizePrimitives.spacing025; // 2px
  */
 const createDirections = ({ blurRadius, color }) => {
 	const createShadow = offsetY => [{
-		offsetX: SizePrimitives.spacing0,
+		offsetX: 0,
 		offsetY,
 		blurRadius,
 		color
@@ -20,17 +17,14 @@ const createDirections = ({ blurRadius, color }) => {
 
 	return {
 		top: createShadow(-SHADOW_OFFSET_Y),
-		center: createShadow(SizePrimitives.spacing0),
+		center: createShadow(0),
 		bottom: createShadow(SHADOW_OFFSET_Y)
 	};
 };
 
 export const Semantic = {
 	none: [],
-	s: createDirections({
-		blurRadius: SizePrimitives.spacing050, // 4px
-		color: ColorPrimitives.blackOpacity30
-	})
+	s: createDirections({ blurRadius: 4, color: 'rgba(0, 0, 0, 0.3)' })
 };
 
 export const Components = {
