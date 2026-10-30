@@ -68,20 +68,24 @@ export const createSymbolTransactionGraphicContent = (transaction, options) => {
 
 	case TransactionType.MOSAIC_GLOBAL_RESTRICTION: {
 		const { restrictionKey, newRestrictionType, newRestrictionValue } = transaction;
+		const restrictionTypeText = $t(`fieldValue_${newRestrictionType}`);
 
 		return {
 			target: { type: TransactionGraphicAvatarType.TOKEN, value: transaction.referenceTokenId },
 			arrowCaptions: [
-				{ type: TransactionGraphicCaptionType.TEXT, value: `${restrictionKey} ${$t(`fieldValue_${newRestrictionType}`)} ${newRestrictionValue}` }
+				{ type: TransactionGraphicCaptionType.TEXT, value: `${restrictionKey} ${restrictionTypeText} ${newRestrictionValue}` }
 			]
 		};
 	}
 
-	case TransactionType.MOSAIC_ADDRESS_RESTRICTION:
+	case TransactionType.MOSAIC_ADDRESS_RESTRICTION: {
+		const { restrictionKey, newRestrictionValue } = transaction;
+
 		return {
 			target: { type: TransactionGraphicAvatarType.ACCOUNT, value: transaction.targetAddress },
-			arrowCaptions: [{ type: TransactionGraphicCaptionType.TEXT, value: `${transaction.restrictionKey} = ${transaction.newRestrictionValue}` }]
+			arrowCaptions: [{ type: TransactionGraphicCaptionType.TEXT, value: `${restrictionKey} = ${newRestrictionValue}` }]
 		};
+	}
 
 	case TransactionType.MULTISIG_ACCOUNT_MODIFICATION:
 		return {
