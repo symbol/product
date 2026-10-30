@@ -10,7 +10,7 @@ const commonPackagesNodeModules = /wallet\/common\/[^/]+\/node_modules\/.*/;
 
 const BRANDS = ['symbol', 'nem'];
 const BRAND_IMPORT = '@/brand';
-const brandsRoot = path.resolve(__dirname, 'brands');
+const brandsRoot = path.resolve(__dirname, 'src/brands');
 
 /**
  * Resolves the brand for this bundle from the "brand" resolver option.
@@ -31,7 +31,7 @@ const getBrand = customResolverOptions => {
 
 /**
  * Custom Metro resolver. Redirects "@/brand" imports to the current brand's folder
- * ("brands/<brand>/..."); every other import falls through to Metro's default resolver.
+ * ("src/brands/<brand>/..."); every other import falls through to Metro's default resolver.
  * @param {object} context Metro resolution context.
  * @param {string} moduleName Requested module path.
  * @param {string|null} platform Target platform.

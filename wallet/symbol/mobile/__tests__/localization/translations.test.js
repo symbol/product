@@ -3,7 +3,7 @@ import path from 'path';
 
 // Checks translation locale files for consistency with the source locale (en.json).
 
-const LOCALES_DIRECTORY = path.join(__dirname, '../../src/localization/locales');
+const LOCALES_DIRECTORY = path.join(__dirname, '../../src/main/localization/locales');
 
 // The list of translated locale files that are tested for key consistency.
 const TRANSLATED_LOCALE_FILES = [];

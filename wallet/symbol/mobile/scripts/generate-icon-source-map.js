@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const brandsRoot = path.resolve(__dirname, '../brands');
+const brandsRoot = path.resolve(__dirname, '../src/brands');
 const ICON_EXTENSION = '.png';
 // Exclude the files with the scale suffixes (e.g. "@2x"). React Native resolves them automatically.
 const SCALE_SUFFIX_PATTERN = /@\d+(\.\d+)?x$/;

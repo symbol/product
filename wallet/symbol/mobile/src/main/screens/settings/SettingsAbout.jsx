@@ -1,5 +1,5 @@
 import { SocialBadges } from './components/SocialBadges';
-import packageJSON from '../../../package.json';
+import packageJSON from '../../../../package.json';
 import { Card, Screen, Spacer, Stack, StyledText, TableView } from '@/app/components';
 import { $t } from '@/app/localization';
 

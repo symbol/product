@@ -56,8 +56,8 @@ module.exports = {
 	transformIgnorePatterns: [`/node_modules/(?!(${transformIgnoreModules.join('|')})/)`],
 	modulePaths: ['<rootDir>'],
 	moduleNameMapper: {
-		'^@/app/(.*)$': '<rootDir>/src/$1',
-		'^@/brand($|/.*)$': '<rootDir>/brands/symbol$1',
+		'^@/app/(.*)$': '<rootDir>/src/main/$1',
+		'^@/brand($|/.*)$': '<rootDir>/src/brands/symbol$1',
 		'^__fixtures__/(.*)$': '<rootDir>/__fixtures__/$1',
 		'^symbol-crypto-wasm-web': '<rootDir>node_modules/symbol-crypto-wasm-node/symbol_crypto_wasm.js',
 		[`\\.(${assetFileExtensions.join('|')})$`]: '<rootDir>/jestAssetTransormer.js'
@@ -69,8 +69,8 @@ module.exports = {
 	coverageProvider: 'v8',
 	coveragePathIgnorePatterns: [
 		'<rootDir>/setupTests.js',
-		'<rootDir>/src/config',
-		'<rootDir>/src/components/layout/Grid.jsx',
+		'<rootDir>/src/main/config',
+		'<rootDir>/src/main/components/layout/Grid.jsx',
 		'<rootDir>/__fixtures__/',
 		'<rootDir>/__mocks__/',
 		'<rootDir>/__tests__/',

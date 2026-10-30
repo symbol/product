@@ -6,24 +6,26 @@ Symbol Mobile Wallet is a React Native application for managing Symbol blockchai
 
 ```
 src/
-├── assets/        # Images, fonts, and other static assets
-├── components/    # Reusable UI components
-├── config/        # App configuration (config.json, knownAccounts.json, ...)
-├── constants/     # Shared constants
-├── hooks/         # Custom React hooks
-├── lib/           # Core application logic
-│   ├── bip39/     # Mnemonic helpers
-│   ├── controller/# Wallet controller wiring for mobile
-│   ├── passcode/  # PIN / biometrics helpers
-│   ├── platform/  # Platform-specific adapters
-│   └── storage/   # Persistent / secure storage adapters and migrations
-├── localization/  # Localization module
-├── screens/       # React Native screens (views)
-├── styles/        # App-wide styles and theme
-├── types/         # Type definitions
-├── utils/         # Utility helpers
-├── App.js         # Root application component
-└── Router.js      # Navigation and routing
+├── brands/            # Per-app code, one folder per app (nem, symbol)
+└── main/              # Shared code
+    ├── assets/        # Images, fonts, and other static assets
+    ├── components/    # Reusable UI components
+    ├── config/        # App configuration (config.json, knownAccounts.json, ...)
+    ├── constants/     # Shared constants
+    ├── hooks/         # Custom React hooks
+    ├── lib/           # Core application logic
+    │   ├── bip39/     # Mnemonic helpers
+    │   ├── controller/# Wallet controller wiring for mobile
+    │   ├── passcode/  # PIN / biometrics helpers
+    │   ├── platform/  # Platform-specific adapters
+    │   └── storage/   # Persistent / secure storage adapters and migrations
+    ├── localization/  # Localization module
+    ├── screens/       # React Native screens (views)
+    ├── styles/        # App-wide styles and theme
+    ├── types/         # Type definitions
+    ├── utils/         # Utility helpers
+    ├── App.js         # Root application component
+    └── Router.js      # Navigation and routing
 
 index.js           # Application entry point
 android/           # Android native project
@@ -52,7 +54,7 @@ This project is part of the Product monorepo.
    ```sh
    npm install
    ```
-5. Configure the application in `src/config/config.json`.
+5. Configure the application in `src/main/config/config.json`.
 
 ## Building for Release
 

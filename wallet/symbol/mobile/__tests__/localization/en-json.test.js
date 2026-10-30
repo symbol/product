@@ -5,8 +5,8 @@ import path from 'path';
 
 // File locations
 
-const LOCALE_FILE_PATH = path.join(__dirname, '../../src/localization/locales/en.json');
-const BRANDS_DIRECTORY = path.join(__dirname, '../../brands');
+const LOCALE_FILE_PATH = path.join(__dirname, '../../src/main/localization/locales/en.json');
+const BRANDS_DIRECTORY = path.join(__dirname, '../../src/brands');
 
 // Each brand's own screens folder
 const brandScreensDirectories = fs.readdirSync(BRANDS_DIRECTORY, { withFileTypes: true })
@@ -14,8 +14,8 @@ const brandScreensDirectories = fs.readdirSync(BRANDS_DIRECTORY, { withFileTypes
 	.map(entry => path.join(BRANDS_DIRECTORY, entry.name, 'screens'))
 	.filter(directory => fs.existsSync(directory));
 
-const SCREENS_DIRECTORIES = [path.join(__dirname, '../../src/screens'), ...brandScreensDirectories];
-const COMPONENT_DIRECTORIES = [path.join(__dirname, '../../src/components'), path.join(__dirname, '../../src/app/components')];
+const SCREENS_DIRECTORIES = [path.join(__dirname, '../../src/main/screens'), ...brandScreensDirectories];
+const COMPONENT_DIRECTORIES = [path.join(__dirname, '../../src/main/components'), path.join(__dirname, '../../src/main/app/components')];
 
 // Element vocabulary (guideline "Elements")
 
@@ -37,7 +37,7 @@ const SECTION_PATTERN = /^[a-z][a-zA-Z0-9]*$/;
 
 const toCamelCase = kebabName => kebabName.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 
-// Screen folders under src/screens and each brands's screens folder ("address-book" -> "addressBook").
+// Screen folders under src/main/screens and each brand's screens folder ("address-book" -> "addressBook").
 const screenFolders = SCREENS_DIRECTORIES
 	.flatMap(directory => fs.readdirSync(directory, { withFileTypes: true }))
 	.filter(entry => entry.isDirectory())

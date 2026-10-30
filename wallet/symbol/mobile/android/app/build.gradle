@@ -141,7 +141,7 @@ android {
  * For each release build, tell the JS bundler which brand to build.
  *
  * The flavor name ("symbol" or "nem") is passed to the bundler as a resolver option,
- * so it loads the matching files from "brands/<brand>".
+ * so it loads the matching files from "src/brands/<brand>".
  *
  * The bundle task is created by the React Native Gradle plugin, once per release
  * variant. Our onVariants callback runs after the plugin's, so the task already
