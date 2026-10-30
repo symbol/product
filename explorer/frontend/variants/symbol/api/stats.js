@@ -46,7 +46,9 @@ export const fetchPriceByDate = async (timestamp, currency) => {
 	const day = String(date.getDate()).padStart(2, '0');
 	const month = String(date.getMonth() + 1).padStart(2, '0');
 	const formattedDate = `${day}-${month}-${date.getFullYear()}`;
-	const response = await makeRequest(`${config.PUBLIC_SYMBOL_HISTORICAL_PRICE_URL}?date=${formattedDate}`);
+	const url = new URL(config.PUBLIC_SYMBOL_HISTORICAL_PRICE_URL);
+	url.searchParams.set('date', formattedDate);
+	const response = await makeRequest(url.toString());
 
 	if (!response || response.id !== 'symbol' || response.symbol !== 'xym')
 		throw new Error('Invalid Symbol historical price response');
@@ -58,7 +60,7 @@ export const fetchPriceByDate = async (timestamp, currency) => {
 		throw new Error('Invalid Symbol historical price response');
 
 	const price = prices?.[currency.toLowerCase()];
-	if (price == null)
+	if (price == null || price === 0)
 		return null;
 
 	if (!Number.isFinite(price) || price < 0)

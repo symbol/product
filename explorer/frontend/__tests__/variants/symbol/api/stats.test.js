@@ -5,6 +5,8 @@ import config from '@/app/config';
 import * as utils from '@/app/utils/server';
 import { fetchMarketData, fetchPriceByDate } from '@/app/variants/symbol/api/stats';
 import axios from 'axios';
+const { execFileSync } = require('child_process');
+const path = require('path');
 
 jest.mock('axios');
 jest.mock('@/app/utils/server', () => ({ __esModule: true, ...jest.requireActual('@/app/utils/server') }));
@@ -139,21 +141,40 @@ describe('Symbol fetchPriceByDate', () => {
 	};
 
 	it.each([
-		['2026-01-02T00:00:00', '02-01-2026', '02-01-2026'],
-		['2026-01-31T23:59:59', '31-01-2026', '31-01-2026'],
-		['2026-02-01T00:00:00', '01-02-2026', '01-02-2026'],
-		['2026-01-01T00:30:00+09:00', '31-12-2025', '01-01-2026'],
-		['2025-12-31T23:30:00-05:00', '01-01-2026', '01-01-2026']
-	])('requests the local-calendar date for %s', async (timestamp, utcDate, tokyoDate) => {
-		// Arrange: explicit expectations for the standard UTC and separate Asia/Tokyo runs.
-		const date = process.env.TZ === 'Asia/Tokyo' ? tokyoDate : utcDate;
+		['2026-01-02T00:00:00', '02-01-2026'],
+		['2026-01-31T23:59:59', '31-01-2026'],
+		['2026-02-01T00:00:00', '01-02-2026'],
+		['2026-01-01T00:30:00+09:00', '31-12-2025'],
+		['2025-12-31T23:30:00-05:00', '01-01-2026']
+	])('requests the local-calendar date for %s', async (timestamp, date) => {
+		// Arrange: the shared Jest suite uses UTC.
 		const request = jest.spyOn(utils, 'makeRequest').mockResolvedValue(response);
 
 		// Act:
 		await fetchPriceByDate(timestamp, 'USD');
 
 		// Assert:
-		expect(request).toHaveBeenCalledWith(`https://symbol.history?date=${date}`);
+		expect(request).toHaveBeenCalledWith(`https://symbol.history/?date=${date}`);
+	});
+
+	it.each([
+		['https://symbol.history?localization=false', 'https://symbol.history/?localization=false&date=29-10-2026'],
+		['https://symbol.history?localization=false&date=01-01-2020', 'https://symbol.history/?localization=false&date=29-10-2026']
+	])('sets the requested date while preserving query parameters in %s', async (configuredUrl, expectedUrl) => {
+		// Arrange:
+		const originalUrl = config.PUBLIC_SYMBOL_HISTORICAL_PRICE_URL;
+		config.PUBLIC_SYMBOL_HISTORICAL_PRICE_URL = configuredUrl;
+		const request = jest.spyOn(utils, 'makeRequest').mockResolvedValue(response);
+
+		try {
+			// Act:
+			await fetchPriceByDate('2026-10-29T12:00:00', 'USD');
+
+			// Assert:
+			expect(request).toHaveBeenCalledWith(expectedUrl);
+		} finally {
+			config.PUBLIC_SYMBOL_HISTORICAL_PRICE_URL = originalUrl;
+		}
 	});
 
 	it.each([
@@ -169,7 +190,11 @@ describe('Symbol fetchPriceByDate', () => {
 		expect(result).toBe(expected);
 	});
 
-	it.each([[0, 0], [null, null], [undefined, null]])('handles price %s without substituting a fixed price', async (price, expected) => {
+	it.each([
+		['returns null for a zero price', 0],
+		['returns null for a null price', null],
+		['returns null for a missing price', undefined]
+	])('%s', async (name, price) => {
 		// Arrange:
 		jest.spyOn(utils, 'makeRequest').mockResolvedValue({ ...response, market_data: { current_price: { usd: price } } });
 
@@ -177,7 +202,7 @@ describe('Symbol fetchPriceByDate', () => {
 		const result = await fetchPriceByDate('2026-10-29', 'USD');
 
 		// Assert:
-		expect(result).toBe(expected);
+		expect(result).toBeNull();
 	});
 
 	it('returns unavailable when the daily market data is absent', async () => {
@@ -221,3 +246,58 @@ describe('Symbol fetchPriceByDate', () => {
 		expect(axios).toHaveBeenCalledTimes(1);
 	});
 });
+
+// A child Jest run uses the existing transforms/mocks, but applies TZ after loading the UTC-pinned config.
+if (process.env.SYMBOL_HISTORY_TEST_TZ) {
+	it('uses the requested timezone for the history year boundary', async () => {
+		// Arrange:
+		const expectations = {
+			UTC: { offset: 0, url: 'https://symbol.history/?date=31-12-2025' },
+			'Asia/Tokyo': { offset: -540, url: 'https://symbol.history/?date=01-01-2026' }
+		};
+		const timezone = process.env.SYMBOL_HISTORY_TEST_TZ;
+		const expected = expectations[timezone];
+		const request = jest.spyOn(utils, 'makeRequest').mockResolvedValue({
+			id: 'symbol', symbol: 'xym', market_data: { current_price: { usd: 2 } }
+		});
+
+		// Sanity check: verify the effective timezone, not just the environment variable.
+		expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe(timezone);
+		expect(new Date('2026-01-01T00:30:00+09:00').getTimezoneOffset()).toBe(expected.offset);
+
+		// Act:
+		await fetchPriceByDate('2026-01-01T00:30:00+09:00', 'USD');
+
+		// Assert:
+		expect(request).toHaveBeenCalledWith(expected.url);
+	});
+} else {
+	it.each(['UTC', 'Asia/Tokyo'])('verifies the history year boundary in a real %s process', timezone => {
+		// Arrange:
+		const root = path.resolve(__dirname, '../../../..');
+		const script = `
+			(async () => {
+				const config = await require('./jest.config.js')();
+				config.modulePathIgnorePatterns = [...(config.modulePathIgnorePatterns || []), '<rootDir>/.next/'];
+				process.env.TZ = process.env.SYMBOL_HISTORY_TEST_TZ;
+				const { results } = await require('jest').runCLI({
+					config: JSON.stringify(config), runInBand: true, watch: false, watchman: false,
+					runTestsByPath: true, _: [process.env.SYMBOL_HISTORY_TEST_FILE],
+					testNamePattern: '^uses the requested timezone for the history year boundary$'
+				}, [process.cwd()]);
+				if (!results.success) process.exit(1);
+				process.stdout.write(JSON.stringify({ passed: results.numPassedTests }));
+			})().catch(error => { console.error(error); process.exit(1); });
+		`;
+
+		// Act:
+		const output = execFileSync(process.execPath, ['-e', script], {
+			cwd: root,
+			env: { ...process.env, SYMBOL_HISTORY_TEST_TZ: timezone, SYMBOL_HISTORY_TEST_FILE: __filename },
+			encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000
+		});
+
+		// Assert: a passing child must actually execute the boundary test.
+		expect(JSON.parse(output)).toStrictEqual({ passed: 1 });
+	}, 25000);
+}

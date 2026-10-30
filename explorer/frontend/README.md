@@ -76,7 +76,8 @@ at build and runtime, separately from the Home market URL. Both URLs are require
 Account balances request the current local-calendar date; transactions use their timestamp's local-calendar date,
 matching NEM's `Date.getDate/getMonth/getFullYear` behavior. The selected currency is read from
 `market_data.current_price`; this is a daily snapshot, not the price at the transaction's exact time.
-Missing prices and failed requests display `—`; valid zero amounts/prices remain zero. No alternate-date or fixed-price fallback is used.
+Missing or zero prices and failed requests display `—`; zero amounts remain valid zero conversions without requesting a price.
+No alternate-date or fixed-price fallback is used.
 
 [CoinGecko's history specification](https://docs.coingecko.com/demo/reference/coins-id-history)
 uses `dd-mm-yyyy` and a 00:00 UTC snapshot, available after the documented publication delay (00:35 UTC).

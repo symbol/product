@@ -10,6 +10,7 @@ import {
 	useUserCurrencyAmount
 } from '@/app/utils/hooks';
 import { act, renderHook, waitFor } from '@testing-library/react';
+const React = require('react');
 
 beforeAll(() => {
 	jest.useFakeTimers();
@@ -593,7 +594,12 @@ describe('utils/hooks', () => {
 });
 
 describe('daily currency conversion availability', () => {
-	it.each([[0, 0], [null, null], [undefined, null], [NaN, null]])('handles price %s', async (price, expected) => {
+	it.each([
+		['converts a numeric zero price to a zero amount', 0, 0],
+		['leaves a null price unavailable', null, null],
+		['leaves a missing price unavailable', undefined, null],
+		['leaves a nonnumeric price unavailable', NaN, null]
+	])('%s', async (name, price, expected) => {
 		// Arrange:
 		const fetchPrice = jest.fn().mockResolvedValue(price);
 		let hook;
@@ -630,21 +636,66 @@ describe('daily currency conversion availability', () => {
 		expect(fetchPrice).not.toHaveBeenCalled();
 	});
 
-	it('ignores an old currency response after the selection changes', async () => {
+	it.each([
+		['currency', { amount: 10, currency: 'JPY', timestamp: 123456 }, 20],
+		['amount', { amount: 7, currency: 'USD', timestamp: 123456 }, 14],
+		['timestamp', { amount: 10, currency: 'USD', timestamp: 999999 }, 20]
+	])('ignores an old response after the %s changes', async (name, nextProps, expectedAmount) => {
 		// Arrange:
 		let resolveOld;
+		let resolveNew;
 		const fetchPrice = jest.fn().mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve; }))
-			.mockResolvedValueOnce(2);
-		const { result, rerender } = renderHook(({ currency }) => useUserCurrencyAmount(fetchPrice, 10, currency, 123456), {
-			initialProps: { currency: 'USD' }
-		});
+			.mockImplementationOnce(() => new Promise(resolve => { resolveNew = resolve; }));
+		const { result, rerender } = renderHook(
+			({ amount, currency, timestamp }) => useUserCurrencyAmount(fetchPrice, amount, currency, timestamp),
+			{ initialProps: { amount: 10, currency: 'USD', timestamp: 123456 } }
+		);
+		act(() => { rerender(nextProps); });
+		await act(async () => { resolveNew(2); });
+
+		// Sanity check: the changed input has a completed conversion before the old response arrives.
+		expect(result.current).toBe(expectedAmount);
+		expect(fetchPrice).toHaveBeenNthCalledWith(2, nextProps.timestamp, nextProps.currency);
 
 		// Act:
-		await act(async () => { rerender({ currency: 'JPY' }); });
 		await act(async () => { resolveOld(99); });
 
 		// Assert:
-		expect(result.current).toBe(20);
+		expect(result.current).toBe(expectedAmount);
+	});
+
+	it('does not call the state setter when a response completes after unmount', async () => {
+		// Arrange: observe setter dispatch while delegating to the real React useState.
+		const { useState } = React;
+		const updates = jest.fn();
+		jest.spyOn(React, 'useState').mockImplementation(initial => {
+			const [value, setValue] = useState(initial);
+
+			return [value, next => { updates(next); setValue(next); }];
+		});
+		let resolvePending;
+		const fetchPrice = jest.fn().mockResolvedValueOnce(2)
+			.mockImplementationOnce(() => new Promise(resolve => { resolvePending = resolve; }));
+		let hook;
+		await act(async () => {
+			hook = renderHook(({ timestamp }) => useUserCurrencyAmount(fetchPrice, 10, 'USD', timestamp), {
+				initialProps: { timestamp: 123456 }
+			});
+		});
+
+		// Sanity check: the observer sees a real completed conversion's setter call.
+		expect(hook.result.current).toBe(20);
+		expect(updates).toHaveBeenCalledWith(20);
+		act(() => { hook.rerender({ timestamp: 999999 }); });
+		expect(fetchPrice).toHaveBeenCalledTimes(2);
+		hook.unmount();
+		updates.mockClear();
+
+		// Act:
+		await act(async () => { resolvePending(99); });
+
+		// Assert: React silently ignoring an update would still be recorded by this observer.
+		expect(updates).not.toHaveBeenCalled();
 	});
 });
 

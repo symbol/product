@@ -52,6 +52,7 @@ describe('Symbol market configuration', () => {
 
 describe('Symbol historical price configuration', () => {
 	it.each([undefined, '', '/relative', 'ftp://example.com'])('rejects missing or invalid history URL %s', value => {
+		// Act + Assert:
 		expect(() => loadServerConfig(value, 'PUBLIC_SYMBOL_HISTORICAL_PRICE_URL'))
 			.toThrow('PUBLIC_SYMBOL_HISTORICAL_PRICE_URL must be a valid HTTP(S) URL');
 	});
