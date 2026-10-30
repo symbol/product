@@ -71,7 +71,7 @@ describe('components/StatusCard', () => {
 
 			// Act:
 			const { getByText } = render(<StatusCard {...props}>
-				<Text>{childText}</Text>
+				{() => <Text>{childText}</Text>}
 			</StatusCard>);
 
 			// Assert:

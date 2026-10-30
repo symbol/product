@@ -1,6 +1,7 @@
-import { EthereumTransactionType, ReceiptType, SymbolTransactionType, TransactionDirection } from '@/app/constants';
+import { EthereumTransactionType, ReceiptType, SymbolTransactionType } from '@/app/constants';
+import { getTransactionTypeInfo } from '@/app/lib/transaction';
 import en from '@/app/localization/locales/en.json';
-import { getErrorMessageLocaleKey, getReceiptTypeLocaleKey, getTransactionTypeLocaleKey } from '@/app/utils';
+import { getErrorMessageLocaleKey, getReceiptTypeLocaleKey } from '@/app/utils';
 import { constants } from 'wallet-common-core';
 
 const { ErrorCode } = constants;
@@ -77,7 +78,7 @@ describe('utils/localization', () => {
 		});
 	});
 
-	describe('getTransactionTypeLocaleKey()', () => {
+	describe('getTransactionTypeInfo() locale key', () => {
 		const transactionTypeLocaleKeys = {
 			symbol: {
 				[SymbolTransactionType.TRANSFER]: 'transactionType_transfer',
@@ -114,12 +115,8 @@ describe('utils/localization', () => {
 				[EthereumTransactionType.ERC_20_APPROVE]: 'transactionType_erc20Approve'
 			}
 		};
-		const transferDirectionLocaleKeys = {
-			[TransactionDirection.INCOMING]: 'transactionType_transferIncoming',
-			[TransactionDirection.OUTGOING]: 'transactionType_transferOutgoing'
-		};
 
-		it('maps every transaction type and direction to its dedicated en.json key', () => {
+		it('maps every transaction type to its dedicated en.json key', () => {
 			// Arrange:
 			// RESERVED is not used, so filter it out.
 			const symbolTypes = Object.values(SymbolTransactionType)
@@ -130,46 +127,31 @@ describe('utils/localization', () => {
 			// Act & Assert:
 			expectMappedLocaleKeys(
 				transactionTypeLocaleKeys.symbol,
-				type => getTransactionTypeLocaleKey(type, CHAIN_NAME_SYMBOL),
+				type => getTransactionTypeInfo(type, CHAIN_NAME_SYMBOL).localeKey,
 				symbolTypes
 			);
 			expectMappedLocaleKeys(
 				transactionTypeLocaleKeys.ethereum,
-				type => getTransactionTypeLocaleKey(type, CHAIN_NAME_ETHEREUM),
+				type => getTransactionTypeInfo(type, CHAIN_NAME_ETHEREUM).localeKey,
 				ethereumTypes
-			);
-			expectMappedLocaleKeys(
-				transferDirectionLocaleKeys,
-				direction => getTransactionTypeLocaleKey(SymbolTransactionType.TRANSFER, CHAIN_NAME_SYMBOL, direction),
-				Object.values(TransactionDirection)
 			);
 		});
 
-		const runGetTransactionTypeLocaleKeyTest = (description, config, expected) => {
+		const runTransactionTypeLocaleKeyTest = (description, config, expected) => {
 			it(description, () => {
 				// Act:
-				const result = getTransactionTypeLocaleKey(config.type, config.chainName, config.direction);
+				const result = getTransactionTypeInfo(config.type, config.chainName).localeKey;
 
 				// Assert:
 				expect(result).toBe(expected.result);
 			});
 		};
 
-		const getTransactionTypeLocaleKeyTests = [
+		const transactionTypeLocaleKeyTests = [
 			{
-				description: 'returns the plain transfer key for a transfer without direction',
+				description: 'returns the plain transfer key for a transfer',
 				config: { type: SymbolTransactionType.TRANSFER, chainName: CHAIN_NAME_SYMBOL },
 				expected: { result: 'transactionType_transfer' }
-			},
-			{
-				description: 'returns the plain transfer key when the direction is unknown',
-				config: { type: SymbolTransactionType.TRANSFER, chainName: CHAIN_NAME_SYMBOL, direction: 'sideways' },
-				expected: { result: 'transactionType_transfer' }
-			},
-			{
-				description: 'ignores the direction for a non-transfer type',
-				config: { type: SymbolTransactionType.HASH_LOCK, chainName: CHAIN_NAME_SYMBOL, direction: TransactionDirection.INCOMING },
-				expected: { result: 'transactionType_hashLock' }
 			},
 			{
 				description: 'returns the unknown-type key for an unmapped type',
@@ -183,8 +165,8 @@ describe('utils/localization', () => {
 			}
 		];
 
-		getTransactionTypeLocaleKeyTests.forEach(test => {
-			runGetTransactionTypeLocaleKeyTest(test.description, test.config, test.expected);
+		transactionTypeLocaleKeyTests.forEach(test => {
+			runTransactionTypeLocaleKeyTest(test.description, test.config, test.expected);
 		});
 	});
 

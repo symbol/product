@@ -1,5 +1,4 @@
-import { SymbolTransactionType } from '@/app/constants';
-import { CaptionType } from '@/app/screens/history/types/TransactionGraphic';
+import { SymbolTransactionType, TransactionGraphicCaptionType } from '@/app/constants';
 import { createTransactionGraphicData } from '@/app/screens/history/utils/transaction-graphic';
 import { mockLocalization } from '__tests__/mock-helpers';
 
@@ -33,7 +32,7 @@ describe('screens/history/utils/transaction-graphic', () => {
 
 				// Assert:
 				expect(result.arrowCaptions).toEqual([
-					{ type: CaptionType.TEXT, value: expected.captionValue }
+					{ type: TransactionGraphicCaptionType.TEXT, value: expected.captionValue }
 				]);
 			});
 		};
