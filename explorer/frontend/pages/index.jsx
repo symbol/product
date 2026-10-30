@@ -24,25 +24,32 @@ import { useCallback } from 'react';
 const RECENT_BLOCK_COUNT = 50;
 
 export const getServerSideProps = async ({ locale }) => {
-	const [blocksPage, latestTransactionsPage, pendingTransactionsPage] = await Promise.all([
-		fetchBlockPage({ pageSize: RECENT_BLOCK_COUNT }),
-		fetchTransactionPage({ pageSize: 5 }),
-		fetchTransactionPage({ pageSize: 5, group: TRANSACTION_GROUP.UNCONFIRMED })
+	const optionalRequests = Promise.allSettled([
+		fetchTransactionPage({ pageSize: 5, group: TRANSACTION_GROUP.UNCONFIRMED }),
+		fetchMarketData(),
+		fetchTransactionStats(),
+		fetchNodeStats(),
+		fetchTransactionChart({ isPerDay: true }),
+		fetchBlockStats()
 	]);
-	const [marketDataPromise, transactionStatsPromise, nodeStatsPromise, transactionChartPromise, blockStatsPromise] =
-		await Promise.allSettled([
-			fetchMarketData(),
-			fetchTransactionStats(),
-			fetchNodeStats(),
-			fetchTransactionChart({ isPerDay: true }),
-			fetchBlockStats()
-		]);
+	const [blocksPage, latestTransactionsPage] = await Promise.all([
+		fetchBlockPage({ pageSize: RECENT_BLOCK_COUNT }),
+		fetchTransactionPage({ pageSize: 5 })
+	]);
+	const [
+		pendingTransactionsPromise,
+		marketDataPromise,
+		transactionStatsPromise,
+		nodeStatsPromise,
+		transactionChartPromise,
+		blockStatsPromise
+	] = await optionalRequests;
 
 	return {
 		props: {
 			preloadedBlocks: blocksPage,
 			preloadedLatestTransactions: latestTransactionsPage,
-			preloadedPendingTransactions: pendingTransactionsPage,
+			preloadedPendingTransactions: pendingTransactionsPromise.value || null,
 			marketData: marketDataPromise.value || {},
 			transactionStats: transactionStatsPromise.value || {},
 			nodeStats: nodeStatsPromise.value || {},
@@ -136,7 +143,11 @@ const Home = ({
 					<RecentTransactions data={latestTransactions.data} />
 				</Section>
 				<Section title={t('section_pendingTransactions')}>
-					<RecentTransactions data={pendingTransactions.data} blockTime={blockTime} />
+					<RecentTransactions
+						data={pendingTransactions?.data || []}
+						blockTime={blockTime}
+						errorMessage={pendingTransactions ? null : t('message_pendingTransactionsUnavailable')}
+					/>
 				</Section>
 			</div>
 		</div>
