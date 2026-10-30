@@ -3,12 +3,12 @@ import React from 'react';
 import { Image, StyleSheet } from 'react-native';
 
 /**
- * SymbolLogo component. A component displaying the Symbol logo image.
- * @returns {React.ReactNode} SymbolLogo component.
+ * AppLogo component. Displays the current brand app logo.
+ * @returns {React.ReactNode} AppLogo component.
  */
-export const SymbolLogo = () => {
+export const AppLogo = () => {
 	return (
-		<Image source={require('@/app/assets/images/logos/symbol-full.png')} style={styles.logo} />
+		<Image source={require('@/brand/assets/images/logos/app-logo.png')} style={styles.logo} />
 	);
 };
 

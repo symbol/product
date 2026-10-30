@@ -1,5 +1,6 @@
 import { generateMnemonic } from './utils/mnemonic';
 import {
+	AppLogo,
 	Button,
 	ButtonClose,
 	Checkbox,
@@ -10,7 +11,6 @@ import {
 	Spacer,
 	Stack,
 	StyledText,
-	SymbolLogo,
 	TextBox
 } from '@/app/components';
 import { MAX_SEED_ACCOUNTS_PER_NETWORK } from '@/app/constants';
@@ -18,8 +18,9 @@ import { useAsyncManager, usePasscode, useToggle, useValidation, useWalletContro
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { Steps } from '@/app/screens/onboarding/components/Steps';
-import { WalletCreationAnimation } from '@/app/screens/onboarding/components/WalletCreationAnimation';
 import { validateAccountName, validateRequired } from '@/app/utils';
+import { createWalletScreenConfig } from '@/brand/config/create-wallet-screen-config';
+import { WalletCreationAnimation } from '@/brand/screens/onboarding/components/WalletCreationAnimation';
 import { useEffect, useState } from 'react';
 
 const STEPS_COUNT = 2;
@@ -89,6 +90,10 @@ export const CreateWallet = () => {
 		setMnemonic(generatedMnemonic);
 	}, []);
 
+	// Header visibility
+	const { isLogoVisible, isStepsVisible } = createWalletScreenConfig;
+	const isHeaderVisible = isLogoVisible || isStepsVisible;
+
 	// Button disabled states
 	const isStep1ButtonDisabled = !!nameErrorMessage;
 	const isStep2ButtonDisabled = !isRiskAccepted;
@@ -104,12 +109,18 @@ export const CreateWallet = () => {
 						<ButtonClose text={$t('button_cancel')} onPress={Router.goBack} />
 					</FlexContainer>
 					<Stack gap="xl">
-						<Stack>
-							<FlexContainer center>
-								<SymbolLogo />
-							</FlexContainer>
-							<Steps stepsCount={STEPS_COUNT} currentStep={step} />
-						</Stack>
+						{isHeaderVisible && (
+							<Stack>
+								{isLogoVisible && (
+									<FlexContainer center>
+										<AppLogo />
+									</FlexContainer>
+								)}
+								{isStepsVisible && (
+									<Steps stepsCount={STEPS_COUNT} currentStep={step} />
+								)}
+							</Stack>
+						)}
 
 						{step === 1 && (
 							<Stack>

@@ -1,11 +1,12 @@
-import { Button, ButtonClose, FlexContainer, PasscodeView, Screen, Spacer, Stack, StyledText, SymbolLogo } from '@/app/components';
+import { AppLogo, Button, ButtonClose, FlexContainer, PasscodeView, Screen, Spacer, Stack, StyledText } from '@/app/components';
 import { MAX_SEED_ACCOUNTS_PER_NETWORK } from '@/app/constants';
 import { useAsyncManager, usePasscode, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { MnemonicInput } from '@/app/screens/onboarding/components/MnemonicInput';
-import { WalletCreationAnimation } from '@/app/screens/onboarding/components/WalletCreationAnimation';
+import { importWalletScreenConfig } from '@/brand/config/import-wallet-screen-config';
+import { WalletCreationAnimation } from '@/brand/screens/onboarding/components/WalletCreationAnimation';
 import { useState } from 'react';
 
 export const ImportWallet = () => {
@@ -55,6 +56,9 @@ export const ImportWallet = () => {
 		passcode.show();
 	};
 
+	// Logo visibility
+	const { isLogoVisible } = importWalletScreenConfig;
+
 	const isButtonDisabled = !isMnemonicValid;
 
 	return (
@@ -68,9 +72,11 @@ export const ImportWallet = () => {
 						<ButtonClose text={$t('button_cancel')} onPress={Router.goBack} />
 					</FlexContainer>
 					<Stack>
-						<FlexContainer center>
-							<SymbolLogo />
-						</FlexContainer>
+						{isLogoVisible && (
+							<FlexContainer center>
+								<AppLogo />
+							</FlexContainer>
+						)}
 						<StyledText type="title">
 							{$t('screen_onboarding_importWallet_title_intro')}
 						</StyledText>
