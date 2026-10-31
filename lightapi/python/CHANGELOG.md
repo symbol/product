@@ -5,6 +5,13 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 
 ## next
 
+## [0.0.13] - 30 Oct-2026
+
+### Added
+- Added new endpoints to the SymbolConnector
+  - transactions/unconfirmed
+  - transactions/partial
+
 ## [0.0.12] - 14 Oct-2026
 
 ### Added
@@ -82,6 +89,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - treat all HTTP statuses less than 400 as success instead of only HTTP statuses 200 and 404 codes
 - OpenSSL libraries names are different on Windows which cause linking to fail; update to select the correct library name.
 
+[0.0.13]: https://github.com/symbol/product/compare/lightapi/python/v0.0.12...lightapi/python/v0.0.13
 [0.0.12]: https://github.com/symbol/product/compare/lightapi/python/v0.0.11...lightapi/python/v0.0.12
 [0.0.11]: https://github.com/symbol/product/compare/lightapi/python/v0.0.10...lightapi/python/v0.0.11
 [0.0.10]: https://github.com/symbol/product/compare/lightapi/python/v0.0.9...lightapi/python/v0.0.10

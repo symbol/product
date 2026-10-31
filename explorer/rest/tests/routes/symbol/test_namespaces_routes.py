@@ -5,7 +5,8 @@ from flask import Flask
 from symbolchain.symbol.Network import Address
 
 from rest import setup_error_handlers
-from rest.db.SymbolDatabase import NamespaceQuery, SortOrder, SymbolDataUnavailable
+from rest.db.SymbolDatabase import NamespaceQuery, SortOrder
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.routes.symbol import setup_symbol_routes
 

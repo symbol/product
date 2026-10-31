@@ -1,3 +1,6 @@
+# pylint: disable=too-many-lines
+
+from datetime import datetime, timedelta, timezone
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
@@ -5,7 +8,8 @@ from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_blo
 from psycopg2 import Error as PsycopgError
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 
-from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDatabase, SymbolDataUnavailable
+from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDatabase
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_receipt, create_symbol_sync_state
 from ..test.SymbolDatabaseTestUtils import (
@@ -46,6 +50,142 @@ class SymbolDatabaseConnectionTest(TestCase):
 
 
 class SymbolDatabaseBlocksTest(TestCase):  # pylint: disable=too-many-public-methods
+	def _assert_block_statistics_unavailable(self, blocks, sync_state):
+		# Arrange:
+		with symbol_test_database(sync_state, blocks) as (db_config, _puller_database):
+			with SymbolDatabase(db_config) as database:
+				# Act:
+				with self.assertRaises(SymbolDataUnavailable) as error:
+					database.get_block_statistics()
+
+		# Assert:
+		self.assertEqual('Symbol block statistics are unavailable', str(error.exception))
+
+	def test_get_block_statistics_excludes_rows_above_readable_watermark(self):
+		# Arrange:
+		base_timestamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
+		blocks = [create_symbol_block(height, timestamp=base_timestamp + timedelta(seconds=height)) for height in range(1, 5)]
+		sync_state = create_symbol_sync_state(last_synced_height=3, finalized_height=1, chain_height=5)
+
+		# Act:
+		result = _get_block_statistics(blocks, sync_state)
+
+		# Assert:
+		self.assertEqual([1, 2, 3], [block.height for block in result])
+		self.assertEqual([1000000, 2000000, 3000000], [block.total_fee for block in result])
+
+	def test_get_block_statistics_reads_241_rows_through_watermark_excluding_higher_rows(self):
+		# Arrange:
+		base_timestamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
+		blocks = [
+			_create_symbol_statistics_block(height, base_timestamp + timedelta(seconds=height))
+			for height in range(1, 244)
+		]
+
+		# Act:
+		result = _get_block_statistics(
+			blocks, create_symbol_sync_state(last_synced_height=242, finalized_height=1))
+
+		# Assert:
+		self.assertEqual(list(range(2, 243)), [block.height for block in result])
+		self.assertEqual(241, len(result))
+
+	def test_get_block_statistics_reads_block_values_from_same_snapshot(self):
+		# Arrange:
+		old_fee = 1000000
+		old_difficulty = 12345678900000
+		new_fee = 2000000
+		new_difficulty = 98765432100000
+		block = create_symbol_block(1, total_fee=old_fee, difficulty=old_difficulty)
+		with symbol_test_database(
+			create_symbol_sync_state(last_synced_height=1, finalized_height=1), [block]) as (db_config, _puller_database):
+			database = PausingAfterSyncStateReadSymbolDatabase(db_config)
+			try:
+				# Act:
+				old_snapshot = read_during_database_snapshot(
+					database,
+					database.get_block_statistics,
+					lambda: _update_block_statistics(db_config, new_fee, new_difficulty))
+				with SymbolDatabase(db_config) as next_database:
+					new_snapshot = next_database.get_block_statistics()
+			finally:
+				database.close()
+
+		# Assert:
+		self.assertEqual([(1, old_fee, old_difficulty)], [
+			(record.height, record.total_fee, record.difficulty) for record in old_snapshot])
+		self.assertEqual([(1, new_fee, new_difficulty)], [
+			(record.height, record.total_fee, record.difficulty) for record in new_snapshot])
+
+	def test_get_block_statistics_rejects_empty_block_window(self):
+		# Arrange:
+		blocks = []
+		sync_state = create_symbol_sync_state(last_synced_height=3, finalized_height=1)
+		self._assert_block_statistics_unavailable(blocks, sync_state)
+
+	def test_get_block_statistics_rejects_gap_within_block_window(self):
+		# Arrange:
+		blocks = [create_symbol_block(1), create_symbol_block(3)]
+		sync_state = create_symbol_sync_state(last_synced_height=3, finalized_height=1)
+		self._assert_block_statistics_unavailable(blocks, sync_state)
+
+	def test_get_block_statistics_rejects_missing_predecessor_before_time_window(self):
+		# Arrange:
+		base_timestamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
+		# Keep genesis and the 240 fee/difficulty rows, leaving only required height 2 absent.
+		blocks = [
+			_create_symbol_statistics_block(height, base_timestamp + timedelta(seconds=height))
+			for height in [1, *range(3, 243)]
+		]
+		sync_state = create_symbol_sync_state(last_synced_height=242, finalized_height=1)
+		self._assert_block_statistics_unavailable(blocks, sync_state)
+
+	def test_get_block_statistics_returns_single_genesis_row(self):
+		# Arrange:
+		blocks = [create_symbol_block(1)]
+		sync_state = create_symbol_sync_state(last_synced_height=1, finalized_height=1)
+
+		# Act:
+		result = _get_block_statistics(blocks, sync_state)
+
+		# Assert:
+		self.assertEqual([1], [block.height for block in result])
+
+	def test_get_block_statistics_caps_dirty_state_at_safe_height(self):
+		# Arrange:
+		blocks = [create_symbol_block(height) for height in range(1, 5)]
+		sync_state = create_symbol_sync_state(
+			last_synced_height=4, finalized_height=1, dirty_state_from_height=3)
+
+		# Act:
+		result = _get_block_statistics(blocks, sync_state)
+
+		# Assert:
+		self.assertEqual([1, 2], [block.height for block in result])
+
+	def test_get_block_statistics_caps_repairing_state_at_safe_height(self):
+		# Arrange:
+		blocks = [create_symbol_block(height) for height in range(1, 5)]
+		sync_state = create_symbol_sync_state(last_synced_height=2, finalized_height=1, status='repairing')
+
+		# Act:
+		result = _get_block_statistics(blocks, sync_state)
+
+		# Assert:
+		self.assertEqual([1, 2], [block.height for block in result])
+
+	def test_get_block_statistics_rejects_missing_sync_state(self):
+		# Arrange:
+		blocks = [create_symbol_block(1)]
+		sync_state = None
+		self._assert_block_statistics_unavailable(blocks, sync_state)
+
+	def test_get_block_statistics_rejects_unhealthy_sync_state(self):
+		# Arrange:
+		blocks = [create_symbol_block(height) for height in range(1, 4)]
+		sync_state = create_symbol_sync_state(last_synced_height=3, finalized_height=1, status='unhealthy')
+		self._assert_block_statistics_unavailable(blocks, sync_state)
+
 	def test_get_blocks_returns_unavailable_when_ascending_range_crosses_dirty_boundary(self):
 		# Arrange + Act + Assert:
 		with self.assertRaises(SymbolDataUnavailable):
@@ -829,6 +969,26 @@ def _get_block(blocks, sync_state, height):
 		lambda database: database.get_block(height))
 
 
+def _get_block_statistics(blocks, sync_state):
+	return _query_symbol_database(
+		blocks,
+		sync_state,
+		lambda database: database.get_block_statistics())
+
+
+def _create_symbol_statistics_block(height, timestamp):
+	block = create_symbol_block(1, timestamp=timestamp)
+	block.update({
+		'height': height,
+		'hash': height.to_bytes(32, 'big'),
+		'previous_hash': (height - 1).to_bytes(32, 'big'),
+		'total_fee': height * 1000000,
+		'difficulty': 1000000 + height
+	})
+
+	return block
+
+
 def _query_symbol_receipts(receipts, sync_state, query, mosaics=None):
 	receipts_by_height = group_records_by_height(receipts)
 	heights = sorted(receipts_by_height)
@@ -862,6 +1022,18 @@ def _query_symbol_database_during_update(query_database):
 				lambda: _update_state_and_blocks(db_config))
 		finally:
 			database.close()
+
+
+def _update_block_statistics(db_config, total_fee, difficulty):
+	with PullerSymbolDatabase(db_config) as puller_database:
+		cursor = puller_database.connection.cursor()
+		try:
+			cursor.execute(
+				'UPDATE symbol_blocks SET total_fee = %s, difficulty = %s WHERE height = %s',
+				(total_fee, difficulty, 1))
+			puller_database.connection.commit()
+		finally:
+			cursor.close()
 
 
 def _update_state_and_blocks(db_config):

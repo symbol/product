@@ -4,7 +4,8 @@ from unittest import TestCase
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from symbolchain.sc import TransactionType
 
-from rest.db.SymbolDatabase import TransactionMosaicRecord, TransactionRecord
+from rest.db.SymbolDatabase import TransactionRecord
+from rest.db.SymbolDatabaseCommon import TransactionMosaicRecord
 from rest.model.symbol.Transaction import SymbolTransactionView
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)

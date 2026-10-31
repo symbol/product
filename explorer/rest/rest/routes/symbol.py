@@ -1,6 +1,6 @@
 import configparser
 import re
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from common.symbol.NativeMosaic import create_native_mosaic_info
@@ -21,15 +21,18 @@ from rest.db.SymbolDatabase import (
 	ReceiptQuery,
 	SortOrder,
 	SymbolDatabase,
-	SymbolDataUnavailable,
 	SymbolMosaicAliasNotFound,
 	TransactionQuery
 )
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
+from rest.facade.SymbolTransactionNodeBacking import AiohttpTransport, SymbolNodeNotFound, SymbolTransactionNodeBacking
 from rest.model.common import DatabaseConfig
+from rest.model.symbol.HarvestingBalanceRange import HarvestingBalanceRange
 from rest.model.symbol.validation import SymbolDataInvalid
 
 BLOCK_LIST_QUERY_PARAMETERS = frozenset(['limit', 'fromHeight', 'sort'])
+BLOCK_STATISTICS_QUERY_PARAMETERS = frozenset()
 MOSAIC_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort'])
 MOSAIC_MAX_OFFSET = 100000
 RECEIPT_QUERY_PARAMETERS = frozenset([
@@ -40,6 +43,7 @@ TRANSACTION_QUERY_PARAMETERS = frozenset([
 	'limit', 'offset', 'height', 'transactionTypes', 'address', 'senderAddress', 'signerPublicKey', 'recipientAddress',
 	'mosaic', 'embedded', 'order'
 ])
+TRANSACTION_STATISTICS_QUERY_PARAMETERS = frozenset()
 NAMESPACE_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort', 'aliasType', 'registrationType', 'ownerAddress'])
 NAMESPACE_MAX_OFFSET = 100000
 NAMESPACE_ALIAS_TYPES = {0: 'none', 1: 'mosaic', 2: 'address'}
@@ -60,21 +64,27 @@ MAX_NAMESPACE_DEPTH = 3
 XYM_DIVISIBILITY = 6
 ACCOUNT_REFRESH_MAX_AGE_SETTING = 'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS'
 HARVESTING_ACTIVE_WINDOW_SETTING = 'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS'
+HARVESTING_MIN_BALANCE_SETTING = 'SYMBOL_HARVESTING_MIN_BALANCE'
+HARVESTING_MAX_BALANCE_SETTING = 'SYMBOL_HARVESTING_MAX_BALANCE'
 
 
-def setup_symbol_facade(app, clock=None):
+# Validate settings before database allocation; this setup boundary owns both settings and REST dependencies.
+def setup_symbol_facade(app, clock=None):  # pylint: disable=too-many-locals
 	"""Creates the Symbol facade after validating configuration against the UTC setup clock."""
 
 	network = _create_symbol_network(app.config)
 	native_mosaic_info = _create_native_mosaic_info(app.config)
 	account_refresh_max_age_seconds = _create_required_positive_integer_setting(app.config, ACCOUNT_REFRESH_MAX_AGE_SETTING)
 	harvesting_active_window_days = _create_required_positive_integer_setting(app.config, HARVESTING_ACTIVE_WINDOW_SETTING)
+	harvesting_balance_range = _create_harvesting_balance_range(app.config)
 	# Bound subtraction by datetime.min, not just timedelta's much larger range.
 	# Later UTC request dates can represent at least this many whole days.
 	setup_now = clock() if clock is not None else datetime.now(timezone.utc)
 	max_harvesting_window_days = setup_now.astimezone(timezone.utc).toordinal() - datetime.min.toordinal()
 	if harvesting_active_window_days > max_harvesting_window_days:
 		raise ValueError(f'{HARVESTING_ACTIVE_WINDOW_SETTING} must be at most {max_harvesting_window_days} days at setup')
+	node_config = SymbolNodeConfiguration.from_app_config(app.config)
+	node_config.assert_request_allowed(node_config.base_url)
 
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_CONFIG_FILEPATH'))
@@ -91,13 +101,14 @@ def setup_symbol_facade(app, clock=None):
 		symbol_db_config['host'],
 		symbol_db_config['port']
 	)
-	node_config = SymbolNodeConfiguration.from_app_config(app.config)
-	node_config.assert_request_allowed(node_config.base_url)
+	node_backing = SymbolTransactionNodeBacking(
+		node_config, network, native_mosaic_info, AiohttpTransport(node_config))
 
 	symbol_db = SymbolDatabase(db_params, native_mosaic_info, clock)
 	app.extensions['symbol_database'] = symbol_db
 	return SymbolRestFacade(
-		symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds, harvesting_active_window_days)
+		symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds, harvesting_active_window_days,
+		harvesting_balance_range=harvesting_balance_range, node_backing=node_backing)
 
 
 def _create_symbol_network(app_config):
@@ -131,7 +142,25 @@ def _create_required_positive_integer_setting(app_config, setting):
 	return value
 
 
+def _create_harvesting_balance_range(app_config):
+	values = {}
+	for setting in (HARVESTING_MIN_BALANCE_SETTING, HARVESTING_MAX_BALANCE_SETTING):
+		if setting not in app_config:
+			raise ValueError(f'{setting} is required')
+		value = app_config[setting]
+		if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 2 ** 64 - 1:
+			raise ValueError(f'{setting} must be an integer between 0 and 2**64 - 1')
+		values[setting] = value
+
+	if values[HARVESTING_MIN_BALANCE_SETTING] > values[HARVESTING_MAX_BALANCE_SETTING]:
+		raise ValueError(f'{HARVESTING_MIN_BALANCE_SETTING} must be at most {HARVESTING_MAX_BALANCE_SETTING}')
+
+	return HarvestingBalanceRange(values[HARVESTING_MIN_BALANCE_SETTING], values[HARVESTING_MAX_BALANCE_SETTING])
+
+
 def setup_symbol_routes(app, symbol_api_facade):
+	"""Registers Symbol API routes and their shared database error boundary."""
+
 	def _run_symbol_query(query_fn, error_log):
 		try:
 			return None, query_fn()
@@ -167,6 +196,18 @@ def setup_symbol_routes(app, symbol_api_facade):
 		error, result = _run_symbol_query(
 			lambda: symbol_api_facade.get_blocks(from_height, limit, SortOrder(sort)),
 			'Failed to get Symbol blocks')
+		if error:
+			return error
+
+		return jsonify(result)
+
+	@app.route('/api/symbol/block/statistics')
+	def api_get_symbol_block_statistics():
+		_validate_allowed_query_parameters(BLOCK_STATISTICS_QUERY_PARAMETERS)
+
+		error, result = _run_symbol_query(
+			symbol_api_facade.get_block_statistics,
+			'Failed to get Symbol block statistics')
 		if error:
 			return error
 
@@ -210,6 +251,7 @@ def setup_symbol_routes(app, symbol_api_facade):
 		return jsonify(result)
 
 	_setup_symbol_transactions_route(app, symbol_api_facade, _run_symbol_query)
+	_setup_symbol_transaction_statistics_routes(app, symbol_api_facade, _run_symbol_query)
 	_setup_symbol_account_routes(app, symbol_api_facade, _run_symbol_query)
 	_setup_symbol_block_receipts_route(app, symbol_api_facade, _run_symbol_query)
 
@@ -237,6 +279,18 @@ def _setup_symbol_block_receipts_route(app, symbol_api_facade, run_symbol_query)
 
 
 def _setup_symbol_account_routes(app, symbol_api_facade, run_symbol_query):
+	@app.route('/api/symbol/account/statistics')
+	def api_get_symbol_account_statistics():
+		_validate_allowed_query_parameters(frozenset())
+
+		error, result = run_symbol_query(
+			symbol_api_facade.get_account_statistics,
+			'Failed to get Symbol account statistics')
+		if error:
+			return error
+
+		return jsonify(result)
+
 	@app.route('/api/symbol/accounts')
 	def api_get_symbol_accounts():
 		try:
@@ -351,8 +405,12 @@ def _setup_symbol_namespace_routes(app, symbol_api_facade, run_symbol_query):
 
 
 def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
+	"""Registers confirmed transaction search with canonical query parsing."""
+
 	@app.route('/api/symbol/transactions')
 	def api_get_symbol_transactions():
+		"""Validates transaction filters and returns the confirmed transaction page."""
+
 		try:
 			_validate_allowed_query_parameters(TRANSACTION_QUERY_PARAMETERS)
 			query = _parse_transaction_query()
@@ -371,6 +429,74 @@ def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
 
 		return jsonify(result)
 
+	_setup_symbol_transaction_detail_route(app, symbol_api_facade)
+
+
+def _setup_symbol_transaction_detail_route(app, symbol_api_facade):
+	@app.route('/api/symbol/transaction/<transaction_hash>')
+	async def api_get_symbol_transaction_detail(transaction_hash):
+		try:
+			transaction_hash = _parse_transaction_hash(transaction_hash)
+			_validate_allowed_query_parameters(frozenset())
+		except ValueError as error:
+			abort(400, error)
+
+		try:
+			result = await symbol_api_facade.get_transaction_detail(transaction_hash)
+		except SymbolNodeNotFound:
+			abort(404)
+		except (PsycopgError, SymbolDataUnavailable, SymbolDataInvalid):
+			return _service_unavailable('Symbol backend data is unavailable')
+
+		return jsonify(result)
+
+
+def _setup_symbol_transaction_statistics_routes(app, symbol_api_facade, run_symbol_query):
+	"""Registers summary and calendar-range transaction statistics endpoints."""
+
+	@app.route('/api/symbol/transaction/statistics')
+	def api_get_symbol_tx_statistics():
+		"""Returns statistics for the healthy published Symbol chain."""
+
+		_validate_allowed_query_parameters(TRANSACTION_STATISTICS_QUERY_PARAMETERS)
+
+		error, result = run_symbol_query(
+			symbol_api_facade.get_transaction_statistics,
+			'Failed to get Symbol transaction statistics')
+		if error:
+			return error
+
+		return jsonify(result)
+
+	@app.route('/api/symbol/transaction/statistics/range')
+	def api_get_symbol_tx_statistics_range():
+		"""Validates inclusive calendar dates and returns totals grouped by day or month."""
+
+		start_date = request.args.get('startDate', '').strip()
+		end_date = request.args.get('endDate', '').strip()
+		period_type = request.args.get('periodType', '').strip().upper()
+		if not all((start_date, end_date, period_type)):
+			abort(400, 'startDate, endDate and period type are required')
+
+		try:
+			start_date, end_date = (date.fromisoformat(value) for value in (start_date, end_date))
+		except ValueError as error:
+			abort(400, error)
+
+		if start_date > end_date:
+			abort(400, 'start date must be less than or equal to end date')
+
+		if period_type not in ('DAY', 'MONTH'):
+			abort(400, 'Period type must be either DAY or MONTH')
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.get_transaction_statistics_range(start_date, end_date, period_type),
+			'Failed to get Symbol transaction statistics range')
+		if error:
+			return error
+
+		return jsonify(result)
+
 
 def _validate_allowed_query_parameters(allowed_parameters):
 	unsupported_parameters = sorted(set(request.args.keys()) - allowed_parameters)
@@ -384,6 +510,13 @@ def _parse_block_height(raw_height):
 		raise ValueError('Height must be greater than or equal to 1')
 
 	return height
+
+
+def _parse_transaction_hash(value):
+	if not re.fullmatch(r'[0-9A-Fa-f]{64}', value or '', re.ASCII):
+		raise ValueError('Hash must be a 64-character hexadecimal string')
+
+	return value.upper()
 
 
 def _parse_receipt_query(height=None):

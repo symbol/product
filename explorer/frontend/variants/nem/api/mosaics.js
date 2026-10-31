@@ -57,7 +57,6 @@ const mosaicInfoFromDTO = data => ({
 	registrationTimestamp: data.mosaicRegisteredTimestamp,
 	namespaceRegistrationHeight: data.rootNamespaceRegisteredHeight,
 	namespaceExpirationHeight: data.rootNamespaceExpirationHeight,
-	namespaceExpirationTimestamp: data.rootNamespaceRegisteredTimestamp,
 	isUnlimitedDuration: !data.rootNamespaceExpirationHeight,
 	isSupplyMutable: data.supplyMutable,
 	isTransferable: data.transferable,

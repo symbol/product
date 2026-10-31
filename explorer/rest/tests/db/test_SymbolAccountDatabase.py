@@ -3,7 +3,8 @@ from unittest import TestCase
 
 from psycopg2.extras import Json
 
-from rest.db.SymbolDatabase import AccountRecord, MosaicRecord, MultisigRecord, SymbolDatabase, SymbolDataUnavailable
+from rest.db.SymbolDatabase import AccountRecord, MosaicRecord, MultisigRecord, SymbolDatabase
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from ..test.SymbolAccountTestUtils import ACCOUNT_ADDRESS, OTHER_ADDRESS, PUBLIC_KEY, create_symbol_account_row, seed_alias

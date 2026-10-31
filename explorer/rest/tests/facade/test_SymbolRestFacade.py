@@ -1,32 +1,30 @@
-from datetime import datetime, timedelta, timezone
+import asyncio
+from datetime import date, datetime, timedelta, timezone
 from unittest import TestCase
 from unittest.mock import create_autospec
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
-from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from psycopg2 import Error as PsycopgError
 from psycopg2 import OperationalError
 from symbolchain.symbol.Network import Network
 
 from rest.db.SymbolDatabase import (
+	BlockStatisticsRecord,
 	NamespaceQuery,
 	ReceiptQuery,
 	ReceiptRecord,
 	SortOrder,
 	SymbolDatabase,
-	SymbolDataUnavailable,
-	TransactionQuery
+	TransactionQuery,
+	TransactionRangeRecord,
+	TransactionStatisticsRecord
 )
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
 
-NODE_URL = 'http://127.0.0.1:3000'
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
-
-
-def _create_node_config():
-	return SymbolNodeConfiguration.from_url(NODE_URL, allow_loopback=True)
 
 
 class FailingSymbolDatabase:
@@ -183,6 +181,18 @@ class BlockSymbolDatabase:
 		return BlockView() if 1 == height else None
 
 
+class BlockStatisticsSymbolDatabase:
+	def __init__(self):
+		self.called = False
+
+	def get_block_statistics(self):
+		self.called = True
+		return [
+			BlockStatisticsRecord(1, datetime(2026, 1, 1, tzinfo=timezone.utc), 1000000, 10 ** 12),
+			BlockStatisticsRecord(2, datetime(2026, 1, 1, 0, 0, 30, tzinfo=timezone.utc), 3000000, 12 * 10 ** 12)
+		]
+
+
 class MosaicView:
 	def __init__(self, mosaic_id):
 		self.mosaic_id = mosaic_id
@@ -225,6 +235,26 @@ class TransactionSymbolDatabase:
 		return self.transactions
 
 
+class TransactionStatisticsSymbolDatabase:
+	def __init__(self):
+		"""Creates independent summary and range records for facade serialization tests."""
+
+		self.statistics = TransactionStatisticsRecord(12, 8, 3, 1.5)
+		self.range_query = None
+		self.range_rows = [TransactionRangeRecord('2026-01-01', 2)]
+
+	def get_transaction_statistics(self, _cache):
+		"""Returns the summary record supplied to the facade."""
+
+		return self.statistics
+
+	def get_transaction_statistics_range(self, start_date, end_date, period_type):
+		"""Records the canonical date query and returns the configured period records."""
+
+		self.range_query = (start_date, end_date, period_type)
+		return self.range_rows
+
+
 class NamespaceSymbolDatabase:
 	def __init__(self, namespaces):
 		self.namespaces = namespaces
@@ -250,11 +280,11 @@ class ReceiptReadErrorSymbolDatabase:
 
 
 def _create_configured_facade():
-	return SymbolRestFacade(HealthySymbolDatabase(), _create_node_config(), NATIVE_MOSAIC_INFO, Network.TESTNET)
+	return SymbolRestFacade(HealthySymbolDatabase(), object(), NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 
 def _create_facade_with_database(symbol_db):
-	return SymbolRestFacade(symbol_db, _create_node_config(), NATIVE_MOSAIC_INFO, Network.TESTNET)
+	return SymbolRestFacade(symbol_db, object(), NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 
 class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
@@ -271,6 +301,41 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual(expected, result)
 		self.assertEqual(NamespaceQuery(), database.query)
 
+	def test_get_transaction_detail_rejects_an_unreadable_database_status_without_node_fallback(self):
+		# Arrange:
+		class Database:
+			@staticmethod
+			def get_transaction_detail(_transaction_hash):
+				return type('ReadResult', (), {'status': 'unsafe'})()
+
+		class NodeBacking:
+			@staticmethod
+			async def get_status(_transaction_hash):
+				raise AssertionError('Node must not be queried for an unsafe database status')
+
+		facade = SymbolRestFacade(
+			Database(), object(), NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=NodeBacking())
+
+		# Act + Assert:
+		with self.assertRaisesRegex(
+			SymbolDataUnavailable,
+			'Symbol transaction detail data is unavailable: confirmed row is not readable'
+		):
+			asyncio.run(facade.get_transaction_detail('AB' * 32))
+
+	def test_constructor_keeps_the_injected_node_backing_and_its_configuration(self):
+		# Arrange:
+		sentinel = object()
+		backing = type('NodeBacking', (), {'native_mosaic_info': sentinel})()
+
+		# Act:
+		facade = SymbolRestFacade(
+			HealthySymbolDatabase(), object(), NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing)
+
+		# Assert:
+		self.assertIs(backing, facade.node_backing)
+		self.assertIs(sentinel, backing.native_mosaic_info)
+
 	def test_get_transactions_passes_query(self):
 		# Arrange:
 		query = TransactionQuery()
@@ -284,34 +349,75 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertIs(query, symbol_db.query)
 		self.assertEqual([], result)
 
+	def test_get_transaction_statistics_formats_contract_fields(self):
+		"""Verifies that summary record fields map to the public statistics response."""
+
+		# Arrange:
+		symbol_db = TransactionStatisticsSymbolDatabase()
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_transaction_statistics()
+
+		# Assert:
+		self.assertEqual({
+			'total': 12,
+			'last30Days': 8,
+			'last24Hours': 3,
+			'averagePerBlock': 1.5
+		}, result)
+
+	def test_get_transaction_range_formats_fields(self):
+		"""Verifies range query forwarding and the public period response fields."""
+
+		# Arrange:
+		symbol_db = TransactionStatisticsSymbolDatabase()
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_transaction_statistics_range(date(2026, 1, 1), date(2026, 1, 31), 'DAY')
+
+		# Assert:
+		self.assertEqual({'periodType': 'day', 'data': [{'period': '2026-01-01', 'totalTransactions': 2}]}, result)
+		self.assertEqual((date(2026, 1, 1), date(2026, 1, 31), 'DAY'), symbol_db.range_query)
+
+	def test_get_transaction_range_formats_empty_data(self):
+		"""Keeps an empty range as an empty data array with its requested period type."""
+
+		# Arrange:
+		symbol_db = TransactionStatisticsSymbolDatabase()
+		symbol_db.range_rows = []
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_transaction_statistics_range(date(2026, 1, 1), date(2026, 1, 31), 'MONTH')
+
+		# Assert:
+		self.assertEqual({'periodType': 'month', 'data': []}, result)
+
 	def test_rejects_missing_database(self):
 		# Arrange:
-		node_config = _create_node_config()
-
 		# Act + Assert:
 		with self.assertRaisesRegex(
 			ValueError,
 			'Symbol database is required'
 		):
-			SymbolRestFacade(None, node_config, NATIVE_MOSAIC_INFO, Network.TESTNET)
-
-	def test_rejects_missing_node_config(self):
-		# Act + Assert:
-		with self.assertRaisesRegex(
-			ValueError,
-			'Symbol node configuration is required'
-		):
-			SymbolRestFacade(object(), None, NATIVE_MOSAIC_INFO, Network.TESTNET)
+			SymbolRestFacade(None, object(), NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 	def test_rejects_missing_native_mosaic_info(self):
 		# Arrange + Act + Assert:
 		with self.assertRaisesRegex(ValueError, 'Native mosaic information is required'):
-			SymbolRestFacade(object(), _create_node_config(), None, Network.TESTNET)
+			SymbolRestFacade(object(), object(), None, Network.TESTNET)
+
+	def test_rejects_missing_node_config(self):
+		# Arrange + Act + Assert:
+		with self.assertRaisesRegex(ValueError, 'Symbol node configuration is required'):
+			SymbolRestFacade(object(), None, NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 	def test_rejects_missing_network(self):
 		# Arrange + Act + Assert:
 		with self.assertRaises(ValueError) as exception_info:
-			SymbolRestFacade(object(), _create_node_config(), NATIVE_MOSAIC_INFO, None)
+			SymbolRestFacade(object(), object(), NATIVE_MOSAIC_INFO, None)
 		self.assertIs(ValueError, type(exception_info.exception))
 		self.assertEqual('Symbol network is required', str(exception_info.exception))
 
@@ -467,6 +573,25 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act + Assert:
 		with self.assertRaises(SymbolDataUnavailable):
 			facade.get_blocks(1, 10, SortOrder.DESC)
+
+	def test_get_block_statistics_formats_database_rows(self):
+		# Arrange:
+		symbol_db = BlockStatisticsSymbolDatabase()
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_block_statistics()
+
+		# Assert:
+		self.assertTrue(symbol_db.called)
+		self.assertEqual({
+			'blockTimeChart': [[2, 30.0]],
+			'blockFeeChart': [[1, 1.0], [2, 3.0]],
+			'blockDifficultyChart': [[1, '1.00'], [2, '12.00']],
+			'blockTime': 30,
+			'blockFee': 2.0,
+			'blockDifficulty': '12.00'
+		}, result)
 
 	def test_can_get_mosaics(self):
 		# Arrange:

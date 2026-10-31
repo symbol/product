@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines  # Namespace REST data access remains owned by this database facade.
 import re
 from collections import namedtuple
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 
@@ -9,12 +10,20 @@ from symbolchain.symbol.IdGenerator import is_mosaic_alias
 from symbolchain.symbol.Network import Address
 from zenlog import log
 
-from rest.model.symbol.Block import SymbolBlockView
+from rest.model.symbol.Block import BLOCK_STATISTICS_WINDOW, SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
 from rest.model.symbol.Namespace import SymbolNamespaceView
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
+from .SymbolDatabaseCommon import (
+	SymbolDataUnavailable,
+	TransactionMosaicRecord,
+	bytes_or_none,
+	is_non_public_state,
+	try_get_readable_height
+)
+from .SymbolTransactionDetail import SymbolTransactionDetailMixin
 
 BLOCK_COLUMNS = '''
 	height,
@@ -74,7 +83,8 @@ SYNC_STATE_COLUMNS = [
 	'dirty_state_from_height',
 	'updated_at'
 ]
-READABLE_BLOCK_STATUSES = frozenset(['healthy', 'repairing'])
+TRANSACTION_STATISTICS_WINDOW = 240
+TransactionStatisticsHead = namedtuple('TransactionStatisticsHead', ['height', 'timestamp', 'block_hash', 'published_hash', 'updated_at'])
 ReceiptQuery = namedtuple(
 	'ReceiptQuery',
 	['limit', 'offset', 'height', 'receipt_group', 'receipt_type', 'included_receipt_types', 'target_address', 'sender_address'],
@@ -83,10 +93,6 @@ ReceiptRecord = namedtuple(
 	'ReceiptRecord',
 	['height', 'receipt_type', 'receipt_group', 'version', 'sender_address', 'recipient_address', 'target_address',
 		'mosaic_id', 'amount', 'artifact_id', 'mosaic_divisibility'])
-
-
-class SymbolDataUnavailable(RuntimeError):
-	"""Raised when Symbol block data is not safely readable."""
 
 
 class SymbolMosaicAliasNotFound(RuntimeError):
@@ -112,9 +118,9 @@ TransactionQuery = namedtuple(
 	['limit', 'offset', 'height', 'transaction_types', 'address', 'signer_public_key', 'recipient_address',
 		'transfer_mosaic_id', 'include_embedded', 'sender_address'],
 	defaults=(10, 0, None, (), None, None, None, None, False, None))
-TransactionMosaicRecord = namedtuple(
-	'TransactionMosaicRecord',
-	['mosaic_id', 'amount', 'role', 'position', 'divisibility', 'alias_names'])
+TransactionStatisticsRecord = namedtuple(
+	'TransactionStatisticsRecord', ['total', 'last30_day', 'last24_hours', 'average_per_block'])
+TransactionRangeRecord = namedtuple('TransactionRangeRecord', ['period', 'total_transactions'])
 NamespaceQuery = namedtuple(
 	'NamespaceQuery',
 	['limit', 'offset', 'sort', 'alias_type', 'registration_type', 'owner_address'],
@@ -126,6 +132,7 @@ TransactionRecord = namedtuple(
 	'TransactionRecord',
 	['transaction_id', 'hash', 'is_embedded', 'aggregate_hash', 'embedded_index', 'height', 'transaction_type',
 		'signer_address', 'recipient_address', 'effective_fee', 'timestamp', 'message_type', 'message_payload', 'mosaics'])
+BlockStatisticsRecord = namedtuple('BlockStatisticsRecord', ['height', 'timestamp', 'total_fee', 'difficulty'])
 AccountRecord = namedtuple(
 	'AccountRecord',
 	['address', 'public_key', 'account_type', 'address_height', 'importance_percentage', 'linked_public_key',
@@ -146,36 +153,14 @@ AccountListPageContext = namedtuple(
 	'AccountListPageContext', ['last_synced_height', 'now', 'harvesting_active_window_days'])
 AccountListEnrichment = namedtuple(
 	'AccountListEnrichment', ['display_relations', 'harvesting_by_address', 'multisig_rows'])
+AccountStatisticsRecord = namedtuple(
+	'AccountStatisticsRecord',
+	['total', 'harvesting', 'eligible_for_harvesting', 'harvesting_eligible', 'total_importance', 'top_accounts'])
 INT64_MAX = 9223372036854775807
-
-
-def _bytes_or_none(value):
-	return bytes(value) if value else None
 
 
 def _address(value):
 	return str(Address(bytes(value)))
-
-
-def _get_readable_height(sync_state):
-	if not sync_state or sync_state.get('status') not in READABLE_BLOCK_STATUSES:
-		return None
-
-	last_synced_height = sync_state.get('last_synced_height')
-	if not isinstance(last_synced_height, int) or last_synced_height < 1:
-		return None
-
-	dirty_state_from_height = sync_state.get('dirty_state_from_height')
-	if dirty_state_from_height is not None:
-		if not isinstance(dirty_state_from_height, int) or dirty_state_from_height < 1:
-			return None
-		last_synced_height = min(last_synced_height, dirty_state_from_height - 1)
-
-	return last_synced_height if last_synced_height >= 1 else None
-
-
-def _is_non_public_state(sync_state):
-	return sync_state['status'] == 'repairing' or sync_state['dirty_state_from_height'] is not None
 
 
 def _is_generic_page_range_unavailable(sync_state):
@@ -195,7 +180,7 @@ def _create_sync_state(columns, result):
 	return dict(zip(columns, result))
 
 
-class SymbolDatabase(DatabaseConnectionPool):
+class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 	"""Database access for Symbol Explorer data."""
 
 	def __init__(self, db_config, native_mosaic_info=None, clock=None):
@@ -250,13 +235,13 @@ class SymbolDatabase(DatabaseConnectionPool):
 			with connection.cursor() as cursor:
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
-				readable_height = _get_readable_height(sync_state)
+				readable_height = try_get_readable_height(sync_state)
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol block data is unavailable')
 				if height > readable_height:
 					# Clean state returns None outside the published range, so HTTP returns 404.
 					# Dirty or repairing state raises because it cannot be safely served, so HTTP returns 503.
-					if _is_non_public_state(sync_state):
+					if is_non_public_state(sync_state):
 						raise SymbolDataUnavailable('Symbol block data is unavailable')
 					return None
 
@@ -273,13 +258,13 @@ class SymbolDatabase(DatabaseConnectionPool):
 			with connection.cursor() as cursor:
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
-				readable_height = _get_readable_height(sync_state)
+				readable_height = try_get_readable_height(sync_state)
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol receipt data is unavailable: sync state is unreadable')
 
 				if query.height is not None:
 					if query.height > readable_height:
-						if _is_non_public_state(sync_state):
+						if is_non_public_state(sync_state):
 							raise SymbolDataUnavailable(
 								'Symbol receipt data is unavailable: requested height is above the readable height '
 								'in dirty or repairing state')
@@ -339,7 +324,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 				if query.height is None and _is_generic_page_range_unavailable(sync_state):
 					raise SymbolDataUnavailable(
 						'Symbol receipt data is unavailable: unbounded receipt query range is unsafe')
-				if _is_non_public_state(sync_state) and self._requires_current_receipt_metadata(results):
+				if is_non_public_state(sync_state) and self._requires_current_receipt_metadata(results):
 					raise SymbolDataUnavailable(
 						'Symbol receipt data is unavailable: non-native mosaic metadata is unsafe '
 						'in dirty or repairing state')
@@ -365,7 +350,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 			with connection.cursor() as cursor:
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
-				readable_height = _get_readable_height(sync_state)
+				readable_height = try_get_readable_height(sync_state)
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol transaction data is unavailable: sync state is unreadable')
 
@@ -375,6 +360,118 @@ class SymbolDatabase(DatabaseConnectionPool):
 					return []
 
 				return self._fetch_transaction_records(cursor, transaction_rows, sync_state)
+
+	def get_transaction_statistics(self, cache=None):
+		"""Gets statistics, validating publication before cache lookup in the aggregation snapshot."""
+
+		with self._read_snapshot() as cursor:
+			head = self._fetch_transaction_statistics_head(cursor)
+			if cache is None:
+				return self._fetch_transaction_statistics(cursor, head)
+
+			# The key and loader share this snapshot: a concurrent publication cannot label old totals with a new head.
+			return cache.get_or_load(head, lambda: self._fetch_transaction_statistics(cursor, head))
+
+	@staticmethod
+	def _fetch_transaction_statistics(cursor, head):
+		"""Aggregates totals and the latest block average independently within the published bounds."""
+
+		cursor.execute(
+			'''
+			WITH bounded_blocks AS NOT MATERIALIZED (
+				SELECT blocks.height, blocks.timestamp AS block_timestamp,
+					blocks.transactions_count, blocks.total_transactions_count
+				FROM symbol_blocks AS blocks
+				WHERE blocks.height <= %s
+			), totals AS (
+				SELECT
+					COALESCE(SUM(total_transactions_count), 0)::bigint AS total,
+					COALESCE(SUM(total_transactions_count) FILTER (
+						WHERE block_timestamp > %s::timestamp - %s
+							AND block_timestamp <= %s), 0)::bigint AS last30_day,
+					COALESCE(SUM(total_transactions_count) FILTER (
+						WHERE block_timestamp > %s::timestamp - %s
+							AND block_timestamp <= %s), 0)::bigint AS last24_hours
+				FROM bounded_blocks
+			), avg_latest AS (
+				SELECT COALESCE(AVG(transactions_count)::double precision, 0.0) AS average_per_block
+				FROM (
+					SELECT transactions_count
+					FROM bounded_blocks
+					ORDER BY height DESC
+					LIMIT %s
+				) AS latest_blocks
+			)
+			SELECT totals.total, totals.last30_day, totals.last24_hours, avg_latest.average_per_block
+			FROM totals, avg_latest
+			''',
+			(head.height, head.timestamp, timedelta(days=30), head.timestamp,
+				head.timestamp, timedelta(hours=24), head.timestamp, TRANSACTION_STATISTICS_WINDOW))
+		return TransactionStatisticsRecord(*cursor.fetchone())
+
+	def get_transaction_statistics_range(self, start_date, end_date, period_type):
+		"""Aggregates existing blocks in the requested period and published snapshot."""
+
+		if period_type not in ('DAY', 'MONTH'):
+			raise ValueError('Invalid transaction statistics period')
+
+		period_format = 'YYYY-MM-DD' if period_type == 'DAY' else 'YYYY-MM'
+		with self._read_snapshot() as cursor:
+			head = self._fetch_transaction_statistics_head(cursor)
+			cursor.execute(
+				"""
+				SELECT to_char(date_trunc(%s, blocks.timestamp), %s),
+					SUM(blocks.transactions_count)::bigint
+				FROM symbol_blocks AS blocks
+				WHERE blocks.height <= %s
+					AND blocks.timestamp >= %s::date
+					AND blocks.timestamp < %s::date + INTERVAL '1 day'
+					AND blocks.timestamp <= %s
+				GROUP BY 1
+				ORDER BY 1
+				""",
+				(period_type, period_format, head.height, start_date, end_date, head.timestamp))
+			return [TransactionRangeRecord(*row) for row in cursor.fetchall()]
+
+	@contextmanager
+	def _read_snapshot(self):
+		"""Provides one read-only repeatable-read cursor and resets failed connections."""
+
+		with self.connection() as connection:
+			try:
+				with connection.cursor() as cursor:
+					self._start_read_transaction(cursor)
+					cursor.execute('SET TRANSACTION READ ONLY')
+					yield cursor
+			except Exception:
+				connection.rollback()
+				raise
+			connection.commit()
+
+	def _fetch_transaction_statistics_head(self, cursor):
+		"""Returns the validated published head and revision used to identify cached statistics."""
+
+		sync_state = self._fetch_sync_state(cursor)
+		if not sync_state:
+			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
+
+		if sync_state['status'] != 'healthy' or sync_state['dirty_state_from_height'] is not None:
+			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
+
+		last_synced_height = sync_state['last_synced_height']
+		if isinstance(last_synced_height, bool) or not isinstance(last_synced_height, int) or last_synced_height < 1:
+			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
+
+		cursor.execute('SELECT timestamp, hash FROM symbol_blocks WHERE height = %s', (last_synced_height,))
+		result = cursor.fetchone()
+		if not result or not isinstance(result[0], datetime):
+			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
+
+		# Include both block identity and publication revision, so same-height replacement and republishing miss the cache.
+		return TransactionStatisticsHead(
+			last_synced_height, result[0], bytes(result[1]),
+			bytes(sync_state['last_synced_block_hash']) if sync_state['last_synced_block_hash'] is not None else None,
+			sync_state['updated_at'])
 
 	def try_get_account(self, address=None, public_key=None):
 		"""Gets one current-state Symbol account and its detail relations."""
@@ -438,6 +535,66 @@ class SymbolDatabase(DatabaseConnectionPool):
 				return self._create_account_list_records(
 					query.mosaic_id or self.native_mosaic_info.id, page_addresses, account_rows, mosaic_rows,
 					AccountListEnrichment((namespaces, mosaic_aliases), harvesting_by_address, multisig_rows))
+
+	def get_account_statistics(self, max_age_seconds, harvesting_active_window_days, harvesting_balance_range):
+		"""Gets account statistics from one successful refresh run and read snapshot."""
+
+		with self.connection() as connection:
+			with connection.cursor() as cursor:
+				self._start_read_transaction(cursor)
+				cursor.execute('SET TRANSACTION READ ONLY')
+				sync_state = self._fetch_sync_state(cursor)
+				self._assert_current_state_readable(sync_state)
+				refresh_state = self._fetch_account_refresh_state(cursor)
+				now = self._clock()
+				now = now.replace(tzinfo=timezone.utc) if now.tzinfo is None else now.astimezone(timezone.utc)
+				run_id = self._assert_account_refresh_readable(refresh_state, max_age_seconds, now)
+				cutoff = now - timedelta(days=harvesting_active_window_days)
+				cutoff = cutoff.replace(tzinfo=None)
+
+				cursor.execute(
+					'''WITH snapshot AS (
+						SELECT address, address_text, importance_percentage
+						FROM symbol_account_refresh_accounts
+						WHERE refresh_run_id = %s
+					), classified AS (
+						SELECT snapshot.address, snapshot.importance_percentage,
+							EXISTS (
+								SELECT 1
+								FROM symbol_blocks AS blocks
+								WHERE blocks.beneficiary_address = snapshot.address
+									AND blocks.timestamp >= %s
+									AND blocks.height <= %s
+							) AS is_active,
+							COALESCE(harvesting_mosaics.amount, 0) >= %s
+								AND COALESCE(harvesting_mosaics.amount, 0) <= %s AS is_eligible
+						FROM snapshot
+						LEFT JOIN symbol_account_refresh_mosaics AS harvesting_mosaics
+							ON harvesting_mosaics.refresh_run_id = %s
+							AND harvesting_mosaics.address = snapshot.address
+							AND harvesting_mosaics.mosaic_id = %s
+					), statistics AS (
+					SELECT COUNT(*) AS total,
+						COUNT(*) FILTER (WHERE is_active) AS harvesting,
+						COUNT(*) FILTER (WHERE is_eligible) AS eligible_for_harvesting,
+						COUNT(*) FILTER (WHERE is_active AND is_eligible) AS harvesting_eligible,
+						COALESCE(SUM(importance_percentage), 0) AS total_importance
+					FROM classified
+					)
+					SELECT statistics.*, top_accounts.importance_percentage, top_accounts.address_text
+					FROM statistics
+					LEFT JOIN LATERAL (
+						SELECT importance_percentage, address_text, address
+						FROM snapshot
+						ORDER BY importance_percentage DESC, address ASC
+						LIMIT 10
+					) AS top_accounts ON TRUE
+					ORDER BY top_accounts.importance_percentage DESC, top_accounts.address ASC''',
+					(run_id, cutoff, sync_state['last_synced_height'], harvesting_balance_range.minimum_balance,
+						harvesting_balance_range.maximum_balance, run_id, self.native_mosaic_info.id))
+				rows = cursor.fetchall()
+				top_accounts = tuple((row[5], row[6]) for row in rows if row[6] is not None)
+				return AccountStatisticsRecord(*rows[0][:5], top_accounts)
 
 	@staticmethod
 	def _fetch_account_refresh_state(cursor):
@@ -717,7 +874,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 		if not is_mosaic_alias(int(mosaic_id, 16)):
 			return mosaic_id.upper()
 
-		if _is_non_public_state(sync_state):
+		if is_non_public_state(sync_state):
 			raise SymbolDataUnavailable(
 				'Symbol data is unavailable: Mosaic alias state is unsafe in dirty or repairing state')
 
@@ -743,7 +900,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 	@staticmethod
 	def _fetch_transaction_rows(cursor, query, sync_state, readable_height):
 		if query.height is not None and query.height > readable_height:
-			if _is_non_public_state(sync_state):
+			if is_non_public_state(sync_state):
 				raise SymbolDataUnavailable(
 					'Symbol transaction data is unavailable: requested height is above the readable height '
 					'in dirty or repairing state')
@@ -829,13 +986,13 @@ class SymbolDatabase(DatabaseConnectionPool):
 			''',
 			(transaction_ids,))
 		transaction_mosaic_rows = cursor.fetchall()
-		if _is_non_public_state(sync_state) and self._requires_current_transaction_metadata(transaction_mosaic_rows):
+		if is_non_public_state(sync_state) and self._requires_current_transaction_metadata(transaction_mosaic_rows):
 			raise SymbolDataUnavailable(
 				'Symbol transaction data is unavailable: mosaic display depends on current state '
 				'in dirty or repairing state')
 
 		excluded_native_mosaic_id = None
-		if _is_non_public_state(sync_state) and self.native_mosaic_info:
+		if is_non_public_state(sync_state) and self.native_mosaic_info:
 			excluded_native_mosaic_id = self.native_mosaic_info.id
 
 		mosaic_state_by_id = SymbolDatabase._fetch_transaction_mosaic_state(
@@ -891,7 +1048,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
 				# Current-state rows cannot be reconstructed from the clean block prefix during repair.
-				if _get_readable_height(sync_state) is None or _is_non_public_state(sync_state):
+				if try_get_readable_height(sync_state) is None or is_non_public_state(sync_state):
 					raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
 
 				cursor.execute(
@@ -1351,7 +1508,7 @@ class SymbolDatabase(DatabaseConnectionPool):
 			with connection.cursor() as cursor:
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
-				if _get_readable_height(sync_state) is None or _is_non_public_state(sync_state):
+				if try_get_readable_height(sync_state) is None or is_non_public_state(sync_state):
 					raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
 
 				try:
@@ -1380,13 +1537,13 @@ class SymbolDatabase(DatabaseConnectionPool):
 			with connection.cursor() as cursor:
 				self._start_read_transaction(cursor)
 				sync_state = self._fetch_sync_state(cursor)
-				readable_height = _get_readable_height(sync_state)
+				readable_height = try_get_readable_height(sync_state)
 				if readable_height is None:
 					raise SymbolDataUnavailable('Symbol block data is unavailable')
 
 				local_height = sync_state['last_synced_height']
 				finalized_height = sync_state['finalized_height']
-				is_non_public = _is_non_public_state(sync_state)
+				is_non_public = is_non_public_state(sync_state)
 				if is_non_public and from_height is not None and from_height > readable_height:
 					raise SymbolDataUnavailable('Symbol block data is unavailable')
 				start_height, end_height = self._calculate_height_range(
@@ -1411,6 +1568,33 @@ class SymbolDatabase(DatabaseConnectionPool):
 				results = cursor.fetchall()
 
 				return [self._create_block_view(result, finalized_height) for result in results]
+
+	def get_block_statistics(self):
+		"""Gets the latest statistics window and its preceding block, if present."""
+
+		with self.connection() as connection:
+			with connection.cursor() as cursor:
+				self._start_read_transaction(cursor)
+				sync_state = self._fetch_sync_state(cursor)
+				readable_height = try_get_readable_height(sync_state)
+				if readable_height is None:
+					raise SymbolDataUnavailable('Symbol block statistics are unavailable')
+
+				# Include the preceding block to calculate the first target block time, yielding at most 241 rows.
+				start_height = max(1, readable_height - BLOCK_STATISTICS_WINDOW)
+				cursor.execute(
+					'''
+					SELECT height, timestamp, total_fee, difficulty
+					FROM symbol_blocks
+					WHERE height BETWEEN %s AND %s
+					ORDER BY height ASC
+					''',
+					(start_height, readable_height))
+				results = cursor.fetchall()
+				if len(results) != readable_height - start_height + 1:
+					raise SymbolDataUnavailable('Symbol block statistics are unavailable')
+
+				return [BlockStatisticsRecord(*result) for result in results]
 
 	@staticmethod
 	def _start_read_transaction(cursor):
@@ -1447,8 +1631,8 @@ class SymbolDatabase(DatabaseConnectionPool):
 	def _create_block_view(result, finalized_height):
 		return SymbolBlockView(
 			height=result[0],
-			block_hash=_bytes_or_none(result[1]),
-			previous_hash=_bytes_or_none(result[2]),
+			block_hash=bytes_or_none(result[1]),
+			previous_hash=bytes_or_none(result[2]),
 			timestamp=result[3],
 			network_timestamp=result[4],
 			total_fee=result[5],
@@ -1459,19 +1643,19 @@ class SymbolDatabase(DatabaseConnectionPool):
 			block_type=result[10],
 			harvester=_address(result[11]),
 			beneficiary_address=_address(result[12]),
-			signature=_bytes_or_none(result[13]),
+			signature=bytes_or_none(result[13]),
 			size=result[14],
-			proof_gamma=_bytes_or_none(result[15]),
-			proof_verification_hash=_bytes_or_none(result[16]),
-			proof_scalar=_bytes_or_none(result[17]),
-			state_hash=_bytes_or_none(result[18]),
-			transactions_hash=_bytes_or_none(result[19]),
-			receipts_hash=_bytes_or_none(result[20]),
+			proof_gamma=bytes_or_none(result[15]),
+			proof_verification_hash=bytes_or_none(result[16]),
+			proof_scalar=bytes_or_none(result[17]),
+			state_hash=bytes_or_none(result[18]),
+			transactions_hash=bytes_or_none(result[19]),
+			receipts_hash=bytes_or_none(result[20]),
 			state_hash_sub_cache_roots=result[21],
 			voting_eligible_accounts_count=result[22],
 			harvesting_eligible_accounts_count=result[23],
 			total_voting_balance=result[24],
-			previous_importance_block_hash=_bytes_or_none(result[25]),
+			previous_importance_block_hash=bytes_or_none(result[25]),
 			block_reward=result[26],
 			is_finalized=bool(finalized_height and result[0] <= finalized_height)
 		)
