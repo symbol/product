@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from unittest import TestCase
 
+from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 
 from rest.db.SymbolDatabase import SortOrder, SymbolDatabase
@@ -15,6 +16,8 @@ from ..test.SymbolDatabaseTestUtils import (
 )
 from ..test.SymbolMosaicTestUtils import create_symbol_mosaic, create_symbol_mosaic_view
 from ..test.SymbolTransactionTestUtils import create_symbol_namespace
+
+NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 
 
 def _create_default_mosaic_row():
@@ -333,3 +336,159 @@ def _query_symbol_mosaics(mosaics, sync_state_map, limit=10, offset=0, sort=Sort
 		mosaics=mosaics) as (db_config, _puller_database):
 		with SymbolDatabase(db_config) as database:
 			return database.get_mosaics(limit, offset, sort)
+
+
+class SymbolDatabaseMosaicDivisibility(TestCase):
+	def test_can_get_native_and_other_mosaics(self):
+		# Arrange:
+		mosaic_id = '1234567890ABCDEF'
+		with symbol_test_database(
+			create_symbol_sync_state(10, 9),
+			mosaics=[
+				create_symbol_mosaic(NATIVE_MOSAIC_INFO.id, 2),
+				create_symbol_mosaic(mosaic_id, 3),
+			]) as (db_config, _):
+
+			# Act:
+			with SymbolDatabase(db_config) as database:
+				result = database.get_mosaic_divisibility([NATIVE_MOSAIC_INFO.id, mosaic_id, mosaic_id], NATIVE_MOSAIC_INFO)
+
+		# Assert:
+		self.assertEqual({
+			NATIVE_MOSAIC_INFO.id: (NATIVE_MOSAIC_INFO.id, 6),
+			mosaic_id: (mosaic_id, 3),
+		}, result)
+
+	def test_can_get_native_alias_without_mosaic_row(self):
+		# Arrange:
+		namespace_id = '887E5DB6BB0B21F5'
+		with symbol_test_database(create_symbol_sync_state(10, 9)) as (db_config, puller_database):
+			puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id=NATIVE_MOSAIC_INFO.id), [])
+
+			# Act:
+			with SymbolDatabase(db_config) as database:
+				result = database.get_mosaic_divisibility([namespace_id], NATIVE_MOSAIC_INFO)
+
+		# Assert:
+		self.assertEqual({namespace_id: (NATIVE_MOSAIC_INFO.id, 6)}, result)
+
+	def test_preserves_native_when_alias_is_missing(self):
+		# Arrange:
+		with symbol_test_database(create_symbol_sync_state(10, 9)) as (db_config, _):
+
+			# Act:
+			with SymbolDatabase(db_config) as database:
+				result = database.get_mosaic_divisibility([NATIVE_MOSAIC_INFO.id, '887E5DB6BB0B21F5'], NATIVE_MOSAIC_INFO)
+
+		# Assert:
+		self.assertEqual({NATIVE_MOSAIC_INFO.id: (NATIVE_MOSAIC_INFO.id, 6)}, result)
+
+	def _assert_mosaic_divisibility(self, divisibility, requested_id='1234567890ABCDEF', namespace_map=None):
+		# Arrange:
+		mosaic_id = '1234567890ABCDEF'
+		with symbol_test_database(
+			create_symbol_sync_state(10, 9),
+			mosaics=[create_symbol_mosaic(mosaic_id, divisibility)]) as (db_config, puller_database):
+			if namespace_map:
+				puller_database.upsert_namespace(namespace_map, [])
+
+			# Act:
+			with SymbolDatabase(db_config) as database:
+				result = database.get_mosaic_divisibility([requested_id])
+
+		# Assert:
+		self.assertEqual({requested_id: (mosaic_id, divisibility)}, result)
+
+	def test_can_get_mosaic_divisibility(self):
+		self._assert_mosaic_divisibility(6)
+
+	def test_can_get_mosaic_divisibility_by_namespace_id(self):
+		self._assert_mosaic_divisibility(
+			6,
+			'887E5DB6BB0B21F5',
+			create_symbol_namespace(alias_mosaic_id='1234567890ABCDEF'))
+
+	def test_returns_empty_map_when_resolved_mosaic_is_not_found(self):
+		# Arrange:
+		with symbol_test_database(create_symbol_sync_state(10, 9)) as (db_config, puller_database):
+			puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id='1234567890ABCDEF'), [])
+
+			# Act:
+			with SymbolDatabase(db_config) as database:
+				result = database.get_mosaic_divisibility(['887E5DB6BB0B21F5'])
+
+		# Assert:
+		self.assertEqual({}, result)
+
+	def test_can_batch_distinct_resolved_mosaic_ids(self):
+		# Arrange:
+		mosaic_id = '1234567890ABCDEF'
+		other_mosaic_id = '0000000000000001'
+		namespace_id = '887E5DB6BB0B21F5'
+		mosaic_ids = [namespace_id, 'FFFFFFFFFFFFFFFF', mosaic_id, other_mosaic_id, '0000000000000002', namespace_id]
+		with symbol_test_database(
+			create_symbol_sync_state(10, 9),
+			mosaics=[
+				create_symbol_mosaic(other_mosaic_id, 3),
+				create_symbol_mosaic(mosaic_id, 6),
+			]) as (db_config, puller_database):
+			puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id=mosaic_id), [])
+
+			# Act:
+			with SymbolDatabase(db_config) as database:
+				result = database.get_mosaic_divisibility(mosaic_ids)
+
+		# Assert:
+		self.assertEqual({
+			namespace_id: (mosaic_id, 6),
+			mosaic_id: (mosaic_id, 6),
+			other_mosaic_id: (other_mosaic_id, 3),
+		}, result)
+
+	def _assert_unavailable_state(self, sync_state_map):
+		# Arrange:
+		with symbol_test_database(sync_state_map) as (db_config, _):
+			with SymbolDatabase(db_config) as database:
+				# Act + Assert:
+				with self.assertRaisesRegex(SymbolDataUnavailable, 'Symbol mosaic data is unavailable'):
+					database.get_mosaic_divisibility(['1234567890ABCDEF'])
+
+	def test_raises_when_sync_state_is_missing(self):
+		self._assert_unavailable_state(None)
+
+	def test_raises_when_last_synced_height_is_zero(self):
+		self._assert_unavailable_state(create_symbol_sync_state(0, None))
+
+	def test_raises_when_sync_state_is_unhealthy(self):
+		self._assert_unavailable_state(create_symbol_sync_state(2, 1, status='unhealthy'))
+
+	def test_raises_when_sync_state_is_repairing(self):
+		self._assert_unavailable_state(create_safe_repairing_sync_state())
+
+	def test_raises_when_sync_state_is_dirty(self):
+		self._assert_unavailable_state(create_symbol_sync_state(2, 1, dirty_state_from_height=3))
+
+	def test_batch_reads_one_snapshot(self):
+		# Arrange:
+		mosaic_id = '1234567890ABCDEF'
+		namespace_id = '887E5DB6BB0B21F5'
+		with symbol_test_database(create_symbol_sync_state(10, 9), mosaics=[_create_default_mosaic_row()]) as (db_config, puller_database):
+			puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id=mosaic_id), [])
+
+			def update_metadata():
+				with puller_database.connection.cursor() as cursor:
+					cursor.execute("UPDATE symbol_namespaces SET alias_type = 'none', alias_mosaic_id = NULL")
+					cursor.execute('UPDATE symbol_mosaics SET divisibility = 2')
+				puller_database.connection.commit()
+
+			# Act:
+			with PausingAfterSyncStateReadSymbolDatabase(db_config) as database:
+				result = read_during_database_snapshot(
+					database, lambda: database.get_mosaic_divisibility([namespace_id, mosaic_id]), update_metadata)
+
+				# Assert: both the alias and divisibility come from the same earlier snapshot.
+				self.assertEqual({
+					namespace_id: (mosaic_id, 6),
+					mosaic_id: (mosaic_id, 6)
+				}, result)
+				self.assertEqual({mosaic_id: (mosaic_id, 2)}, database.get_mosaic_divisibility([namespace_id, mosaic_id]))

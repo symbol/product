@@ -1,6 +1,7 @@
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import TransactionType
+from symbollightapi.connector.SymbolConnector import SymbolConnector
 from zenlog import log
 
 from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
@@ -47,6 +48,8 @@ class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 		self.harvesting_balance_range = harvesting_balance_range
 		self.statistics_cache = TtlCache(STATISTICS_CACHE_TTL_SECONDS, STATISTICS_CACHE_MAX_ENTRIES)
 		self.node_backing = node_backing
+		self.symbol_connector = SymbolConnector(node_config.base_url)
+		self.symbol_connector.timeout_seconds = node_config.timeout_seconds
 
 	def get_health(self):
 		"""Gets health of the Symbol backend core foundation."""
@@ -274,3 +277,11 @@ class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 		statistics = self.symbol_db.get_account_statistics(
 			self.account_refresh_max_age_seconds, self.harvesting_active_window_days, self.harvesting_balance_range)
 		return SymbolAccountStatisticsView(statistics).to_dict()
+
+	async def get_unconfirmed_transactions(self):
+		"""Gets pending Symbol transactions in the shared Explorer transaction envelope."""
+
+		unconfirmed_transactions = await self.symbol_connector.get_unconfirmed_transactions()
+
+		views = self.symbol_db.get_unconfirmed_transactions(unconfirmed_transactions, self.network)
+		return [view.to_dict() for view in views]

@@ -12,6 +12,7 @@ from symbolchain.CryptoTypes import PublicKey
 from symbolchain.sc import NamespaceRegistrationType, TransactionType
 from symbolchain.symbol.IdGenerator import generate_namespace_path
 from symbolchain.symbol.Network import Address, Network
+from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
 
 from rest.db.SymbolDatabase import (
@@ -430,6 +431,20 @@ def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
 		return jsonify(result)
 
 	_setup_symbol_transaction_detail_route(app, symbol_api_facade)
+	_setup_symbol_unconfirmed_transaction_route(app, symbol_api_facade)
+
+
+def _setup_symbol_unconfirmed_transaction_route(app, symbol_api_facade):
+	@app.route('/api/symbol/transactions/unconfirmed')
+	async def api_get_symbol_unconfirmed():
+		_validate_allowed_query_parameters(frozenset())
+		try:
+			result = await symbol_api_facade.get_unconfirmed_transactions()
+		except NodeException:
+			log.error('Failed to get Symbol unconfirmed transactions')
+			return _service_unavailable('Symbol node data is unavailable')
+
+		return jsonify(result)
 
 
 def _setup_symbol_transaction_detail_route(app, symbol_api_facade):
