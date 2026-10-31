@@ -200,22 +200,25 @@ def test_unsynced_app_keeps_pool_open(rest_config_path, symbol_database_config):
 	db_config_path = _write_symbol_database_config(rest_config_path.parent, symbol_database_config)
 	app_config_path = _write_symbol_app_config(rest_config_path.parent, db_config_path)
 	with PullerSymbolDatabase(symbol_database_config) as puller_database:
-		drop_symbol_block_tables_if_present(puller_database)
-		puller_database.create_tables()
-
-	with rest_settings_env(app_config_path):
-		# Act:
-		app = create_app()
-		response = app.test_client().get('/api/symbol/health')
-		symbol_database = app.extensions['symbol_database']
-		with symbol_database.connection() as connection:
-			with connection.cursor() as cursor:
-				cursor.execute('SELECT 1')
-				result = cursor.fetchone()
-		symbol_database.close()
-
-	with PullerSymbolDatabase(symbol_database_config) as puller_database:
-		drop_symbol_block_tables_if_present(puller_database)
+		symbol_database = None
+		try:
+			drop_symbol_block_tables_if_present(puller_database)
+			puller_database.create_tables()
+			with rest_settings_env(app_config_path):
+				# Act:
+				app = create_app()
+				symbol_database = app.extensions['symbol_database']
+				try:
+					response = app.test_client().get('/api/symbol/health')
+					with symbol_database.connection() as connection:
+						with connection.cursor() as cursor:
+							cursor.execute('SELECT 1')
+							result = cursor.fetchone()
+				finally:
+					if symbol_database is not None:
+						symbol_database.close()
+		finally:
+			drop_symbol_block_tables_if_present(puller_database)
 
 	# Assert:
 	assert 200 == response.status_code
