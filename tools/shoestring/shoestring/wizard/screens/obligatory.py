@@ -10,6 +10,7 @@ from prompt_toolkit.widgets import Box, Label
 from symbolchain.CryptoTypes import PrivateKey
 from symbolchain.PrivateKeyStorage import PrivateKeyStorage
 
+from shoestring.internal.DirectoryResolver import resolve_directory
 from shoestring.wizard.MultibyteButton import MultibyteButton as Button
 from shoestring.wizard.Screen import ScreenDialog
 from shoestring.wizard.TabbedView import TabList, Tabs
@@ -107,7 +108,7 @@ def create(screens):
 		_('wizard-obligatory-destination-directory-label'),
 		is_directory_path,
 		_('wizard-obligatory-destination-directory-error-text'),
-		str(Path.home().absolute() / 'symbol'))
+		resolve_directory())
 
 	ca_key_tab_list = TabList([
 		(0, _('wizard-obligatory-priv-ca')),
