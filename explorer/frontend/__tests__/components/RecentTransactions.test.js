@@ -2,11 +2,14 @@ import '@testing-library/jest-dom';
 import { itVariant } from '../test-utils/variants';
 import RecentTransactions from '@/app/components/RecentTransactions';
 import { TRANSACTION_GROUP, TRANSACTION_TYPE } from '@/app/constants';
+import { SYMBOL_TRANSACTION_TYPE } from '@/app/variants/symbol/constants';
 import { render, screen } from '@testing-library/react';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en.json';
 
 TimeAgo.addDefaultLocale(en);
+
+const getIconPath = image => decodeURIComponent(image.getAttribute('src'));
 
 jest.mock('next/router', () => ({
 	useRouter: () => ({ locale: 'en' })
@@ -54,5 +57,31 @@ describe('components/RecentTransactions', () => {
 		// Assert:
 		expect(screen.queryByText(/value_transactionConfirmationTime/)).not.toBeInTheDocument();
 		expect(screen.queryByText('label_awaitingCosignatures')).not.toBeInTheDocument();
+	});
+
+	itVariant('nem')('keeps the existing label and icon when Symbol display helpers are absent', () => {
+		// Arrange:
+		const type = TRANSACTION_TYPE.TRANSFER;
+		const data = [{ ...baseTransaction, type, group: TRANSACTION_GROUP.CONFIRMED }];
+
+		// Act:
+		render(<RecentTransactions data={data} blockTime={blockTime} />);
+
+		// Assert:
+		expect(screen.getByText(`transactionType_${type}`)).toBeInTheDocument();
+		expect(getIconPath(screen.getByAltText(type))).toContain('/nem/images/transaction/transfer.svg');
+	});
+
+	itVariant('symbol')('uses Symbol labels and icons in the transaction preview', () => {
+		// Arrange:
+		const type = SYMBOL_TRANSACTION_TYPE.AGGREGATE_COMPLETE;
+		const data = [{ ...baseTransaction, type, group: TRANSACTION_GROUP.CONFIRMED }];
+
+		// Act:
+		render(<RecentTransactions data={data} blockTime={blockTime} />);
+
+		// Assert:
+		expect(screen.getByText('Aggregate Complete')).toBeInTheDocument();
+		expect(getIconPath(screen.getByAltText(type))).toContain('/symbol/images/transaction/aggregate.svg');
 	});
 });

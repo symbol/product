@@ -10,12 +10,14 @@ import {
 	selectFilterOption,
 	toggleFilterChip
 } from '../test-utils/page';
+import { symbolTransactionTypes } from '../test-utils/transaction-types';
+import { itVariant } from '../test-utils/variants';
 import * as StatsService from '@/app/api/stats';
 import * as TransactionService from '@/app/api/transactions';
 import { STORAGE_KEY, TRANSACTION_TYPE } from '@/app/constants';
 import TransactionList, { getServerSideProps } from '@/app/pages/transactions';
 import { truncateString } from '@/app/utils';
-import { render } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 
 // Mocks
 
@@ -249,6 +251,18 @@ describe('TransactionList', () => {
 		});
 
 		describe('transaction filter', () => {
+			itVariant('symbol')('offers all Symbol transaction types in the configured order', async () => {
+				// Arrange:
+				renderPage({ preloadedData: [] });
+
+				// Act:
+				await toggleFilterChip(SCREEN_TEXT.filterType)();
+
+				// Assert:
+				const icons = within(screen.getByRole('dialog')).getAllByRole('img');
+				expect(icons.map(icon => icon.getAttribute('alt')).filter(alt => alt !== 'Close')).toEqual(symbolTransactionTypes);
+			});
+
 			const selectTransferType = selectFilterOption(SCREEN_TEXT.filterType, SCREEN_TEXT.typeTransfer);
 			const selectFromContact = selectFilterOption(SCREEN_TEXT.filterFrom, contactOptionText);
 			const selectToContact = selectFilterOption(SCREEN_TEXT.filterTo, contactOptionText);

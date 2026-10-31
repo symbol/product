@@ -26,6 +26,7 @@ import {
 	usePagination,
 	useStorage
 } from '@/app/utils';
+import { pageConfig } from '@/app/variants/page-config';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -100,7 +101,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			title: t('filter_type'),
 			conflicts: ['mosaic', 'to'],
 			type: 'transaction-type',
-			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
+			options: (pageConfig.transactions?.transactionTypes ?? Object.values(TRANSACTION_TYPE)).map(type => ({ type }))
 		},
 		{
 			name: 'from',
