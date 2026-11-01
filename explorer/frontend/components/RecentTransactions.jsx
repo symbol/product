@@ -9,13 +9,13 @@ import { createAssetURL } from '@/app/utils';
 import { utils } from '@/app/variants/utils';
 import { useTranslation } from 'next-i18next';
 
-const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, blockTime }) => {
+const TransactionPreview = ({ type, group, sender, hash, timestamp, amount, blockTime }) => {
 	const { t } = useTranslation();
 	const typeText = t(`transactionType_${type}`);
 	const labelSenderText = t('table_field_sender');
 	const isUnconfirmed = group !== TRANSACTION_GROUP.CONFIRMED;
 	const isAwaitingSignatures = utils.transactions.isTransactionAwaitingSignatures({ type, group });
-	const title = `${typeText}\n${labelSenderText}: ${signer}`;
+	const title = `${typeText}\n${labelSenderText}: ${sender}`;
 
 	return (
 		<div className={styles.transactionPreview} title={title}>
@@ -47,7 +47,7 @@ const RecentTransactions = ({ data, blockTime }) => {
 			{data.map((item, key) => (
 				<TransactionPreview
 					type={item.type}
-					signer={item.signer}
+					sender={item.sender}
 					group={item.group}
 					hash={item.hash}
 					deadline={item.deadline}
