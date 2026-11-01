@@ -42,7 +42,7 @@
     "sass": "^1.49.0",
     "sharp": "^0.35.1",
     "usehooks-ts": "^3.1.0",
-    "web-vitals": "^5.1.0"
+    "web-vitals": "^6.2.3"
   },
   "devDependencies": {
     "@eslint-react/eslint-plugin": "^5.18.6",
