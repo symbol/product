@@ -159,7 +159,7 @@ export const iconSourceMap = {
 		'info-circle': require('./white/info-circle.png'),
 		'key': require('./white/key.png'),
 		'lock': require('./white/lock.png'),
-		'messgae-encrypted': require('./white/messgae-encrypted.png'),
+		'message-encrypted': require('./white/message-encrypted.png'),
 		'minus': require('./white/minus.png'),
 		'nem': require('./white/nem.png'),
 		'open': require('./white/open.png'),
