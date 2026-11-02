@@ -8,7 +8,8 @@ from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_blo
 from psycopg2 import Error as PsycopgError
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 
-from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDatabase, SymbolDataUnavailable
+from rest.db.SymbolDatabase import ReceiptQuery, SortOrder, SymbolDatabase
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_importance_block, create_symbol_receipt, create_symbol_sync_state
 from ..test.SymbolDatabaseTestUtils import (

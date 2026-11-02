@@ -5,14 +5,8 @@ from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import TransactionType
 
-from rest.db.SymbolDatabase import (
-	SymbolDatabase,
-	SymbolDataUnavailable,
-	SymbolMosaicAliasNotFound,
-	TransactionMosaicRecord,
-	TransactionQuery,
-	TransactionRecord
-)
+from rest.db.SymbolDatabase import SymbolDatabase, SymbolMosaicAliasNotFound, TransactionQuery, TransactionRecord
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable, TransactionMosaicRecord
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state
 from ..test.SymbolDatabaseTestUtils import (

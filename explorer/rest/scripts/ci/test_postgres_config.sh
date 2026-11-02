@@ -1,0 +1,13 @@
+#!/bin/bash
+
+configure_test_postgres() {
+	export EXPLORER_TEST_POSTGRES_HOST="${EXPLORER_TEST_POSTGRES_HOST:-127.0.0.1}"
+	export EXPLORER_TEST_POSTGRES_PORT="${EXPLORER_TEST_POSTGRES_PORT:-5432}"
+	export EXPLORER_TEST_POSTGRES_DATABASE="${EXPLORER_TEST_POSTGRES_DATABASE:-explorer_rest_test}"
+	export EXPLORER_TEST_POSTGRES_USER="${EXPLORER_TEST_POSTGRES_USER:-postgres}"
+	export PGDATA="${PGDATA:-/var/lib/postgresql/data/pgdata}"
+	if [ "${PGDATA}" = /var/lib/postgresql/data ]; then
+		# The CI image parent belongs to postgres; ubuntu must create its own cluster directory.
+		export PGDATA="${PGDATA}/pgdata"
+	fi
+}

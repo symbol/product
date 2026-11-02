@@ -5,7 +5,8 @@ from flask import Flask
 from psycopg2 import OperationalError
 
 from rest import setup_error_handlers
-from rest.db.SymbolDatabase import SortOrder, SymbolDataUnavailable
+from rest.db.SymbolDatabase import SortOrder
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.routes.symbol import setup_symbol_routes
 

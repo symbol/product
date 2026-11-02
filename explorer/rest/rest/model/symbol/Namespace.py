@@ -1,4 +1,4 @@
-from rest.model.symbol.format import format_timestamp
+from rest.model.format import format_timestamp
 
 
 class SymbolNamespaceView:  # pylint: disable=too-many-instance-attributes

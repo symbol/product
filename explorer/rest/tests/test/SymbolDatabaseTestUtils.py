@@ -12,8 +12,8 @@ from .SymbolBlockTestUtils import create_symbol_sync_state
 class PausingAfterSyncStateReadSymbolDatabase(SymbolDatabase):
 	"""Pauses after reading sync state to test repeatable-read snapshot boundaries."""
 
-	def __init__(self, db_config):
-		super().__init__(db_config)
+	def __init__(self, db_config, native_mosaic_info=None, clock=None):
+		super().__init__(db_config, native_mosaic_info, clock)
 		self.state_read_event = Event()
 		self.allow_query_event = Event()
 
