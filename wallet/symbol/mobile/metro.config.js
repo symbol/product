@@ -1,3 +1,4 @@
+const BRANDS = require('./src/contract/brands.json');
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 const path = require('path');
 
@@ -8,7 +9,6 @@ const defaultConfig = getDefaultConfig(__dirname);
 const commonPackagesRoot = path.resolve(__dirname, '../../common');
 const commonPackagesNodeModules = /wallet\/common\/[^/]+\/node_modules\/.*/;
 
-const BRANDS = ['symbol', 'nem'];
 const BRAND_IMPORT = '@/brand';
 const brandsRoot = path.resolve(__dirname, 'src/brands');
 

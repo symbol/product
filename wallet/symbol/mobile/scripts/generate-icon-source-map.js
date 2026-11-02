@@ -1,3 +1,4 @@
+const brands = require('../src/contract/brands.json');
 const fs = require('fs');
 const path = require('path');
 
@@ -51,8 +52,6 @@ const createEntries = (iconTree, depth) => {
 
 const createSourceMapModule = (iconTree, exportName) =>
 	`${HEADER}\nexport const ${exportName} = {\n${createEntries(iconTree, 1)}\n};\n`;
-
-const brands = getSubfolderNames(brandsRoot);
 
 sourceMaps.forEach(({ folder, fileName, exportName }) => {
 	brands.forEach(brand => {
