@@ -7,5 +7,4 @@ export const config = configFile;
 export const knownAccounts = knownAccountsFile;
 export const knownTokens = knownTokensFile;
 export const termsAndPrivacy = termsAndPrivacyFile;
-export { brand } from '@/brand';
 

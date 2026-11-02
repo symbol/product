@@ -3,6 +3,7 @@
         "baseUrl": ".",
         "paths": {
             "@/app/*": ["src/main/*"],
+            "@/contract/*": ["src/contract/*"],
             "@/brand": ["src/brands/symbol"],
             "@/brand/*": ["src/brands/symbol/*"],
             "__fixtures__/*": ["__fixtures__/*"],

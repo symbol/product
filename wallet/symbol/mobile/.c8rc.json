@@ -3,6 +3,7 @@
 	"include": ["src/**"],
 	"exclude": [
 		"src/main/types/**",
+		"src/contract/types/**",
 		"src/main/components/layout/Grid.jsx"
 	]
 }
