@@ -81,6 +81,12 @@ export const App = () => {
 			mainWalletController.fetchAccountInfo();
 	};
 
+	// Invalidate network request cache depending on blockchain state changes
+	// Must be used before listeners
+	useCacheInvalidation({
+		walletControllers: [mainWalletController, ...walletControllers.additional]
+	});
+
 	// Transaction listeners
 	const showTransactionMessage = () => {
 		showMessage({ message: $t('message_transactionConfirmed'), type: 'info' });
@@ -99,11 +105,6 @@ export const App = () => {
 		walletControllers: walletControllers.additional,
 		onTransactionConfirmed: showTransactionMessage,
 		onTransactionError: showError
-	});
-
-	// Invalidate network request cache depending on blockchain state changes
-	useCacheInvalidation({
-		walletControllers: [mainWalletController, ...walletControllers.additional]
 	});
 
 	// Sync selected network across additional wallet controllers
