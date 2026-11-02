@@ -128,6 +128,7 @@ describe('modules/TransferModule', () => {
 					bundle: new TransactionBundle([{
 						type: TransactionType.TRANSFER,
 						signerPublicKey: currentAccount.publicKey,
+						signerAddress: currentAccount.address,
 						recipientAddress: RECIPIENT_ADDRESS,
 						tokens: nativeTokens('10'),
 						message: plainMessage('Good luck!'),
@@ -150,6 +151,7 @@ describe('modules/TransferModule', () => {
 					bundle: new TransactionBundle([{
 						type: TransactionType.TRANSFER,
 						signerPublicKey: currentAccount.publicKey,
+						signerAddress: currentAccount.address,
 						recipientAddress: RECIPIENT_ADDRESS,
 						tokens: nativeTokens('5'),
 						message: null,
@@ -171,6 +173,7 @@ describe('modules/TransferModule', () => {
 					bundle: new TransactionBundle([{
 						type: TransactionType.TRANSFER,
 						signerPublicKey: currentAccount.publicKey,
+						signerAddress: currentAccount.address,
 						recipientAddress: RECIPIENT_ADDRESS,
 						tokens: nativeTokens('10'),
 						message: null,
@@ -196,6 +199,7 @@ describe('modules/TransferModule', () => {
 					bundle: new TransactionBundle([{
 						type: TransactionType.TRANSFER,
 						signerPublicKey: currentAccount.publicKey,
+						signerAddress: currentAccount.address,
 						recipientAddress: RECIPIENT_ADDRESS,
 						tokens: nativeTokens('10'),
 						message: encryptedMessage('Secret', `ENC(Secret)-with-${bob.publicKey}`),
@@ -218,9 +222,11 @@ describe('modules/TransferModule', () => {
 					bundle: new TransactionBundle([{
 						type: TransactionType.MULTISIG,
 						signerPublicKey: currentAccount.publicKey,
+						signerAddress: currentAccount.address,
 						innerTransaction: {
 							type: TransactionType.TRANSFER,
 							signerPublicKey: MULTISIG_PUBLIC_KEY,
+							signerAddress: carol.address,
 							recipientAddress: RECIPIENT_ADDRESS,
 							tokens: nativeTokens('10'),
 							message: null,
