@@ -9,6 +9,7 @@ from psycopg2 import OperationalError
 from symbolchain.symbol.Network import Network
 
 from rest.db.SymbolDatabase import (
+	BlockStatisticsRecord,
 	NamespaceQuery,
 	ReceiptQuery,
 	ReceiptRecord,
@@ -181,6 +182,18 @@ class BlockSymbolDatabase:
 	def get_block(self, height):
 		self.height = height
 		return BlockView() if 1 == height else None
+
+
+class BlockStatisticsSymbolDatabase:
+	def __init__(self):
+		self.called = False
+
+	def get_block_statistics(self):
+		self.called = True
+		return [
+			BlockStatisticsRecord(1, datetime(2026, 1, 1, tzinfo=timezone.utc), 1000000, 10 ** 12),
+			BlockStatisticsRecord(2, datetime(2026, 1, 1, 0, 0, 30, tzinfo=timezone.utc), 3000000, 12 * 10 ** 12)
+		]
 
 
 class MosaicView:
@@ -467,6 +480,25 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act + Assert:
 		with self.assertRaises(SymbolDataUnavailable):
 			facade.get_blocks(1, 10, SortOrder.DESC)
+
+	def test_get_block_statistics_formats_database_rows(self):
+		# Arrange:
+		symbol_db = BlockStatisticsSymbolDatabase()
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_block_statistics()
+
+		# Assert:
+		self.assertTrue(symbol_db.called)
+		self.assertEqual({
+			'blockTimeChart': [[2, 30.0]],
+			'blockFeeChart': [[1, 1.0], [2, 3.0]],
+			'blockDifficultyChart': [[1, '1.00'], [2, '12.00']],
+			'blockTime': 30,
+			'blockFee': 2.0,
+			'blockDifficulty': '12.00'
+		}, result)
 
 	def test_can_get_mosaics(self):
 		# Arrange:

@@ -29,6 +29,12 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 		self.height = None
 		self.blocks_error = None
 		self.block_error = None
+		self.block_statistics_result = {
+			'blockTimeChart': [], 'blockFeeChart': [], 'blockDifficultyChart': [],
+			'blockTime': None, 'blockFee': 0, 'blockDifficulty': '0.00'
+		}
+		self.block_statistics_error = None
+		self.block_statistics_call_count = 0
 		self.receipts_result = [{'version': 1}]
 		self.receipts_query = None
 		self.receipts_error = None
@@ -53,6 +59,13 @@ class SymbolBlockFacade:  # pylint: disable=too-many-instance-attributes
 			raise self.block_error
 
 		return self.block_result
+
+	def get_block_statistics(self):
+		self.block_statistics_call_count += 1
+		if self.block_statistics_error:
+			raise self.block_statistics_error
+
+		return self.block_statistics_result
 
 	def get_receipts(self, query):
 		self.receipts_query = query
@@ -261,6 +274,57 @@ def test_blocks_uses_cursor_sort():
 	assert 200 == response.status_code
 	assert [{'height': 2}] == response.json
 	assert (10, 5, SortOrder.ASC) == facade.blocks_query
+
+
+def test_block_stats_200_dispatch_once():
+	# Arrange:
+	facade = SymbolBlockFacade()
+	facade.block_statistics_result = {
+		'blockTimeChart': [[1, 30.123]],
+		'blockFeeChart': [[1, 0]],
+		'blockDifficultyChart': [[1, '12.35']],
+		'blockTime': 30,
+		'blockFee': 0,
+		'blockDifficulty': '12.35'
+	}
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/block/statistics')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert facade.block_statistics_result == response.json
+	assert 1 == facade.block_statistics_call_count
+	assert facade.height is None
+
+
+def test_block_query_400_no_dispatch():
+	# Arrange:
+	facade = SymbolBlockFacade()
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/block/statistics?limit=1')
+
+	# Assert:
+	_assert_bad_request_response(response, 'Unsupported query parameter: limit')
+	assert 0 == facade.block_statistics_call_count
+
+
+@pytest.mark.parametrize('error', [
+	pytest.param(SymbolDataUnavailable(), id='symbol-data-unavailable'),
+	pytest.param(OperationalError('database unavailable'), id='database-operational-error')
+])
+def test_block_stats_backend_503(error):
+	# Arrange:
+	facade = SymbolBlockFacade()
+	facade.block_statistics_error = error
+
+	# Act:
+	response = _create_symbol_test_client(facade).get('/api/symbol/block/statistics')
+
+	# Assert:
+	_assert_symbol_backend_unavailable_response(response)
+	assert 1 == facade.block_statistics_call_count
 
 
 def test_blocks_rejects_limit():

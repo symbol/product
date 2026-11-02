@@ -250,6 +250,7 @@ def test_route_failure_closes_db_pool(rest_config_path, symbol_database_config):
 @pytest.mark.parametrize('url', [
 	pytest.param('/api/symbol/blocks', id='blocks-list'),
 	pytest.param('/api/symbol/block/1', id='block-detail'),
+	pytest.param('/api/symbol/block/statistics', id='block-statistics'),
 	pytest.param('/api/symbol/receipts', id='receipts-list'),
 	pytest.param('/api/symbol/block/1/receipts', id='block-receipts')
 ])
@@ -264,6 +265,10 @@ def test_injected_db_errors_return_503(rest_config_path, url):
 
 		@staticmethod
 		def get_block(_height):
+			raise OperationalError('database unavailable')
+
+		@staticmethod
+		def get_block_statistics():
 			raise OperationalError('database unavailable')
 
 		@staticmethod

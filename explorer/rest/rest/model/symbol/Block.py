@@ -1,4 +1,67 @@
+from decimal import ROUND_HALF_UP, Decimal
+
 from rest.model.symbol.format import format_amount, format_timestamp, str_or_none, to_hex, to_hex_or_none
+
+BLOCK_STATISTICS_WINDOW = 240
+
+
+class SymbolBlockStatisticsView:
+	"""Format a non-empty sequence of blocks in ascending height order.
+
+	The input contains up to the latest 240 blocks and, if present, their predecessor.
+	Block times use all adjacent pairs; fees and difficulties use up to the latest 240 blocks.
+	At least one block is assumed because the database read rejects an empty result.
+	"""
+
+	def __init__(self, blocks):
+		self.blocks = blocks
+
+	@staticmethod
+	def _timestamp_difference(newer_timestamp, older_timestamp):
+		delta = newer_timestamp - older_timestamp
+		seconds = Decimal(delta.days * 86400 + delta.seconds) + Decimal(delta.microseconds) / Decimal(1_000_000)
+		return float(seconds)
+
+	@staticmethod
+	def _format_difficulty(difficulty):
+		# Match the frontend's binary64 calculation before applying its toFixed(2) rounding.
+		percentage = float(difficulty) / float(10 ** 14) * 100.0
+		rounded_percentage = Decimal.from_float(percentage).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+		return format(rounded_percentage, '.2f')
+
+	def to_dict(self, native_mosaic_info):
+		"""Formats the block statistics response with explicit native divisibility."""
+
+		fee_blocks = self.blocks[-BLOCK_STATISTICS_WINDOW:]
+		block_time_chart = [
+			[block.height, self._timestamp_difference(block.timestamp, previous_block.timestamp)]
+			for previous_block, block in zip(self.blocks, self.blocks[1:])
+		]
+		block_fee_chart = [
+			[block.height, format_amount(block.total_fee, native_mosaic_info.divisibility)] for block in fee_blocks
+		]
+		block_difficulty_chart = [
+			[block.height, self._format_difficulty(block.difficulty)] for block in fee_blocks
+		]
+
+		block_time = None
+		if block_time_chart:
+			average_time = sum(Decimal(str(item[1])) for item in block_time_chart) / len(block_time_chart)
+			block_time = int(average_time.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+
+		block_fee = format_amount(
+			sum((Decimal(block.total_fee) for block in fee_blocks), Decimal(0)) / len(fee_blocks),
+			native_mosaic_info.divisibility)
+		block_difficulty = self._format_difficulty(fee_blocks[-1].difficulty)
+
+		return {
+			'blockTimeChart': block_time_chart,
+			'blockFeeChart': block_fee_chart,
+			'blockDifficultyChart': block_difficulty_chart,
+			'blockTime': block_time,
+			'blockFee': block_fee,
+			'blockDifficulty': block_difficulty
+		}
 
 
 class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
