@@ -2,7 +2,7 @@ import { AppLogo, Button, ButtonPlain, Screen, Spacer, Stack, StyledText } from 
 import { $t } from '@/app/localization';
 import React from 'react';
 
-/** @typedef {import('@/app/screens/onboarding/types/Onboarding').WelcomeViewProps} WelcomeViewProps */
+/** @typedef {import('@/contract/types/Component').WelcomeViewProps} WelcomeViewProps */
 
 /**
  * WelcomeView component. Represents the Welcome screen for this brand. Used in the common Welcome screen.

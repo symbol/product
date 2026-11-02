@@ -1,4 +1,4 @@
-/** @typedef {import('@/app/screens/address-book/types/AddressBook').AddressBookWidgetConfig} AddressBookWidgetConfig */
+/** @typedef {import('@/contract/types/Config').AddressBookWidgetConfig} AddressBookWidgetConfig */
 
 /** @type {AddressBookWidgetConfig} */
 export const addressBookWidgetConfig = {

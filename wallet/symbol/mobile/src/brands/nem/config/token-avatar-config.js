@@ -1,4 +1,4 @@
-/** @typedef {import('@/app/types/Token').TokenAvatarConfig} TokenAvatarConfig */
+/** @typedef {import('@/contract/types/Config').TokenAvatarConfig} TokenAvatarConfig */
 
 /** @type {TokenAvatarConfig} */
 export const tokenAvatarConfig = {

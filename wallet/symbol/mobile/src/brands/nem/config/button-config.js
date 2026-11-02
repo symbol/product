@@ -1,4 +1,4 @@
-/** @typedef {import('@/app/types/Button').ButtonConfig} ButtonConfig */
+/** @typedef {import('@/contract/types/Config').ButtonConfig} ButtonConfig */
 
 /** @type {ButtonConfig} */
 export const buttonConfig = {

@@ -1,6 +1,6 @@
 import { FilterType } from '@/app/types/Filter';
 
-/** @typedef {import('@/app/screens/history/types/History').HistoryScreenConfig} HistoryScreenConfig */
+/** @typedef {import('@/contract/types/Config').HistoryScreenConfig} HistoryScreenConfig */
 
 /** @type {HistoryScreenConfig} */
 export const historyScreenConfig = {

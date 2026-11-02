@@ -2,7 +2,7 @@ import { SymbolTransactionType } from '@/app/constants';
 import { getTransactionTypeInfo } from '@/app/lib/transaction';
 import { FilterType } from '@/app/types/Filter';
 
-/** @typedef {import('@/app/screens/history/types/History').HistoryScreenConfig} HistoryScreenConfig */
+/** @typedef {import('@/contract/types/Config').HistoryScreenConfig} HistoryScreenConfig */
 
 const SYMBOL_CHAIN_NAME = 'symbol';
 

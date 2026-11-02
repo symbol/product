@@ -2,7 +2,7 @@ import { Colors, Sizes, Typography } from '@/app/styles';
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-/** @typedef {import('@/app/screens/onboarding/types/Onboarding').WalletCreationAnimationProps} WalletCreationAnimationProps */
+/** @typedef {import('@/contract/types/Component').WalletCreationAnimationProps} WalletCreationAnimationProps */
 
 const ANIMATION_DURATION = 10;
 

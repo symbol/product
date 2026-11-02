@@ -4,7 +4,7 @@ import { $t } from '@/app/localization';
 import React from 'react';
 import { isMosaicRevokable, isMosaicSupplyModifiable } from 'wallet-common-symbol';
 
-/** @typedef {import('@/app/screens/assets/types/Assets').TokenDetailsActionProps} TokenDetailsActionProps */
+/** @typedef {import('@/contract/types/Component').TokenDetailsActionProps} TokenDetailsActionProps */
 
 /**
  * MosaicCreatorActions component. Shows the revoke and modify buttons on TokenDetails.

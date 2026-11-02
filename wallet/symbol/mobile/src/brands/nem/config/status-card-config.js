@@ -1,4 +1,4 @@
-/** @typedef {import('@/app/types/StatusCardConfig').StatusCardConfig} StatusCardConfig */
+/** @typedef {import('@/contract/types/Config').StatusCardConfig} StatusCardConfig */
 
 /** @type {StatusCardConfig} */
 export const statusCardConfig = {

@@ -1,4 +1,4 @@
-/** @typedef {import('@/app/screens/onboarding/types/Onboarding').ImportWalletScreenConfig} ImportWalletScreenConfig */
+/** @typedef {import('@/contract/types/Config').ImportWalletScreenConfig} ImportWalletScreenConfig */
 
 /** @type {ImportWalletScreenConfig} */
 export const importWalletScreenConfig = {

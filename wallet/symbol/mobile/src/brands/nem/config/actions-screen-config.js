@@ -1,6 +1,6 @@
 import { NemRouter } from '../router/NemRouter';
 
-/** @typedef {import('@/app/screens/actions/types/ActionItem').ActionsScreenConfig} ActionsScreenConfig */
+/** @typedef {import('@/contract/types/Config').ActionsScreenConfig} ActionsScreenConfig */
 
 /** @type {ActionsScreenConfig} */
 export const actionsScreenConfig = {

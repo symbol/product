@@ -1,4 +1,4 @@
-/** @typedef {import('@/app/types/FeeSelectorConfig').FeeSelectorConfig} FeeSelectorConfig */
+/** @typedef {import('@/contract/types/Config').FeeSelectorConfig} FeeSelectorConfig */
 
 /** @type {FeeSelectorConfig} */
 export const feeSelectorConfig = {

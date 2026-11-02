@@ -1,6 +1,6 @@
 import { MosaicCreatorActions } from '../screens/mosaic/components/MosaicCreatorActions';
 
-/** @typedef {import('@/app/screens/assets/types/Assets').TokenDetailsScreenConfig} TokenDetailsScreenConfig */
+/** @typedef {import('@/contract/types/Config').TokenDetailsScreenConfig} TokenDetailsScreenConfig */
 
 /** @type {TokenDetailsScreenConfig} */
 export const tokenDetailsScreenConfig = {

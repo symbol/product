@@ -4,7 +4,7 @@ import { Sizes } from '@/app/styles';
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
-/** @typedef {import('@/app/screens/onboarding/types/Onboarding').WelcomeViewProps} WelcomeViewProps */
+/** @typedef {import('@/contract/types/Component').WelcomeViewProps} WelcomeViewProps */
 
 const LOGO_SIZE = Sizes.Primitives.spacing1600;
 

@@ -1,4 +1,4 @@
-/** @typedef {import('@/app/types/MnemonicViewConfig').MnemonicViewConfig} MnemonicViewConfig */
+/** @typedef {import('@/contract/types/Config').MnemonicViewConfig} MnemonicViewConfig */
 
 /** @type {MnemonicViewConfig} */
 export const mnemonicViewConfig = {

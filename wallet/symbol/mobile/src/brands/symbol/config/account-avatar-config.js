@@ -1,4 +1,4 @@
-/** @typedef {import('@/app/types/AccountAvatarConfig').AccountAvatarConfig} AccountAvatarConfig */
+/** @typedef {import('@/contract/types/Config').AccountAvatarConfig} AccountAvatarConfig */
 
 /** @type {AccountAvatarConfig} */
 export const accountAvatarConfig = {

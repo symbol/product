@@ -2,7 +2,7 @@ import { HarvestingHomeWidget } from '../screens/harvesting/widgets/HarvestingHo
 import { MultisigHomeWidget } from '../screens/multisig/widgets/MultisigHomeWidget';
 import { AddressBookHomeWidget } from '@/app/screens/address-book/widgets/AddressBookHomeWidget';
 
-/** @typedef {import('@/app/screens/home/types/Home').HomeScreenConfig} HomeScreenConfig */
+/** @typedef {import('@/contract/types/Config').HomeScreenConfig} HomeScreenConfig */
 
 /** @type {HomeScreenConfig} */
 export const homeScreenConfig = {

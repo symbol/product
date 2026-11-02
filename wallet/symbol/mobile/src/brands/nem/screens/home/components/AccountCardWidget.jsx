@@ -6,7 +6,7 @@ import { Colors, Shadows, Sizes, Typography } from '@/app/styles';
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-/** @typedef {import('@/app/screens/home/types/Home').AccountCardWidgetProps} AccountCardWidgetProps */
+/** @typedef {import('@/contract/types/Component').AccountCardWidgetProps} AccountCardWidgetProps */
 
 const CARD_BACKGROUND_COLOR = Colors.Components.accountCardWidgetBody.background;
 const BUTTON_BACKGROUND_COLOR = Colors.Components.accountCardWidgetButton.default.background;

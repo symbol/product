@@ -1,4 +1,4 @@
-/** @typedef {import('@/app/screens/onboarding/types/Onboarding').CreateWalletScreenConfig} CreateWalletScreenConfig */
+/** @typedef {import('@/contract/types/Config').CreateWalletScreenConfig} CreateWalletScreenConfig */
 
 /** @type {CreateWalletScreenConfig} */
 export const createWalletScreenConfig = {

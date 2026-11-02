@@ -1,3 +1,6 @@
+/** @typedef {import('@/contract/types/Config').IconConfig} IconConfig */
+
+/** @type {IconConfig} */
 export const iconConfig = {
 	variants: {
 		default: 'black',

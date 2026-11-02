@@ -9,7 +9,7 @@ import { ModifyMultisigAccount } from '../screens/multisig/ModifyMultisigAccount
 import { MultisigAccountDetails } from '../screens/multisig/MultisigAccountDetails';
 import { MultisigAccountList } from '../screens/multisig/MultisigAccountList';
 
-/** @typedef {import('@/app/types/Route').RouteItem} RouteItem */
+/** @typedef {import('@/contract/types/Router').RouteItem} RouteItem */
 
 /** @type {RouteItem[]} */
 export const routes = [
