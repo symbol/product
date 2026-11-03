@@ -1,13 +1,39 @@
+from datetime import datetime, timedelta, timezone
+
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from symbolchain.sc import NamespaceId, TransactionType
 from symbolchain.symbol.Network import Address, Network
 
-from rest.model.symbol.TransactionView import create_transaction_payload
+from rest.model.symbol.TransactionView import (
+	SymbolTransactionView,
+	TransactionViewRecord,
+	create_transaction_payload,
+	create_unconfirmed_record
+)
+from rest.model.symbol.validation import SymbolDataInvalid
 
-from ...test.SymbolUnconfirmedTransactionTestUtils import get_unconfirmed_transaction
+from ...test.SymbolUnconfirmedTransactionTestUtils import get_unconfirmed_aggregate_children, get_unconfirmed_transaction
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
+
+
+def _create_record(**overrides):
+	record = TransactionViewRecord(
+		transaction_hash='AB' * 32,
+		aggregate_hash=None,
+		embedded_index=None,
+		transaction_type=TransactionType.TRANSFER,
+		from_address='TDPO5E6N2BZZNRNDLHHQ2FC3D6RBVUEOXEO26YY',
+		to_address='TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
+		payload=[{'message': {'type': 0, 'payload': '4869'}}],
+		mosaics=(('1234567890ABCDEF', 12345),),
+		deadline=datetime(2026, 10, 28, 10, 0, tzinfo=timezone.utc),
+		signature='CD' * 64,
+		size=176,
+		version=1,
+	)
+	return record._replace(**overrides)
 
 
 @pytest.mark.parametrize('transaction_type,expected_payload_map', [
@@ -269,3 +295,328 @@ def test_can_format_transaction_fields(amount, expected_amount):
 	# Assert:
 	assert [{'message': {'type': 0, 'payload': '4869'}}] == payload
 	assert (('1234567890ABCDEF', expected_amount),) == mosaics
+
+
+def test_can_create_unconfirmed_record():
+	# Arrange:
+	unconfirmed_transaction = get_unconfirmed_transaction(TransactionType.TRANSFER)
+
+	# Act:
+	record = create_unconfirmed_record(unconfirmed_transaction, Network.TESTNET)
+
+	# Assert:
+	assert TransactionViewRecord(
+		transaction_hash='01' * 32,
+		aggregate_hash=None,
+		embedded_index=None,
+		transaction_type=TransactionType.TRANSFER,
+		from_address='TDPO5E6N2BZZNRNDLHHQ2FC3D6RBVUEOXEO26YY',
+		to_address='TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
+		payload=[],
+		mosaics=(('72C0212E67A08BCE', 123000000),),
+		deadline=datetime(2022, 11, 2, 7, 25, 23, 789000, tzinfo=timezone.utc),
+		signature='AB' * 64,
+		size=176,
+		version=1,
+		fee=None,
+		height=0,
+		timestamp=None,
+	) == record
+
+
+@pytest.mark.parametrize('index', [0, 2])
+def test_can_create_embedded_record(index):
+	# Arrange:
+	unconfirmed_transaction, = get_unconfirmed_aggregate_children('02' * 32)
+	unconfirmed_transaction['meta']['index'] = str(index)
+
+	# Act:
+	record = create_unconfirmed_record(unconfirmed_transaction, Network.TESTNET)
+
+	# Assert:
+	assert None is record.transaction_hash
+	assert '02' * 32 == record.aggregate_hash
+	assert index == record.embedded_index
+	assert TransactionType.TRANSFER == record.transaction_type
+	assert 'TDPO5E6N2BZZNRNDLHHQ2FC3D6RBVUEOXEO26YY' == record.from_address
+	assert 'TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY' == record.to_address
+	assert (('72C0212E67A08BCE', 5000000),) == record.mosaics
+	assert [] == record.payload
+	assert 1 == record.version
+	assert 0 == record.height
+	for field_name in ('deadline', 'signature', 'size', 'fee', 'timestamp'):
+		assert None is getattr(record, field_name)
+
+
+def test_returns_no_record_recipient():
+	# Arrange:
+	unconfirmed_transaction = get_unconfirmed_transaction(TransactionType.NAMESPACE_REGISTRATION)
+
+	# Act:
+	record = create_unconfirmed_record(unconfirmed_transaction, Network.TESTNET)
+
+	# Assert:
+	assert None is record.to_address
+
+
+def test_preserves_recipient_alias():
+	# Arrange:
+	address = Address.from_namespace_id(NamespaceId(int('887E5DB6BB0B21F5', 16)), Network.TESTNET.identifier)
+	unconfirmed_transaction = get_unconfirmed_transaction(TransactionType.TRANSFER)
+	unconfirmed_transaction['transaction']['recipientAddress'] = address.bytes.hex()
+
+	# Act:
+	record = create_unconfirmed_record(unconfirmed_transaction, Network.TESTNET)
+
+	# Assert:
+	assert str(address) == record.to_address
+
+
+@pytest.mark.parametrize('transaction_type', [TransactionType.SECRET_LOCK, TransactionType.SECRET_PROOF])
+def test_formats_secret_recipient(transaction_type):
+	# Arrange:
+	unconfirmed_transaction = get_unconfirmed_transaction(transaction_type)
+
+	# Act:
+	record = create_unconfirmed_record(unconfirmed_transaction, Network.TESTNET)
+
+	# Assert:
+	assert 'TAJHE6PY3UOW3EPZVL5UP52WPNOIQXH7BL6MXSQ' == record.to_address
+
+
+@pytest.mark.parametrize('amount', ['1.5', 'invalid'])
+def test_rejects_invalid_transfer_amount(amount):
+	# Arrange:
+	unconfirmed_transaction = get_unconfirmed_transaction(TransactionType.TRANSFER)
+	unconfirmed_transaction['transaction']['mosaics'][0]['amount'] = amount
+
+	# Act + Assert:
+	with pytest.raises(SymbolDataInvalid, match='invalid node response'):
+		create_unconfirmed_record(unconfirmed_transaction, Network.TESTNET)
+
+
+@pytest.mark.parametrize('overrides_map', [
+	{'type': 0}, {'signerPublicKey': 'AB'}, {'recipientAddress': 'AB'},
+	{'deadline': 'invalid'}, {'mosaics': [{'id': 'invalid', 'amount': '1'}]}
+])
+def test_rejects_invalid_common_fields(overrides_map):
+	# Arrange:
+	unconfirmed_transaction = get_unconfirmed_transaction(TransactionType.TRANSFER)
+	unconfirmed_transaction['transaction'].update(overrides_map)
+
+	# Act + Assert:
+	with pytest.raises(SymbolDataInvalid, match='invalid node response'):
+		create_unconfirmed_record(unconfirmed_transaction, Network.TESTNET)
+
+
+@pytest.mark.parametrize('confirmation_map,expected_timestamp', [
+	({}, None),
+	({
+		'fee': 0.125,
+		'height': 123456,
+		'timestamp': datetime(2026, 10, 28, 16, 0, tzinfo=timezone(timedelta(hours=8))),
+	}, '2026-10-28 08:00:00'),
+])
+def test_returns_shared_output(confirmation_map, expected_timestamp):
+	# Arrange:
+	record = _create_record(**confirmation_map)
+	view = SymbolTransactionView(record, {'1234567890ABCDEF': ('1234567890ABCDEF', 2)})
+
+	# Act:
+	result = view.to_dict()
+
+	# Assert:
+	assert {
+		'transactionHash': 'AB' * 32,
+		'transactionType': 'TRANSFER',
+		'fromAddress': record.from_address,
+		'toAddress': record.to_address,
+		'value': [
+			{'message': {'type': 0, 'payload': '4869'}},
+			{'id': '1234567890ABCDEF', 'name': '1234567890ABCDEF', 'amount': 123.45},
+		],
+		'embeddedTransactions': None,
+		'fee': confirmation_map.get('fee'),
+		'height': confirmation_map.get('height', 0),
+		'timestamp': expected_timestamp,
+		'deadline': '2026-10-28 10:00:00',
+		'signature': 'CD' * 64,
+		'size': 176,
+		'version': 1,
+	} == result
+
+
+@pytest.mark.parametrize('divisibility,expected_amount', [
+	(0, 1234567),
+	(2, 12345.67),
+	(6, 1.234567),
+])
+def test_formats_transfer_mosaic(divisibility, expected_amount):
+	# Arrange:
+	mosaic_id = '1234567890ABCDEF'
+	record = _create_record(payload=[], mosaics=((mosaic_id, 1234567),))
+	view = SymbolTransactionView(record, {mosaic_id: (mosaic_id, divisibility)})
+
+	# Act:
+	result = view.to_dict()
+
+	# Assert:
+	assert [{'id': mosaic_id, 'name': mosaic_id, 'amount': expected_amount}] == result['value']
+
+
+def test_preserves_mosaic_amount():
+	# Arrange:
+	record = _create_record(payload=[], mosaics=(('1234567890ABCDEF', 18446744073709551615),))
+	view = SymbolTransactionView(record, {})
+
+	# Act:
+	result = view.to_dict()
+
+	# Assert:
+	assert [{
+		'id': '1234567890ABCDEF',
+		'name': '1234567890ABCDEF',
+		'amount': 18446744073709551615,
+	}] == result['value']
+
+
+def test_preserves_unresolved_aliases():
+	# Arrange:
+	alias_id = '887E5DB6BB0B21F5'
+	record = _create_record(payload=[], mosaics=((alias_id, 1234567),))
+	view = SymbolTransactionView(record, {})
+
+	# Act:
+	result = view.to_dict()
+
+	# Assert:
+	assert [{'id': alias_id, 'name': alias_id, 'amount': 1234567}] == result['value']
+
+
+@pytest.mark.parametrize('resolved_id,divisibility,expected_amount', [
+	('1234567890ABCDEF', 3, 1234.567),
+	('72C0212E67A08BCE', 3, 1234.567)
+])
+def test_formats_resolved_alias(resolved_id, divisibility, expected_amount):
+	# Arrange:
+	alias_id = '887E5DB6BB0B21F5'
+	record = _create_record(payload=[], mosaics=((alias_id, 1234567),))
+	view = SymbolTransactionView(record, {alias_id: (resolved_id, divisibility)})
+
+	# Act:
+	result = view.to_dict()
+
+	# Assert:
+	assert [{'id': resolved_id, 'name': resolved_id, 'amount': expected_amount}] == result['value']
+
+
+def test_returns_confirmed_child():
+	# Arrange:
+	timestamp = datetime(2026, 10, 28, 8, 0)
+	parent = _create_record(
+		transaction_type=TransactionType.AGGREGATE_COMPLETE,
+		payload=[],
+		mosaics=(),
+		fee=0.5,
+		height=123456,
+		timestamp=timestamp,
+	)
+	child = _create_record(
+		transaction_hash=None,
+		aggregate_hash=parent.transaction_hash,
+		embedded_index=0,
+		deadline=None,
+		signature=None,
+		size=None,
+		height=parent.height,
+		timestamp=timestamp,
+	)
+	view = SymbolTransactionView(parent, {'1234567890ABCDEF': ('1234567890ABCDEF', 2)}, (child,))
+
+	# Act:
+	result = view.to_dict()
+
+	# Assert:
+	child_map, = result['embeddedTransactions']
+	assert 123456 == child_map['height']
+	assert '2026-10-28 08:00:00' == child_map['timestamp']
+	assert 123.45 == child_map['value'][1]['amount']
+	assert None is child_map['embeddedTransactions']
+	for field_name in ('transactionHash', 'fee', 'deadline', 'signature', 'size'):
+		assert None is child_map[field_name]
+
+
+@pytest.mark.parametrize('parent_type,child_type,payload,mosaics,expected_value', [
+	(TransactionType.AGGREGATE_COMPLETE, TransactionType.MULTISIG_ACCOUNT_MODIFICATION, [{
+		'minRemovalDelta': -1,
+		'minApprovalDelta': -1,
+		'addressAdditions': [],
+		'addressDeletions': ['TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY'],
+	}], (), [{
+		'minRemovalDelta': -1,
+		'minApprovalDelta': -1,
+		'addressAdditions': [],
+		'addressDeletions': ['TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY'],
+	}]),
+	(TransactionType.AGGREGATE_BONDED, TransactionType.TRANSFER, [], (('72C0212E67A08BCE', 5000000),), [{
+		'id': '72C0212E67A08BCE',
+		'name': '72C0212E67A08BCE',
+		'amount': 5,
+	}]),
+])
+def test_returns_embedded_transactions(parent_type, child_type, payload, mosaics, expected_value):
+	# Arrange:
+	parent = _create_record(transaction_type=parent_type, payload=[], mosaics=())
+	child = _create_record(
+		transaction_hash=None,
+		aggregate_hash=parent.transaction_hash,
+		embedded_index=0,
+		transaction_type=child_type,
+		payload=payload,
+		mosaics=mosaics,
+		deadline=None,
+		signature=None,
+		size=None,
+	)
+	view = SymbolTransactionView(parent, {NATIVE_MOSAIC_INFO.id: (NATIVE_MOSAIC_INFO.id, 6)}, (child,))
+
+	# Act:
+	result = view.to_dict()
+
+	# Assert:
+	child_map, = result['embeddedTransactions']
+	assert child_type.name == child_map['transactionType']
+	assert expected_value == child_map['value']
+	for field_name in ('transactionHash', 'signature', 'deadline', 'size', 'fee'):
+		assert None is child_map[field_name]
+
+
+def test_can_format_unconfirmed_transfer():
+	# Arrange:
+	unconfirmed_transaction = get_unconfirmed_transaction(TransactionType.TRANSFER)
+	unconfirmed_transaction['transaction']['message'] = '0048656C6C6F'
+	mosaic_divisibility_map = {NATIVE_MOSAIC_INFO.id: (NATIVE_MOSAIC_INFO.id, NATIVE_MOSAIC_INFO.divisibility)}
+
+	# Act:
+	record = create_unconfirmed_record(unconfirmed_transaction, Network.TESTNET)
+	result = SymbolTransactionView(record, mosaic_divisibility_map).to_dict()
+
+	# Assert:
+	assert {
+		'transactionHash': '01' * 32,
+		'transactionType': 'TRANSFER',
+		'fromAddress': 'TDPO5E6N2BZZNRNDLHHQ2FC3D6RBVUEOXEO26YY',
+		'toAddress': 'TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
+		'value': [
+			{'message': {'type': 0, 'payload': '48656C6C6F'}},
+			{'id': '72C0212E67A08BCE', 'name': '72C0212E67A08BCE', 'amount': 123}
+		],
+		'embeddedTransactions': None,
+		'fee': None,
+		'height': 0,
+		'timestamp': None,
+		'deadline': '2022-11-02 07:25:23',
+		'signature': 'AB' * 64,
+		'size': 176,
+		'version': 1
+	} == result
