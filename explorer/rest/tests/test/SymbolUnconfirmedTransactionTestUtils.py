@@ -61,6 +61,15 @@ def get_unconfirmed_transaction(transaction_type):
 	raise ValueError(f'No unconfirmed transaction fixture for {transaction_type}')
 
 
+def get_unconfirmed_aggregate_children(aggregate_hash):
+	"""Returns separate child DTOs linked to the requested aggregate."""
+
+	return [
+		deepcopy(item_map) for item_map in _UNCONFIRMED_TRANSACTION_RESPONSE
+		if item_map['meta'].get('aggregateHash') == aggregate_hash
+	]
+
+
 # Node DTO examples adapted from the wallet unconfirmed transaction fixture.
 _UNCONFIRMED_TRANSACTION_RESPONSE = [
 	{
