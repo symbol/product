@@ -6,7 +6,7 @@
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('wallet-common-core/src/types/Transaction').TransactionFee} TransactionFee */
 
-import { MessageType, TransactionType } from '../constants';
+import { MessageKind, TransactionType } from '../constants';
 import { createDeadline, encodePlainMessage } from '../utils';
 
 export class BridgeHelper {
@@ -44,8 +44,10 @@ export class BridgeHelper {
 			tokens: [token],
 			message: {
 				text: recipientAddress,
+				// Bridge expects recipient address without leading '0x'
 				payload: encodePlainMessage(recipientAddress).substring(2),
-				type: MessageType.PlainText
+				type: null,
+				kind: MessageKind.RAW
 			},
 			deadline: createDeadline(2, networkProperties.epochAdjustment),
 			fee

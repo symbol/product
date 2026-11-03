@@ -1,3 +1,5 @@
+import { constants } from 'wallet-common-core';
+
 export const TransactionGroup = {
 	CONFIRMED: 'confirmed',
 	UNCONFIRMED: 'unconfirmed'
@@ -6,6 +8,8 @@ export const TransactionGroup = {
 export const TransactionAnnounceGroup = {
 	DEFAULT: 'default'
 };
+
+export const { MessageKind } = constants;
 
 export const TransactionType = {
 	RESERVED: 0,
