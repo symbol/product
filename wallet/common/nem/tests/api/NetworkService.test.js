@@ -31,7 +31,7 @@ describe('api/NetworkService', () => {
 	describe('fetchNodeList', () => {
 		it('fetches the SSL peer nodes and maps them to their endpoints', async () => {
 			// Arrange:
-			const endpoint = `${NODEWATCH_URL}/api/nem/nodes/peer?only_ssl=true&limit=30&order=random`;
+			const endpoint = `${NODEWATCH_URL}/api/nem/nodes?only_ssl=true&limit=30&order=random`;
 			const requestMap = { [endpoint]: nodeListResponse };
 			const expectedNodes = nodeListResponse.map(node => node.endpoint);
 
