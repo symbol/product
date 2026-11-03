@@ -14,7 +14,8 @@ if linkage != nil
   use_frameworks! :linkage => linkage.to_sym
 end
 
-target 'SymbolMobileWallet' do
+# One app target per brand; both share the same pods.
+abstract_target 'App' do
   config = use_native_modules!
 
   use_react_native!(
@@ -22,6 +23,12 @@ target 'SymbolMobileWallet' do
     # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
+
+  target 'SymbolMobileWallet' do
+  end
+
+  target 'NemMobileWallet' do
+  end
 
   post_install do |installer|
     react_native_post_install(
