@@ -150,6 +150,7 @@ async def test_can_dispatch_upgrade_command():
 	]
 	dispatched_args = []
 	with tempfile.TemporaryDirectory() as package_directory:
+		prepare_testnet_package(package_directory, 'resources.zip')
 		shoestring_directory = Path(package_directory) / 'shoestring'
 		shoestring_directory.mkdir()
 		shoestring_filepath = shoestring_directory / 'shoestring.ini'
@@ -158,7 +159,7 @@ async def test_can_dispatch_upgrade_command():
 		# Act:
 		await dispatch_shoestring_command({
 			'obligatory': ObligatoryScreen(package_directory, str(Path(package_directory) / 'ca.pem')),
-			'network-type': SingleValueScreen('sai'),
+			'network-type': SingleValueScreen(f'file://{Path(package_directory) / "resources.zip"}'),
 			'welcome': WelcomeScreen(ShoestringOperation.UPGRADE)
 		}, _create_executor(dispatched_args))
 
@@ -168,7 +169,7 @@ async def test_can_dispatch_upgrade_command():
 			'--config', f'{shoestring_directory}/shoestring.ini',
 			'--directory', package_directory,
 			'--overrides', f'{shoestring_directory}/overrides.ini',
-			'--package', 'sai'
+			'--package', f'file://{Path(package_directory) / "resources.zip"}'
 		] == dispatched_args
 
 		# node_patches is a superset of expected_keys
