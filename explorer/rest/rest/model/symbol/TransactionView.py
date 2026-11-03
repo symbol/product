@@ -1,7 +1,14 @@
+from collections import namedtuple
+
 from common.symbol.NativeMosaic import normalize_mosaic_id
 from common.symbol.Transaction import MESSAGE_TYPE_LABELS, parse_message
+from symbolchain.CryptoTypes import PublicKey
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address
+
+from rest.model.format import format_timestamp
+from rest.model.symbol.format import format_amount
+from rest.model.symbol.validation import SymbolDataInvalid
 
 PAYLOAD_EXCLUDED_FIELDS = frozenset({
 	'signerPublicKey',
@@ -15,6 +22,55 @@ PAYLOAD_EXCLUDED_FIELDS = frozenset({
 	'recipientAddress'
 })
 MESSAGE_TYPE_ID_MAP = {label: type_id for type_id, label in MESSAGE_TYPE_LABELS.items()}
+
+# Records carry display-ready addresses, hex strings, and relative fees.
+# Payload and mosaics are prepared by the source-specific adapter.
+TransactionViewRecord = namedtuple('TransactionViewRecord', [
+	'transaction_hash',
+	'aggregate_hash',
+	'embedded_index',
+	'transaction_type',
+	'from_address',
+	'to_address',
+	'payload',
+	'mosaics',
+	'deadline',
+	'signature',
+	'size',
+	'version',
+	'fee',
+	'height',
+	'timestamp',
+], defaults=(None, 0, None))
+
+
+def create_unconfirmed_record(item_map, network):
+	"""Parses one flat entry from a Symbol unconfirmed transaction search response."""
+
+	try:
+		meta_map = item_map['meta']
+		transaction_map = item_map['transaction']
+		transaction_type = TransactionType(transaction_map['type'])
+		recipient = transaction_map.get('recipientAddress')
+		payload, mosaics = create_transaction_payload(transaction_map, transaction_type)
+
+		is_embedded = 'aggregateHash' in meta_map
+		deadline = None if is_embedded else network.datetime_converter.to_datetime(int(transaction_map['deadline']))
+		return TransactionViewRecord(
+			transaction_hash=None if is_embedded else meta_map['hash'],
+			aggregate_hash=meta_map['aggregateHash'] if is_embedded else None,
+			embedded_index=int(meta_map['index']) if is_embedded else None,
+			transaction_type=transaction_type,
+			from_address=str(network.public_key_to_address(PublicKey(transaction_map['signerPublicKey']))),
+			to_address=str(Address(bytes.fromhex(recipient))) if recipient is not None else None,
+			payload=payload,
+			mosaics=mosaics,
+			deadline=deadline,
+			signature=None if is_embedded else transaction_map['signature'],
+			size=None if is_embedded else transaction_map['size'],
+			version=transaction_map['version'])
+	except (KeyError, TypeError, ValueError) as error:
+		raise SymbolDataInvalid('unconfirmed_transaction', 'invalid node response') from error
 
 
 def create_transaction_payload(transaction_map, transaction_type):
@@ -58,3 +114,45 @@ def _format_payload_addresses(payload_map, transaction_type):
 	for field_name in address_list_fields:
 		if field_name in payload_map:
 			payload_map[field_name] = [str(Address(bytes.fromhex(address))) for address in payload_map[field_name]]
+
+
+class SymbolTransactionView:
+	"""Formats normalized Symbol transaction records for the Explorer API."""
+
+	def __init__(self, transaction, mosaic_divisibility_map, embedded_transactions=()):
+		self.transaction = transaction
+		self.mosaic_divisibility_map = mosaic_divisibility_map
+		self.embedded_transactions = embedded_transactions
+
+	def to_dict(self):
+		transaction = self.transaction
+		return {
+			'transactionHash': transaction.transaction_hash,
+			'transactionType': transaction.transaction_type.name,
+			'fromAddress': transaction.from_address,
+			'toAddress': transaction.to_address,
+			'value': self._value(),
+			'embeddedTransactions': [
+				SymbolTransactionView(embedded_transaction, self.mosaic_divisibility_map).to_dict()
+				for embedded_transaction in self.embedded_transactions
+			] or None,
+			'fee': transaction.fee,
+			'height': transaction.height,
+			'timestamp': format_timestamp(transaction.timestamp),
+			'deadline': format_timestamp(transaction.deadline),
+			'signature': transaction.signature,
+			'size': transaction.size,
+			'version': transaction.version
+		}
+
+	def _value(self):
+		value = list(self.transaction.payload)
+
+		for mosaic_id, amount in self.transaction.mosaics:
+			resolved_id, divisibility = self.mosaic_divisibility_map.get(mosaic_id, (mosaic_id, None))
+			value.append({
+				'id': resolved_id,
+				'name': resolved_id,
+				'amount': amount if divisibility is None else format_amount(amount, divisibility)
+			})
+		return value
