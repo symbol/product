@@ -1,9 +1,14 @@
 import { addressFromPublicKey } from './account';
+import { createTransactionFee } from './fee';
 import { getMosaicProperty, getTokenAmount, tokenIdFromRaw, tokenListFromDTO } from './token';
 import { decodePlainMessage, getMessageKind, isIncomingTransaction, isOutgoingTransaction, nemTimestampToDate } from './transaction';
 import {
+	LinkActionMessage,
 	MessageType,
 	MosaicPropertyName,
+	MosaicSupplyChangeActionMessage,
+	MosaicTransferFeeTypeMessage,
+	MultisigAccountModificationType,
 	NETWORK_CURRENCY_ID,
 	TransactionType
 } from '../constants';
@@ -62,24 +67,23 @@ const resolveTransferAmount = (transactionBody, nativeTokenAmount, currentAccoun
 	return `${-nativeTokenAmount}`;
 };
 
-// Reads the mosaic definition property array ([{ name, value }]) into the typed MosaicProperties shape.
 const mapMosaicProperties = properties => ({
 	divisibility: parseInt(getMosaicProperty(properties, MosaicPropertyName.DIVISIBILITY)),
 	initialSupply: parseInt(getMosaicProperty(properties, MosaicPropertyName.INITIAL_SUPPLY)),
-	supplyMutable: getMosaicProperty(properties, MosaicPropertyName.SUPPLY_MUTABLE) === 'true',
-	transferable: getMosaicProperty(properties, MosaicPropertyName.TRANSFERABLE) !== 'false'
+	isSupplyMutable: getMosaicProperty(properties, MosaicPropertyName.SUPPLY_MUTABLE) === 'true',
+	isTransferable: getMosaicProperty(properties, MosaicPropertyName.TRANSFERABLE) !== 'false'
 });
 
 // NIS serializes an absent mosaic levy as an empty object; only a populated levy carries a recipient.
 const levyFromDTO = levy => {
 	if (!levy?.recipient)
-		return null;
+		return {};
 
 	return {
-		type: levy.type,
-		recipientAddress: levy.recipient,
-		mosaicId: tokenIdFromRaw(levy.mosaicId),
-		fee: levy.fee
+		levyType: MosaicTransferFeeTypeMessage[levy.type],
+		levyRecipientAddress: levy.recipient,
+		levyTokenId: tokenIdFromRaw(levy.mosaicId),
+		levyFee: levy.fee
 	};
 };
 
@@ -140,7 +144,10 @@ const baseTransactionFromDTO = (transactionDTO, config) => {
 		height: meta?.height ?? null,
 		hash: meta?.hash?.data ?? null,
 		fee: transaction.fee != null
-			? absoluteToRelativeAmount(transaction.fee, networkProperties.networkCurrency.divisibility)
+			? createTransactionFee(
+				networkProperties,
+				absoluteToRelativeAmount(transaction.fee, networkProperties.networkCurrency.divisibility)
+			)
 			: null,
 		signerAddress,
 		signerPublicKey
@@ -213,28 +220,35 @@ const accountKeyLinkTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const { networkProperties } = config;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
-	const remotePublicKey = transaction.remoteAccount;
+	const linkedPublicKey = transaction.remoteAccount;
 
 	return {
 		...baseTransaction,
-		linkAction: transaction.mode,
-		remotePublicKey,
-		remoteAccountAddress: addressFromPublicKey(remotePublicKey, networkProperties.networkIdentifier)
+		linkAction: LinkActionMessage[transaction.mode],
+		linkedPublicKey,
+		linkedAccountAddress: addressFromPublicKey(linkedPublicKey, networkProperties.networkIdentifier)
 	};
 };
 
 const multisigAccountModificationTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
+	const { networkIdentifier } = config.networkProperties;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
-	const modifications = (transaction.modifications || []).map(modification => ({
-		modificationType: modification.modificationType,
-		cosignatoryPublicKey: modification.cosignatoryAccount
-	}));
+	const modifications = transaction.modifications || [];
+	const publicKeyAdditions = modifications
+		.filter(modification => modification.modificationType === MultisigAccountModificationType.ADD_COSIGNATORY)
+		.map(modification => modification.cosignatoryAccount);
+	const publicKeyDeletions = modifications
+		.filter(modification => modification.modificationType === MultisigAccountModificationType.DELETE_COSIGNATORY)
+		.map(modification => modification.cosignatoryAccount);
 
 	return {
 		...baseTransaction,
-		modifications,
-		minApprovalDelta: transaction.minCosignatories?.relativeChange ?? 0
+		minApprovalDelta: transaction.minCosignatories?.relativeChange ?? 0,
+		addressAdditions: publicKeyAdditions.map(publicKey => addressFromPublicKey(publicKey, networkIdentifier)),
+		addressDeletions: publicKeyDeletions.map(publicKey => addressFromPublicKey(publicKey, networkIdentifier)),
+		publicKeyAdditions,
+		publicKeyDeletions
 	};
 };
 
@@ -245,7 +259,7 @@ const cosignatureTransactionFromDTO = (transactionDTO, config) => {
 	return {
 		...baseTransaction,
 		otherTransactionHash: transaction.otherHash?.data ?? null,
-		multisigAccountAddress: transaction.otherAccount || null
+		multisigAddress: transaction.otherAccount || null
 	};
 };
 
@@ -262,7 +276,10 @@ const namespaceRegistrationTransactionFromDTO = (transactionDTO, config) => {
 		parentName,
 		namespaceId: parentName ? `${parentName}.${namespaceName}` : namespaceName,
 		rentalFeeSink: transaction.rentalFeeSink,
-		rentalFee: absoluteToRelativeAmount(transaction.rentalFee, networkProperties.networkCurrency.divisibility)
+		rentalFee: createTransactionFee(
+			networkProperties,
+			absoluteToRelativeAmount(transaction.rentalFee, networkProperties.networkCurrency.divisibility)
+		)
 	};
 };
 
@@ -274,15 +291,16 @@ const mosaicDefinitionTransactionFromDTO = (transactionDTO, config) => {
 
 	return {
 		...baseTransaction,
-		mosaicDefinition: {
-			id: tokenIdFromRaw(mosaicDefinition.id),
-			ownerPublicKey: mosaicDefinition.creator,
-			description: mosaicDefinition.description,
-			properties: mapMosaicProperties(mosaicDefinition.properties),
-			levy: levyFromDTO(mosaicDefinition.levy)
-		},
+		tokenId: tokenIdFromRaw(mosaicDefinition.id),
+		description: mosaicDefinition.description,
+		...mapMosaicProperties(mosaicDefinition.properties),
+		creatorPublicKey: mosaicDefinition.creator,
+		...levyFromDTO(mosaicDefinition.levy),
 		rentalFeeSink: transaction.creationFeeSink,
-		rentalFee: absoluteToRelativeAmount(transaction.creationFee, networkProperties.networkCurrency.divisibility)
+		rentalFee: createTransactionFee(
+			networkProperties,
+			absoluteToRelativeAmount(transaction.creationFee, networkProperties.networkCurrency.divisibility)
+		)
 	};
 };
 
@@ -293,7 +311,7 @@ const mosaicSupplyChangeTransactionFromDTO = (transactionDTO, config) => {
 	return {
 		...baseTransaction,
 		tokenId: tokenIdFromRaw(transaction.mosaicId),
-		action: transaction.supplyType,
+		action: MosaicSupplyChangeActionMessage[transaction.supplyType],
 		delta: transaction.delta
 	};
 };
