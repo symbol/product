@@ -46,7 +46,7 @@ const mapDeadline = deadline => (deadline
 	: { timestamp: 0, deadline: 0 });
 
 const mapMessage = message => ({
-	messageType: message.native.type,
+	messageType: message.type,
 	message: Buffer.from(message.payload, 'hex')
 });
 

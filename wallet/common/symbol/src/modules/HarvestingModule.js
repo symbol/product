@@ -5,7 +5,8 @@ import {
 	createMultisigAggregateBundle,
 	createTransactionFee,
 	encodeDelegatedHarvestingMessage,
-	generateKeyPair
+	generateKeyPair,
+	getMessageKind
 } from '../utils';
 import { shuffle } from 'lodash';
 import { 
@@ -330,6 +331,7 @@ export class HarvestingModule {
 			tokens: [],
 			message: {
 				type: MessageType.DelegatedHarvesting,
+				kind: getMessageKind(MessageType.DelegatedHarvesting),
 				payload: encodeDelegatedHarvestingMessage(
 					nodePublicKey,
 					remoteAccount.privateKey,

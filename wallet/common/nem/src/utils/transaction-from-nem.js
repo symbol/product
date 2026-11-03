@@ -1,13 +1,11 @@
 import { addressFromPublicKey } from './account';
 import { getTokenAmount, tokenListFromDTO } from './token';
-import { decodePlainMessage, isIncomingTransaction, isOutgoingTransaction, nemTimestampToDate } from './transaction';
+import { decodePlainMessage, getMessageKind, isIncomingTransaction, isOutgoingTransaction, nemTimestampToDate } from './transaction';
 import {
 	MessageType,
 	MosaicPropertyName,
 	NETWORK_CURRENCY_ID,
-	NativeMessageType,
-	TransactionType,
-	nativeToCommonMessageType
+	TransactionType
 } from '../constants';
 import { absoluteToRelativeAmount } from 'wallet-common-core';
 
@@ -170,15 +168,15 @@ const transferTransactionFromNem = (transaction, config) => {
 	};
 
 	if (transaction.message?.message?.length) {
-		const nativeType = transaction.message.messageType.value;
+		const messageType = transaction.message.messageType.value;
 		const payload = Buffer.from(transaction.message.message).toString('hex');
-		const text = nativeType === NativeMessageType.PlainText ? decodePlainMessage(payload) : null;
+		const text = messageType === MessageType.PlainText ? decodePlainMessage(payload) : null;
 
 		transactionBody.message = {
-			type: nativeToCommonMessageType[nativeType] ?? MessageType.RAW,
+			type: messageType,
+			kind: getMessageKind(messageType),
 			text,
-			payload,
-			native: { type: nativeType }
+			payload
 		};
 	}
 

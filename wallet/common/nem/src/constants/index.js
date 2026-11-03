@@ -54,22 +54,12 @@ export const TransactionAnnounceGroup = {
 	COSIGNATURE: 'cosignature'
 };
 
-/** Re-export of the common wallet-common-core message kinds for NEM consumers (the UI-facing type). */
-export const { MessageType } = constants;
+export const { MessageKind } = constants;
 
-/**
- * NEM native (on-chain protocol) message-type codes. Stored on message.native.type and mapped to the
- * common MessageType (for message.type) via nativeToCommonMessageType.
- */
-export const NativeMessageType = {
+/** NEM protocol transaction message type codes. */
+export const MessageType = {
 	PlainText: 1,
 	EncryptedText: 2
-};
-
-/** Maps a NEM native message-type code to the common wallet-common-core MessageType. */
-export const nativeToCommonMessageType = {
-	[NativeMessageType.PlainText]: MessageType.PLAIN,
-	[NativeMessageType.EncryptedText]: MessageType.ENCRYPTED
 };
 
 /**
