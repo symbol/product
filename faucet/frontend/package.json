@@ -17,7 +17,7 @@
     "sass": "^1.64.2",
     "symbol-crypto-wasm-web": "^0.1.1",
     "symbol-sdk": "^3.3.0",
-    "web-vitals": "^5.0.0"
+    "web-vitals": "^6.2.3"
   },
   "devDependencies": {
     "@eslint-react/eslint-plugin": "^5.18.6",
