@@ -7,6 +7,7 @@ import {
 	TransactionType
 } from '../constants';
 import {
+	addressFromPublicKey,
 	calculateTotalTransactionFee,
 	calculateTransactionFee,
 	createDeadline,
@@ -67,6 +68,7 @@ export class TransferModule {
 
 		const { currentAccount, networkProperties } = this.#walletController;
 		const senderPublicKey = options.senderPublicKey || currentAccount.publicKey;
+		const senderAddress = addressFromPublicKey(senderPublicKey, networkProperties.networkIdentifier);
 		const isMultisig = senderPublicKey !== currentAccount.publicKey;
 
 		let messagePayload = null;
@@ -93,6 +95,7 @@ export class TransferModule {
 		const transferTransaction = {
 			type: TransactionType.TRANSFER,
 			signerPublicKey: senderPublicKey,
+			signerAddress: senderAddress,
 			recipientAddress,
 			tokens: tokens || [],
 			message: messagePayload,
@@ -109,6 +112,7 @@ export class TransferModule {
 			const outerTransaction = {
 				type: TransactionType.MULTISIG,
 				signerPublicKey: currentAccount.publicKey,
+				signerAddress: currentAccount.address,
 				innerTransaction: transferTransaction,
 				fee: createTransactionFee(networkProperties, '0'),
 				deadline: createDeadline(networkProperties.networkTime, MULTISIG_TRANSACTION_DEADLINE_HOURS)
