@@ -31,7 +31,7 @@ COMPLETED_AT = datetime(2026, 1, 1, tzinfo=timezone.utc)
 NATIVE_MOSAIC_INFO = NativeMosaicInfo(NATIVE_MOSAIC_ID, 6)
 
 
-def _read_survives_cleanup(read, expected_old, expected_current):  # pylint: disable=too-many-locals,too-many-statements
+def _assert_read_survives_cleanup(read, expected_old, expected_current):  # pylint: disable=too-many-locals,too-many-statements
 	# Arrange: publish distinct old and current generations around a paused reader.
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (database_config, writer):
 		seed_refresh_run(writer, 'old', [
@@ -63,6 +63,7 @@ def _read_survives_cleanup(read, expected_old, expected_current):  # pylint: dis
 				selected.set()
 				if not resume.wait(timeout=10):
 					raise RuntimeError('Timed out waiting for generation cleanup')
+
 				return state
 
 		reader = PausingDatabase(database_config, NATIVE_MOSAIC_INFO, lambda: COMPLETED_AT)
@@ -110,20 +111,26 @@ def _read_survives_cleanup(read, expected_old, expected_current):  # pylint: dis
 			resume.set()
 			if worker.ident is not None:
 				worker.join(timeout=10)
+
 			if worker.is_alive() and reader.read_connection is not None:
 				try:
 					reader.read_connection.cancel()
 				except Exception as error:  # pylint: disable=broad-exception-caught
 					errors.append(error)
+
 				worker.join(timeout=5)
+
 			if worker.is_alive() and reader.read_connection is not None:
 				try:
 					with writer.connection.cursor() as cursor:
 						cursor.execute('SELECT pg_terminate_backend(%s)', (reader.read_connection.get_backend_pid(),))
+
 					writer.connection.commit()
 				except Exception as error:  # pylint: disable=broad-exception-caught
 					errors.append(error)
+
 				worker.join(timeout=5)
+
 			if not worker.is_alive():
 				reader.close()
 
@@ -137,6 +144,7 @@ def _read_survives_cleanup(read, expected_old, expected_current):  # pylint: dis
 
 
 def test_rest_statistics_survive_cleanup():
+	# Arrange:
 	old = AccountStatisticsRecord(
 		2, 0, 2, 0, Decimal('1'),
 		((Decimal('0.75'), str(Address(account_address(2)))), (Decimal('0.25'), str(Address(account_address(1)))))
@@ -150,10 +158,11 @@ def test_rest_statistics_survive_cleanup():
 	def read_statistics(reader):
 		return reader.get_account_statistics(3600, 7, HarvestingBalanceRange(0, 100))
 
-	_read_survives_cleanup(read_statistics, old, current)
+	_assert_read_survives_cleanup(read_statistics, old, current)
 
 
 def test_rest_list_survives_cleanup():
+	# Arrange:
 	old = [
 		AccountListRecord(
 			account_address(2), bytes([12]) * 32, 'remote', Decimal('0.75'), NATIVE_MOSAIC_ID, (),
@@ -183,4 +192,4 @@ def test_rest_list_survives_cleanup():
 		query = AccountListQuery(AccountSortField.ID, None, 100, 0, False)
 		return reader.get_account_list(query, 3600, 7)
 
-	_read_survives_cleanup(read_list, old, current)
+	_assert_read_survives_cleanup(read_list, old, current)

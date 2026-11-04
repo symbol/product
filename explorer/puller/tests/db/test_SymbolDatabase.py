@@ -2307,6 +2307,31 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('updated_at', 'timestamp', 'NO')
 		], cursor.fetchall())
 
+	@staticmethod
+	def _create_legacy_rank_page_index(cursor):
+		cursor.execute(
+			'CREATE INDEX idx_symbol_account_list_ranks_page '
+			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)')
+
+	def _assert_legacy_rank_page_index_absent(self, cursor):
+		cursor.execute('SELECT to_regclass(\'public.idx_symbol_account_list_ranks_page\')')
+		self.assertEqual((None,), cursor.fetchone())
+
+	def _assert_rank_primary_key_valid(self, cursor):
+		cursor.execute(
+			'''
+			SELECT index_class.relname, index_data.indisprimary, index_data.indisunique,
+				index_data.indisvalid, pg_get_indexdef(index_data.indexrelid)
+			FROM pg_index AS index_data
+			JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid
+			WHERE index_data.indrelid = 'public.symbol_account_list_ranks'::regclass AND index_data.indisprimary
+			''')
+		self.assertEqual((
+			'symbol_account_list_ranks_pkey', True, True, True,
+			'CREATE UNIQUE INDEX symbol_account_list_ranks_pkey ON public.symbol_account_list_ranks '
+			'USING btree (refresh_run_id, rank_scope, rank)'
+		), cursor.fetchone())
+
 	def test_create_tables_creates_symbol_account_indexes(self):
 		# Arrange:
 		database = self._create_uninitialized_database()
@@ -2343,23 +2368,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_accounts_harvesting',
 			'idx_symbol_accounts_importance_desc'
 		], [row[0] for row in cursor.fetchall()])
-		cursor.execute(
-			'''
-			SELECT index_class.relname, index_data.indisprimary, index_data.indisunique,
-				index_data.indisvalid, pg_get_indexdef(index_data.indexrelid)
-			FROM pg_index AS index_data
-			JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid
-			JOIN pg_class AS table_class ON table_class.oid = index_data.indrelid
-			WHERE table_class.relname = 'symbol_account_list_ranks' AND index_data.indisprimary
-			''')
-		primary_key = cursor.fetchone()
-		self.assertEqual('symbol_account_list_ranks_pkey', primary_key[0])
-		self.assertTrue(primary_key[1])
-		self.assertTrue(primary_key[2])
-		self.assertTrue(primary_key[3])
-		self.assertIn('(refresh_run_id, rank_scope, rank)', primary_key[4])
+		self._assert_rank_primary_key_valid(cursor)
 
-	def test_create_tables_removes_legacy_rank_page_index_and_preserves_published_data(self):
+	def test_create_tables_removes_legacy_index_idempotently_and_preserves_published_data(self):
 		# Arrange:
 		database = self._create_database()
 		seed_account_refresh_state(database, {
@@ -2369,9 +2380,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'is_retention_ready': True
 		})
 		cursor = database.connection.cursor()
-		cursor.execute(
-			'CREATE INDEX idx_symbol_account_list_ranks_page '
-			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)')
+		self._create_legacy_rank_page_index(cursor)
 		cursor.execute(
 			'INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address) VALUES (\'published\', \'ID\', 0, %s)',
 			(bytes.fromhex('11' * 24),))
@@ -2382,24 +2391,15 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.create_tables()
 
 		# Assert:
-		cursor.execute(
-			'SELECT 1 FROM pg_class AS index_class JOIN pg_namespace AS index_namespace '
-			'ON index_namespace.oid = index_class.relnamespace '
-			'WHERE index_namespace.nspname = \'public\' AND index_class.relname = \'idx_symbol_account_list_ranks_page\'')
-		self.assertIsNone(cursor.fetchone())
+		self._assert_legacy_rank_page_index_absent(cursor)
 		cursor.execute('SELECT last_successful_run_id, previous_successful_run_id, running_run_id FROM symbol_account_refresh_state WHERE id = 1')
 		self.assertEqual(('published', 'previous', 'running'), cursor.fetchone())
 		cursor.execute('SELECT refresh_run_id, rank_scope, rank, address FROM symbol_account_list_ranks')
 		row = cursor.fetchone()
 		self.assertEqual(('published', 'ID', 0, bytes.fromhex('11' * 24)), (*row[:3], bytes(row[3])))
-		cursor.execute(
-			'SELECT index_class.relname, index_data.indisprimary, index_data.indisvalid '
-			'FROM pg_index AS index_data JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid '
-			'JOIN pg_class AS table_class ON table_class.oid = index_data.indrelid '
-			'WHERE table_class.relname = \'symbol_account_list_ranks\' AND index_data.indisprimary')
-		self.assertEqual(('symbol_account_list_ranks_pkey', True, True), cursor.fetchone())
+		self._assert_rank_primary_key_valid(cursor)
 
-	def test_create_tables_keeps_same_named_index_on_another_table(self):
+	def test_create_tables_fails_without_dropping_index_on_another_table(self):
 		# Arrange:
 		database = self._create_database()
 		cursor = database.connection.cursor()
@@ -2420,22 +2420,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Arrange: replace the unexpected index before retrying.
 		cursor.execute('DROP INDEX public.idx_symbol_account_list_ranks_page')
-		cursor.execute(
-			'CREATE INDEX idx_symbol_account_list_ranks_page '
-			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)')
+		self._create_legacy_rank_page_index(cursor)
 		database.connection.commit()
 
 		# Act: retry initialization.
 		database.create_tables()
 
 		# Assert: the expected legacy index was removed.
-		cursor.execute(
-			'SELECT 1 FROM pg_class AS index_class JOIN pg_namespace AS index_namespace '
-			'ON index_namespace.oid = index_class.relnamespace '
-			'WHERE index_namespace.nspname = \'public\' AND index_class.relname = \'idx_symbol_account_list_ranks_page\'')
-		self.assertIsNone(cursor.fetchone())
+		self._assert_legacy_rank_page_index_absent(cursor)
 
-	def test_create_tables_rejects_same_named_non_index_relation(self):
+	def test_create_tables_fails_without_dropping_same_named_non_index_relation(self):
 		# Arrange:
 		database = self._create_database()
 		cursor = database.connection.cursor()
@@ -2450,16 +2444,24 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute("""SELECT relkind FROM pg_class WHERE oid = 'public.idx_symbol_account_list_ranks_page'::regclass""")
 		self.assertEqual(('r',), cursor.fetchone())
 
-	def test_create_tables_keeps_rank_page_index_with_descending_key_or_nondefault_operator_class(self):
+	def test_create_tables_fails_without_dropping_index_with_unexpected_order_or_operator_class(self):
 		# Arrange:
 		database = self._create_database()
 		cursor = database.connection.cursor()
 		unexpected_definitions = [
-			'refresh_run_id, rank_scope, rank DESC',
-			'refresh_run_id varchar_pattern_ops, rank_scope, rank'
+			(
+				'refresh_run_id, rank_scope, rank DESC',
+				'CREATE INDEX idx_symbol_account_list_ranks_page ON public.symbol_account_list_ranks '
+				'USING btree (refresh_run_id, rank_scope, rank DESC)'
+			),
+			(
+				'refresh_run_id varchar_pattern_ops, rank_scope, rank',
+				'CREATE INDEX idx_symbol_account_list_ranks_page ON public.symbol_account_list_ranks '
+				'USING btree (refresh_run_id varchar_pattern_ops, rank_scope, rank)'
+			)
 		]
 
-		for index_definition in unexpected_definitions:
+		for index_definition, expected_definition in unexpected_definitions:
 			with self.subTest(index_definition=index_definition):
 				cursor.execute(f'CREATE INDEX idx_symbol_account_list_ranks_page ON symbol_account_list_ranks({index_definition})')
 				database.connection.commit()
@@ -2473,14 +2475,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 					cursor.execute(
 						'SELECT indexdef FROM pg_indexes WHERE schemaname = \'public\' '
 						'AND indexname = \'idx_symbol_account_list_ranks_page\'')
-					self.assertIsNotNone(cursor.fetchone())
+					self.assertEqual((expected_definition,), cursor.fetchone())
 				finally:
 					# Reset any failed test transaction before cleaning up this subtest's index.
 					database.connection.rollback()
 					cursor.execute('DROP INDEX IF EXISTS public.idx_symbol_account_list_ranks_page')
 					database.connection.commit()
 
-	def test_create_tables_keeps_same_named_index_with_different_rank_columns(self):
+	def test_create_tables_fails_without_dropping_index_with_different_columns(self):
 		# Arrange:
 		database = self._create_database()
 		cursor = database.connection.cursor()
@@ -2495,15 +2497,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		cursor.execute('SELECT indexdef FROM pg_indexes WHERE schemaname = \'public\' AND indexname = \'idx_symbol_account_list_ranks_page\'')
-		self.assertIn('(refresh_run_id, rank_scope, address)', cursor.fetchone()[0])
+		self.assertEqual((
+			'CREATE INDEX idx_symbol_account_list_ranks_page ON public.symbol_account_list_ranks '
+			'USING btree (refresh_run_id, rank_scope, address)',
+		), cursor.fetchone())
 
-	def test_create_tables_keeps_legacy_index_when_expected_primary_key_is_missing(self):
+	def test_create_tables_fails_without_dropping_index_when_primary_key_is_missing(self):
 		# Arrange:
 		database = self._create_database()
 		cursor = database.connection.cursor()
-		cursor.execute(
-			'CREATE INDEX idx_symbol_account_list_ranks_page '
-			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)')
+		self._create_legacy_rank_page_index(cursor)
 		cursor.execute('ALTER TABLE symbol_account_list_ranks DROP CONSTRAINT symbol_account_list_ranks_pkey')
 		database.connection.commit()
 
@@ -2531,11 +2534,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.create_tables()
 
 		# Assert: the expected legacy index was removed.
-		cursor.execute(
-			'SELECT 1 FROM pg_class AS index_class JOIN pg_namespace AS index_namespace '
-			'ON index_namespace.oid = index_class.relnamespace '
-			'WHERE index_namespace.nspname = \'public\' AND index_class.relname = \'idx_symbol_account_list_ranks_page\'')
-		self.assertIsNone(cursor.fetchone())
+		self._assert_legacy_rank_page_index_absent(cursor)
 
 	def test_create_tables_with_no_legacy_index_does_not_block_on_reader(self):
 		# Arrange: the reader retains a transaction on the table throughout initialization.
@@ -2546,8 +2545,10 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		with reader.connection.cursor() as cursor:
 			cursor.execute('SELECT count(*) FROM symbol_account_list_ranks')
 			cursor.fetchone()
+
 		with writer.connection.cursor() as cursor:
 			cursor.execute('SET lock_timeout = \'3s\'')
+
 		writer.connection.commit()
 
 		# Act:
@@ -2556,23 +2557,15 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert: the old index remains absent and the primary key is still valid and unique.
 		with writer.connection.cursor() as cursor:
-			cursor.execute('SELECT to_regclass(\'public.idx_symbol_account_list_ranks_page\')')
-			self.assertEqual((None,), cursor.fetchone())
-			cursor.execute('''
-				SELECT index_class.relname, index_data.indisprimary, index_data.indisunique, index_data.indisvalid
-				FROM pg_index AS index_data
-				JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid
-				WHERE index_data.indrelid = 'public.symbol_account_list_ranks'::regclass AND index_data.indisprimary
-			''')
-			self.assertEqual(('symbol_account_list_ranks_pkey', True, True, True), cursor.fetchone())
+			self._assert_legacy_rank_page_index_absent(cursor)
+			self._assert_rank_primary_key_valid(cursor)
 
-	def test_create_tables_retries_legacy_index_migration_after_reader_releases_table(self):
+	def test_create_tables_fails_nowait_then_succeeds_after_reader_releases_lock(self):
 		# Arrange:
 		database = self._create_database()
 		with database.connection.cursor() as cursor:
-			cursor.execute(
-				'CREATE INDEX idx_symbol_account_list_ranks_page '
-				'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)')
+			self._create_legacy_rank_page_index(cursor)
+
 		database.connection.commit()
 		reader = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
 		writer = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
@@ -2580,6 +2573,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.addCleanup(reader.connection.rollback)
 		with writer.connection.cursor() as cursor:
 			cursor.execute('SET lock_timeout = \'3s\'')
+
 		writer.connection.commit()
 		with reader.connection.cursor() as cursor:
 			cursor.execute('SELECT count(*) FROM symbol_account_list_ranks')
@@ -2589,13 +2583,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		with self.assertRaises(PsycopgError) as error:
 			with writer.workflow_lock():
 				writer.create_tables()
+
 		# Assert: the lock conflict was reported.
 		self.assertEqual('55P03', error.exception.pgcode)
 		# The dedicated test server uses English PostgreSQL diagnostics.
 		self.assertEqual('could not obtain lock on relation "public.symbol_account_list_ranks"', error.exception.diag.message_primary)
 
-		# Arrange: release the reader and verify the workflow lock can be reacquired.
+		# Arrange: release the reader before retrying.
 		reader.connection.rollback()
+
+		# Assert: the failed workflow released its lock.
 		with observer.workflow_lock():
 			pass
 
@@ -2605,11 +2602,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		with writer.connection.cursor() as cursor:
-			cursor.execute(
-				'SELECT 1 FROM pg_class AS index_class JOIN pg_namespace AS index_namespace '
-				'ON index_namespace.oid = index_class.relnamespace '
-				'WHERE index_namespace.nspname = \'public\' AND index_class.relname = \'idx_symbol_account_list_ranks_page\'')
-			self.assertIsNone(cursor.fetchone())
+			self._assert_legacy_rank_page_index_absent(cursor)
 
 	def test_create_tables_creates_account_refresh_state_schema(self):
 		# Arrange:
@@ -2805,7 +2798,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		with self.assertRaises(PsycopgError):
 			seed_account_refresh_state(database, {'status': 'invalid'})
 
-	def test_account_retention_preserves_protected_runs_and_resumes_bounded_batches(self):
+	def test_prune_account_refresh_generations_preserves_protected_runs_and_resumes_batches(self):
 		# Arrange: every run has a parent, child and rank, plus a rank-only interrupted run.
 		database = self._create_database()
 		cursor = database.connection.cursor()
@@ -2853,7 +2846,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			cursor.execute(f'SELECT refresh_run_id FROM {table} ORDER BY refresh_run_id')
 			self.assertEqual([('previous',), ('published',), ('running',)], cursor.fetchall())
 
-	def test_account_retention_defers_existing_rows_until_first_success(self):
+	def test_prune_account_refresh_generations_defers_legacy_rows_until_first_success(self):
 		# Arrange: a migrated database has an unknown old generation and a published ID.
 		database = self._create_database()
 		seed_account_refresh_state(database, {'last_successful_run_id': 'published'})
@@ -2890,7 +2883,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('SELECT refresh_run_id FROM symbol_account_list_ranks')
 		self.assertEqual([], cursor.fetchall())
 
-	def test_account_retention_migration_is_repeatable_and_preserves_publication(self):
+	def test_create_tables_repeats_account_state_migration_and_preserves_publication(self):
 		# Arrange: reconstruct the pre-migration state table with an existing public ID.
 		database = self._create_database()
 		seed_account_refresh_state(database, {'last_successful_run_id': 'published'})
@@ -2910,7 +2903,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual(('published', None, None, False), (
 			state['last_successful_run_id'], state['previous_successful_run_id'], state['running_run_id'], state['is_retention_ready']))
 
-	def test_account_retention_retries_after_child_delete_failure(self):
+	def test_prune_account_refresh_generations_retries_after_child_delete_failure(self):
 		# Arrange: leave an account and mosaic after committing its rank deletion.
 		database = self._create_database()
 		address = bytes([1]) * 24
@@ -3084,6 +3077,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert: both the session lock and local guard are available again.
 		with other.workflow_lock():
 			self.assertIsNotNone(other.connection)
+
 		with database.workflow_lock():
 			self.assertIsNotNone(database.connection)
 
@@ -3184,7 +3178,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert: the publication and owner are unchanged.
 		self.assertEqual(before, database.get_account_refresh_state())
 
-	def test_account_retention_stops_at_deadline_and_can_resume(self):
+	def test_prune_account_refresh_generations_stops_at_deadline_and_can_resume(self):
 		# Arrange: a candidate exists when the pass reaches its time limit.
 		database = self._create_database(retention_time_source=lambda: 0, retention_time_budget_seconds=0)
 		seed_account_refresh_state(database, {'last_successful_run_id': 'published', 'is_retention_ready': True})
@@ -3215,7 +3209,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			cursor.execute('SELECT refresh_run_id FROM symbol_account_list_ranks')
 			self.assertEqual([], cursor.fetchall())
 
-	def test_account_retention_finds_unprotected_run_after_large_protected_runs(self):
+	def test_prune_account_refresh_generations_finds_run_after_large_protected_runs(self):
 		# Arrange: the first three run IDs each contain many ranks; the last run is removable.
 		database = self._create_database()
 		cursor = database.connection.cursor()

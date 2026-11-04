@@ -208,11 +208,11 @@ def test_workflow_rejects_invalid_retention_configuration_before_database_connec
 	arguments = _base_arguments('refresh-accounts')
 	arguments[arguments.index('--db-config') + 1] = str(config_path)
 
-	# Act and assert: configuration fails before the entrypoint can attempt its unusable DB connection.
+	# Act + Assert: configuration fails before the entrypoint can attempt its unusable DB connection.
 	with pytest.raises(ValueError, match='lock_timeout_ms must be at most'):
 		asyncio.run(main(arguments, environment=workflow_test_utils.create_symbol_environment()))
 
-	# Act and assert: with valid retention settings the same entrypoint reaches the invalid DB port.
+	# Act + Assert: with valid retention settings the same entrypoint reaches the invalid DB port.
 	config_path.write_text(
 		'[symbol_db]\ndatabase = postgres\nuser = postgres\npassword = \nhost = 127.0.0.1\nport = 0\n', encoding='utf8')
 	with pytest.raises(OperationalError):
