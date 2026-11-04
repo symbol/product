@@ -96,7 +96,7 @@ def _factory(database_factory):
 
 
 @pytest.mark.parametrize('command', ['sync-block', 'refresh-accounts'])
-def test_cli_rejects_migration_overlap(database_config, tmp_path, command):  # pylint: disable=too-many-locals,too-many-statements
+def test_cli_reject_overlap_no_ddl_wait(database_config, tmp_path, command):  # pylint: disable=too-many-locals,too-many-statements
 	# Arrange: keep an existing publication and its data in the pre-retention schema.
 	config_path = create_db_config(tmp_path, database_config)
 	with SymbolDatabase(database_config) as observer, ExitStack() as processes:
@@ -188,7 +188,7 @@ def test_cli_rejects_migration_overlap(database_config, tmp_path, command):  # p
 
 @pytest.mark.parametrize('command', ['sync-block', 'refresh-accounts'])
 @pytest.mark.parametrize('error_type', [ValueError, asyncio.CancelledError, KeyboardInterrupt])
-def test_schema_failure_keeps_state(database_config, tmp_path, command, error_type):
+def test_failed_ddl_keeps_publication(database_config, tmp_path, command, error_type):
 	# Arrange: a partial migration fails before any workflow may update the old publication.
 	config_path = create_db_config(tmp_path, database_config)
 	error = error_type('migration failed')

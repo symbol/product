@@ -5,7 +5,17 @@ import time
 from puller.db.SymbolDatabase import SymbolDatabase
 
 
-class AccountRetentionDeleteGate:
+def run_account_prune_worker(database, errors):
+	"""Runs one retention pass in a worker; its caller owns connection and thread cleanup."""
+
+	try:
+		with database.workflow_lock():
+			database.prune_account_refresh_generations()
+	except Exception as error:  # pylint: disable=broad-exception-caught
+		errors.append(error)
+
+
+class AccountRetentionAdvisoryLockGate:
 	"""Owns an advisory lock for tests where lock contention is the target behavior."""
 
 	def __init__(self, database, db_config, target_run_id):
@@ -46,7 +56,7 @@ class AccountRetentionDeleteGate:
 			self.__exit__(None, None, None)
 			raise
 
-	def wait_for_advisory_wait(self, worker_pid):
+	def wait_for_worker_advisory_lock_wait(self, worker_pid):
 		"""Waits until PostgreSQL confirms the worker is blocked on an advisory lock."""
 
 		cursor = self.observer.connection.cursor()
@@ -105,7 +115,7 @@ class AccountRetentionDeleteGate:
 			self.database.connection.commit()
 
 
-class AccountRetentionReleaseGate:
+class AccountRetentionPollingFlagGate:
 	"""Uses a polled flag row for observations that must not consume lock_timeout."""
 
 	def __init__(self, database, db_config, target_run_id, max_wait_seconds=30):

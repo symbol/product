@@ -40,6 +40,7 @@ class AccountRetentionConfiguration(namedtuple('AccountRetentionConfiguration', 
 			raise ValueError(
 				f'lock_timeout_ms must be at most {ACCOUNT_RETENTION_LOCK_TIMEOUT_MAX_MS} milliseconds '
 				'(one-fifth of the account retention time budget)')
+
 		if lock_timeout_ms >= statement_timeout_ms:
 			raise ValueError('lock_timeout_ms must be less than statement_timeout_ms')
 

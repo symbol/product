@@ -19,7 +19,7 @@ from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.format import address_from_public_key
 from tests.test.SymbolTestConstants import SIGNER_ADDRESS
 
-from .account_retention_test_utils import AccountRetentionReleaseGate
+from .account_retention_test_utils import AccountRetentionPollingFlagGate
 from .puller_test_utils import (
 	BENEFICIARY_ADDRESS,
 	NATIVE_MOSAIC_ID,
@@ -1446,7 +1446,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		cursor.execute('SELECT refresh_run_id FROM symbol_account_list_ranks')
 		self.assertEqual([], cursor.fetchall())
 
-	def test_sync_rejects_active_refresh_without_clearing_its_owner(self):
+	def test_sync_block_headers_rejects_refresh_without_clearing_owner(self):
 		# Arrange: an independent session holds the workflow lock and owns the running refresh.
 		database = self.puller.symbol_db
 		seed_account_refresh_state(database, {
@@ -1487,7 +1487,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			''', (run_id, bytes([1]) * 24))
 
 		database.connection.commit()
-		gate = self.exit_stack.enter_context(AccountRetentionReleaseGate(database, self.db_config, 'abandoned'))
+		gate = self.exit_stack.enter_context(AccountRetentionPollingFlagGate(database, self.db_config, 'abandoned'))
 		started = threading.Event()
 		worker_state = {}
 		worker_errors = []
