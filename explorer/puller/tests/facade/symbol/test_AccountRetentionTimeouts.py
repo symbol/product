@@ -7,8 +7,8 @@ from common.tests.AccountRefreshTestUtils import seed_account_refresh_state
 from puller.db.AccountRetentionConfiguration import AccountRetentionConfiguration
 
 from .account_retention_test_utils import (
-	AccountRetentionDeleteGate,
-	AccountRetentionReleaseGate,
+	AccountRetentionAdvisoryLockGate,
+	AccountRetentionPollingFlagGate,
 	ManualRetentionClock,
 	RecordingRetentionLogger
 )
@@ -53,7 +53,7 @@ class AccountRetentionTimeoutsTest(SymbolPullerTestBase):
 
 	def _seed_rows_and_gate(self):
 		database = self._seed_rows()
-		return self.exit_stack.enter_context(AccountRetentionDeleteGate(database, self.db_config, 'b-old'))
+		return self.exit_stack.enter_context(AccountRetentionAdvisoryLockGate(database, self.db_config, 'b-old'))
 
 	def _assert_rollback_and_retry_completes_on_another_connection(self, gate, protected, retained_before):
 		# Assert: the second DELETE rolled back, and every protected row is intact.
@@ -81,7 +81,7 @@ class AccountRetentionTimeoutsTest(SymbolPullerTestBase):
 
 		gate.observer.connection.commit()
 
-	def test_deadline_rolls_back_inflight_delete_and_retries(self):
+	def test_prune_account_refresh_generations_rolls_back_expired_delete_and_retries(self):
 		# Arrange: commit the first old generation, then wait inside the second DELETE without a lock gate.
 		self._set_retention_time_budget(60)
 		database = self._seed_rows()
@@ -89,17 +89,17 @@ class AccountRetentionTimeoutsTest(SymbolPullerTestBase):
 		with database.workflow_lock():
 			database.prune_account_refresh_generations(max_batches=1)
 
-		gate = self.exit_stack.enter_context(AccountRetentionReleaseGate(database, self.db_config, 'b-old'))
+		gate = self.exit_stack.enter_context(AccountRetentionPollingFlagGate(database, self.db_config, 'b-old'))
 		worker_errors = []
 
-		def cleanup():
+		def prune_in_worker():
 			try:
 				with database.workflow_lock():
 					database.prune_account_refresh_generations(max_batches=1)
 			except Exception as error:  # pylint: disable=broad-exception-caught
 				worker_errors.append(error)
 
-		worker = threading.Thread(target=cleanup, daemon=True)
+		worker = threading.Thread(target=prune_in_worker, daemon=True)
 		try:
 			worker.start()
 			gate.wait_for_worker_sleep(database.connection.get_backend_pid())
@@ -164,7 +164,7 @@ class AccountRetentionTimeoutsTest(SymbolPullerTestBase):
 		try:
 			# Act: start the workflow and hold its second DELETE until lock timeout.
 			worker.start()
-			gate.wait_for_advisory_wait(database.connection.get_backend_pid())
+			gate.wait_for_worker_advisory_lock_wait(database.connection.get_backend_pid())
 
 			# Assert: the first DELETE already committed.
 			cursor = gate.observer.connection.cursor()
@@ -201,8 +201,8 @@ class AccountRetentionTimeoutsTest(SymbolPullerTestBase):
 		self.assertEqual(('0',), cursor.fetchone())
 		self._assert_rollback_and_retry_completes_on_another_connection(gate, protected, ('z-previous', 'z-published', 'z-running'))
 
-	def test_refresh_succeeds_when_retention_lock_times_out(self):
+	def test_refresh_accounts_succeeds_when_retention_lock_times_out(self):
 		self._assert_workflow_survives_lock_timeout(True)
 
-	def test_sync_succeeds_when_retention_lock_times_out(self):
+	def test_sync_block_headers_succeeds_when_retention_lock_times_out(self):
 		self._assert_workflow_survives_lock_timeout(False)

@@ -591,13 +591,13 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 					FROM unnest(index_data.indcollation::oid[]) WITH ORDINALITY AS collation_data(collation_oid, position)
 					ORDER BY collation_data.position
 				) = ARRAY(
-				SELECT column_data.attcollation
-				FROM unnest(index_data.indkey::smallint[]) WITH ORDINALITY AS indexed_column(attnum, position)
-				JOIN pg_attribute AS column_data
-					ON column_data.attrelid = index_data.indrelid AND column_data.attnum = indexed_column.attnum
-				WHERE indexed_column.position <= index_data.indnkeyatts
-				ORDER BY indexed_column.position
-			),
+					SELECT column_data.attcollation
+					FROM unnest(index_data.indkey::smallint[]) WITH ORDINALITY AS indexed_column(attnum, position)
+					JOIN pg_attribute AS column_data
+						ON column_data.attrelid = index_data.indrelid AND column_data.attnum = indexed_column.attnum
+					WHERE indexed_column.position <= index_data.indnkeyatts
+					ORDER BY indexed_column.position
+				),
 				ARRAY(
 					SELECT operator_data.operator_class_oid
 					FROM unnest(index_data.indclass::oid[]) WITH ORDINALITY AS operator_data(operator_class_oid, position)
@@ -610,7 +610,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 					JOIN pg_namespace AS operator_class_namespace
 						ON operator_class_namespace.oid = operator_class.opcnamespace AND operator_class_namespace.nspname = 'pg_catalog'
 					ORDER BY expected_class.position
-			),
+				),
 				pg_get_expr(index_data.indexprs, index_data.indrelid),
 				pg_get_expr(index_data.indpred, index_data.indrelid),
 				ARRAY(

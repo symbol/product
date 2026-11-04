@@ -9,10 +9,10 @@ from puller.db.AccountRetentionConfiguration import AccountRetentionConfiguratio
 from puller.db.SymbolDatabase import SymbolDatabase
 
 from .account_retention_test_utils import (
-	AccountRetentionDeleteGate,
-	AccountRetentionReleaseGate,
+	AccountRetentionPollingFlagGate,
 	ManualRetentionClock,
-	RecordingRetentionLogger
+	RecordingRetentionLogger,
+	run_account_prune_worker
 )
 from .puller_test_utils import FakeConnector, RecordingCleanupLogger, SymbolPullerTestBase, create_node_block, set_symbol_connector
 
@@ -111,7 +111,7 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		''')
 		database.connection.commit()
 
-	def test_delete_timeouts_retry_at_minimum_and_each_pass_restarts_at_initial_batch(  # pylint: disable=too-many-statements,too-many-locals
+	def test_prune_account_refresh_generations_retries_at_minimum_and_resets_each_pass(  # pylint: disable=too-many-statements,too-many-locals
 		self):
 		# Arrange: a one-row generation commits before two DELETEs time out in each pass.
 		database = self._seed_generations(8000)
@@ -132,6 +132,7 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		]
 		for sequence_name in sequence_names:
 			cursor.execute(f'CREATE SEQUENCE {sequence_name}')
+
 		cursor.execute('''
 			CREATE OR REPLACE FUNCTION retention_statement_delay() RETURNS trigger LANGUAGE plpgsql AS $$
 			DECLARE affected int;
@@ -192,6 +193,7 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 				cursor.execute('ALTER SEQUENCE retention_statement_timeout_attempt_seq RESTART WITH 1')
 				cursor.execute('UPDATE retention_test_pass_state SET pass_no = 2')
 				database.connection.commit()
+
 			self.retention_logger.clear()
 			with database.workflow_lock():
 				database.prune_account_refresh_generations(max_batches=4 if pass_index == 0 else 3)
@@ -223,6 +225,7 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 			self.assertIn('batch_size=2500', timeouts[1])
 			self.assertTrue(any('next_batch_size=500' in message for message in messages))
 			self.assertTrue(any('table=symbol_account_list_ranks batch_size=5000' in message for message in messages))
+
 		cursor.execute("SELECT count(*) FROM symbol_account_list_ranks WHERE refresh_run_id = 'b-target'")
 		self.assertEqual((7000,), cursor.fetchone())
 		cursor.execute('SELECT deleted FROM retention_statement_audit ORDER BY ctid')
@@ -230,12 +233,12 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self._assert_protected_and_timeout_reset(database)
 		self.assertEqual(initial_refresh_state, database.get_account_refresh_state())
 
-		# A separate database session can acquire the workflow lock after both passes.
+		# Assert: a separate session can acquire the workflow lock after both passes.
 		with SymbolDatabase(self.db_config) as observer:
 			with observer.workflow_lock():
 				pass
 
-	def test_delete_timeout_halves_batch_then_commits_and_next_pass_resets(self):  # pylint: disable=too-many-statements
+	def test_prune_account_refresh_generations_halves_batch_and_resets_next_pass(self):  # pylint: disable=too-many-statements
 		# Arrange: a committed old run precedes a large generation whose first batch is slow.
 		database = self._seed_generations(7500)
 		cursor = database.connection.cursor()
@@ -280,22 +283,16 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self.assertEqual([(1,), (2500,), (2500,), (5000,)], cursor.fetchall())
 		self._assert_protected_and_timeout_reset(database)
 
-	def test_external_cancel_is_not_retried_as_statement_timeout(self):
+	def test_prune_account_refresh_generations_propagates_external_cancel_without_retry(self):
 		# Arrange: the trigger polls a flag so observation does not wait on lock_timeout.
 		self._set_retention_time_budget(60)
 		database = self._seed_generations(5)
 		database.retention_config = AccountRetentionConfiguration(30000, 200)
-		gate = self.exit_stack.enter_context(AccountRetentionReleaseGate(database, self.db_config, 'b-target'))
+		gate = self.exit_stack.enter_context(AccountRetentionPollingFlagGate(database, self.db_config, 'b-target'))
 		errors = []
 
-		def cleanup():
-			try:
-				with database.workflow_lock():
-					database.prune_account_refresh_generations()
-			except Exception as error:  # pylint: disable=broad-exception-caught
-				errors.append(error)
-
-		worker = threading.Thread(target=cleanup, daemon=True)
+		worker = threading.Thread(
+			target=run_account_prune_worker, args=(database, errors), daemon=True)
 		try:
 			# Act: cancel the active PostgreSQL statement only after the gate confirms contention.
 			worker.start()
@@ -330,11 +327,10 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self.assertEqual((0,), cursor.fetchone())
 		self._assert_protected_and_timeout_reset(database)
 
-	def test_unknown_lock_error_propagates_and_later_cleanup_can_resume(self):
+	def test_prune_account_refresh_generations_propagates_unknown_lock_error_and_can_resume(self):
 		# Arrange: a real trigger emits SQLSTATE 55P03 for a reason other than lock timeout.
 		database = self._seed_generations(5)
-		gate = self.exit_stack.enter_context(AccountRetentionDeleteGate(database, self.db_config, 'never-gate-a-row'))
-		gate.release()
+		observer = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
 		cursor = database.connection.cursor()
 		cursor.execute('''
 			CREATE FUNCTION retention_raise_lock_error() RETURNS trigger LANGUAGE plpgsql AS $$
@@ -363,12 +359,14 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self.assertEqual((5,), cursor.fetchone())
 		self._assert_protected_and_timeout_reset(database)
 
-		# Act: remove the injected error and retry through the separate session.
+		# Arrange: remove the injected error before retrying.
 		cursor.execute('DROP TRIGGER retention_raise_lock_error ON symbol_account_list_ranks')
 		cursor.execute('DROP FUNCTION retention_raise_lock_error()')
 		database.connection.commit()
-		with gate.observer.workflow_lock():
-			gate.observer.prune_account_refresh_generations()
+
+		# Act: retry through the separate session.
+		with observer.workflow_lock():
+			observer.prune_account_refresh_generations()
 
 		# Assert: the abandoned generation is collected and the protected state remains intact.
 		cursor.execute("SELECT count(*) FROM symbol_account_list_ranks WHERE refresh_run_id = 'b-target'")
@@ -396,14 +394,14 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self._assert_protected_and_timeout_reset(database)
 		return messages
 
-	def test_minimum_batch_timeout_stops_the_retention_pass(self):
+	def test_prune_account_refresh_generations_stops_on_minimum_batch_timeout(self):
 		messages = self._assert_delete_timeout_stops_without_commit(600, 500, 3, 0)
 
 		# Assert: the minimum size terminates the pass without a further reduction.
 		self.assertTrue(any('stop_reason=minimum_batch' in message for message in messages))
 		self.assertFalse(any('next_batch_size=' in message for message in messages))
 
-	def test_failed_delete_consumes_the_attempt_budget(self):
+	def test_prune_account_refresh_generations_counts_failed_delete_attempt(self):
 		messages = self._assert_delete_timeout_stops_without_commit(5000, 5000, 1, 2500)
 
 		# Assert: the timeout exhausted the budget before any reduction was scheduled.
@@ -463,10 +461,10 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self.assertEqual((0,), cursor.fetchone())
 		self.assertEqual(state['last_successful_run_id'], database.get_account_refresh_state()['last_successful_run_id'])
 
-	def test_refresh_succeeds_when_minimum_delete_times_out(self):
+	def test_refresh_accounts_succeeds_when_minimum_delete_times_out(self):
 		self._assert_workflow_survives_minimum_batch_timeout(True)
 
-	def test_sync_succeeds_when_minimum_delete_times_out(self):
+	def test_sync_block_headers_succeeds_when_minimum_delete_times_out(self):
 		self._assert_workflow_survives_minimum_batch_timeout(False)
 
 	def _assert_workflow_redacts_database_error(self, is_refresh):
@@ -517,13 +515,13 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self.assertEqual((0,), cursor.fetchone())
 		self.assertEqual(state['last_successful_run_id'], database.get_account_refresh_state()['last_successful_run_id'])
 
-	def test_refresh_redacts_retention_database_error(self):
+	def test_refresh_accounts_redacts_retention_database_error(self):
 		self._assert_workflow_redacts_database_error(True)
 
-	def test_sync_redacts_retention_database_error(self):
+	def test_sync_block_headers_redacts_retention_database_error(self):
 		self._assert_workflow_redacts_database_error(False)
 
-	def test_refresh_keeps_publication_when_retention_error_logging_fails(self):
+	def test_refresh_accounts_keeps_publication_when_retention_error_logging_fails(self):
 		# Arrange: a real DELETE fails and the retention error logger itself also fails.
 		database = self._seed_generations(5)
 		set_symbol_connector(self.puller, FakeConnector(1, {}, account_pages={1: []}))
@@ -559,24 +557,18 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self.assertEqual((0,), cursor.fetchone())
 		self.assertEqual(state['last_successful_run_id'], database.get_account_refresh_state()['last_successful_run_id'])
 
-	def test_delete_timeout_stops_when_remaining_budget_cannot_retry(self):
+	def test_prune_account_refresh_generations_stops_retry_when_budget_is_insufficient(self):
 		# Arrange: stop a real DELETE on a non-locking flag before its statement timeout.
 		self._set_retention_time_budget(60)
 		database = self._seed_generations(5000)
 		database.retention_config = AccountRetentionConfiguration(5000, 200)
 		self._create_statement_delay(database, 2500, delay_seconds=5.5)
-		gate = self.exit_stack.enter_context(AccountRetentionReleaseGate(database, self.db_config, 'b-target'))
+		gate = self.exit_stack.enter_context(AccountRetentionPollingFlagGate(database, self.db_config, 'b-target'))
 		self.retention_logger.clear()
 		errors = []
 
-		def cleanup():
-			try:
-				with database.workflow_lock():
-					database.prune_account_refresh_generations()
-			except Exception as error:  # pylint: disable=broad-exception-caught
-				errors.append(error)
-
-		worker = threading.Thread(target=cleanup, daemon=True)
+		worker = threading.Thread(
+			target=run_account_prune_worker, args=(database, errors), daemon=True)
 		try:
 			# Act: advance the injected clock while DELETE is active, then let PostgreSQL time out.
 			worker.start()
@@ -598,9 +590,11 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self.assertEqual((5000,), cursor.fetchone())
 		self._assert_protected_and_timeout_reset(database)
 
-		# Act: a separate session reacquires the lock and resumes after the slow condition is removed.
+		# Arrange: remove the slow condition before retrying.
 		cursor.execute('UPDATE retention_statement_threshold SET size = 999999')
 		database.connection.commit()
+
+		# Act: a separate session reacquires the lock and resumes.
 		with gate.observer.workflow_lock():
 			gate.observer.prune_account_refresh_generations()
 
@@ -609,7 +603,7 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self.assertEqual((0,), cursor.fetchone())
 		self._assert_protected_and_timeout_reset(database)
 
-	def test_state_read_timeout_stops_without_reducing_batch(self):
+	def test_prune_account_refresh_generations_stops_on_state_read_timeout_without_shrinking(self):
 		# Arrange: a view delays the state SELECT itself, before candidate selection or DELETE.
 		database = self._seed_generations(5)
 		database.retention_config = AccountRetentionConfiguration(4000, 300)
@@ -676,7 +670,7 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self.assertEqual((0,), cursor.fetchone())
 		self._assert_protected_and_timeout_reset(database)
 
-	def test_cleanup_caps_timeouts_to_remaining_budget_and_resets_them(self):
+	def test_prune_account_refresh_generations_caps_timeouts_to_remaining_budget_and_resets_them(self):
 		# Arrange: record PostgreSQL's actual GUC values while the retention DELETE executes.
 		database = self._seed_generations(5)
 		database.retention_config = AccountRetentionConfiguration(4000, 300)
@@ -730,7 +724,7 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self.assertEqual((1001, 1000), cursor.fetchone())
 		self._assert_protected_and_timeout_reset(database)
 
-	def test_minimum_delete_timeout_is_capped_by_remaining_budget(self):
+	def test_prune_account_refresh_generations_caps_minimum_delete_timeout_to_budget(self):
 		# Arrange: a 500-row batch observes the remaining budget inside its real DELETE trigger.
 		database = self._seed_generations(5)
 		database.retention_config = AccountRetentionConfiguration(4000, 300)
@@ -769,7 +763,7 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self.assertEqual((0,), cursor.fetchone())
 		self._assert_protected_and_timeout_reset(database)
 
-	def test_cleanup_stops_before_delete_when_candidate_search_exhausts_budget(self):
+	def test_prune_account_refresh_generations_stops_before_delete_when_search_exhausts_budget(self):
 		# Arrange: the injected clock leaves less than the lock timeout after candidate search.
 		database = self._seed_generations(5)
 		database.retention_config = AccountRetentionConfiguration(1200, 1000)
@@ -797,7 +791,7 @@ class AccountRetentionAdaptiveTimeoutsTest(SymbolPullerTestBase):
 		self.assertEqual((0,), cursor.fetchone())
 		self._assert_protected_and_timeout_reset(database)
 
-	def test_cleanup_stops_when_runtime_budget_expires_during_delete(self):
+	def test_prune_account_refresh_generations_rolls_back_when_budget_expires_before_commit(self):
 		# Arrange: use constructor-injected readings to expire after the real DELETE completes.
 		database = self._seed_generations(5)
 		database.retention_config = AccountRetentionConfiguration(2000, 200)
