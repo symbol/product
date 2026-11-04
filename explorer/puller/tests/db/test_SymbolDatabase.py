@@ -2328,7 +2328,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual([
 			'idx_symbol_account_list_ranks_address',
-			'idx_symbol_account_list_ranks_page',
 			'idx_symbol_account_mosaics_address',
 			'idx_symbol_account_mosaics_mosaic',
 			'idx_symbol_account_refresh_accounts_address_text',
@@ -2344,6 +2343,273 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_accounts_harvesting',
 			'idx_symbol_accounts_importance_desc'
 		], [row[0] for row in cursor.fetchall()])
+		cursor.execute(
+			'''
+			SELECT index_class.relname, index_data.indisprimary, index_data.indisunique,
+				index_data.indisvalid, pg_get_indexdef(index_data.indexrelid)
+			FROM pg_index AS index_data
+			JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid
+			JOIN pg_class AS table_class ON table_class.oid = index_data.indrelid
+			WHERE table_class.relname = 'symbol_account_list_ranks' AND index_data.indisprimary
+			''')
+		primary_key = cursor.fetchone()
+		self.assertEqual('symbol_account_list_ranks_pkey', primary_key[0])
+		self.assertTrue(primary_key[1])
+		self.assertTrue(primary_key[2])
+		self.assertTrue(primary_key[3])
+		self.assertIn('(refresh_run_id, rank_scope, rank)', primary_key[4])
+
+	def test_create_tables_removes_legacy_rank_page_index_and_preserves_published_data(self):
+		# Arrange:
+		database = self._create_database()
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'published',
+			'previous_successful_run_id': 'previous',
+			'running_run_id': 'running',
+			'is_retention_ready': True
+		})
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'CREATE INDEX idx_symbol_account_list_ranks_page '
+			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)')
+		cursor.execute(
+			'INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address) VALUES (\'published\', \'ID\', 0, %s)',
+			(bytes.fromhex('11' * 24),))
+		database.connection.commit()
+
+		# Act:
+		database.create_tables()
+		database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'SELECT 1 FROM pg_class AS index_class JOIN pg_namespace AS index_namespace '
+			'ON index_namespace.oid = index_class.relnamespace '
+			'WHERE index_namespace.nspname = \'public\' AND index_class.relname = \'idx_symbol_account_list_ranks_page\'')
+		self.assertIsNone(cursor.fetchone())
+		cursor.execute('SELECT last_successful_run_id, previous_successful_run_id, running_run_id FROM symbol_account_refresh_state WHERE id = 1')
+		self.assertEqual(('published', 'previous', 'running'), cursor.fetchone())
+		cursor.execute('SELECT refresh_run_id, rank_scope, rank, address FROM symbol_account_list_ranks')
+		row = cursor.fetchone()
+		self.assertEqual(('published', 'ID', 0, bytes.fromhex('11' * 24)), (*row[:3], bytes(row[3])))
+		cursor.execute(
+			'SELECT index_class.relname, index_data.indisprimary, index_data.indisvalid '
+			'FROM pg_index AS index_data JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid '
+			'JOIN pg_class AS table_class ON table_class.oid = index_data.indrelid '
+			'WHERE table_class.relname = \'symbol_account_list_ranks\' AND index_data.indisprimary')
+		self.assertEqual(('symbol_account_list_ranks_pkey', True, True), cursor.fetchone())
+
+	def test_create_tables_keeps_same_named_index_on_another_table(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('CREATE INDEX idx_symbol_account_list_ranks_page ON symbol_blocks(height)')
+		database.connection.commit()
+
+		# Act:
+		with self.assertRaisesRegex(RuntimeError, 'catalog definition does not match'):
+			database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'SELECT tablename, indexdef FROM pg_indexes WHERE schemaname = \'public\' '
+			'AND indexname = \'idx_symbol_account_list_ranks_page\'')
+		self.assertEqual(
+			('symbol_blocks', 'CREATE INDEX idx_symbol_account_list_ranks_page ON public.symbol_blocks USING btree (height)'),
+			cursor.fetchone())
+
+		# Arrange: replace the unexpected index before retrying.
+		cursor.execute('DROP INDEX public.idx_symbol_account_list_ranks_page')
+		cursor.execute(
+			'CREATE INDEX idx_symbol_account_list_ranks_page '
+			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)')
+		database.connection.commit()
+
+		# Act: retry initialization.
+		database.create_tables()
+
+		# Assert: the expected legacy index was removed.
+		cursor.execute(
+			'SELECT 1 FROM pg_class AS index_class JOIN pg_namespace AS index_namespace '
+			'ON index_namespace.oid = index_class.relnamespace '
+			'WHERE index_namespace.nspname = \'public\' AND index_class.relname = \'idx_symbol_account_list_ranks_page\'')
+		self.assertIsNone(cursor.fetchone())
+
+	def test_create_tables_rejects_same_named_non_index_relation(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('CREATE TABLE idx_symbol_account_list_ranks_page (value int)')
+		database.connection.commit()
+
+		# Act:
+		with self.assertRaisesRegex(RuntimeError, 'catalog definition does not match'):
+			database.create_tables()
+
+		# Assert:
+		cursor.execute("""SELECT relkind FROM pg_class WHERE oid = 'public.idx_symbol_account_list_ranks_page'::regclass""")
+		self.assertEqual(('r',), cursor.fetchone())
+
+	def test_create_tables_keeps_rank_page_index_with_descending_key_or_nondefault_operator_class(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		unexpected_definitions = [
+			'refresh_run_id, rank_scope, rank DESC',
+			'refresh_run_id varchar_pattern_ops, rank_scope, rank'
+		]
+
+		for index_definition in unexpected_definitions:
+			with self.subTest(index_definition=index_definition):
+				cursor.execute(f'CREATE INDEX idx_symbol_account_list_ranks_page ON symbol_account_list_ranks({index_definition})')
+				database.connection.commit()
+
+				try:
+					# Act:
+					with self.assertRaisesRegex(RuntimeError, 'catalog definition does not match'):
+						database.create_tables()
+
+					# Assert:
+					cursor.execute(
+						'SELECT indexdef FROM pg_indexes WHERE schemaname = \'public\' '
+						'AND indexname = \'idx_symbol_account_list_ranks_page\'')
+					self.assertIsNotNone(cursor.fetchone())
+				finally:
+					# Reset any failed test transaction before cleaning up this subtest's index.
+					database.connection.rollback()
+					cursor.execute('DROP INDEX IF EXISTS public.idx_symbol_account_list_ranks_page')
+					database.connection.commit()
+
+	def test_create_tables_keeps_same_named_index_with_different_rank_columns(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'CREATE INDEX idx_symbol_account_list_ranks_page '
+			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, address)')
+		database.connection.commit()
+
+		# Act:
+		with self.assertRaisesRegex(RuntimeError, 'catalog definition does not match'):
+			database.create_tables()
+
+		# Assert:
+		cursor.execute('SELECT indexdef FROM pg_indexes WHERE schemaname = \'public\' AND indexname = \'idx_symbol_account_list_ranks_page\'')
+		self.assertIn('(refresh_run_id, rank_scope, address)', cursor.fetchone()[0])
+
+	def test_create_tables_keeps_legacy_index_when_expected_primary_key_is_missing(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'CREATE INDEX idx_symbol_account_list_ranks_page '
+			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)')
+		cursor.execute('ALTER TABLE symbol_account_list_ranks DROP CONSTRAINT symbol_account_list_ranks_pkey')
+		database.connection.commit()
+
+		# Act:
+		with self.assertRaisesRegex(RuntimeError, 'symbol_account_list_ranks_pkey is missing'):
+			database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'SELECT index_class.relname FROM pg_class AS index_class '
+			'JOIN pg_namespace AS index_namespace ON index_namespace.oid = index_class.relnamespace '
+			'WHERE index_namespace.nspname = \'public\' AND index_class.relname = \'idx_symbol_account_list_ranks_page\'')
+		self.assertEqual(('idx_symbol_account_list_ranks_page',), cursor.fetchone())
+		cursor.execute(
+			'SELECT 1 FROM pg_constraint WHERE conrelid = \'symbol_account_list_ranks\'::regclass AND contype = \'p\'')
+		self.assertIsNone(cursor.fetchone())
+
+		# Arrange: restore the primary key before retrying.
+		cursor.execute(
+			'ALTER TABLE symbol_account_list_ranks ADD CONSTRAINT symbol_account_list_ranks_pkey '
+			'PRIMARY KEY (refresh_run_id, rank_scope, rank)')
+		database.connection.commit()
+
+		# Act: retry initialization.
+		database.create_tables()
+
+		# Assert: the expected legacy index was removed.
+		cursor.execute(
+			'SELECT 1 FROM pg_class AS index_class JOIN pg_namespace AS index_namespace '
+			'ON index_namespace.oid = index_class.relnamespace '
+			'WHERE index_namespace.nspname = \'public\' AND index_class.relname = \'idx_symbol_account_list_ranks_page\'')
+		self.assertIsNone(cursor.fetchone())
+
+	def test_create_tables_with_no_legacy_index_does_not_block_on_reader(self):
+		# Arrange: the reader retains a transaction on the table throughout initialization.
+		self._create_database()
+		reader = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		writer = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		self.addCleanup(reader.connection.rollback)
+		with reader.connection.cursor() as cursor:
+			cursor.execute('SELECT count(*) FROM symbol_account_list_ranks')
+			cursor.fetchone()
+		with writer.connection.cursor() as cursor:
+			cursor.execute('SET lock_timeout = \'3s\'')
+		writer.connection.commit()
+
+		# Act:
+		with writer.workflow_lock():
+			writer.create_tables()
+
+		# Assert: the old index remains absent and the primary key is still valid and unique.
+		with writer.connection.cursor() as cursor:
+			cursor.execute('SELECT to_regclass(\'public.idx_symbol_account_list_ranks_page\')')
+			self.assertEqual((None,), cursor.fetchone())
+			cursor.execute('''
+				SELECT index_class.relname, index_data.indisprimary, index_data.indisunique, index_data.indisvalid
+				FROM pg_index AS index_data
+				JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid
+				WHERE index_data.indrelid = 'public.symbol_account_list_ranks'::regclass AND index_data.indisprimary
+			''')
+			self.assertEqual(('symbol_account_list_ranks_pkey', True, True, True), cursor.fetchone())
+
+	def test_create_tables_retries_legacy_index_migration_after_reader_releases_table(self):
+		# Arrange:
+		database = self._create_database()
+		with database.connection.cursor() as cursor:
+			cursor.execute(
+				'CREATE INDEX idx_symbol_account_list_ranks_page '
+				'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)')
+		database.connection.commit()
+		reader = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		writer = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		observer = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		self.addCleanup(reader.connection.rollback)
+		with writer.connection.cursor() as cursor:
+			cursor.execute('SET lock_timeout = \'3s\'')
+		writer.connection.commit()
+		with reader.connection.cursor() as cursor:
+			cursor.execute('SELECT count(*) FROM symbol_account_list_ranks')
+			cursor.fetchone()
+
+		# Act:
+		with self.assertRaises(PsycopgError) as error:
+			with writer.workflow_lock():
+				writer.create_tables()
+		# Assert: the lock conflict was reported.
+		self.assertEqual('55P03', error.exception.pgcode)
+		# The dedicated test server uses English PostgreSQL diagnostics.
+		self.assertEqual('could not obtain lock on relation "public.symbol_account_list_ranks"', error.exception.diag.message_primary)
+
+		# Arrange: release the reader and verify the workflow lock can be reacquired.
+		reader.connection.rollback()
+		with observer.workflow_lock():
+			pass
+
+		# Act: retry initialization.
+		with writer.workflow_lock():
+			writer.create_tables()
+
+		# Assert:
+		with writer.connection.cursor() as cursor:
+			cursor.execute(
+				'SELECT 1 FROM pg_class AS index_class JOIN pg_namespace AS index_namespace '
+				'ON index_namespace.oid = index_class.relnamespace '
+				'WHERE index_namespace.nspname = \'public\' AND index_class.relname = \'idx_symbol_account_list_ranks_page\'')
+			self.assertIsNone(cursor.fetchone())
 
 	def test_create_tables_creates_account_refresh_state_schema(self):
 		# Arrange:
