@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from common.symbol.ReceiptTypes import RECEIPT_TYPE_LABELS
 from common.symbol.Transaction import MESSAGE_TYPE_LABELS
 from psycopg2 import Error as PsycopgError
-from psycopg2 import errorcodes
+from psycopg2 import errorcodes, sql
 from psycopg2.extras import Json
 from zenlog import log
 
@@ -252,8 +252,6 @@ ACCOUNT_REFRESH_INDEXES = [
 	'ON symbol_account_refresh_mosaics(refresh_run_id, mosaic_id, amount DESC, address)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_mosaics_address '
 	'ON symbol_account_refresh_mosaics(refresh_run_id, address)',
-	'CREATE INDEX IF NOT EXISTS idx_symbol_account_list_ranks_page '
-	'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_list_ranks_address '
 	'ON symbol_account_list_ranks(refresh_run_id, rank_scope, address)'
 ]
@@ -569,6 +567,178 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			# Performance observation must never alter database commit semantics.
 			return
 
+	@staticmethod
+	def _fetch_account_rank_index_details(cursor, schema_name, index_name):
+		cursor.execute(
+			'''
+			SELECT
+				table_class.relname,
+				access_method.amname,
+				index_data.indisunique,
+				index_data.indisprimary,
+				index_data.indisvalid,
+				index_data.indisready,
+				index_data.indislive,
+				index_data.indnkeyatts,
+				index_data.indnatts,
+				ARRAY(
+					SELECT option_data.option_value
+					FROM unnest(index_data.indoption::smallint[]) WITH ORDINALITY AS option_data(option_value, position)
+					ORDER BY option_data.position
+				) = ARRAY[0, 0, 0]::smallint[],
+				ARRAY(
+					SELECT collation_data.collation_oid
+					FROM unnest(index_data.indcollation::oid[]) WITH ORDINALITY AS collation_data(collation_oid, position)
+					ORDER BY collation_data.position
+				) = ARRAY(
+				SELECT column_data.attcollation
+				FROM unnest(index_data.indkey::smallint[]) WITH ORDINALITY AS indexed_column(attnum, position)
+				JOIN pg_attribute AS column_data
+					ON column_data.attrelid = index_data.indrelid AND column_data.attnum = indexed_column.attnum
+				WHERE indexed_column.position <= index_data.indnkeyatts
+				ORDER BY indexed_column.position
+			),
+				ARRAY(
+					SELECT operator_data.operator_class_oid
+					FROM unnest(index_data.indclass::oid[]) WITH ORDINALITY AS operator_data(operator_class_oid, position)
+					ORDER BY operator_data.position
+				) = ARRAY(
+					SELECT operator_class.oid
+					FROM (VALUES ('text_ops', 1), ('text_ops', 2), ('int8_ops', 3)) AS expected_class(name, position)
+					JOIN pg_opclass AS operator_class
+						ON operator_class.opcmethod = access_method.oid AND operator_class.opcname::text = expected_class.name
+					JOIN pg_namespace AS operator_class_namespace
+						ON operator_class_namespace.oid = operator_class.opcnamespace AND operator_class_namespace.nspname = 'pg_catalog'
+					ORDER BY expected_class.position
+			),
+				pg_get_expr(index_data.indexprs, index_data.indrelid),
+				pg_get_expr(index_data.indpred, index_data.indrelid),
+				ARRAY(
+					SELECT pg_get_indexdef(index_data.indexrelid, key_number, true)
+					FROM generate_series(1, index_data.indnkeyatts) AS key_numbers(key_number)
+					ORDER BY key_number
+				),
+				EXISTS (
+					SELECT 1 FROM pg_constraint AS constraint_data
+					WHERE constraint_data.conindid = index_data.indexrelid
+				)
+			FROM pg_class AS index_class
+			JOIN pg_namespace AS index_namespace ON index_namespace.oid = index_class.relnamespace
+			JOIN pg_index AS index_data ON index_data.indexrelid = index_class.oid
+			JOIN pg_class AS table_class ON table_class.oid = index_data.indrelid
+			JOIN pg_am AS access_method ON access_method.oid = index_class.relam
+			WHERE index_namespace.nspname = %s AND index_class.relname = %s
+			''',
+			(schema_name, index_name))
+		return cursor.fetchone()
+
+	@staticmethod
+	def _is_expected_account_rank_primary_key(cursor, schema_name):
+		cursor.execute(
+			'''
+			SELECT
+				constraint_data.conname,
+				index_data.indisvalid,
+				index_data.indisready,
+				index_data.indislive,
+				index_data.indisunique,
+				index_data.indisprimary,
+				index_data.indnkeyatts,
+				index_data.indnatts,
+				ARRAY(
+					SELECT option_data.option_value
+					FROM unnest(index_data.indoption::smallint[]) WITH ORDINALITY AS option_data(option_value, position)
+					ORDER BY option_data.position
+				) = ARRAY[0, 0, 0]::smallint[],
+				ARRAY(
+					SELECT collation_data.collation_oid
+					FROM unnest(index_data.indcollation::oid[]) WITH ORDINALITY AS collation_data(collation_oid, position)
+					ORDER BY collation_data.position
+				) = ARRAY(
+					SELECT column_data.attcollation
+					FROM unnest(index_data.indkey::smallint[]) WITH ORDINALITY AS indexed_column(attnum, position)
+					JOIN pg_attribute AS column_data
+						ON column_data.attrelid = index_data.indrelid AND column_data.attnum = indexed_column.attnum
+					WHERE indexed_column.position <= index_data.indnkeyatts
+					ORDER BY indexed_column.position
+				),
+				ARRAY(
+					SELECT operator_data.operator_class_oid
+					FROM unnest(index_data.indclass::oid[]) WITH ORDINALITY AS operator_data(operator_class_oid, position)
+					ORDER BY operator_data.position
+				) = ARRAY(
+					SELECT operator_class.oid
+					FROM (VALUES ('text_ops', 1), ('text_ops', 2), ('int8_ops', 3)) AS expected_class(name, position)
+					JOIN pg_opclass AS operator_class
+						ON operator_class.opcmethod = access_method.oid AND operator_class.opcname::text = expected_class.name
+					JOIN pg_namespace AS operator_class_namespace
+						ON operator_class_namespace.oid = operator_class.opcnamespace AND operator_class_namespace.nspname = 'pg_catalog'
+					ORDER BY expected_class.position
+				),
+				access_method.amname,
+				pg_get_expr(index_data.indexprs, index_data.indrelid),
+				pg_get_expr(index_data.indpred, index_data.indrelid),
+				ARRAY(
+					SELECT pg_get_indexdef(index_data.indexrelid, key_number, true)
+					FROM generate_series(1, index_data.indnkeyatts) AS key_numbers(key_number)
+					ORDER BY key_number
+				)
+			FROM pg_constraint AS constraint_data
+			JOIN pg_class AS table_class ON table_class.oid = constraint_data.conrelid
+			JOIN pg_namespace AS table_namespace ON table_namespace.oid = table_class.relnamespace
+			JOIN pg_index AS index_data ON index_data.indexrelid = constraint_data.conindid
+			JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid
+			JOIN pg_am AS access_method ON access_method.oid = index_class.relam
+			WHERE table_namespace.nspname = %s
+				AND table_class.relname = 'symbol_account_list_ranks'
+				AND constraint_data.contype = 'p'
+			''',
+			(schema_name,))
+		primary_key = cursor.fetchone()
+		return primary_key == (
+			'symbol_account_list_ranks_pkey', True, True, True, True, True, 3, 3, True, True, True, 'btree', None, None,
+			['refresh_run_id', 'rank_scope', 'rank'])
+
+	def _drop_legacy_account_rank_page_index(self, cursor):
+		cursor.execute('SELECT current_schema()')
+		schema_name = cursor.fetchone()[0]
+		cursor.execute(
+			'''
+			SELECT 1
+			FROM pg_class AS index_class
+			JOIN pg_namespace AS index_namespace ON index_namespace.oid = index_class.relnamespace
+			WHERE index_namespace.nspname = %s AND index_class.relname = %s
+			''',
+			(schema_name, 'idx_symbol_account_list_ranks_page'))
+		if not cursor.fetchone():
+			return
+
+		# Fail without waiting if the table lock cannot be acquired. Once acquired,
+		# it can block reads and writes until commit or rollback; recheck the catalog under the lock.
+		cursor.execute(
+			sql.SQL('LOCK TABLE {}.{} IN ACCESS EXCLUSIVE MODE NOWAIT').format(
+				sql.Identifier(schema_name), sql.Identifier('symbol_account_list_ranks')))
+		if not self._is_expected_account_rank_primary_key(cursor, schema_name):
+			self.connection.rollback()
+			raise RuntimeError(
+				'Cannot remove idx_symbol_account_list_ranks_page: '
+				'symbol_account_list_ranks_pkey is missing or does not match the expected valid primary key')
+
+		index_details = self._fetch_account_rank_index_details(
+			cursor, schema_name, 'idx_symbol_account_list_ranks_page')
+		is_expected_page_index = index_details == (
+			'symbol_account_list_ranks', 'btree', False, False, True, True, True, 3, 3, True, True, True, None, None,
+			['refresh_run_id', 'rank_scope', 'rank'], False)
+		if not is_expected_page_index:
+			self.connection.rollback()
+			raise RuntimeError(
+				'Cannot remove idx_symbol_account_list_ranks_page: '
+				'catalog definition does not match the expected unowned rank paging index')
+
+		cursor.execute(
+			sql.SQL('DROP INDEX {}.{}').format(
+				sql.Identifier(schema_name), sql.Identifier('idx_symbol_account_list_ranks_page')))
+
 	def create_tables(self):  # pylint: disable=too-many-statements
 		"""Creates Symbol block synchronization tables."""
 
@@ -690,6 +860,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transaction_addresses_height ON symbol_transaction_addresses(height)')
 		for index_sql in SYMBOL_RECEIPT_INDEXES:
 			cursor.execute(index_sql)
+		self._drop_legacy_account_rank_page_index(cursor)
 		self._commit()
 
 	def check_connection(self):
