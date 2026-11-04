@@ -1,8 +1,8 @@
 import { Sizes } from '@/app/styles';
-import { Image } from 'react-native';
 import { iconSourceMap } from '@/brand/assets/images/icons/icon-source-map';
 import { iconConfig } from '@/brand/config/icon-config';
 import { iconNamesByVariant } from '@/contract/icons';
+import { Image } from 'react-native';
 
 /** @typedef {import('react')} React */
 /** @typedef {import('@/app/types/ColorVariants').IconColorVariants} IconColorVariants */

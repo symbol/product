@@ -1,8 +1,8 @@
 import { Sizes } from '@/app/styles';
-import React from 'react';
-import { Image, StyleSheet } from 'react-native';
 import { tokenImageSourceMap } from '@/brand/assets/images/tokens/token-image-source-map';
 import { tokenAvatarConfig } from '@/brand/config/token-avatar-config';
+import React from 'react';
+import { Image, StyleSheet } from 'react-native';
 
 /** @typedef {import('@/app/types/Sizes').AvatarSize} AvatarSize */
 
