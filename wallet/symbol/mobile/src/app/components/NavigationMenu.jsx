@@ -10,26 +10,26 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 const ITEM_HEIGHT = Sizes.Semantic.navigationMenuHeight.m;
 const ICON_SIZE = Sizes.Semantic.spacing.xl;
 
-const ICON_SOURCE_MAP = {
+const iconSourceMap = {
 	[RouteName.Home]: {
-		default: require('@/app/assets/images/navigation/home_d.png'),
-		active: require('@/app/assets/images/navigation/home_a.png')
+		default: require('@/brand/assets/images/navigation/home-default.png'),
+		active: require('@/brand/assets/images/navigation/home-active.png')
 	},
 	[RouteName.History]: {
-		default: require('@/app/assets/images/navigation/history_d.png'),
-		active: require('@/app/assets/images/navigation/history_a.png')
+		default: require('@/brand/assets/images/navigation/history-default.png'),
+		active: require('@/brand/assets/images/navigation/history-active.png')
 	},
 	[RouteName.Scan]: {
-		default: require('@/app/assets/images/navigation/scan_d.png'),
-		active: require('@/app/assets/images/navigation/scan_a.png')
+		default: require('@/brand/assets/images/navigation/scan-default.png'),
+		active: require('@/brand/assets/images/navigation/scan-active.png')
 	},
 	[RouteName.Assets]: {
-		default: require('@/app/assets/images/navigation/assets_d.png'),
-		active: require('@/app/assets/images/navigation/assets_a.png')
+		default: require('@/brand/assets/images/navigation/assets-default.png'),
+		active: require('@/brand/assets/images/navigation/assets-active.png')
 	},
 	[RouteName.Actions]: {
-		default: require('@/app/assets/images/navigation/features_d.png'),
-		active: require('@/app/assets/images/navigation/features_a.png')
+		default: require('@/brand/assets/images/navigation/features-default.png'),
+		active: require('@/brand/assets/images/navigation/features-active.png')
 	}
 };
 
@@ -103,7 +103,7 @@ export const NavigationMenu = ({ currentRouteName }) => {
 	return (
 		<Animated.View style={styles.root} entering={FadeInDown}>
 			{TAB_CONFIG.map(tab => {
-				const icons = ICON_SOURCE_MAP[tab.name];
+				const icons = iconSourceMap[tab.name];
 				const isActive = tab.name === currentRouteName;
 
 				return (
