@@ -1,4 +1,4 @@
-import { Button, ButtonClose, FlexContainer, PasscodeView, Screen, Spacer, Stack, StyledText, SymbolLogo } from '@/app/components';
+import { AppLogo, Button, ButtonClose, FlexContainer, PasscodeView, Screen, Spacer, Stack, StyledText } from '@/app/components';
 import { MAX_SEED_ACCOUNTS_PER_NETWORK } from '@/app/constants';
 import { useAsyncManager, usePasscode, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
@@ -69,7 +69,7 @@ export const ImportWallet = () => {
 					</FlexContainer>
 					<Stack>
 						<FlexContainer center>
-							<SymbolLogo />
+							<AppLogo />
 						</FlexContainer>
 						<StyledText type="title">
 							{$t('screen_onboarding_importWallet_title_intro')}
