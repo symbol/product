@@ -3,6 +3,9 @@
         "baseUrl": ".",
         "paths": {
             "@/app/*": ["src/*"],
+            "@/contract/*": ["src/contract/*"],
+            "@/brand": ["src/brands/symbol"],
+            "@/brand/*": ["src/brands/symbol/*"],
             "__fixtures__/*": ["__fixtures__/*"],
             "__tests__/*": ["__tests__/*"],
             "symbol-sdk/symbol": ["node_modules/symbol-sdk/src/symbol/index.js"]

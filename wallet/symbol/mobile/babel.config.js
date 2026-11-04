@@ -1,6 +1,7 @@
 const createAlias = () => {
 	const alias = {
 		'@/app': './src',
+		'@/contract': './src/contract',
 		'symbol-sdk/symbol': './node_modules/symbol-sdk/src/symbol/index.js'
 	};
 
