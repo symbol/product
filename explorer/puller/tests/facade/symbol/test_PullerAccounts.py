@@ -1,13 +1,17 @@
 # pylint: disable=duplicate-code,too-many-lines
 import asyncio
+import threading
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from unittest.mock import Mock
 
+from common.tests.AccountRefreshTestUtils import seed_account_refresh_state, wait_for_backend_exit
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import ReceiptType, TransactionType
 from symbolchain.symbol.Network import Address
 from symbollightapi.model.Exceptions import NodeException
 
+from puller.db.AccountRetentionConfiguration import AccountRetentionConfiguration
 from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.facade.SymbolPuller import ACCOUNT_BATCH_FETCH_SIZE
 from puller.model.symbol.Account import create_account_row
@@ -15,6 +19,7 @@ from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.format import address_from_public_key
 from tests.test.SymbolTestConstants import SIGNER_ADDRESS
 
+from .account_retention_test_utils import AccountRetentionReleaseGate
 from .puller_test_utils import (
 	BENEFICIARY_ADDRESS,
 	NATIVE_MOSAIC_ID,
@@ -27,6 +32,7 @@ from .puller_test_utils import (
 	create_node_block,
 	create_node_transaction,
 	create_resolution_statement,
+	create_symbol_puller,
 	create_transaction_page,
 	set_symbol_connector,
 	statement_path,
@@ -116,9 +122,14 @@ class FailureStateRecordingDatabase(DelegatingSymbolDatabase):
 		super().__init__(database)
 		self.failure_state_errors = []
 
-	def mark_account_refresh_failed(self, last_error):
+	def mark_account_refresh_failed(self, _refresh_run_id, last_error):
 		self.failure_state_errors.append(last_error)
 		raise FailureStateRecordingError('failure-state persistence failed')
+
+
+class RetentionFailureDatabase(DelegatingSymbolDatabase):
+	def prune_account_refresh_generations(self):  # pylint: disable=no-self-use
+		raise RuntimeError('private retention error detail')
 
 
 class MalformedAccountsConnector(FakeConnector):
@@ -1270,7 +1281,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_refresh_accounts_rolls_back_failed_page_and_records_original_database_error(self):
 		# Arrange:
-		self.puller.symbol_db.upsert_account_refresh_state({
+		seed_account_refresh_state(self.puller.symbol_db, {
 			'status': 'healthy',
 			'last_successful_run_id': 'previous-run',
 			'last_completed_height': 10
@@ -1317,6 +1328,218 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# Assert:
 		self.assertIs(refresh_error, context.exception)
 		self.assertEqual([str(refresh_error)], failure_state_database.failure_state_errors)
+
+	def test_refresh_accounts_keeps_successful_publication_when_retention_fails(self):
+		# Arrange:
+		seed_account_refresh_state(self.puller.symbol_db, {'last_successful_run_id': 'old'})
+		logger = Mock()
+		puller = create_symbol_puller(self.config_ini, 'testnet', cleanup_logger=logger)
+		set_symbol_connector(puller, FakeConnector(1, {}, account_pages={1: []}))
+		database = self.puller.symbol_db
+		puller.symbol_db = RetentionFailureDatabase(database)
+
+		# Act:
+		asyncio.run(puller.refresh_accounts())
+
+		# Assert:
+		state = database.get_account_refresh_state()
+		self.assertEqual('healthy', state['status'])
+		self.assertNotEqual('old', state['last_successful_run_id'])
+		self.assertEqual('old', state['previous_successful_run_id'])
+		self.assertIsNone(state['running_run_id'])
+		self.assertIsNotNone(state['last_completed_at'])
+		logger.error.assert_called_once_with(
+			'Symbol account snapshot retention failed after successful workflow: error_type=RuntimeError sqlstate=None')
+
+	def test_refresh_accounts_rejects_concurrent_workflow_without_changing_its_owner(self):
+		# Arrange: another database session has acquired the exclusion before refresh starts.
+		other = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		set_symbol_connector(self.puller, FakeConnector(1, {}, account_pages={1: []}))
+		with other.workflow_lock():
+			other.begin_account_refresh('other-owner', datetime(2026, 1, 1, tzinfo=timezone.utc))
+
+			# Act: attempt refresh while the other session owns the lock.
+			with self.assertRaisesRegex(RuntimeError, 'Another Symbol workflow'):
+				asyncio.run(self.puller.refresh_accounts())
+
+			# Assert: the active run and its status are unchanged.
+			state = self.puller.symbol_db.get_account_refresh_state()
+			self.assertEqual('other-owner', state['running_run_id'])
+			self.assertEqual('refreshing', state['status'])
+
+		# Act: once exclusion is released, the next refresh can complete.
+		asyncio.run(self.puller.refresh_accounts())
+
+		# Assert:
+		state = self.puller.symbol_db.get_account_refresh_state()
+		self.assertEqual('healthy', state['status'])
+		self.assertIsNone(state['running_run_id'])
+		self.assertNotEqual('other-owner', state['last_successful_run_id'])
+
+	def test_sync_block_headers_releases_lock_after_failed_operation(self):
+		# Arrange: another session holds the lock while this sync attempts to start.
+		other = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		set_symbol_connector(self.puller, FakeConnector(1, {}))
+		with other.workflow_lock():
+			# Act: the first sync is rejected while the other session owns the lock.
+			with self.assertRaisesRegex(RuntimeError, 'Another Symbol workflow'):
+				asyncio.run(self.puller.sync_block_headers())
+
+		# Act: the next sync obtains the lock but fails because its block page is absent.
+		with self.assertRaises(KeyError):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Assert: the failed facade operation released the session lock.
+		with other.workflow_lock():
+			self.assertIsNotNone(other.connection)
+
+	def test_sync_block_headers_advances_retention_after_migration(self):
+		# Arrange: a successful previous publication enables cleanup of an abandoned rank.
+		database = self.puller.symbol_db
+		seed_account_refresh_state(database, {'last_successful_run_id': 'published', 'is_retention_ready': True})
+		cursor = database.connection.cursor()
+		cursor.execute('''
+			INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
+			VALUES ('abandoned', 'ID', 0, %s)
+		''', (bytes([1]) * 24,))
+		database.connection.commit()
+		set_symbol_connector(self.puller, FakeConnector(1, {0: [create_node_block(1)]}))
+
+		# Act:
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		cursor.execute('SELECT refresh_run_id FROM symbol_account_list_ranks')
+		self.assertEqual([], cursor.fetchall())
+		self.assertEqual('published', database.get_account_refresh_state()['last_successful_run_id'])
+
+	def test_sync_block_headers_reclaims_refresh_owner_after_connection_loss(self):
+		# Arrange: a refresh process acquired the session lock, wrote pages and then died.
+		database = self.puller.symbol_db
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous', 'is_retention_ready': True
+		})
+		other = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		cursor = other.connection.cursor()
+		cursor.execute('SELECT pg_try_advisory_lock(%s, %s)', (0x53594D42, 0x41434354))
+		self.assertEqual((True,), cursor.fetchone())
+		other.connection.commit()
+		other.begin_account_refresh('abandoned', datetime(2026, 1, 1, tzinfo=timezone.utc))
+		cursor.execute('''
+			INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
+			VALUES ('abandoned', 'ID', 0, %s)
+		''', (bytes([1]) * 24,))
+		other.connection.commit()
+		backend_pid = other.connection.get_backend_pid()
+		other.connection.close()
+		wait_for_backend_exit(database, backend_pid)
+		set_symbol_connector(self.puller, FakeConnector(1, {0: [create_node_block(1)]}))
+
+		# Act: sync acquires the released lock, reclaims the stale owner, and runs retention.
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert: published and previous IDs remain intact while the abandoned run is removed.
+		state = database.get_account_refresh_state()
+		self.assertEqual(('published', 'previous', None, 'unhealthy'), (
+			state['last_successful_run_id'], state['previous_successful_run_id'], state['running_run_id'], state['status']))
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT refresh_run_id FROM symbol_account_list_ranks')
+		self.assertEqual([], cursor.fetchall())
+
+	def test_sync_rejects_active_refresh_without_clearing_its_owner(self):
+		# Arrange: an independent session holds the workflow lock and owns the running refresh.
+		database = self.puller.symbol_db
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous', 'is_retention_ready': True
+		})
+		other = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		set_symbol_connector(self.puller, FakeConnector(1, {0: [create_node_block(1)]}))
+		with other.workflow_lock():
+			other.begin_account_refresh('active-owner', datetime(2026, 1, 1, tzinfo=timezone.utc))
+			before = database.get_account_refresh_state()
+
+			# Act: synchronization attempts to start while the refresh still owns the lock.
+			with self.assertRaisesRegex(RuntimeError, 'Another Symbol workflow'):
+				asyncio.run(self.puller.sync_block_headers())
+
+			# Assert: rejection preserves the owner and the complete refresh state.
+			self.assertEqual('active-owner', before['running_run_id'])
+			self.assertEqual(before, database.get_account_refresh_state())
+
+		# Act: after the owner releases the lock, synchronization may proceed.
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert: the subsequent workflow acquired the lock and reclaimed the abandoned owner.
+		self.assertIsNone(database.get_account_refresh_state()['running_run_id'])
+		self.assertEqual('healthy', database.get_sync_state()['status'])
+
+	def test_refresh_accounts_rejects_concurrent_cleanup_and_can_retry(self):  # pylint: disable=too-many-statements
+		# Arrange: a trigger holds an actual cleanup DELETE at a PostgreSQL release flag.
+		database = self.puller.symbol_db
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous', 'is_retention_ready': True
+		})
+		cursor = database.connection.cursor()
+		for run_id in ('abandoned', 'published', 'previous'):
+			cursor.execute('''
+				INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
+				VALUES (%s, 'ID', 0, %s)
+			''', (run_id, bytes([1]) * 24))
+
+		database.connection.commit()
+		gate = self.exit_stack.enter_context(AccountRetentionReleaseGate(database, self.db_config, 'abandoned'))
+		started = threading.Event()
+		worker_state = {}
+		worker_errors = []
+
+		def prune_in_separate_session():
+			try:
+				with SymbolDatabase(
+					self.db_config, retention_config=AccountRetentionConfiguration(120000, 1000), retention_time_budget_seconds=120
+				) as worker_database:
+					worker_state['connection'] = worker_database.connection
+					worker_state['pid'] = worker_database.connection.get_backend_pid()
+					started.set()
+					with worker_database.workflow_lock():
+						worker_database.prune_account_refresh_generations(batch_size=1, max_batches=1)
+			except Exception as error:  # pylint: disable=broad-exception-caught
+				worker_errors.append(error)
+				started.set()
+
+		set_symbol_connector(self.puller, FakeConnector(1, {}, account_pages={1: []}))
+		worker = threading.Thread(target=prune_in_separate_session, daemon=True)
+		# Act: start cleanup and wait until the actual DELETE is blocked.
+		worker.start()
+		try:
+			self.assertTrue(started.wait(5))
+			self.assertFalse(worker_errors)
+			gate.wait_for_worker_sleep(worker_state['pid'])
+
+			# Act: attempt publication while cleanup owns the workflow lock.
+			with self.assertRaisesRegex(RuntimeError, 'Another Symbol workflow'):
+				asyncio.run(self.puller.refresh_accounts())
+
+			# Assert: the rejected attempt did not change ownership or publication.
+			state = database.get_account_refresh_state()
+			self.assertEqual(('published', 'previous', None), (
+				state['last_successful_run_id'], state['previous_successful_run_id'], state['running_run_id']))
+		finally:
+			gate.stop_worker(worker, worker_state.get('connection'))
+
+		# Assert: the completed cleanup removed only the unprotected generation.
+		self.assertFalse(worker.is_alive(), 'cleanup worker did not finish')
+		self.assertFalse(worker_errors)
+		cursor.execute('SELECT refresh_run_id FROM symbol_account_list_ranks ORDER BY refresh_run_id')
+		self.assertEqual([('previous',), ('published',)], cursor.fetchall())
+
+		# Act: retry publication after cleanup releases the exclusion.
+		asyncio.run(self.puller.refresh_accounts())
+
+		# Assert:
+		state = database.get_account_refresh_state()
+		self.assertEqual('published', state['previous_successful_run_id'])
+		self.assertIsNone(state['running_run_id'])
+		self.assertNotEqual('published', state['last_successful_run_id'])
 
 	def test_rollback_re_raises_database_error(self):
 		# Arrange:
@@ -1480,7 +1703,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_refresh_accounts_marks_failed_run_unhealthy_without_changing_previous_successful_run(self):
 		# Arrange:
-		self.puller.symbol_db.upsert_account_refresh_state({
+		seed_account_refresh_state(self.puller.symbol_db, {
 			'status': 'healthy',
 			'last_successful_run_id': 'previous-run',
 			'last_completed_height': 10
