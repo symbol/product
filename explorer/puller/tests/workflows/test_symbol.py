@@ -3,6 +3,7 @@ import asyncio
 
 import pytest
 import workflow_test_utils
+from psycopg2 import OperationalError
 
 from puller.workflows.symbol import main
 
@@ -117,13 +118,10 @@ def test_command_help(command, expected_text, capsys):
 
 
 @pytest.mark.parametrize(
-	('command', 'command_specific_text'),
-	[
-		('refresh-accounts', 'refresh-accounts runs'),
-		('sync-block', 'do not overlap sync-block runs')
-	],
+	'command',
+	['refresh-accounts', 'sync-block'],
 	ids=['refresh-accounts', 'sync-block'])
-def test_command_help_describes_single_writer_contract(command, command_specific_text, capsys):
+def test_command_help_describes_single_writer_contract(command, capsys):
 	# Act:
 	with pytest.raises(SystemExit) as exception:
 		asyncio.run(main([command, '--help']))
@@ -131,12 +129,12 @@ def test_command_help_describes_single_writer_contract(command, command_specific
 	# Assert:
 	assert 0 == exception.value.code
 	normalized_output = ' '.join(capsys.readouterr().out.split()).lower()
-	assert 'sync-block runs' in normalized_output
+	assert 'sync-block' in normalized_output.replace('sync- block', 'sync-block')
 	assert 'refresh-accounts' in normalized_output
 	assert 'manual runs' in normalized_output
-	assert 'external scheduler' in normalized_output
-	assert 'no mechanical lock' in normalized_output
-	assert command_specific_text in normalized_output
+	assert 'database lock rejects overlapping' in normalized_output
+	assert 'once connected to the database, overlaps fail immediately with a nonzero exit' in normalized_output
+	assert 'scheduling and retries are external' in normalized_output
 
 
 def test_sync_block_dispatches_with_forwarded_limits_and_config():
@@ -152,7 +150,7 @@ def test_sync_block_dispatches_with_forwarded_limits_and_config():
 	# Assert:
 	puller = puller_factory.puller
 	assert {'max_requests_per_second': 25, 'max_transactions_per_batch': 50000} == puller.constructor_kwargs
-	assert 1 == puller.symbol_db.create_tables_call_count
+	assert 0 == puller.symbol_db.create_tables_call_count
 	assert [3000] == puller.synced_max_heights
 	assert ('http://localhost:7890', 'test_config.ini', 'testnet') == puller.constructor_args[:3]
 	assert 'http://localhost:7890' == puller.constructor_args[3].base_url
@@ -181,7 +179,7 @@ def test_refresh_accounts_dispatches_and_logs_completion(caplog):
 	# Assert:
 	puller = puller_factory.puller
 	assert 1 == puller.refresh_accounts_call_count
-	assert 1 == puller.symbol_db.create_tables_call_count
+	assert 0 == puller.symbol_db.create_tables_call_count
 	assert ('http://localhost:7890', 'test_config.ini', 'testnet') == puller.constructor_args[:3]
 	assert ['Account refresh completed'] == caplog.messages
 
@@ -199,3 +197,23 @@ def test_refresh_accounts_propagates_failure_without_completion_log(caplog):
 	assert [] == caplog.messages
 	assert 1 == puller_factory.puller.async_enter_call_count
 	assert 1 == puller_factory.puller.async_exit_call_count
+
+
+def test_workflow_rejects_invalid_retention_configuration_before_database_connection(tmp_path):
+	# Arrange: the invalid retention setting and unusable database port are read by the real entrypoint.
+	config_path = tmp_path / 'invalid-retention.ini'
+	config_path.write_text(
+		'[symbol_db]\ndatabase = postgres\nuser = postgres\npassword = \nhost = 127.0.0.1\nport = 0\n'
+		'[symbol_account_retention]\nlock_timeout_ms = 4999\n', encoding='utf8')
+	arguments = _base_arguments('refresh-accounts')
+	arguments[arguments.index('--db-config') + 1] = str(config_path)
+
+	# Act and assert: configuration fails before the entrypoint can attempt its unusable DB connection.
+	with pytest.raises(ValueError, match='lock_timeout_ms must be at most'):
+		asyncio.run(main(arguments, environment=workflow_test_utils.create_symbol_environment()))
+
+	# Act and assert: with valid retention settings the same entrypoint reaches the invalid DB port.
+	config_path.write_text(
+		'[symbol_db]\ndatabase = postgres\nuser = postgres\npassword = \nhost = 127.0.0.1\nport = 0\n', encoding='utf8')
+	with pytest.raises(OperationalError):
+		asyncio.run(main(arguments, environment=workflow_test_utils.create_symbol_environment()))

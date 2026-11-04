@@ -26,7 +26,7 @@ def create_node_config(symbol_node, environment=None):
 
 
 async def run_symbol_workflow(symbol_puller_factory, args, operation, environment=None, puller_kwargs=None):
-	"""Constructs a Symbol puller, initializes its tables, and runs one operation."""
+	"""Constructs a Symbol puller and runs its schema-owning, locked operation."""
 
 	node_config = create_node_config(args.symbol_node, environment)
 	puller = symbol_puller_factory(
@@ -37,5 +37,4 @@ async def run_symbol_workflow(symbol_puller_factory, args, operation, environmen
 		**(puller_kwargs or {}))
 
 	async with puller:
-		puller.symbol_db.create_tables()
 		await operation(puller)

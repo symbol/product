@@ -17,12 +17,14 @@ from common.symbol.ReceiptTypes import (
 	NAMESPACE_DELETED_RECEIPT_TYPE,
 	NAMESPACE_EXPIRED_RECEIPT_TYPE
 )
+from psycopg2 import Error as PsycopgError
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address, Network
 from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
 
+from puller.db.AccountRetentionConfiguration import ACCOUNT_RETENTION_TIME_BUDGET_SECONDS, create_retention_configuration
 from puller.db.SymbolDatabase import RollbackRefreshEntries, SymbolDatabase
 from puller.facade.async_utils import CONTROL_FLOW_EXCEPTIONS, gather_in_chunks, log_cleanup_failure_safely, select_exception_by_priority
 from puller.facade.RequestRateLimiter import RequestRateLimiter
@@ -118,7 +120,7 @@ def _is_not_found_response(response):
 class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 	"""Facade for pulling data from Symbol network."""
 
-	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
 		self,
 		node_url,
 		config_file,
@@ -130,7 +132,10 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		performance_logger=log,
 		connector_factory=SymbolPullerConnector,
 		cleanup_logger=log,
-		max_transactions_per_batch=DEFAULT_MAX_TRANSACTIONS_PER_BATCH
+		max_transactions_per_batch=DEFAULT_MAX_TRANSACTIONS_PER_BATCH,
+		retention_time_source=None,
+		retention_time_budget_seconds=ACCOUNT_RETENTION_TIME_BUDGET_SECONDS,
+		retention_logger=log
 	):
 		"""Creates a Symbol puller facade object."""
 
@@ -149,7 +154,12 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		self.symbol_db = SymbolDatabase(
 			DatabaseConfiguration(**db_config),
 			commit_observer=self._record_commit,
-			time_source=time_source)
+			time_source=time_source,
+			retention_time_source=retention_time_source,
+			retention_time_budget_seconds=retention_time_budget_seconds,
+			retention_logger=retention_logger,
+			retention_config=create_retention_configuration(
+				config['symbol_account_retention'] if config.has_section('symbol_account_retention') else None))
 		self.node_config = node_config or SymbolNodeConfiguration.from_url(node_url)
 		symbol_node_endpoint = self.node_config.assert_request_allowed(self.node_config.base_url)
 		self._symbol_connector = connector_factory(
@@ -327,9 +337,16 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 			category=request_category('POST', normalized_path)
 		)
 
-	async def sync_block_headers(self, max_height=None):  # pylint: disable=too-many-locals
-		"""Synchronizes Symbol block headers; an external scheduler must prevent overlap."""
+	async def sync_block_headers(self, max_height=None):
+		"""Synchronizes Symbol block headers under database workflow exclusion."""
 
+		with self.symbol_db.workflow_lock():
+			self.symbol_db.create_tables()
+			self.symbol_db.recover_abandoned_account_refresh()
+			await self._sync_block_headers_with_performance(max_height)
+			self._prune_account_refresh_generations()
+
+	async def _sync_block_headers_with_performance(self, max_height):
 		performance = SyncPerformance(self._time_source)
 		self._active_performance = performance
 		try:
@@ -1856,27 +1873,24 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		cutoff_timestamp = datetime.now(timezone.utc) - timedelta(days=HARVESTING_ACTIVE_WINDOW_DAYS)
 		return harvested_block_timestamp >= cutoff_timestamp
 
-	async def refresh_accounts(self):  # pylint: disable=too-many-locals
-		"""Refresh the full account population; scheduler must keep it non-overlapping with rollback repair.
+	async def refresh_accounts(self):
+		"""Refreshes accounts and performs bounded retention under database workflow exclusion."""
 
-		The external scheduler owns exclusion between this command and ``sync-block`` rollback repair.
-		Manual execution must also not run both operations at the same time.
-		"""
+		with self.symbol_db.workflow_lock():
+			self.symbol_db.create_tables()
+			await self._refresh_accounts()
+
+	async def _refresh_accounts(self):  # pylint: disable=too-many-locals
+		refresh_run_id = str(uuid.uuid4())
+		started_at = datetime.now(timezone.utc)
 
 		try:
-			refresh_run_id = str(uuid.uuid4())
-			started_at = datetime.now(timezone.utc)
+			self.symbol_db.begin_account_refresh(refresh_run_id, started_at)
 			chain_info = await self.get_symbol_node('/chain/info')
 			snapshot_height = int(chain_info['height'])
 			native_mosaic_info = await self._get_native_mosaic_info()
 			cutoff_timestamp = started_at - timedelta(days=HARVESTING_ACTIVE_WINDOW_DAYS)
 			recently_harvesting_addresses = self.symbol_db.get_recently_harvesting_addresses(cutoff_timestamp)
-			self.symbol_db.upsert_account_refresh_state({
-				'status': 'refreshing',
-				'last_started_at': started_at,
-				'last_scanned_page': None,
-				'last_error': None
-			})
 
 			account_search_order = 0
 			page_number = 1
@@ -1916,11 +1930,23 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 				datetime.now(timezone.utc))
 		except Exception as exception:
 			try:
-				self.symbol_db.mark_account_refresh_failed(str(exception))
+				self.symbol_db.mark_account_refresh_failed(refresh_run_id, str(exception))
 			except Exception as state_error:  # pylint: disable=broad-exception-caught
 				# Preserve the original refresh failure when failure-state persistence also fails.
 				log.error(f'Failed to record Symbol account refresh failure: {state_error}')
+
 			raise
+
+		self._prune_account_refresh_generations()
+
+	def _prune_account_refresh_generations(self):
+		try:
+			self.symbol_db.prune_account_refresh_generations()
+		except Exception as exception:  # pylint: disable=broad-exception-caught
+			sqlstate = exception.pgcode if isinstance(exception, PsycopgError) else None  # pylint: disable=no-member
+			log_cleanup_failure_safely(
+				self._cleanup_logger, 'Symbol account snapshot retention failed after successful workflow: '
+				f'error_type={type(exception).__name__} sqlstate={sqlstate}')
 
 	@staticmethod
 	def _validate_block_page(rows, expected_start_height):
