@@ -2633,7 +2633,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('updated_at', 'timestamp', 'YES', 'CURRENT_TIMESTAMP'),
 			('previous_successful_run_id', 'varchar', 'YES', None),
 			('running_run_id', 'varchar', 'YES', None),
-			('is_retention_ready', 'bool', 'NO', 'false')
+			('is_retention_ready', 'bool', 'NO', 'false'),
+			('valid_run_id', 'varchar', 'YES', None),
+			('height_ready_run_id', 'varchar', 'YES', None)
 		], cursor.fetchall())
 
 		cursor.execute(
@@ -2680,7 +2682,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('importance', 'int8', 'NO', None),
 			('importance_percentage', 'numeric', 'NO', '0'),
 			('snapshot_height', 'int8', 'NO', None),
-			('snapshot_at', 'timestamp', 'NO', None)
+			('snapshot_at', 'timestamp', 'NO', None),
+			('address_height', 'int8', 'YES', None)
 		], cursor.fetchall())
 
 		cursor.execute(
@@ -2826,7 +2829,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.connection.commit()
 		seed_account_refresh_state(database, {
 			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous',
-			'running_run_id': 'running', 'is_retention_ready': True
+			'running_run_id': 'running', 'is_retention_ready': True, 'valid_run_id': None
 		})
 
 		# Act: the first pass commits only two rows.
@@ -2902,6 +2905,54 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		state = database.get_account_refresh_state()
 		self.assertEqual(('published', None, None, False), (
 			state['last_successful_run_id'], state['previous_successful_run_id'], state['running_run_id'], state['is_retention_ready']))
+
+	def test_create_tables_migrates_snapshot_validity_without_promoting_existing_generations(self):
+		# Arrange: reconstruct the previous schema with a published snapshot and running owner.
+		database = self._create_database()
+		completed_at = datetime.datetime(2026, 1, 1)
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous',
+			'running_run_id': 'running', 'last_completed_at': completed_at, 'is_retention_ready': True,
+			'status': 'healthy'
+		})
+		cursor = database.connection.cursor()
+		cursor.execute("""
+			INSERT INTO symbol_account_refresh_accounts
+			(refresh_run_id, address, address_text, account_search_order, importance, snapshot_height, snapshot_at)
+			VALUES ('published', %s, 'account', 0, 1, 99, %s)
+		""", (bytes.fromhex(ADDRESS1), completed_at))
+		cursor.execute('''
+			INSERT INTO symbol_account_refresh_mosaics
+			(refresh_run_id, address, mosaic_id, amount, snapshot_height, snapshot_at)
+			VALUES ('published', %s, %s, 123, 99, %s)
+		''', (bytes.fromhex(ADDRESS1), NATIVE_MOSAIC_ID, completed_at))
+		cursor.execute('''
+			INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
+			VALUES ('published', 'ID', 0, %s)
+		''', (bytes.fromhex(ADDRESS1),))
+		cursor.execute('ALTER TABLE symbol_account_refresh_accounts DROP COLUMN address_height')
+		cursor.execute('ALTER TABLE symbol_account_refresh_state DROP COLUMN valid_run_id, DROP COLUMN height_ready_run_id')
+		database.connection.commit()
+
+		# Act: apply the additive migration twice.
+		database.create_tables()
+		state = database.get_account_refresh_state()
+		self.assertEqual(('published', 'previous', 'running', completed_at, True, None, None), (
+			state['last_successful_run_id'], state['previous_successful_run_id'], state['running_run_id'],
+			state['last_completed_at'], state['is_retention_ready'], state['valid_run_id'], state['height_ready_run_id']))
+		database.create_tables()
+
+		# Assert: prior state and rows remain, but no new guarantees are inferred.
+		state = database.get_account_refresh_state()
+		self.assertEqual(('published', 'previous', 'running', completed_at, True, None, None), (
+			state['last_successful_run_id'], state['previous_successful_run_id'], state['running_run_id'],
+			state['last_completed_at'], state['is_retention_ready'], state['valid_run_id'], state['height_ready_run_id']))
+		cursor.execute('SELECT refresh_run_id, address_height, snapshot_height FROM symbol_account_refresh_accounts')
+		self.assertEqual([('published', None, 99)], cursor.fetchall())
+		cursor.execute('SELECT refresh_run_id, mosaic_id, amount FROM symbol_account_refresh_mosaics')
+		self.assertEqual([('published', NATIVE_MOSAIC_ID, 123)], cursor.fetchall())
+		cursor.execute('SELECT refresh_run_id, rank_scope, rank FROM symbol_account_list_ranks')
+		self.assertEqual([('published', 'ID', 0)], cursor.fetchall())
 
 	def test_prune_account_refresh_generations_retries_after_child_delete_failure(self):
 		# Arrange: leave an account and mosaic after committing its rank deletion.
@@ -3014,7 +3065,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Arrange: one run owns the refresh and its publication state must remain unchanged.
 		database = self._create_database()
 		seed_account_refresh_state(database, {
-			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous'
+			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous',
+			'valid_run_id': 'published', 'height_ready_run_id': 'published'
 		})
 		database.begin_account_refresh('active', datetime.datetime(2026, 1, 1))
 		before = database.get_account_refresh_state()
@@ -3166,13 +3218,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Arrange: another run owns the refresh and existing publication must remain untouched.
 		database = self._create_database()
 		seed_account_refresh_state(database, {
-			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous', 'is_retention_ready': True
+			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous', 'is_retention_ready': True,
+			'valid_run_id': 'published', 'height_ready_run_id': 'published'
 		})
 		database.begin_account_refresh('owner', datetime.datetime(2026, 1, 1))
 		before = database.get_account_refresh_state()
 
 		# Act: a different run attempts to publish.
-		with self.assertRaisesRegex(RuntimeError, 'does not own the running ID'):
+		with self.assertRaisesRegex(RuntimeError, '^Symbol account refresh does not own the running ID$'):
 			database.finalize_account_refresh('other', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
 
 		# Assert: the publication and owner are unchanged.
@@ -4507,6 +4560,91 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([bytes.fromhex('DD' * 24)], [bytes(value) for value in result[3]])
 		self.assertEqual(60, result[4])
 
+	def test_snapshot_page_replaces_address_height_when_same_account_is_saved_again(self):
+		# Arrange: the node height differs from both the observed and snapshot heights.
+		database = self._create_database()
+		row, mosaics = _create_account_row(observed_height=80, addressHeight='17')
+		entry = {
+			'refresh_run_id': 'run-1', 'account_search_order': 0, 'account_row': row,
+			'mosaic_rows': mosaics, 'snapshot_height': 90, 'snapshot_at': datetime.datetime(2026, 1, 1)
+		}
+		_insert_account_refresh_snapshot_rows(database, entry)
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT address_height, snapshot_height FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s', ('run-1',))
+		self.assertEqual((17, 90), cursor.fetchone())
+		row['address_height'] = 19
+
+		# Act: the same account is saved again in the same generation.
+		_insert_account_refresh_snapshot_rows(database, entry)
+
+		# Assert:
+		cursor.execute('SELECT address_height, snapshot_height FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s', ('run-1',))
+		self.assertEqual((19, 90), cursor.fetchone())
+
+	def test_snapshot_address_height_is_independent_of_later_current_state_changes(self):
+		# Arrange: persist a snapshot and a different current value for the same account.
+		database = self._create_database()
+		row, mosaics = _create_account_row(observed_height=80, addressHeight='17')
+		_insert_account_refresh_snapshot_rows(database, {
+			'refresh_run_id': 'run-1', 'account_search_order': 0, 'account_row': row,
+			'mosaic_rows': mosaics, 'snapshot_height': 90, 'snapshot_at': datetime.datetime(2026, 1, 1)
+		})
+		row['address_height'] = 42
+
+		# Act:
+		database.upsert_account_current_state(row, mosaics)
+
+		# Assert:
+		cursor = database.connection.cursor()
+		cursor.execute('SELECT address_height, snapshot_height FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s', ('run-1',))
+		self.assertEqual((17, 90), cursor.fetchone())
+		cursor.execute('SELECT address_height FROM symbol_accounts WHERE address = %s', (bytes.fromhex(ADDRESS1),))
+		self.assertEqual((42,), cursor.fetchone())
+
+	def test_finalize_account_refresh_publishes_height_and_validity_with_new_generation(self):
+		# Arrange:
+		database = self._create_database()
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'old', 'valid_run_id': 'old', 'height_ready_run_id': 'old',
+			'last_completed_at': datetime.datetime(2025, 1, 1)
+		})
+		row, mosaics = _create_account_row(observed_height=80, addressHeight='17')
+		_insert_account_refresh_snapshot_rows(database, {
+			'refresh_run_id': 'run-1', 'account_search_order': 0, 'account_row': row,
+			'mosaic_rows': mosaics, 'snapshot_height': 90, 'snapshot_at': datetime.datetime(2026, 1, 1)
+		})
+		database.begin_account_refresh('run-1', datetime.datetime(2026, 1, 1))
+
+		# Act:
+		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 90, datetime.datetime(2026, 1, 2))
+
+		# Assert:
+		state = database.get_account_refresh_state()
+		self.assertEqual(('run-1', 'old', None, 'run-1', 'run-1', datetime.datetime(2026, 1, 2)), (
+			state['last_successful_run_id'], state['previous_successful_run_id'], state['running_run_id'],
+			state['valid_run_id'], state['height_ready_run_id'], state['last_completed_at']))
+
+	def test_finalize_account_refresh_rejects_missing_snapshot_height_and_preserves_publication(self):
+		# Arrange: a legacy-style row lacks the generation's address height.
+		database = self._create_database()
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'old', 'valid_run_id': 'old', 'height_ready_run_id': 'old'
+		})
+		cursor = database.connection.cursor()
+		cursor.execute("""
+			INSERT INTO symbol_account_refresh_accounts
+			(refresh_run_id, address, address_text, account_search_order, importance, snapshot_height, snapshot_at)
+			VALUES ('new', %s, 'account', 0, 1, 10, CURRENT_TIMESTAMP)
+		""", (bytes.fromhex(ADDRESS1),))
+		database.connection.commit()
+		database.begin_account_refresh('new', datetime.datetime(2026, 1, 1))
+		before = database.get_account_refresh_state()
+
+		# Act + Assert: no incomplete snapshot is promoted.
+		with self.assertRaisesRegex(RuntimeError, '^Symbol account refresh has missing address heights$'):
+			database.finalize_account_refresh('new', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 2))
+		self.assertEqual(before, database.get_account_refresh_state())
+
 	def test_can_insert_snapshot_rows_and_update_importance_percentages(self):
 		# Arrange:
 		database = self._create_database()
@@ -4550,6 +4688,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		state = database.get_account_refresh_state()
 		self.assertEqual('healthy', state['status'])
 		self.assertEqual('run-1', state['last_successful_run_id'])
+		self.assertEqual(('run-1', 'run-1'), (state['valid_run_id'], state['height_ready_run_id']))
 		self.assertEqual(10, state['last_completed_height'])
 		self.assertEqual(snapshot_at.replace(tzinfo=None), state['last_completed_at'])
 		self.assertIsNone(state['last_error'])
@@ -4679,7 +4818,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		seed_account_refresh_state(database, {
 			'status': 'healthy',
 			'last_successful_run_id': 'previous-run',
-			'last_completed_height': 9
+			'valid_run_id': 'previous-run', 'height_ready_run_id': 'previous-run',
+			'last_completed_at': datetime.datetime(2025, 12, 31), 'last_completed_height': 9
 		})
 		cursor = database.connection.cursor()
 		cursor.execute(
@@ -4713,10 +4853,84 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		state = database.get_account_refresh_state()
 		self.assertEqual('refreshing', state['status'])
 		self.assertEqual('previous-run', state['last_successful_run_id'])
+		self.assertEqual(('previous-run', 'previous-run'), (state['valid_run_id'], state['height_ready_run_id']))
+		self.assertEqual(datetime.datetime(2025, 12, 31), state['last_completed_at'])
 		self.assertEqual(9, state['last_completed_height'])
 		self.assertIsNone(state['previous_successful_run_id'])
 		self.assertEqual('run-1', state['running_run_id'])
 		self.assertFalse(state['is_retention_ready'])
+
+	def test_refresh_failure_preserves_valid_publication_and_completion_time(self):
+		# Arrange:
+		database = self._create_database()
+		completed_at = datetime.datetime(2026, 1, 1)
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'published', 'valid_run_id': 'published',
+			'height_ready_run_id': 'published', 'last_completed_at': completed_at
+		})
+
+		# Act: failed work must not extend or invalidate the prior publication.
+		database.begin_account_refresh('failed', datetime.datetime(2026, 1, 2))
+		state = database.get_account_refresh_state()
+		self.assertEqual(('published', 'published', 'published', completed_at, 'refreshing'), (
+			state['last_successful_run_id'], state['valid_run_id'], state['height_ready_run_id'],
+			state['last_completed_at'], state['status']))
+		database.mark_account_refresh_failed('failed', 'failure')
+
+		# Assert:
+		state = database.get_account_refresh_state()
+		self.assertEqual(('published', 'published', 'published', completed_at, 'unhealthy'), (
+			state['last_successful_run_id'], state['valid_run_id'], state['height_ready_run_id'],
+			state['last_completed_at'], state['status']))
+
+	def test_rollback_invalidation_survives_failure_and_abandoned_refresh_recovery(self):
+		# Arrange: a previously valid published run intersects the rollback boundary.
+		database = self._create_database()
+		completed_at = datetime.datetime(2026, 1, 1)
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'published', 'valid_run_id': 'published',
+			'height_ready_run_id': 'published', 'last_completed_at': completed_at, 'last_completed_height': 10
+		})
+		# Act and assert each transition: no later operation may conceal a transient restoration.
+		database.delete_blocks_from_height(10)
+		state = database.get_account_refresh_state()
+		self.assertEqual(('published', None, 'published', completed_at, None, 'stale'), (
+			state['last_successful_run_id'], state['valid_run_id'], state['height_ready_run_id'],
+			state['last_completed_at'], state['running_run_id'], state['status']))
+		database.begin_account_refresh('failed', datetime.datetime(2026, 1, 2))
+		state = database.get_account_refresh_state()
+		self.assertEqual(('published', None, 'published', completed_at, 'failed', 'refreshing'), (
+			state['last_successful_run_id'], state['valid_run_id'], state['height_ready_run_id'],
+			state['last_completed_at'], state['running_run_id'], state['status']))
+		database.mark_account_refresh_failed('failed', 'failure')
+		state = database.get_account_refresh_state()
+		self.assertEqual(('published', None, 'published', completed_at, None, 'unhealthy'), (
+			state['last_successful_run_id'], state['valid_run_id'], state['height_ready_run_id'],
+			state['last_completed_at'], state['running_run_id'], state['status']))
+		database.begin_account_refresh('abandoned', datetime.datetime(2026, 1, 3))
+		state = database.get_account_refresh_state()
+		self.assertEqual(('published', None, 'published', completed_at, 'abandoned', 'refreshing'), (
+			state['last_successful_run_id'], state['valid_run_id'], state['height_ready_run_id'],
+			state['last_completed_at'], state['running_run_id'], state['status']))
+		database.recover_abandoned_account_refresh()
+		state = database.get_account_refresh_state()
+		self.assertEqual(('published', None, 'published', completed_at, None, 'unhealthy'), (
+			state['last_successful_run_id'], state['valid_run_id'], state['height_ready_run_id'],
+			state['last_completed_at'], state['running_run_id'], state['status']))
+
+	def test_rollback_invalidates_publication_even_if_status_is_already_stale(self):
+		# Arrange:
+		database = self._create_database()
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'published', 'valid_run_id': 'published',
+			'last_completed_height': 10, 'status': 'stale'
+		})
+
+		# Act:
+		database.delete_blocks_from_height(10)
+
+		# Assert:
+		self.assertIsNone(database.get_account_refresh_state()['valid_run_id'])
 
 	def test_repair_rollback_marks_account_refresh_state_stale_when_completed_height_is_rollbacked(self):
 		# Arrange:
@@ -4724,6 +4938,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		seed_account_refresh_state(database, {
 			'status': 'healthy',
 			'last_successful_run_id': 'run-1',
+			'valid_run_id': 'run-1', 'height_ready_run_id': 'run-1',
 			'last_completed_height': 10
 		})
 
@@ -4732,15 +4947,35 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			10, _create_sync_state(status='repairing', last_synced_height=9), RollbackRefreshEntries())
 
 		# Assert:
-		self.assertEqual('stale', database.get_account_refresh_state()['status'])
+		state = database.get_account_refresh_state()
+		self.assertEqual(('stale', None, 'run-1'), (state['status'], state['valid_run_id'], state['height_ready_run_id']))
+
+	def test_repair_rollback_invalidates_publication_when_fork_is_before_completed_height(self):
+		# Arrange: the fork intersects the published snapshot below its completion height.
+		database = self._create_database()
+		completed_at = datetime.datetime(2026, 1, 1)
+		seed_account_refresh_state(database, {
+			'status': 'healthy', 'last_successful_run_id': 'run-1', 'last_completed_height': 10,
+			'valid_run_id': 'run-1', 'height_ready_run_id': 'run-1', 'last_completed_at': completed_at
+		})
+
+		# Act:
+		database.repair_rollback_from_height(
+			9, _create_sync_state(status='repairing', last_synced_height=8), RollbackRefreshEntries())
+
+		# Assert:
+		state = database.get_account_refresh_state()
+		self.assertEqual(('stale', 'run-1', None, 'run-1', completed_at), (
+			state['status'], state['last_successful_run_id'], state['valid_run_id'],
+			state['height_ready_run_id'], state['last_completed_at']))
 
 	def test_repair_rollback_leaves_account_refresh_state_when_completed_height_is_before_rollback(self):
-		# Arrange:
+		# Arrange: the fork starts above the published snapshot.
 		database = self._create_database()
+		completed_at = datetime.datetime(2026, 1, 1)
 		seed_account_refresh_state(database, {
-			'status': 'healthy',
-			'last_successful_run_id': 'run-1',
-			'last_completed_height': 9
+			'status': 'healthy', 'last_successful_run_id': 'run-1', 'last_completed_height': 9,
+			'valid_run_id': 'run-1', 'height_ready_run_id': 'run-1', 'last_completed_at': completed_at
 		})
 
 		# Act:
@@ -4748,7 +4983,10 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			10, _create_sync_state(status='repairing', last_synced_height=9), RollbackRefreshEntries())
 
 		# Assert:
-		self.assertEqual('healthy', database.get_account_refresh_state()['status'])
+		state = database.get_account_refresh_state()
+		self.assertEqual(('healthy', 'run-1', 'run-1', 'run-1', completed_at), (
+			state['status'], state['last_successful_run_id'], state['valid_run_id'],
+			state['height_ready_run_id'], state['last_completed_at']))
 
 	def test_repair_rollback_from_height_rolls_back_when_sync_state_table_is_missing(self):
 		# Arrange:

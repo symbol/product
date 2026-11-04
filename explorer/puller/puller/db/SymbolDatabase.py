@@ -93,6 +93,8 @@ ACCOUNT_REFRESH_STATE_COLUMNS = [
 	'previous_successful_run_id',
 	'running_run_id',
 	'is_retention_ready',
+	'valid_run_id',
+	'height_ready_run_id',
 	'last_started_at',
 	'last_completed_at',
 	'last_completed_height',
@@ -161,6 +163,8 @@ SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS = [
 	'previous_successful_run_id varchar',
 	'running_run_id varchar',
 	'is_retention_ready boolean NOT NULL DEFAULT false',
+	'valid_run_id varchar',
+	'height_ready_run_id varchar',
 	'CONSTRAINT symbol_account_refresh_state_singleton CHECK (id = 1)'
 ]
 ACCOUNT_REFRESH_STATE_INDEXES = [
@@ -217,6 +221,7 @@ SYMBOL_ACCOUNT_REFRESH_ACCOUNT_DEFINITIONS = [
 	'importance_percentage numeric NOT NULL DEFAULT 0',
 	'snapshot_height bigint NOT NULL',
 	'snapshot_at timestamp NOT NULL',
+	'address_height bigint',
 	'PRIMARY KEY (refresh_run_id, address)'
 ]
 SYMBOL_ACCOUNT_REFRESH_MOSAIC_FOREIGN_KEY_NAME = 'symbol_account_refresh_mosaics_account_fk'
@@ -778,10 +783,29 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				ADD COLUMN IF NOT EXISTS is_retention_ready boolean NOT NULL DEFAULT false
 			''')
 
+		cursor.execute('''
+			SELECT column_name FROM information_schema.columns
+			WHERE table_schema = current_schema() AND table_name = 'symbol_account_refresh_state'
+				AND column_name IN ('valid_run_id', 'height_ready_run_id')
+		''')
+		if len(cursor.fetchall()) != 2:
+			cursor.execute('''
+				ALTER TABLE symbol_account_refresh_state
+				ADD COLUMN IF NOT EXISTS valid_run_id varchar,
+				ADD COLUMN IF NOT EXISTS height_ready_run_id varchar
+			''')
+
 		_create_table(cursor, 'symbol_accounts', SYMBOL_ACCOUNT_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_mosaics', SYMBOL_ACCOUNT_MOSAIC_DEFINITIONS)
 		_create_table(cursor, 'symbol_multisig', SYMBOL_MULTISIG_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_refresh_accounts', SYMBOL_ACCOUNT_REFRESH_ACCOUNT_DEFINITIONS)
+		cursor.execute('''
+			SELECT column_name FROM information_schema.columns
+			WHERE table_schema = current_schema() AND table_name = 'symbol_account_refresh_accounts'
+				AND column_name = 'address_height'
+		''')
+		if not cursor.fetchone():
+			cursor.execute('ALTER TABLE symbol_account_refresh_accounts ADD COLUMN IF NOT EXISTS address_height bigint')
 		_create_table(cursor, 'symbol_account_refresh_mosaics', SYMBOL_ACCOUNT_REFRESH_MOSAIC_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_list_ranks', SYMBOL_ACCOUNT_LIST_RANK_DEFINITIONS)
 		for index_sql in ACCOUNT_REFRESH_STATE_INDEXES:
@@ -2030,7 +2054,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				importance,
 				importance_percentage,
 				snapshot_height,
-				snapshot_at
+				snapshot_at,
+				address_height
 			)
 			VALUES (
 				%(refresh_run_id)s,
@@ -2042,7 +2067,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				%(importance)s,
 				%(importance_percentage)s,
 				%(snapshot_height)s,
-				%(snapshot_at)s
+				%(snapshot_at)s,
+				%(address_height)s
 			)
 			ON CONFLICT (refresh_run_id, address) DO UPDATE SET
 				address_text = EXCLUDED.address_text,
@@ -2052,7 +2078,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				importance = EXCLUDED.importance,
 				importance_percentage = EXCLUDED.importance_percentage,
 				snapshot_height = EXCLUDED.snapshot_height,
-				snapshot_at = EXCLUDED.snapshot_at
+				snapshot_at = EXCLUDED.snapshot_at,
+				address_height = EXCLUDED.address_height
 			''',
 			{
 				**account_row,
@@ -2125,12 +2152,14 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 
 			cursor.execute(
 				'''
-				SELECT COALESCE(SUM(importance), 0)
+				SELECT COALESCE(SUM(importance), 0), COUNT(*) FILTER (WHERE address_height IS NULL)
 				FROM symbol_account_refresh_accounts
 				WHERE refresh_run_id = %s
 				''',
 				(refresh_run_id,))
-			total_importance = cursor.fetchone()[0]
+			total_importance, missing_height_count = cursor.fetchone()
+			if missing_height_count:
+				raise RuntimeError('Symbol account refresh has missing address heights')
 			cursor.execute(
 				'''
 				UPDATE symbol_account_refresh_accounts
@@ -2220,10 +2249,11 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				UPDATE symbol_account_refresh_state
 				SET previous_successful_run_id = last_successful_run_id,
 					last_successful_run_id = %s, running_run_id = NULL, is_retention_ready = true,
+					valid_run_id = %s, height_ready_run_id = %s,
 					last_completed_at = %s, last_completed_height = %s, status = 'healthy',
 					last_error = NULL, updated_at = CURRENT_TIMESTAMP
 				WHERE id = 1 AND running_run_id = %s
-			''', (refresh_run_id, completed_at, completed_height, refresh_run_id))
+			''', (refresh_run_id, refresh_run_id, refresh_run_id, completed_at, completed_height, refresh_run_id))
 
 	def get_block_hash(self, height):
 		"""Gets a block hash by height."""
@@ -2447,9 +2477,9 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute(
 			'''
 			UPDATE symbol_account_refresh_state
-			SET status = 'stale',
+			SET status = 'stale', valid_run_id = NULL,
 				updated_at = CURRENT_TIMESTAMP
-			WHERE id = 1 AND last_completed_height >= %s AND status != 'stale'
+			WHERE id = 1 AND last_completed_height >= %s AND (status != 'stale' OR valid_run_id IS NOT NULL)
 			''',
 			(fork_height,))
 
