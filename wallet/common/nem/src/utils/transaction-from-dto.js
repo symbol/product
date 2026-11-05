@@ -235,12 +235,11 @@ const multisigAccountModificationTransactionFromDTO = (transactionDTO, config) =
 	const { networkIdentifier } = config.networkProperties;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const modifications = transaction.modifications || [];
-	const publicKeyAdditions = modifications
-		.filter(modification => modification.modificationType === MultisigAccountModificationType.ADD_COSIGNATORY)
+	const getCosignatoryPublicKeys = modificationType => modifications
+		.filter(modification => modification.modificationType === modificationType)
 		.map(modification => modification.cosignatoryAccount);
-	const publicKeyDeletions = modifications
-		.filter(modification => modification.modificationType === MultisigAccountModificationType.DELETE_COSIGNATORY)
-		.map(modification => modification.cosignatoryAccount);
+	const publicKeyAdditions = getCosignatoryPublicKeys(MultisigAccountModificationType.ADD_COSIGNATORY);
+	const publicKeyDeletions = getCosignatoryPublicKeys(MultisigAccountModificationType.DELETE_COSIGNATORY);
 
 	return {
 		...baseTransaction,
