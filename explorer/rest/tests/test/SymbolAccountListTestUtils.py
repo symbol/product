@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from threading import Event
 
+from common.tests.AccountRefreshTestUtils import seed_account_refresh_state
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.symbol.Network import Address, Network
 
@@ -66,6 +67,14 @@ def seed_refresh_run(  # pylint: disable=too-many-arguments,too-many-positional-
 		puller_database.begin_account_refresh(refresh_run_id, completed_at)
 		puller_database.upsert_account_refresh_page(entries, last_scanned_page=1)
 		puller_database.finalize_account_refresh(refresh_run_id, native_mosaic_id, completed_height, completed_at)
+
+
+def seed_published_account_snapshot(puller_database, run_id):
+	"""Sets the published fixture IDs together and commits through the shared state seeder."""
+
+	seed_account_refresh_state(puller_database, {
+		'last_successful_run_id': run_id, 'valid_run_id': run_id, 'height_ready_run_id': run_id
+	})
 
 
 def seed_current_mosaic(puller_database, mosaic_id, divisibility=0, owner_address=None):
