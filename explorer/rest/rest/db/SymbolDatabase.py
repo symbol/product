@@ -13,6 +13,7 @@ from zenlog import log
 from rest.model.symbol.Block import BLOCK_STATISTICS_WINDOW, SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
 from rest.model.symbol.Namespace import SymbolNamespaceView
+from rest.model.symbol.TransactionView import AGGREGATE_TYPES, SymbolTransactionView, create_unconfirmed_record
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -1111,6 +1112,34 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 					block_timestamps.get(row['start_height']),
 					descendant_counts[row['namespace_id']])
 					for row in page_rows]
+
+	def get_unconfirmed_transactions(self, transactions, network):
+		"""Builds pending transaction views and enriches transfer mosaics in one batch."""
+
+		records = [create_unconfirmed_record(item_map, network) for item_map in transactions]
+
+		embedded_by_hash_map = {}
+		for record in records:
+			if record.aggregate_hash is not None:
+				embedded_by_hash_map.setdefault(record.aggregate_hash, []).append(record)
+
+		aggregate_hashes = {
+			record.transaction_hash for record in records if record.transaction_type in AGGREGATE_TYPES
+		}
+
+		mosaic_ids = list(dict.fromkeys(mosaic_id for record in records for mosaic_id, _ in record.mosaics))
+		mosaic_divisibility_map = self.get_mosaic_divisibility(mosaic_ids, self.native_mosaic_info)
+
+		views = []
+		for record in records:
+			if record.aggregate_hash in aggregate_hashes:
+				continue
+			embedded_records = ()
+			if record.transaction_type in AGGREGATE_TYPES:
+				embedded_records = sorted(embedded_by_hash_map.get(record.transaction_hash, []), key=lambda child: child.embedded_index)
+			views.append(SymbolTransactionView(record, mosaic_divisibility_map, embedded_records))
+
+		return views
 
 	def get_mosaic_divisibility(self, mosaic_ids, native_mosaic_info=None):
 		"""Maps requested IDs to resolved IDs and divisibilities, querying only mosaics without configured metadata."""
