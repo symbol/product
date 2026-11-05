@@ -5,6 +5,7 @@ from symbollightapi.connector.SymbolConnector import SymbolConnector
 from zenlog import log
 
 from shoestring.internal.ConfigurationManager import ConfigurationManager
+from shoestring.internal.DirectoryResolver import add_directory_argument
 from shoestring.internal.LinkTransactionBuilder import LinkTransactionBuilder
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.NodewatchClient import get_current_finalization_epoch
@@ -110,5 +111,5 @@ async def run_main(args):
 
 def add_arguments(parser):
 	parser.add_argument('--config', help=_('argument-help-config'), required=True)
-	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path=Path.home()), default=str(Path.home()))
+	add_directory_argument(parser)
 	parser.set_defaults(func=run_main)
