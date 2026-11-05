@@ -25,9 +25,9 @@
  * @readonly
  * @enum {string}
  */
-export const FilterType = {
+export const FilterType = /** @type {const} */ ({
 	BOOLEAN: 'boolean',
 	SELECT: 'select',
 	ADDRESS: 'address',
 	CHOICE: 'choice'
-};
+});
