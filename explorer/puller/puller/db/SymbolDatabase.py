@@ -525,6 +525,21 @@ def _create_table(cursor, name, definitions):
 	cursor.execute(f'CREATE TABLE IF NOT EXISTS {name} ({", ".join(definitions)})')
 
 
+def _add_missing_columns(cursor, name, definitions):
+	cursor.execute('''
+		SELECT column_name FROM information_schema.columns
+		WHERE table_schema = current_schema() AND table_name = %s AND column_name = ANY(%s)
+	''', (name, [column_name for column_name, _ in definitions]))
+	if len(cursor.fetchall()) == len(definitions):
+		return
+
+	additions = [
+		sql.SQL('ADD COLUMN IF NOT EXISTS {} {}').format(sql.Identifier(column_name), sql.SQL(column_type))
+		for column_name, column_type in definitions
+	]
+	cursor.execute(sql.SQL('ALTER TABLE {} {}').format(sql.Identifier(name), sql.SQL(', ').join(additions)))
+
+
 class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-methods
 	"""Database containing Symbol blockchain data."""
 
@@ -765,47 +780,26 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_enum_type(cursor, 'symbol_mosaic_restriction_entry_type', SYMBOL_MOSAIC_RESTRICTION_ENTRY_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_lock_status', SYMBOL_LOCK_STATUS_VALUES)
 		_create_enum_type(cursor, 'symbol_lock_hash_algorithm', SYMBOL_LOCK_HASH_ALGORITHM_VALUES)
-		# Account retention columns are migrated below; other schema changes retain
+		# Account retention and published snapshot columns are migrated below; other schema changes retain
 		# the existing greenfield deployment lifecycle.
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_refresh_state', SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS)
-		cursor.execute('''
-			SELECT column_name FROM information_schema.columns
-			WHERE table_schema = current_schema() AND table_name = 'symbol_account_refresh_state'
-				AND column_name IN ('previous_successful_run_id', 'running_run_id', 'is_retention_ready')
-		''')
-		if len(cursor.fetchall()) != 3:
-			cursor.execute('''
-				ALTER TABLE symbol_account_refresh_state
-				ADD COLUMN IF NOT EXISTS previous_successful_run_id varchar,
-				ADD COLUMN IF NOT EXISTS running_run_id varchar,
-				ADD COLUMN IF NOT EXISTS is_retention_ready boolean NOT NULL DEFAULT false
-			''')
-
-		cursor.execute('''
-			SELECT column_name FROM information_schema.columns
-			WHERE table_schema = current_schema() AND table_name = 'symbol_account_refresh_state'
-				AND column_name IN ('valid_run_id', 'height_ready_run_id')
-		''')
-		if len(cursor.fetchall()) != 2:
-			cursor.execute('''
-				ALTER TABLE symbol_account_refresh_state
-				ADD COLUMN IF NOT EXISTS valid_run_id varchar,
-				ADD COLUMN IF NOT EXISTS height_ready_run_id varchar
-			''')
+		_add_missing_columns(cursor, 'symbol_account_refresh_state', (
+			('previous_successful_run_id', 'varchar'),
+			('running_run_id', 'varchar'),
+			('is_retention_ready', 'boolean NOT NULL DEFAULT false')
+		))
+		_add_missing_columns(cursor, 'symbol_account_refresh_state', (
+			('valid_run_id', 'varchar'),
+			('height_ready_run_id', 'varchar')
+		))
 
 		_create_table(cursor, 'symbol_accounts', SYMBOL_ACCOUNT_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_mosaics', SYMBOL_ACCOUNT_MOSAIC_DEFINITIONS)
 		_create_table(cursor, 'symbol_multisig', SYMBOL_MULTISIG_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_refresh_accounts', SYMBOL_ACCOUNT_REFRESH_ACCOUNT_DEFINITIONS)
-		cursor.execute('''
-			SELECT column_name FROM information_schema.columns
-			WHERE table_schema = current_schema() AND table_name = 'symbol_account_refresh_accounts'
-				AND column_name = 'address_height'
-		''')
-		if not cursor.fetchone():
-			cursor.execute('ALTER TABLE symbol_account_refresh_accounts ADD COLUMN IF NOT EXISTS address_height bigint')
+		_add_missing_columns(cursor, 'symbol_account_refresh_accounts', (('address_height', 'bigint'),))
 		_create_table(cursor, 'symbol_account_refresh_mosaics', SYMBOL_ACCOUNT_REFRESH_MOSAIC_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_list_ranks', SYMBOL_ACCOUNT_LIST_RANK_DEFINITIONS)
 		for index_sql in ACCOUNT_REFRESH_STATE_INDEXES:
@@ -2158,8 +2152,10 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				''',
 				(refresh_run_id,))
 			total_importance, missing_height_count = cursor.fetchone()
+			# Legacy rows may have NULL heights; a newly published generation must be complete.
 			if missing_height_count:
 				raise RuntimeError('Symbol account refresh has missing address heights')
+
 			cursor.execute(
 				'''
 				UPDATE symbol_account_refresh_accounts
