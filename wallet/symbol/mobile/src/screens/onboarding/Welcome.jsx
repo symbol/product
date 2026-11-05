@@ -1,4 +1,4 @@
-import { Button, ButtonPlain, DialogBox, Screen, Spacer, Stack, StyledText, SymbolLogo } from '@/app/components';
+import { AppLogo, Button, ButtonPlain, DialogBox, Screen, Spacer, Stack, StyledText } from '@/app/components';
 import { termsAndPrivacy } from '@/app/config';
 import { useToggle } from '@/app/hooks';
 import { $t } from '@/app/localization';
@@ -15,7 +15,7 @@ export const Welcome = () => {
 			<Screen.Upper>
 				<Spacer top='xxl'>
 					<Stack>
-						<SymbolLogo />
+						<AppLogo />
 						<StyledText type="title" size="l">
 							{$t('screen_onboarding_title_welcome')}
 						</StyledText>

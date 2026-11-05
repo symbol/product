@@ -1,5 +1,6 @@
 import { generateMnemonic } from './utils/mnemonic';
 import {
+	AppLogo,
 	Button,
 	ButtonClose,
 	Checkbox,
@@ -10,7 +11,6 @@ import {
 	Spacer,
 	Stack,
 	StyledText,
-	SymbolLogo,
 	TextBox
 } from '@/app/components';
 import { MAX_SEED_ACCOUNTS_PER_NETWORK } from '@/app/constants';
@@ -106,7 +106,7 @@ export const CreateWallet = () => {
 					<Stack gap="xl">
 						<Stack>
 							<FlexContainer center>
-								<SymbolLogo />
+								<AppLogo />
 							</FlexContainer>
 							<Steps stepsCount={STEPS_COUNT} currentStep={step} />
 						</Stack>

@@ -1,5 +1,6 @@
-import { tokenImages } from '@/app/config/known-token-images';
 import { Sizes } from '@/app/styles';
+import { tokenImageSourceMap } from '@/brand/assets/images/tokens/token-image-source-map';
+import { tokenAvatarConfig } from '@/brand/config/token-avatar-config';
 import React from 'react';
 import { Image, StyleSheet } from 'react-native';
 
@@ -31,9 +32,15 @@ const sizeMap = {
  */
 export const TokenAvatar = ({ imageId, size = DEFAULT_SIZE, style }) => {
 	// Image
-	const tokenImagePack = tokenImages[imageId];
-	const tokenImageSrcFromPack = tokenImagePack ? tokenImagePack[sizeMap[size]] : null;
-	const imageSrc = tokenImageSrcFromPack ?? tokenImages[DEFAULT_TOKEN_ID][sizeMap[size]];
+	const imageSize = sizeMap[size];
+	const tokenImageNames = tokenAvatarConfig.images[imageId] ?? tokenAvatarConfig.images[DEFAULT_TOKEN_ID];
+	const imageName = tokenImageNames[imageSize];
+	const imageSrc = tokenImageSourceMap[imageName];
+
+	if (!imageSrc && __DEV__)
+		throw new Error(`TokenAvatar: Token image source not found for name "${imageName}".`);
+
+	const fallbackImageSrc = tokenImageSourceMap[tokenAvatarConfig.images[DEFAULT_TOKEN_ID][imageSize]];
 
 	// Size style
 	const rootSizeStyleMap = {
@@ -45,7 +52,7 @@ export const TokenAvatar = ({ imageId, size = DEFAULT_SIZE, style }) => {
 	const rootSizeStyle = rootSizeStyleMap[size];
 
 	return (
-		<Image source={imageSrc} style={[rootSizeStyle, style]} />
+		<Image source={imageSrc ?? fallbackImageSrc} style={[rootSizeStyle, style]} />
 	);
 };
 
