@@ -1,10 +1,11 @@
 import '@testing-library/jest-dom';
 import { namespace, namespaceWithMosaics, nativeNamespace } from '../../__fixtures__/local/namespace';
+import { childNamespace as symbolChildNamespace } from '../../__fixtures__/local/symbol/namespace-info';
 import { runGetServerSidePropsTests, runRenderScenarioTests } from '../test-utils/page';
 import * as BlockService from '@/app/api/blocks';
 import * as NamespaceService from '@/app/api/namespaces';
 import NamespaceInfo, { getServerSideProps } from '@/app/pages/namespaces/[id]';
-import { render } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 
 // Mocks
 
@@ -95,11 +96,60 @@ describe('NamespaceInfo', () => {
 		});
 	});
 
+	describe('getServerSideProps: Symbol detail', () => {
+		runGetServerSidePropsTests({
+			getServerSideProps,
+			params: { id: 'symbol.xym' },
+			requests: { namespaceInfo: [NamespaceService, 'fetchNamespaceInfo'] },
+			cases: [{
+				description: 'returns the mapped Symbol detail requested by name',
+				variants: ['symbol'],
+				config: { responses: { namespaceInfo: symbolChildNamespace } },
+				expected: {
+					requestArguments: { namespaceInfo: ['symbol.xym'] },
+					result: { props: { namespaceInfo: symbolChildNamespace } }
+				}
+			}]
+		});
+	});
+
 	describe('render', () => {
 		const renderPage = config => {
 			BlockService.fetchChainHight.mockResolvedValue(config.chainHeight ?? activeChainHeight);
 			render(<NamespaceInfo namespaceInfo={config.namespaceInfo} />);
 		};
+
+		describe('Symbol detail', () => {
+			runRenderScenarioTests({
+				renderPage,
+				cases: [{
+					description: 'renders the mapped Symbol name, descendants and repeated Mosaic associations',
+					variants: ['symbol'],
+					config: { namespaceInfo: symbolChildNamespace },
+					expected: {
+						textOccurrences: {
+							'symbol.xym': 2,
+							'symbol.xym.leaf': 2,
+							'72C0212E67A08BCE': 2,
+							'8388098149704674': 2
+						}
+					}
+				}]
+			});
+
+			// The render runner checks text; link destinations need a focused assertion.
+			it('links Symbol namespace groups and Mosaics by canonical IDs', async () => {
+				// Arrange + Act:
+				renderPage({ namespaceInfo: symbolChildNamespace });
+				await act(async () => {});
+
+				// Assert:
+				expect(screen.getByRole('link', { name: /symbol.xym E74B99BA41F4AFEE/ }))
+					.toHaveAttribute('href', '/namespaces/E74B99BA41F4AFEE');
+				expect(screen.getAllByRole('link', { name: '72C0212E67A08BCE' }).map(link => link.getAttribute('href')))
+					.toEqual(['/mosaics/72C0212E67A08BCE', '/mosaics/72C0212E67A08BCE']);
+			});
+		});
 
 		describe('section: namespace', () => {
 			const namespaceCases = [

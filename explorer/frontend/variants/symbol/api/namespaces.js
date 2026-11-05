@@ -1,10 +1,9 @@
-import { stubNamespaces } from './fixtures';
-import { stubValue } from './stub';
 import {
 	createApiUrl,
 	createPage,
 	createSearchCriteria,
 	createSearchURL,
+	createTryFetchInfoFunction,
 	makeRequest
 } from '@/app/utils/server';
 
@@ -69,6 +68,23 @@ const namespaceInfoFromDTO = data => ({
 	registrationTimestamp: data.startTimestamp
 });
 
+const namespaceDetailFromDTO = data => ({
+	...data,
+	name: data.namespaceName,
+	registrationTimestamp: data.startTimestamp,
+	subNamespaceHierarchy: data.subNamespaces,
+	subNamespaces: data.subNamespaces.map(namespace => namespace.namespaceName),
+	namespaceMosaics: data.namespaceMosaics.map(group => ({
+		...group,
+		data: group.data.map(mosaic => ({
+			...mosaic,
+			name: mosaic.id,
+			namespaceExpirationHeight: mosaic.expirationHeight,
+			registrationTimestamp: mosaic.startTimestamp
+		}))
+	}))
+});
+
 /**
  * Fetches a Symbol namespace page from Explorer REST.
  * @param {object} [searchParams] - page and supported namespace filter parameters.
@@ -83,4 +99,13 @@ export const fetchNamespacePage = async (searchParams = {}) => {
 
 	return createPage(namespaces, searchCriteria.pageNumber, namespaceInfoFromDTO);
 };
-export const fetchNamespaceInfo = stubValue(stubNamespaces[0]);
+
+/**
+ * Fetches a Symbol namespace detail by canonical ID or namespace name.
+ * @param {string} id - namespace ID or name.
+ * @returns {Promise<object|null>} mapped namespace detail, or null for HTTP 400/404.
+ */
+export const fetchNamespaceInfo = createTryFetchInfoFunction(async id => {
+	const namespace = await makeRequest(createApiUrl(`namespace/${encodeURIComponent(id)}`));
+	return namespaceDetailFromDTO(namespace);
+});

@@ -1,6 +1,9 @@
-import config from '@/app/config';
+import {
+	childNamespaceResponse, namespaceResponse, namespaceWithMosaicsResponse
+} from '../../../../__fixtures__/api/symbol/namespace-info';
+import { childNamespace, namespace, namespaceWithMosaics } from '../../../../__fixtures__/local/symbol/namespace-info';
+import { runApiRequestTests, runApiResultTests } from '../../../test-utils/api';
 import * as serverUtils from '@/app/utils/server';
-import { stubNamespaces } from '@/app/variants/symbol/api/fixtures';
 import { fetchNamespaceInfo, fetchNamespacePage } from '@/app/variants/symbol/api/namespaces';
 
 jest.mock('@/app/utils/server', () => ({
@@ -8,17 +11,9 @@ jest.mock('@/app/utils/server', () => ({
 	...jest.requireActual('@/app/utils/server')
 }));
 
-const symbolApiBaseURL = 'https://explorer.backend/api/symbol';
+const symbolApiBaseURL = 'https://explorer.backend';
 
 describe('variants/symbol/api/namespaces', () => {
-	beforeEach(() => {
-		config.PUBLIC_API_BASE_URL = symbolApiBaseURL;
-	});
-
-	afterEach(() => {
-		jest.restoreAllMocks();
-	});
-
 	it('requests the default page and returns the shared page shape', async () => {
 		// Arrange:
 		const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue([]);
@@ -337,11 +332,131 @@ describe('variants/symbol/api/namespaces', () => {
 		await expect(fetchNamespacePage()).rejects.toBe(error);
 	});
 
-	it('keeps the existing namespace info stub unchanged', async () => {
-		// Act:
-		const result = await fetchNamespaceInfo('ignored-id');
+	describe('fetchNamespaceInfo', () => {
+		describe('request', () => {
+			const requestCases = [
+				{
+					description: 'requests the namespace by id',
+					config: { params: 'A95F1F8A96159516' },
+					expected: { url: `${symbolApiBaseURL}/namespace/A95F1F8A96159516` }
+				},
+				{
+					description: 'requests the namespace by name',
+					config: { params: 'symbol.xym' },
+					expected: { url: `${symbolApiBaseURL}/namespace/symbol.xym` }
+				},
+				{
+					description: 'encodes the namespace path element',
+					config: { params: 'symbol.xym/leaf?name=1#test%' },
+					expected: { url: `${symbolApiBaseURL}/namespace/symbol.xym%2Fleaf%3Fname%3D1%23test%25` }
+				}
+			];
 
-		// Assert:
-		expect(result).toBe(stubNamespaces[0]);
+			runApiRequestTests({ functionToTest: fetchNamespaceInfo, response: namespaceResponse, cases: requestCases });
+		});
+
+		describe('result', () => {
+			const resultCases = [
+				{
+					description: 'maps a root namespace without descendants or mosaics',
+					config: { params: namespaceResponse.id, response: namespaceResponse },
+					expected: { result: namespace }
+				},
+				{
+					description: 'maps descendants, Mosaic groups and repeated associations in REST order',
+					config: { params: namespaceResponse.id, response: namespaceWithMosaicsResponse },
+					expected: { result: namespaceWithMosaics }
+				},
+				{
+					description: 'preserves non-alphabetic descendant and Mosaic group order without deduplicating associations',
+					config: {
+						response: {
+							...namespaceWithMosaicsResponse,
+							subNamespaces: [
+								namespaceWithMosaicsResponse.subNamespaces[2],
+								namespaceWithMosaicsResponse.subNamespaces[0],
+								namespaceWithMosaicsResponse.subNamespaces[1]
+							],
+							namespaceMosaics: [
+								namespaceWithMosaicsResponse.namespaceMosaics[2],
+								namespaceWithMosaicsResponse.namespaceMosaics[0],
+								namespaceWithMosaicsResponse.namespaceMosaics[1]
+							]
+						}
+					},
+					expected: {
+						result: {
+							...namespaceWithMosaics,
+							subNamespaces: ['symbol.xym.leaf', 'symbol.coin', 'symbol.xym'],
+							subNamespaceHierarchy: [
+								namespaceWithMosaics.subNamespaceHierarchy[2],
+								namespaceWithMosaics.subNamespaceHierarchy[0],
+								namespaceWithMosaics.subNamespaceHierarchy[1]
+							],
+							namespaceMosaics: [
+								namespaceWithMosaics.namespaceMosaics[2],
+								namespaceWithMosaics.namespaceMosaics[0],
+								namespaceWithMosaics.namespaceMosaics[1]
+							]
+						}
+					}
+				},
+				{
+					description: 'maps a child namespace with its ancestors and descendant hierarchy',
+					config: { params: 'symbol.xym', response: childNamespaceResponse },
+					expected: { result: childNamespace }
+				},
+				{
+					description: 'preserves missing timestamps and unlimited namespace duration',
+					config: {
+						response: { ...namespaceResponse, startTimestamp: null, expirationHeight: null, isUnlimitedDuration: true }
+					},
+					expected: {
+						result: {
+							...namespace,
+							startTimestamp: null,
+							registrationTimestamp: null,
+							expirationHeight: null,
+							isUnlimitedDuration: true
+						}
+					}
+				},
+				...[400, 404].map(status => ({
+					description: `returns null for HTTP ${status}`,
+					config: { error: { response: { data: { status } } } },
+					expected: { result: null }
+				}))
+			];
+
+			runApiResultTests({ functionToTest: fetchNamespaceInfo, cases: resultCases });
+		});
+
+		it('maps detail without mutating the input DTO or nested data and without resolving additional APIs', async () => {
+			// Arrange:
+			const input = JSON.parse(JSON.stringify(namespaceWithMosaicsResponse));
+			const snapshot = JSON.parse(JSON.stringify(input));
+			const makeRequest = jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue(input);
+
+			// Act:
+			const result = await fetchNamespaceInfo(input.id);
+
+			// Assert:
+			expect(input).toStrictEqual(snapshot);
+			expect(result).toStrictEqual(namespaceWithMosaics);
+			expect(makeRequest.mock.calls).toEqual([[`${symbolApiBaseURL}/namespace/A95F1F8A96159516`]]);
+		});
+
+		it.each([
+			['HTTP 503', Object.assign(new Error('unavailable'), { response: { data: { status: 503 } } })],
+			['HTTP 500', Object.assign(new Error('server failure'), { response: { data: { status: 500 } } })],
+			['network', new Error('network unavailable')],
+			['timeout', Object.assign(new Error('timeout'), { code: 'ECONNABORTED' })]
+		])('propagates %s namespace detail failures', async (_description, error) => {
+			// Arrange:
+			jest.spyOn(serverUtils, 'makeRequest').mockRejectedValue(error);
+
+			// Act + Assert:
+			await expect(fetchNamespaceInfo('symbol')).rejects.toBe(error);
+		});
 	});
 });
