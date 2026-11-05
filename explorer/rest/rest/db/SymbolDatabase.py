@@ -1112,6 +1112,41 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 					descendant_counts[row['namespace_id']])
 					for row in page_rows]
 
+	def get_mosaic_divisibility(self, mosaic_ids, native_mosaic_info=None):
+		"""Maps requested IDs to resolved IDs and divisibilities, querying only mosaics without configured metadata."""
+
+		divisibility_map = {native_mosaic_info.id: native_mosaic_info.divisibility} if native_mosaic_info is not None else {}
+		resolved_ids_map = {mosaic_id: mosaic_id.upper() for mosaic_id in mosaic_ids if mosaic_id.upper() in divisibility_map}
+		mosaic_ids_to_resolve = [mosaic_id for mosaic_id in mosaic_ids if mosaic_id not in resolved_ids_map]
+
+		if mosaic_ids_to_resolve:
+			with self.connection() as connection:
+				with connection.cursor() as cursor:
+					self._start_read_transaction(cursor)
+					sync_state = self._fetch_sync_state(cursor)
+					if try_get_readable_height(sync_state) is None or is_non_public_state(sync_state):
+						raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
+
+					for mosaic_id in mosaic_ids_to_resolve:
+						try:
+							resolved_ids_map[mosaic_id] = self._resolve_mosaic_id(cursor, mosaic_id, sync_state)
+						except SymbolMosaicAliasNotFound:
+							continue
+
+					resolved_ids = tuple(dict.fromkeys(
+						resolved_id for resolved_id in resolved_ids_map.values() if resolved_id not in divisibility_map))
+					if resolved_ids:
+						cursor.execute(
+							'SELECT mosaic_id, divisibility FROM symbol_mosaics WHERE mosaic_id IN %s',
+							(resolved_ids,))
+						divisibility_map.update(cursor.fetchall())
+
+		return {
+			requested_id: (resolved_id, divisibility_map[resolved_id])
+			for requested_id, resolved_id in resolved_ids_map.items()
+			if resolved_id in divisibility_map
+		}
+
 	def try_get_namespace(self, namespace_id):  # pylint: disable=too-many-locals
 		"""Gets one persisted namespace and its saved descendants and Mosaic aliases."""
 
