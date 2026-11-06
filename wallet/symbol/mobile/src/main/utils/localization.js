@@ -1,14 +1,10 @@
-import { EthereumTransactionType, ReceiptType, SymbolTransactionType, TransactionDirection } from '@/app/constants';
+import { ReceiptType } from '@/app/constants';
 import { constants } from 'wallet-common-core';
-
-/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
 const { ErrorCode } = constants;
 
 const UNKNOWN_ERROR_MESSAGE_KEY = 'errorMessage_unknown';
-const UNKNOWN_TRANSACTION_TYPE_KEY = 'transactionType_unknown';
 const UNKNOWN_RECEIPT_TYPE_KEY = 'receiptType_unknown';
-const TRANSFER_TYPE_KEY = 'transactionType_transfer';
 
 const errorMessageKeyMap = {
 	[ErrorCode.FAILED_ACCESS_KEYSTORE]: 'errorMessage_keystoreAccess',
@@ -43,48 +39,6 @@ const errorMessageKeyMap = {
 	error_unknown_account_name: 'errorMessage_unknownAccountName'
 };
 
-const transactionTypeKeyMap = {
-	symbol: {
-		[SymbolTransactionType.TRANSFER]: 'transactionType_transfer',
-		[SymbolTransactionType.NAMESPACE_REGISTRATION]: 'transactionType_namespaceRegistration',
-		[SymbolTransactionType.ADDRESS_ALIAS]: 'transactionType_addressAlias',
-		[SymbolTransactionType.MOSAIC_ALIAS]: 'transactionType_mosaicAlias',
-		[SymbolTransactionType.MOSAIC_DEFINITION]: 'transactionType_mosaicDefinition',
-		[SymbolTransactionType.MOSAIC_SUPPLY_CHANGE]: 'transactionType_mosaicSupplyChange',
-		[SymbolTransactionType.MOSAIC_SUPPLY_REVOCATION]: 'transactionType_mosaicSupplyRevocation',
-		[SymbolTransactionType.MULTISIG_ACCOUNT_MODIFICATION]: 'transactionType_multisigAccountModification',
-		[SymbolTransactionType.AGGREGATE_COMPLETE]: 'transactionType_aggregateComplete',
-		[SymbolTransactionType.AGGREGATE_BONDED]: 'transactionType_aggregateBonded',
-		[SymbolTransactionType.HASH_LOCK]: 'transactionType_hashLock',
-		[SymbolTransactionType.SECRET_LOCK]: 'transactionType_secretLock',
-		[SymbolTransactionType.SECRET_PROOF]: 'transactionType_secretProof',
-		[SymbolTransactionType.ACCOUNT_ADDRESS_RESTRICTION]: 'transactionType_accountAddressRestriction',
-		[SymbolTransactionType.ACCOUNT_MOSAIC_RESTRICTION]: 'transactionType_accountMosaicRestriction',
-		[SymbolTransactionType.ACCOUNT_OPERATION_RESTRICTION]: 'transactionType_accountOperationRestriction',
-		[SymbolTransactionType.ACCOUNT_KEY_LINK]: 'transactionType_accountKeyLink',
-		[SymbolTransactionType.MOSAIC_ADDRESS_RESTRICTION]: 'transactionType_mosaicAddressRestriction',
-		[SymbolTransactionType.MOSAIC_GLOBAL_RESTRICTION]: 'transactionType_mosaicGlobalRestriction',
-		[SymbolTransactionType.ACCOUNT_METADATA]: 'transactionType_accountMetadata',
-		[SymbolTransactionType.MOSAIC_METADATA]: 'transactionType_mosaicMetadata',
-		[SymbolTransactionType.NAMESPACE_METADATA]: 'transactionType_namespaceMetadata',
-		[SymbolTransactionType.VRF_KEY_LINK]: 'transactionType_vrfKeyLink',
-		[SymbolTransactionType.VOTING_KEY_LINK]: 'transactionType_votingKeyLink',
-		[SymbolTransactionType.NODE_KEY_LINK]: 'transactionType_nodeKeyLink'
-	},
-	ethereum: {
-		[EthereumTransactionType.TRANSFER]: 'transactionType_transfer',
-		[EthereumTransactionType.ERC_20_TRANSFER]: 'transactionType_erc20Transfer',
-		[EthereumTransactionType.ERC_20_BRIDGE_TRANSFER]: 'transactionType_erc20BridgeTransfer',
-		[EthereumTransactionType.UNISWAP_SWAP]: 'transactionType_uniswapSwap',
-		[EthereumTransactionType.ERC_20_APPROVE]: 'transactionType_erc20Approve'
-	}
-};
-
-const transferDirectionKeyMap = {
-	[TransactionDirection.INCOMING]: 'transactionType_transferIncoming',
-	[TransactionDirection.OUTGOING]: 'transactionType_transferOutgoing'
-};
-
 const receiptTypeKeyMap = {
 	[ReceiptType.HARVESTING_REWARD]: 'receiptType_harvestingReward'
 };
@@ -95,23 +49,6 @@ const receiptTypeKeyMap = {
  * @returns {string} Localization key.
  */
 export const getErrorMessageLocaleKey = code => errorMessageKeyMap[code] ?? UNKNOWN_ERROR_MESSAGE_KEY;
-
-/**
- * Gets the key of a transaction type text, falling back to the generic text for an unknown type.
- * @param {number|string} type - The chain-specific transaction type enum value.
- * @param {ChainName} chainName - The blockchain name (e.g., 'symbol', 'ethereum').
- * @param {string} [direction] - Direction of the transfer text, a member of TransactionDirection.
- * @returns {string} Localization key, e.g. 'transactionType_transferIncoming'.
- */
-export const getTransactionTypeLocaleKey = (type, chainName, direction) => {
-	const key = transactionTypeKeyMap[chainName]?.[type];
-	if (!key)
-		return UNKNOWN_TRANSACTION_TYPE_KEY;
-	if (direction && key === TRANSFER_TYPE_KEY)
-		return transferDirectionKeyMap[direction] ?? key;
-
-	return key;
-};
 
 /**
  * Gets the key of a receipt type text, falling back to the generic text for an unknown type.
