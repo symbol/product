@@ -11,6 +11,7 @@ import {
 } from '@/app/router/config';
 import { navigationRef } from '@/app/router/navigationRef';
 import * as screens from '@/app/screens';
+import { routes } from '@/brand/router/routes';
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
@@ -93,15 +94,9 @@ export const RouterView = ({ isActive, flow }) => (
 							<Stack.Screen name={RouteName.BridgeAccountDetails} component={screens.BridgeAccountDetails} />
 							<Stack.Screen name={RouteName.BridgeSwap} component={screens.BridgeSwap} />
 							<Stack.Screen name={RouteName.BridgeSwapDetails} component={screens.BridgeSwapDetails} />
-							<Stack.Screen name={RouteName.MultisigAccountList} component={screens.MultisigAccountList} />
-							<Stack.Screen name={RouteName.MultisigAccountDetails} component={screens.MultisigAccountDetails} />
-							<Stack.Screen name={RouteName.CreateMultisigAccount} component={screens.CreateMultisigAccount} />
-							<Stack.Screen name={RouteName.ModifyMultisigAccount} component={screens.ModifyMultisigAccount} />
-							<Stack.Screen name={RouteName.Harvesting} component={screens.Harvesting} />
-							<Stack.Screen name={RouteName.CreateMosaic} component={screens.CreateMosaic} />
-							<Stack.Screen name={RouteName.ModifyMosaic} component={screens.ModifyMosaic} />
-							<Stack.Screen name={RouteName.RevokeMosaic} component={screens.RevokeMosaic} />
-							<Stack.Screen name={RouteName.CreatedMosaicList} component={screens.CreatedMosaicList} />
+							{routes.map(route => (
+								<Stack.Screen key={route.name} name={route.name} component={route.component} />
+							))}
 							<Stack.Screen name={RouteName.Settings} component={screens.Settings} />
 							<Stack.Screen name={RouteName.SettingsAbout} component={screens.SettingsAbout} />
 							<Stack.Screen name={RouteName.SettingsNetwork} component={screens.SettingsNetwork} />
