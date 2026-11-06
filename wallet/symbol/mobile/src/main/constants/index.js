@@ -33,6 +33,24 @@ export const TransactionDirection = {
 	OUTGOING: 'outgoing'
 };
 
+export const TransactionKind = {
+	TRANSFER: 'transfer',
+	AGGREGATE: 'aggregate',
+	OTHER: 'other'
+};
+
+export const TransactionGraphicAvatarType = {
+	ACCOUNT: 'account',
+	TOKEN: 'token',
+	NAMESPACE: 'namespace',
+	LOCK: 'lock'
+};
+
+export const TransactionGraphicCaptionType = {
+	TEXT: 'text',
+	ICON: 'icon'
+};
+
 export const PASSCODE_PIN_LENGTH = 4;
 export const PASSCODE_MAX_FAILED_ATTEMPTS = 10;
 export const PASSCODE_LOCKOUT_DURATION = 60000;
