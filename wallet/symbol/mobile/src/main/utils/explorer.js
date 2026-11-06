@@ -16,6 +16,9 @@ export const createExplorerTransactionUrl = (chainName, networkIdentifier, trans
 	if (chainName === 'symbol')
 		return `${baseUrl}/transactions/${transactionHash}`;
 
+	if (chainName === 'nem')
+		return `${baseUrl}/transactions/${transactionHash}`;
+
 	if (chainName === 'ethereum')
 		return `${baseUrl}/tx/${transactionHash}`;
 
@@ -33,6 +36,9 @@ export const createExplorerAccountUrl = (chainName, networkIdentifier, address) 
 	const baseUrl = config.chains[chainName]?.explorerURL[networkIdentifier];
 
 	if (chainName === 'symbol')
+		return `${baseUrl}/accounts/${address}`;
+
+	if (chainName === 'nem')
 		return `${baseUrl}/accounts/${address}`;
 
 	if (chainName === 'ethereum')
@@ -54,6 +60,9 @@ export const createTokenExplorerUrl = (chainName, networkIdentifier, tokenId) =>
 	if (chainName === 'symbol')
 		return `${baseUrl}/mosaics/${tokenId}`;
 
+	if (chainName === 'nem')
+		return `${baseUrl}/mosaics/${tokenId}`;
+
 	if (chainName === 'ethereum')
 		return `${baseUrl}/address/${tokenId}`;
 };
@@ -69,6 +78,9 @@ export const createExplorerNamespaceUrl = (chainName, networkIdentifier, namespa
 	const baseUrl = config.chains[chainName].explorerURL[networkIdentifier];
 
 	if (chainName === 'symbol')
+		return `${baseUrl}/namespaces/${namespaceId}`;
+
+	if (chainName === 'nem')
 		return `${baseUrl}/namespaces/${namespaceId}`;
 
 	throw new Error(`Cannot create explorer URL for namespace on chain "${chainName}"`);
