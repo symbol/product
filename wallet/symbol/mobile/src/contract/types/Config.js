@@ -41,6 +41,13 @@
  */
 
 /**
+ * Create wallet screen config.
+ * @typedef {object} CreateWalletScreenConfig
+ * @property {boolean} isLogoVisible - Whether the logo is shown at the top of the screen.
+ * @property {boolean} isStepsVisible - Whether the step progress indicator is shown at the top of the screen.
+ */
+
+/**
  * FeeSelector config.
  * @typedef {object} FeeSelectorConfig
  * @property {boolean} isSpeedIconVisible - Whether the fee speed icon is shown on the right side of the selector.
@@ -86,6 +93,12 @@
  * Icon component config.
  * @typedef {object} IconConfig
  * @property {Record<IconColorVariants, string>} variants - Icon folder name for each icon variant.
+ */
+
+/**
+ * Import wallet screen config.
+ * @typedef {object} ImportWalletScreenConfig
+ * @property {boolean} isLogoVisible - Whether the logo is shown at the top of the screen.
  */
 
 /**
