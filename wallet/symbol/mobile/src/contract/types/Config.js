@@ -3,11 +3,29 @@
 /** @typedef {import('@/app/types/ColorVariants').IconColorVariants} IconColorVariants */
 /** @typedef {import('@/app/types/ColorVariants').InverseColorVariants} InverseColorVariants */
 /** @typedef {import('./Component').HomeWidgetProps} HomeWidgetProps */
+/** @typedef {import('./Component').TokenDetailsActionProps} TokenDetailsActionProps */
 
 /**
  * AccountAvatar config.
  * @typedef {object} AccountAvatarConfig
  * @property {IconColorVariants} iconVariant - Variant of the account icon displayed on top of the generated blockie.
+ */
+
+/**
+ * Data for a single action card on the actions screen.
+ * @typedef {object} ActionItem
+ * @property {string} id - Unique key of the card.
+ * @property {string} titleKey - Translation key of the card title.
+ * @property {string} descriptionKey - Translation key of the card description.
+ * @property {number} imageSource - The image source for the card (require result).
+ * @property {boolean} isDisabledForMultisig - Whether the card is disabled for a multisig account.
+ * @property {function(): void} onPress - Callback function when the card is pressed.
+ */
+
+/**
+ * Actions screen config.
+ * @typedef {object} ActionsScreenConfig
+ * @property {ActionItem[]} cards - Cards in display order.
  */
 
 /**
@@ -77,6 +95,19 @@
  * Token avatar config of a brand.
  * @typedef {object} TokenAvatarConfig
  * @property {Record<string, TokenImageNames>} images - Image id to size bundle map.
+ */
+
+/**
+ * Action sections displayed at the bottom of TokenDetails.
+ * @typedef {object} TokenDetailsActionItem
+ * @property {string} id - Unique key in the list.
+ * @property {function(TokenDetailsActionProps): React.ReactNode} Component - Action block component.
+ */
+
+/**
+ * TokenDetails screen config.
+ * @typedef {object} TokenDetailsScreenConfig
+ * @property {Record<string, TokenDetailsActionItem[]>} actionsByChain - Action blocks per token chain name, in display order.
  */
 
 export {};
