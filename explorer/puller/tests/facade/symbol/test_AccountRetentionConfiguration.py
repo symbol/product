@@ -38,6 +38,7 @@ def _write_retention_config(tmp_path, entries):
 		(2147483647, ACCOUNT_RETENTION_LOCK_TIMEOUT_MAX_MS - 1)),
 	({'statement_timeout_ms': '201'}, (201, 200)),
 	({'lock_timeout_ms': '1'}, (2000, 1)),
+	({'lock_timeout_ms': '0' * 5000 + '1'}, (2000, 1)),
 	({'statement_timeout_ms': '00000000003000', 'lock_timeout_ms': '000125'}, (3000, 125)),
 	({'statement_timeout_ms': '2147483647', 'lock_timeout_ms': str(ACCOUNT_RETENTION_LOCK_TIMEOUT_MAX_MS)},
 		(2147483647, ACCOUNT_RETENTION_LOCK_TIMEOUT_MAX_MS))
@@ -63,6 +64,8 @@ def test_puller_loads_retention_timeouts(tmp_path, entries, expected):
 	({'statement_timeout_ms': '١٢'}, STATEMENT_ERROR),
 	({'statement_timeout_ms': '2147483648'}, STATEMENT_ERROR),
 	({'statement_timeout_ms': '99999999999'}, STATEMENT_ERROR),
+	({'statement_timeout_ms': '9' * 5000}, STATEMENT_ERROR),
+	({'statement_timeout_ms': '0' * 5000}, STATEMENT_ERROR),
 	({'lock_timeout_ms': '0'}, LOCK_ERROR),
 	({'lock_timeout_ms': '-1'}, LOCK_ERROR),
 	({'lock_timeout_ms': 'not-a-number'}, LOCK_ERROR),
