@@ -5,17 +5,21 @@ msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 
-#: shoestring/commands/announce_transaction.py:31
+#: shoestring/commands/announce_transaction.py:38
 msgid "announce-transaction-announce-successful"
 msgstr "transaction was successfully sent to the network"
 
-#: shoestring/commands/announce_transaction.py:24
+#: shoestring/commands/announce_transaction.py:26
+msgid "announce-transaction-missing-hash-lock"
+msgstr "aggregate bonded transaction was selected but no adjacent hash lock file was found at {hash_lock_filepath}"
+
+#: shoestring/commands/announce_transaction.py:22
 msgid "announce-transaction-preparing-to-announce"
 msgstr ""
 "preparing to announce transaction {transaction_hash} of type "
 "{transaction_type}"
 
-#: shoestring/commands/announce_transaction.py:36
+#: shoestring/commands/announce_transaction.py:43
 msgid "argument-help-announce-transaction-transaction"
 msgstr "file containing serialized transaction to send"
 
@@ -486,6 +490,10 @@ msgstr "Inner transactions:"
 msgid "signer-signed-transaction"
 msgstr "Signed transaction {transaction_type} with hash: {transaction_hash}"
 
+#: shoestring/commands/signer.py:84
+msgid "signer-already-cosigned-transaction"
+msgstr "transaction {transaction_type} with hash {transaction_hash} was already cosigned by this key, skipping"
+
 #: shoestring/commands/signer.py:26
 msgid "signer-transaction"
 msgstr "Transaction: {transaction}"
@@ -934,4 +942,3 @@ msgstr "Welcome"
 #: shoestring/wizard/screens/welcome.py:39
 msgid "wizard-welcome-upgrade"
 msgstr "upgrade"
-
