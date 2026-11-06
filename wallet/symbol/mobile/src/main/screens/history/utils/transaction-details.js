@@ -1,14 +1,7 @@
-import { EthereumTransactionType, SymbolTransactionType } from '@/app/constants';
+import { TransactionKind } from '@/app/constants';
+import { createTransactionBodyFields, getTransactionTypeInfo } from '@/app/lib/transaction';
 import { createTransactionGraphicData } from '@/app/screens/history/utils/transaction-graphic';
-import { getSignedSupplyDelta, objectToTableData } from '@/app/utils';
-import { omit } from 'lodash';
-
-const TRANSFER_TYPES = [
-	SymbolTransactionType.TRANSFER, 
-	EthereumTransactionType.TRANSFER,
-	EthereumTransactionType.ERC_20_TRANSFER,
-	EthereumTransactionType.ERC_20_BRIDGE_TRANSFER
-];
+import { objectToTableData } from '@/app/utils';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 /** @typedef {import('@/app/types/Table').TableRow} TableRow */
@@ -45,50 +38,13 @@ export const createTransactionBaseTableData = transaction => {
 };
 
 /**
- * Creates table rows specific to a transaction body.
+ * Creates table rows specific to a transaction body. The fields to show come from the display helpers of its chain.
  * @param {Transaction} transaction - Transaction to extract specific details from.
+ * @param {ChainName} chainName - The name of the blockchain the transaction belongs to.
  * @returns {TableRow[]} Transaction-specific detail rows.
  */
-export const createTransactionSpecificTableData = transaction => {
-	const specificData = omit(transaction, [
-		'hash',
-		'id',
-		'type',
-		'amount',
-		'fee',
-		'status',
-		'height',
-		'innerTransactions',
-		'cosignatures',
-		'receivedCosignatures',
-		'deadline',
-		'timestamp',
-		'signerPublicKey',
-		'sourceAddress',
-		'lockedAmount',
-		'aggregateHash',
-		'nonce'
-	]);
-
-	let finalData = specificData;
-	if (TRANSFER_TYPES.includes(transaction.type)) {
-		const { signerAddress, recipientAddress, ...rest } = specificData;
-		finalData = {
-			senderAddress: signerAddress,
-			recipientAddress,
-			...rest
-		};
-	}
-	else if (transaction.type === SymbolTransactionType.MOSAIC_SUPPLY_CHANGE) {
-		finalData = {
-			...omit(specificData, ['action']),
-			delta: getSignedSupplyDelta(transaction)
-		};
-	}
-
-
-	return objectToTableData(finalData);
-};
+export const createTransactionBodyTableData = (transaction, chainName) =>
+	objectToTableData(createTransactionBodyFields(transaction, chainName));
 
 /**
  * Creates the list of data used to present transaction graphic and
@@ -98,12 +54,11 @@ export const createTransactionSpecificTableData = transaction => {
  * @returns {TransactionCardData[]} Transaction detail cards.
  */
 export const createdCardListData = (transaction, options) => {
-	const isAggregateTransaction = transaction.type === SymbolTransactionType.AGGREGATE_COMPLETE 
-        || transaction.type === SymbolTransactionType.AGGREGATE_BONDED;
+	const { kind } = getTransactionTypeInfo(transaction.type, options.chainName);
 
-	if (!isAggregateTransaction) {
+	if (kind !== TransactionKind.AGGREGATE) {
 		const data = {
-			table: createTransactionSpecificTableData(transaction),
+			table: createTransactionBodyTableData(transaction, options.chainName),
 			graphic: createTransactionGraphicData(transaction, options)
 		};
 
@@ -111,7 +66,7 @@ export const createdCardListData = (transaction, options) => {
 	}
 
 	return transaction.innerTransactions.map(innerTx => ({
-		table: createTransactionSpecificTableData(innerTx),
+		table: createTransactionBodyTableData(innerTx, options.chainName),
 		graphic: createTransactionGraphicData(innerTx, options)
 	}));
 };

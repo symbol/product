@@ -1,4 +1,5 @@
-import { AggregateTypes, TransferTypes } from '@/app/screens/history/constants';
+import { TransactionKind } from '@/app/constants';
+import { getTransactionTypeInfo } from '@/app/lib/transaction';
 import { AmountChangeType, AmountDisplaySize } from '@/app/screens/history/types/AmountBreakdown';
 import { createTokenDisplayData, getAccountKnownInfo } from '@/app/utils';
 import { safeOperationWithRelativeAmounts } from 'wallet-common-core';
@@ -73,14 +74,17 @@ const processTransferTransaction = (transaction, breakdownMap) => {
  * Recursively processes a transaction and updates the breakdown map.
  * @param {Transaction} transaction - The transaction to process.
  * @param {AmountBreakdownMap} breakdownMap - The breakdown map to update.
+ * @param {ChainName} chainName - The blockchain name.
  */
-const processTransaction = (transaction, breakdownMap) => {
-	if (TransferTypes.includes(transaction.type))
+const processTransaction = (transaction, breakdownMap, chainName) => {
+	const { kind } = getTransactionTypeInfo(transaction.type, chainName);
+
+	if (kind === TransactionKind.TRANSFER)
 		processTransferTransaction(transaction, breakdownMap);
 
-	if (AggregateTypes.includes(transaction.type) && transaction.innerTransactions) {
+	if (kind === TransactionKind.AGGREGATE && transaction.innerTransactions) {
 		for (const innerTx of transaction.innerTransactions)
-			processTransaction(innerTx, breakdownMap);
+			processTransaction(innerTx, breakdownMap, chainName);
 
 	}
 };
@@ -89,12 +93,13 @@ const processTransaction = (transaction, breakdownMap) => {
  * Calculates the amount breakdown for a transaction.
  * Returns a map of account addresses to their token balance changes.
  * @param {Transaction} transaction - The transaction to analyze.
+ * @param {ChainName} chainName - The blockchain name.
  * @returns {AmountBreakdownMap} Map of account addresses to token changes.
  */
-export const calculateAmountBreakdown = transaction => {
+export const calculateAmountBreakdown = (transaction, chainName) => {
 	const breakdownMap = {};
 
-	processTransaction(transaction, breakdownMap);
+	processTransaction(transaction, breakdownMap, chainName);
 
 	return breakdownMap;
 };
@@ -175,7 +180,7 @@ export const createAmountBreakdownDisplayData = (transaction, options) => {
 		addressBook
 	} = options;
 
-	const breakdownMap = calculateAmountBreakdown(transaction);
+	const breakdownMap = calculateAmountBreakdown(transaction, chainName);
 	const accountDisplayOptions = { chainName, networkIdentifier, walletAccounts, addressBook };
 
 	// Ensure current account always has a native token entry in the breakdown
