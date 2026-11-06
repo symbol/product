@@ -39,7 +39,7 @@ const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, bloc
 	);
 };
 
-const RecentTransactions = ({ data, blockTime }) => {
+const RecentTransactions = ({ data, blockTime, errorMessage }) => {
 	const { t } = useTranslation('common');
 
 	return (
@@ -58,7 +58,8 @@ const RecentTransactions = ({ data, blockTime }) => {
 					key={key}
 				/>
 			))}
-			{data.length === 0 && <div className={styles.emptyListMessage}>{t('message_emptyTable')}</div>}
+			{!!errorMessage && <div className={styles.emptyListMessage}>{errorMessage}</div>}
+			{!errorMessage && data.length === 0 && <div className={styles.emptyListMessage}>{t('message_emptyTable')}</div>}
 		</div>
 	);
 };

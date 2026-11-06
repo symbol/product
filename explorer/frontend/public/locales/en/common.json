@@ -186,6 +186,7 @@
 	"message_tooManyTransactionsToVisualize": "Too many transactions to visualize.",
 	"message_noLinkedKeys": "No linked keys",
 	"message_nothingFound": "Nothing found.",
+	"message_pendingTransactionsUnavailable": "Unable to load pending transactions.",
 	"message_404": "We can't seem to find the resource you're looking for.",
 	"message_500": "Internal Server Error.",
 	"message_healthGenericError": "Temporary Server Disruption.",
