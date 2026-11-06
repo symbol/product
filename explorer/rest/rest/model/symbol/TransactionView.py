@@ -39,8 +39,10 @@ def create_transaction_payload(transaction_map, transaction_type):
 		mosaics = tuple(
 			(normalize_mosaic_id(mosaic_map['id']), int(mosaic_map['amount']))
 			for mosaic_map in payload_map.pop('mosaics', []))
+
 	if payload_map:
 		payload.append(payload_map)
+
 	return payload, mosaics
 
 
@@ -51,9 +53,9 @@ def _format_payload_addresses(payload_map, transaction_type):
 		if field_name in payload_map:
 			payload_map[field_name] = str(Address(bytes.fromhex(payload_map[field_name])))
 
-	address_list_fields = ('addressAdditions', 'addressDeletions')
+	address_list_fields = ['addressAdditions', 'addressDeletions']
 	if transaction_type == TransactionType.ACCOUNT_ADDRESS_RESTRICTION:
-		address_list_fields += ('restrictionAdditions', 'restrictionDeletions')
+		address_list_fields.extend(['restrictionAdditions', 'restrictionDeletions'])
 
 	for field_name in address_list_fields:
 		if field_name in payload_map:
