@@ -1,8 +1,8 @@
 import { Primitives } from './primitives';
-import { Component, Semantic } from './semantic';
+import { Components, Semantic } from './semantic';
 
 export const Sizes = {
-	Component,
+	Components,
 	Primitives,
 	Semantic
 };
