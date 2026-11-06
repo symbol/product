@@ -1,10 +1,10 @@
-import { ModifyMultisigAccount } from '@/app/screens/multisig/ModifyMultisigAccount';
+import { ModifyMultisigAccount } from '@/brand/screens/multisig/ModifyMultisigAccount';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
 import { TransactionFeeFixtureBuilder } from '__fixtures__/local/TransactionFeeFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
+import { ACTION_TYPE, addCosignatory, applyCounterAction } from '__tests__/brands/symbol/screens/multisig/multisig-test-helper';
 import { createAddressBookMock, mockLocalization, mockPasscode, mockRouter, mockWalletController } from '__tests__/mock-helpers';
-import { ACTION_TYPE, addCosignatory, applyCounterAction } from '__tests__/screens/multisig/multisig-test-helper';
 
 // Mocks
 

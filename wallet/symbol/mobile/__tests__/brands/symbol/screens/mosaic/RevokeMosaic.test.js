@@ -1,4 +1,4 @@
-import { RevokeMosaic } from '@/app/screens/mosaic/RevokeMosaic';
+import { RevokeMosaic } from '@/brand/screens/mosaic/RevokeMosaic';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
 import { TransactionFeeFixtureBuilder } from '__fixtures__/local/TransactionFeeFixtureBuilder';

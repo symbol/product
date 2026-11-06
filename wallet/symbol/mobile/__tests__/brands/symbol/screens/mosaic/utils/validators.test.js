@@ -1,4 +1,4 @@
-import { validateNotSenderAddress } from '@/app/screens/mosaic/utils';
+import { validateNotSenderAddress } from '@/brand/screens/mosaic/utils';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 
 // Constants

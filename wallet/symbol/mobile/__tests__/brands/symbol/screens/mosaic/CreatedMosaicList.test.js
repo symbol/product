@@ -1,4 +1,5 @@
-import { CreatedMosaicList } from '@/app/screens/mosaic/CreatedMosaicList';
+import { SymbolRouter } from '@/brand/router/SymbolRouter';
+import { CreatedMosaicList } from '@/brand/screens/mosaic/CreatedMosaicList';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
@@ -516,7 +517,7 @@ describe('screens/mosaic/CreatedMosaicList', () => {
 			setupMocks();
 			const routerMock = mockRouter({
 				goToCreateMosaic: jest.fn()
-			});
+			}, SymbolRouter);
 
 			// Act:
 			const screenTester = await renderCreatedMosaicListScreen();

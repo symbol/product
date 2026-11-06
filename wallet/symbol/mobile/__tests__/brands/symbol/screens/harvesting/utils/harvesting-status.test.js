@@ -1,5 +1,5 @@
-import { HarvestingStatus } from '@/app/screens/harvesting/types/Harvesting';
-import { createHarvestingStatusViewModel, getHarvestingEligibility } from '@/app/screens/harvesting/utils/harvesting-status';
+import { HarvestingStatus } from '@/brand/screens/harvesting/types/Harvesting';
+import { createHarvestingStatusViewModel, getHarvestingEligibility } from '@/brand/screens/harvesting/utils/harvesting-status';
 import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
 import { mockLocalization } from '__tests__/mock-helpers';
 

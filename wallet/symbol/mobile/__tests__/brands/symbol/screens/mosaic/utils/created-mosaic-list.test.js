@@ -1,10 +1,10 @@
+import { FilterType } from '@/app/types/Filter';
 import {
 	buildCreatedMosaicListSections,
 	filterCreatedMosaics,
 	getCreatedMosaicListFilterConfig,
 	mergeHeldAmounts
-} from '@/app/screens/mosaic/utils';
-import { FilterType } from '@/app/types/Filter';
+} from '@/brand/screens/mosaic/utils';
 import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
 import { mockLocalization } from '__tests__/mock-helpers';
 

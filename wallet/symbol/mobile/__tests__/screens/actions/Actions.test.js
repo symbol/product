@@ -1,4 +1,5 @@
 import { Actions } from '@/app/screens/actions/Actions';
+import { SymbolRouter } from '@/brand/router/SymbolRouter';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
@@ -108,7 +109,8 @@ describe('screens/actions/Actions', () => {
 			},
 			{
 				buttonText: SCREEN_TEXT.harvestingTitle,
-				actionName: 'goToHarvesting'
+				actionName: 'goToHarvesting',
+				routerClass: SymbolRouter
 			},
 			{
 				buttonText: SCREEN_TEXT.sendTitle,
@@ -120,7 +122,8 @@ describe('screens/actions/Actions', () => {
 			},
 			{
 				buttonText: SCREEN_TEXT.multisigTitle,
-				actionName: 'goToMultisigAccountList'
+				actionName: 'goToMultisigAccountList',
+				routerClass: SymbolRouter
 			},
 			{
 				buttonText: SCREEN_TEXT.bridgeAccountsTitle,
@@ -128,7 +131,8 @@ describe('screens/actions/Actions', () => {
 			},
 			{
 				buttonText: SCREEN_TEXT.createMosaicTitle,
-				actionName: 'goToCreatedMosaicList'
+				actionName: 'goToCreatedMosaicList',
+				routerClass: SymbolRouter
 			}
 		]
 	});

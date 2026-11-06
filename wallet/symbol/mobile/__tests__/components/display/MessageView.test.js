@@ -1,14 +1,12 @@
 import { MessageView } from '@/app/components/display/MessageView';
-import { MessageType } from '@/app/constants';
+import { MessageKind } from '@/app/constants';
 import { runRenderComponentTest } from '__tests__/component-tests';
 import { render } from '@testing-library/react-native';
 
-const CUSTOM_MESSAGE_TYPE = 123;
-
 describe('components/MessageView', () => {
-	const createProps = ({ type, text, payload } = {}) => ({
+	const createProps = ({ kind, text, payload } = {}) => ({
 		message: {
-			type: type ?? MessageType.PLAIN_TEXT,
+			kind: kind ?? MessageKind.PLAIN,
 			text: text,
 			payload: payload ?? ''
 		}
@@ -39,7 +37,7 @@ describe('components/MessageView', () => {
 			{
 				description: 'renders text when provided',
 				config: {
-					message: { type: MessageType.PLAIN_TEXT, text: 'Hello World' }
+					message: { kind: MessageKind.PLAIN, text: 'Hello World' }
 				},
 				expected: {
 					textShouldBeVisible: true
@@ -48,7 +46,7 @@ describe('components/MessageView', () => {
 			{
 				description: 'does not render text when not provided',
 				config: {
-					message: { type: MessageType.PLAIN_TEXT, payload: '0x1234' }
+					message: { kind: MessageKind.PLAIN, payload: '0x1234' }
 				},
 				expected: {
 					textShouldBeVisible: false
@@ -82,9 +80,9 @@ describe('components/MessageView', () => {
 
 		const tests = [
 			{
-				description: 'renders encrypted icon for encrypted message type',
+				description: 'renders encrypted icon for encrypted message kind',
 				config: {
-					message: { type: MessageType.ENCRYPTED_TEXT, text: 'Encrypted content' }
+					message: { kind: MessageKind.ENCRYPTED, text: 'Encrypted content' }
 				},
 				expected: {
 					iconShouldBeVisible: true,
@@ -92,9 +90,9 @@ describe('components/MessageView', () => {
 				}
 			},
 			{
-				description: 'renders raw icon for message with payload but no text',
+				description: 'renders raw icon for raw message with payload but no text',
 				config: {
-					message: { type: CUSTOM_MESSAGE_TYPE, payload: '0x1234abcd' }
+					message: { kind: MessageKind.RAW, payload: '0x1234abcd' }
 				},
 				expected: {
 					iconShouldBeVisible: true,
@@ -104,7 +102,7 @@ describe('components/MessageView', () => {
 			{
 				description: 'does not render icon for plain text message with text',
 				config: {
-					message: { type: MessageType.PLAIN_TEXT, text: 'Plain message' }
+					message: { kind: MessageKind.PLAIN, text: 'Plain message' }
 				},
 				expected: {
 					iconShouldBeVisible: false

@@ -1,5 +1,5 @@
-import { Harvesting } from '@/app/screens/harvesting/Harvesting';
 import { formatDate } from '@/app/utils';
+import { Harvesting } from '@/brand/screens/harvesting/Harvesting';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
