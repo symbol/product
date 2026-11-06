@@ -38,13 +38,15 @@ export const formatDate = (dateStr, translate, config = {}) => {
 		return 0 <= num && 10 > num ? '0' + num : num + '';
 	};
 
-	const dateObj = type === 'local' ? dateToLocalDate(dateStr) : new Date(dateStr);
-	const seconds = addZero(dateObj.getSeconds());
-	const minutes = addZero(dateObj.getMinutes());
-	const hour = addZero(dateObj.getHours());
-	const month = 'function' === typeof translate ? translate('month_' + months[dateObj.getMonth()]) : months[dateObj.getMonth()];
-	const day = dateObj.getDate();
-	const year = dateObj.getFullYear();
+	const dateObj = dateToLocalDate(dateStr);
+	const isLocal = 'local' === type;
+	const seconds = addZero(isLocal ? dateObj.getSeconds() : dateObj.getUTCSeconds());
+	const minutes = addZero(isLocal ? dateObj.getMinutes() : dateObj.getUTCMinutes());
+	const hour = addZero(isLocal ? dateObj.getHours() : dateObj.getUTCHours());
+	const monthIndex = isLocal ? dateObj.getMonth() : dateObj.getUTCMonth();
+	const month = 'function' === typeof translate ? translate('month_' + months[monthIndex]) : months[monthIndex];
+	const day = isLocal ? dateObj.getDate() : dateObj.getUTCDate();
+	const year = isLocal ? dateObj.getFullYear() : dateObj.getUTCFullYear();
 
 	let formattedDate = `${month}`;
 	formattedDate += hasDays ? ` ${day}` : '';
@@ -55,17 +57,20 @@ export const formatDate = (dateStr, translate, config = {}) => {
 	return formattedDate;
 };
 
+const UTC_DATE_WITHOUT_TIMEZONE_REGEX = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/;
+
 /**
- * Converts date to a local date.
- * @param {string} date - Date string.
- * @returns {Date} Local date.
+ * Parses a date.
+ * Datetime strings without a timezone designator (`YYYY-MM-DD HH:mm[:ss[.sss]]`, as returned by REST) are parsed as UTC,
+ * because `new Date()` would parse them as local time. Any other value is passed to `new Date()`.
+ * @param {string|number|Date} date - Date.
+ * @returns {Date} Parsed date.
  */
 export const dateToLocalDate = date => {
-	const dateMilliseconds = new Date(date).getTime();
-	const localTimezoneOffsetMinutes = new Date().getTimezoneOffset();
-	const millisecondsCoefficient = 60000;
+	if ('string' === typeof date && UTC_DATE_WITHOUT_TIMEZONE_REGEX.test(date))
+		return new Date(`${date.replace(' ', 'T')}Z`);
 
-	return new Date(dateMilliseconds - (localTimezoneOffsetMinutes * millisecondsCoefficient));
+	return new Date(date);
 };
 
 /**
