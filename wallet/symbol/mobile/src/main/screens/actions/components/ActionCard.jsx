@@ -64,6 +64,7 @@ export const ActionCard = ({ title, description, imageSource, isDisabled = false
 
 const styles = StyleSheet.create({
 	card: {
+		borderRadius: Sizes.Components.actionCard.borderRadius,
 		overflow: 'hidden',
 		height: CARD_HEIGHT
 	},

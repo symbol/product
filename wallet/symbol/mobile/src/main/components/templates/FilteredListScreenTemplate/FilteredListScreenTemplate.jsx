@@ -1,6 +1,5 @@
-import { AnimatedListItem, Filter, LoadingIndicator, Screen, StyledText } from '@/app/components';
+import { AnimatedListItem, EmptyListMessage, Filter, LoadingIndicator, Screen, StyledText } from '@/app/components';
 import { useWalletController } from '@/app/hooks';
-import { $t } from '@/app/localization';
 import { Colors, Sizes } from '@/app/styles';
 import React, { useCallback } from 'react';
 import { SectionList, StyleSheet, View } from 'react-native';
@@ -9,18 +8,6 @@ import { RefreshControl } from 'react-native-gesture-handler';
 const LIST_PADDING = Sizes.Semantic.layoutPadding.m;
 const LIST_GAP = Sizes.Semantic.layoutSpacing.s;
 const NEXT_PAGE_TRIGGER_THRESHOLD = 0.75;
-
-/**
- * Empty list placeholder component.
- * @returns {React.ReactNode}
- */
-const EmptyListPlaceholder = () => (
-	<View style={styles.emptyList}>
-		<StyledText type="label" style={styles.emptyListText}>
-			{$t('message_emptyList')}
-		</StyledText>
-	</View>
-);
 
 /**
  * Section header component.
@@ -135,7 +122,7 @@ export const FilteredListScreenTemplate = ({
 		if (isLoading || isRefreshing || isPageLoading)
 			return null;
 
-		return <EmptyListPlaceholder />;
+		return <EmptyListMessage />;
 	}, [isLoading || isRefreshing || isPageLoading]);
 
 	const renderSectionHeader = useCallback(({ section }) => (
@@ -221,15 +208,5 @@ const styles = StyleSheet.create({
 		position: 'absolute',
 		height: '100%',
 		width: '100%'
-	},
-	emptyList: {
-		width: '100%',
-		height: '100%',
-		justifyContent: 'center',
-		alignItems: 'center'
-	},
-	emptyListText: {
-		textAlign: 'center',
-		color: Colors.Semantic.background.tertiary.darker
 	}
 });

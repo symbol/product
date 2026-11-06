@@ -1,6 +1,6 @@
 import { ButtonClose, EmptyListMessage, Icon, StyledText } from '@/app/components';
 import { useColorTransition } from '@/app/hooks';
-import { Colors, Sizes, Typography } from '@/app/styles';
+import { Colors, Shadows, Sizes, Typography } from '@/app/styles';
 import React, { useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -159,7 +159,7 @@ export const Dropdown = props => {
 	);
 };
 
-const CONTAINER_BORDER_WIDTH = Sizes.Semantic.borderWidth.m;
+const CONTAINER_BORDER_WIDTH = Sizes.Components.control.borderWidth;
 const EXTRA_PIXEL_OFFSET = 0.75;
 
 const styles = StyleSheet.create({
@@ -171,9 +171,10 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
-		borderRadius: Sizes.Semantic.borderRadius.s,
+		borderRadius: Sizes.Components.control.borderRadius,
 		borderWidth: CONTAINER_BORDER_WIDTH,
-		borderStyle: 'solid'
+		borderStyle: 'solid',
+		boxShadow: Shadows.Components.control
 	},
 	inputContainer: {
 		alignSelf: 'stretch',

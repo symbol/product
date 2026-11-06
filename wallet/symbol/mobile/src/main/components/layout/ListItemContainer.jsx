@@ -1,9 +1,10 @@
 import { TouchableNative } from '@/app/components';
-import { Colors, Sizes } from '@/app/styles';
+import { Colors, Shadows, Sizes } from '@/app/styles';
 import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 const MIN_CARD_HEIGHT = Sizes.Semantic.spacing.m * 9;
+const BORDER_RADIUS = Sizes.Components.listItem.borderRadius;
 
 /**
  * ListItemContainer component. A pressable card container for list items
@@ -46,6 +47,7 @@ export const ListItemContainer = ({
 	return (
 		<View style={rootStyles}>
 			<TouchableNative
+				containerStyle={styles.touchable}
 				onPress={handlePress}
 				disabled={isDisabled}
 				accessibilityRole="button"
@@ -63,12 +65,16 @@ const styles = StyleSheet.create({
 	root: {
 		position: 'relative'
 	},
+	touchable: {
+		borderRadius: BORDER_RADIUS
+	},
 	card: {
 		width: '100%',
 		minHeight: MIN_CARD_HEIGHT,
 		backgroundColor: Colors.Components.card.background,
-		borderRadius: Sizes.Semantic.borderRadius.s,
+		borderRadius: BORDER_RADIUS,
 		paddingHorizontal: Sizes.Semantic.layoutPadding.m,
-		paddingVertical: Sizes.Semantic.layoutPadding.s
+		paddingVertical: Sizes.Semantic.layoutPadding.s,
+		boxShadow: Shadows.Components.listItem
 	}
 });
