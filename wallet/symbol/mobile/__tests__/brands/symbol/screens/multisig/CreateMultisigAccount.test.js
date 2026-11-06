@@ -1,10 +1,10 @@
-import { CreateMultisigAccount } from '@/app/screens/multisig/CreateMultisigAccount';
 import * as accountUtils from '@/app/utils/account';
+import { CreateMultisigAccount } from '@/brand/screens/multisig/CreateMultisigAccount';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { TransactionFeeFixtureBuilder } from '__fixtures__/local/TransactionFeeFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
+import { ACTION_TYPE, addCosignatory, applyCounterAction } from '__tests__/brands/symbol/screens/multisig/multisig-test-helper';
 import { createAddressBookMock, mockLocalization, mockPasscode, mockRouter, mockWalletController } from '__tests__/mock-helpers';
-import { ACTION_TYPE, addCosignatory, applyCounterAction } from '__tests__/screens/multisig/multisig-test-helper';
 
 // Constants
 

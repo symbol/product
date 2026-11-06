@@ -1,4 +1,5 @@
-import { MultisigAccountList } from '@/app/screens/multisig/MultisigAccountList';
+import { SymbolRouter } from '@/brand/router/SymbolRouter';
+import { MultisigAccountList } from '@/brand/screens/multisig/MultisigAccountList';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
 import { ContactFixtureBuilder } from '__fixtures__/local/ContactFixtureBuilder';
@@ -193,7 +194,7 @@ describe('screens/multisig/MultisigAccountList', () => {
 			setupMocks();
 			const routerMock = mockRouter({
 				goToCreateMultisigAccount: jest.fn()
-			});
+			}, SymbolRouter);
 
 			// Act:
 			const screenTester = new ScreenTester(MultisigAccountList);

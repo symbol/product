@@ -1,5 +1,5 @@
-import { CreateMosaic } from '@/app/screens/mosaic/CreateMosaic';
-import { DEFAULT_MOSAIC_DIVISIBILITY, MOSAIC_NEVER_EXPIRING_DURATION } from '@/app/screens/mosaic/constants';
+import { CreateMosaic } from '@/brand/screens/mosaic/CreateMosaic';
+import { DEFAULT_MOSAIC_DIVISIBILITY, MOSAIC_NEVER_EXPIRING_DURATION } from '@/brand/screens/mosaic/constants';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
 import { TransactionFeeFixtureBuilder } from '__fixtures__/local/TransactionFeeFixtureBuilder';

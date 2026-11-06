@@ -1,5 +1,6 @@
 import { config } from '@/app/config';
-import { MultisigAccountDetails } from '@/app/screens/multisig/MultisigAccountDetails';
+import { SymbolRouter } from '@/brand/router/SymbolRouter';
+import { MultisigAccountDetails } from '@/brand/screens/multisig/MultisigAccountDetails';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
 import { ContactFixtureBuilder } from '__fixtures__/local/ContactFixtureBuilder';
@@ -153,11 +154,13 @@ const setupMocks = (config = {}) => {
 	} = config;
 
 	mockLocalization();
-	const routerMock = mockRouter({
-		goToSend: jest.fn(),
-		goToModifyMultisigAccount: jest.fn(),
-		goToTokenDetails: jest.fn()
-	});
+	const routerMock = {
+		...mockRouter({
+			goToSend: jest.fn(),
+			goToTokenDetails: jest.fn()
+		}),
+		...mockRouter({ goToModifyMultisigAccount: jest.fn() }, SymbolRouter)
+	};
 	const addressBookMock = createAddressBookMock(contacts);
 	const multisigModuleMock = createMultisigModuleMock(multisigAccountInfo);
 	const walletControllerMock = mockWalletController({

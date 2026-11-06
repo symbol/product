@@ -1,5 +1,5 @@
 import { MosaicSupplyChangeAction } from '@/app/constants';
-import { ModifyMosaic } from '@/app/screens/mosaic/ModifyMosaic';
+import { ModifyMosaic } from '@/brand/screens/mosaic/ModifyMosaic';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
 import { TransactionFeeFixtureBuilder } from '__fixtures__/local/TransactionFeeFixtureBuilder';
