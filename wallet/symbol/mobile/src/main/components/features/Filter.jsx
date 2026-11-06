@@ -94,7 +94,9 @@ export const Filter = props => {
 	const [expandedFilter, setExpandedFilter] = useState(null);
 
 	// Filter state helpers
-	const isFilterActive = name => !!value[name];
+	const isFilterActive = filter => filter.type === FilterType.CHOICE
+		? value[filter.name] === filter.value
+		: !!value[filter.name];
 	const isFilterAvailable = name => 
 		(Object.keys(value).length === 0 || Object.prototype.hasOwnProperty.call(value, name)) && !isDisabled;
 
@@ -104,6 +106,8 @@ export const Filter = props => {
 	const handleFilterPress = filter => {
 		if (filter.type === FilterType.BOOLEAN)
 			handleFilterValueChange(filter, !value[filter.name]);
+		else if (filter.type === FilterType.CHOICE)
+			handleFilterValueChange(filter, isFilterActive(filter) ? null : filter.value);
 		else
 			setExpandedFilter(filter);
 	};
@@ -126,7 +130,7 @@ export const Filter = props => {
 		<View style={styles.chipWrapper}>
 			<FilterChip
 				title={item.title}
-				isActive={isFilterActive(item.name)}
+				isActive={isFilterActive(item)}
 				isDisabled={!isFilterAvailable(item.name)}
 				onPress={() => handleFilterPress(item)}
 			/>
