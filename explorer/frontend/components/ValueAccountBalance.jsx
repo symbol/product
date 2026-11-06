@@ -5,8 +5,12 @@ import { numberToShortString, numberToString, truncateDecimals } from '@/app/uti
 const ValueAccountBalance = ({ value, valueInUserCurrency, userCurrency }) => {
 	const userCurrencyText = userCurrency.toUpperCase();
 	const truncatedValueInUserCurrency = truncateDecimals(valueInUserCurrency, 2);
-	const valueInUserCurrencyText = `~${numberToShortString(truncatedValueInUserCurrency)} ${userCurrencyText}`;
-	const valueInUserCurrencyTitle = `${numberToString(truncatedValueInUserCurrency)} ${userCurrencyText}`;
+	const valueInUserCurrencyText = valueInUserCurrency == null
+		? '—'
+		: `~${numberToShortString(truncatedValueInUserCurrency)} ${userCurrencyText}`;
+	const valueInUserCurrencyTitle = valueInUserCurrency == null
+		? undefined
+		: `${numberToString(truncatedValueInUserCurrency)} ${userCurrencyText}`;
 
 	return (
 		<div className={styles.valueAccountBalance}>

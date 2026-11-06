@@ -38,7 +38,10 @@ NEXT_PUBLIC_EXPLORER_VARIANT=nem npm run build && NEXT_PUBLIC_EXPLORER_VARIANT=n
 NEXT_PUBLIC_EXPLORER_VARIANT=symbol npm run build && NEXT_PUBLIC_EXPLORER_VARIANT=symbol npm run start
 
 # Per-variant Docker image
-docker build --build-arg NEXT_PUBLIC_EXPLORER_VARIANT=symbol -t explorer-frontend-symbol .
+docker build --build-arg NEXT_PUBLIC_EXPLORER_VARIANT=symbol \
+  --build-arg PUBLIC_SYMBOL_MARKET_DATA_URL='https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=symbol' \
+  --build-arg PUBLIC_SYMBOL_HISTORICAL_PRICE_URL='https://api.coingecko.com/api/v3/coins/symbol/history' \
+  -t explorer-frontend-symbol .
 ```
 
 ## Environment Variables
@@ -56,6 +59,33 @@ encodes **visibility** (build-time vs runtime, client vs server) and **scope** (
 
 `NEXT_PUBLIC_*` values are baked into the build. `PUBLIC_*` values stay runtime-configurable and are exposed through `window.appConfig`. Variant-scoped keys should be read only inside `variants/<variant>/`.
 
+
+### Symbol market data
+
+Set `PUBLIC_SYMBOL_MARKET_DATA_URL` to
+`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=symbol`
+when building and running the Symbol variant. The URL is required and validated when configuration loads;
+it is public, so do not include credentials. Home requests it once during SSR using `PUBLIC_REQUEST_TIMEOUT`.
+Missing or zero circulating supply and market cap display as `—`; a failed request displays unavailable market fields
+without a stub fallback or automatic retry. Other variants retain their own market configuration.
+
+### Symbol daily currency conversion
+
+Set `PUBLIC_SYMBOL_HISTORICAL_PRICE_URL=https://api.coingecko.com/api/v3/coins/symbol/history`
+at build and runtime, separately from the Home market URL. Both URLs are required HTTP(S) configuration.
+Account balances request the current local-calendar date; transactions use their timestamp's local-calendar date,
+matching NEM's `Date.getDate/getMonth/getFullYear` behavior. The selected currency is read from
+`market_data.current_price`; this is a daily snapshot, not the price at the transaction's exact time.
+Missing or zero prices and failed requests display `—`; zero amounts remain valid zero conversions without requesting a price.
+No alternate-date or fixed-price fallback is used.
+
+[CoinGecko's history specification](https://docs.coingecko.com/demo/reference/coins-id-history)
+uses `dd-mm-yyyy` and a 00:00 UTC snapshot, available after the documented publication delay (00:35 UTC).
+Demo history is limited to 365 days; longer history requires Analyst or higher.
+The documentation marks the Demo API key as required, although an unauthenticated Symbol request on
+2026-10-30 for 29-10-2026 returned HTTP 200. Unauthenticated availability is not guaranteed.
+Never put keys in these public URLs or browser configuration. If authentication is enforced, a separately
+configured server-side proxy holding the key is required; this change does not provide that service.
 
 ### Known Accounts
 

@@ -143,6 +143,5 @@ export const stubBlockStats = {
 
 export const stubTransactionStats = { averagePerBlock: 2, total: 10667593, last30Day: 17457, last24Hours: 630 };
 
-export const stubMarketData = { price: 0.031, priceChange: 1.74, volume: 49221365.72, circulatingSupply: 7842928625, marketCap: 243130787.3, treasury: 0 };
 
 export const stubTransactionChart = stubBlocks.map(block => [block.height, block.transactionCount]).reverse();

@@ -104,19 +104,23 @@ const Home = ({
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_price')}>
-								<ValuePrice
+								{marketData.price == null ? '—' : <ValuePrice
 									value={truncateDecimals(marketData.price, 7)}
 									change={truncateDecimals(marketData.priceChange, 1)}
-								/>
+								/>}
 							</Field>
-							<Field title={t('field_volume')}>${numberToShortString(marketData.volume)}</Field>
+							<Field title={t('field_volume')}>
+								{marketData.volume == null ? '—' : `$${numberToShortString(marketData.volume)}`}
+							</Field>
 						</div>
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_circulatingSupply')} textAlign="right">
-								{numberToString(marketData.circulatingSupply)} {config.PUBLIC_NATIVE_MOSAIC_TICKER}
+								{marketData.circulatingSupply == null
+									? '—'
+									: `${numberToString(marketData.circulatingSupply)} ${config.PUBLIC_NATIVE_MOSAIC_TICKER}`}
 							</Field>
 							<Field title={t('field_marketCap')} textAlign="right">
-								${numberToShortString(marketData.marketCap)}
+								{marketData.marketCap == null ? '—' : `$${numberToShortString(marketData.marketCap)}`}
 							</Field>
 						</div>
 					</div>
