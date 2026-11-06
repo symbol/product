@@ -4,6 +4,7 @@
 import { useToggle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Colors, Shadows, Sizes, Typography } from '@/app/styles';
+import { feeSelectorConfig } from '@/brand/config/fee-selector-config';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -93,6 +94,7 @@ export const FeeSelector = ({ style, title, feeTiers, value, ticker, onChange })
 	}, [feeTiers]);
 
 	// Derived values
+	const { isSpeedIconVisible } = feeSelectorConfig;
 	const sliderValue = FEE_TIER_LEVELS.indexOf(value);
 	const imageSrc = IMAGES[sliderValue];
 	const selectedFeeValue = options[sliderValue].value;
@@ -122,7 +124,9 @@ export const FeeSelector = ({ style, title, feeTiers, value, ticker, onChange })
 	return (
 		<View style={[styles.root, style]}>
 			<View style={styles.inputContainer}>
-				<Animated.Image source={imageSrc} style={[styles.image, animatedImageStyle]} />
+				{isSpeedIconVisible && (
+					<Animated.Image source={imageSrc} style={[styles.image, animatedImageStyle]} />
+				)}
 				<Text style={styles.label}>{title}</Text>
 				<Text style={styles.value}>{valueField}</Text>
 			</View>
