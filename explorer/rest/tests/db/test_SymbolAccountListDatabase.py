@@ -4,6 +4,7 @@ from unittest import TestCase
 
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo
+from common.tests.AccountRefreshTestUtils import seed_account_refresh_state
 from psycopg2 import Error as PsycopgError
 from symbolchain.symbol.Network import Address
 
@@ -295,7 +296,7 @@ class SymbolAccountListDatabaseTest(TestCase):
 				# Arrange: every status owns a fresh healthy sync state and successful refresh run.
 				with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 					seed_accounts(writer)
-					writer.upsert_account_refresh_state({'status': status})
+					seed_account_refresh_state(writer, {'status': status})
 					with self._create_database(config) as database:
 						# Act:
 						with self.assertRaises(SymbolDataUnavailable) as context:
@@ -339,11 +340,13 @@ class SymbolAccountListDatabaseTest(TestCase):
 					('mosaic', 'UPDATE symbol_account_list_ranks SET mosaic_id = %s WHERE refresh_run_id = %s AND rank_scope = %s AND rank = 0',
 						('0000000000000001', 'selected-run', f'BALANCE:{NATIVE_MOSAIC_ID}')),
 				)
-				for name, statement, parameters in mutations:
+				run_id = 'selected-run'
+				for index, (name, statement, parameters) in enumerate(mutations):
 					with self.subTest(name=name):
 						# Arrange: corrupt one requested scope before the read.
 						with puller_database.connection.cursor() as cursor:
-							cursor.execute(statement, parameters)
+							cursor.execute(statement, tuple(run_id if value == 'selected-run' else value for value in parameters))
+
 						puller_database.connection.commit()
 						query = {
 							'sort value': list_query(AccountSortField.IMPORTANCE),
@@ -357,8 +360,9 @@ class SymbolAccountListDatabaseTest(TestCase):
 						# Assert:
 						self.assertEqual('Symbol account list ranks are unavailable', str(context.exception))
 
-						# Cleanup: rebuild all ranks before the next corruption case.
-						puller_database.finalize_account_refresh('selected-run', NATIVE_MOSAIC_ID, 100, REFRESH_COMPLETED_AT)
+						# Publish a fresh run before the next corruption case.
+						run_id = f'recovered-run-{index}'
+						seed_refresh_run(puller_database, run_id, create_account_list_entries(run_id))
 			finally:
 				database.close()
 
@@ -427,8 +431,12 @@ def test_list_excludes_other_run_decoys(sort_field, mosaic_id, indices):
 		seed_accounts(writer)
 		failed_entries = create_account_list_entries('failed-run', is_new=True)
 		failed_entries.append(create_refresh_entry('failed-run', 5, 4, 10, mosaic_rows=[(CUSTOM_MOSAIC_ID, 900)]))
-		writer.upsert_account_refresh_page(failed_entries, last_scanned_page=1)
-		writer.upsert_account_refresh_state({'status': 'healthy'})
+		with writer.workflow_lock():
+			writer.begin_account_refresh('failed-run', REFRESH_COMPLETED_AT)
+			writer.upsert_account_refresh_page(failed_entries, last_scanned_page=1)
+			writer.mark_account_refresh_failed('failed-run', 'fixture failure')
+
+		seed_account_refresh_state(writer, {'status': 'healthy'})
 		expected = _expected_records([_old_record_rows()[index] for index in indices], mosaic_id or NATIVE_MOSAIC_ID)
 		with SymbolDatabase(config, NATIVE_MOSAIC_INFO, clock=lambda: NOW) as reader:
 			# Act:
@@ -444,7 +452,7 @@ def test_list_db_repeatable_read(change):
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 		seed_accounts(writer, 'old-run')
 		seed_accounts(writer, 'new-run', variant='new')
-		writer.upsert_account_refresh_state({'last_successful_run_id': 'old-run'})
+		seed_account_refresh_state(writer, {'last_successful_run_id': 'old-run'})
 		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2, account_address(1))
 		seed_alias(writer, 'account', str(Address(account_address(1))), 'before.account')
 		seed_alias(writer, 'mosaic', CUSTOM_MOSAIC_ID, 'before.mosaic')
@@ -453,7 +461,7 @@ def test_list_db_repeatable_read(change):
 
 		def update():
 			if change == 'run':
-				writer.upsert_account_refresh_state({'last_successful_run_id': 'new-run'})
+				seed_account_refresh_state(writer, {'last_successful_run_id': 'new-run'})
 			else:
 				with writer.connection.cursor() as cursor:
 					cursor.execute('UPDATE symbol_alias_names SET name = \'after.account\' WHERE artifact_type = \'account\'')
