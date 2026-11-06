@@ -2,8 +2,8 @@ import { AccountAvatar, Icon, StyledText, TokenAvatar } from '@/app/components';
 import { Colors, Sizes, Typography } from '@/app/styles';
 import { Image, StyleSheet, View } from 'react-native';
 
-/** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicArrowCaption} TransactionGraphicArrowCaption */
-/** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicAvatarType} TransactionGraphicAvatarType */
+/** @typedef {import('@/app/types/Transaction').TransactionGraphicArrowCaption} TransactionGraphicArrowCaption */
+/** @typedef {import('@/app/types/Transaction').TransactionGraphicAvatarType} TransactionGraphicAvatarType */
 /** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicSide} TransactionGraphicSide */
 /** @typedef {import('react').ReactNode} ReactNode */
 

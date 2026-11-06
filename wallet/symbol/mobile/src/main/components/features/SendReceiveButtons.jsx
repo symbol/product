@@ -12,9 +12,11 @@ import {
 import { useToggle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Colors, Sizes, Typography } from '@/app/styles';
+import { sendReceiveButtonsConfig } from '@/brand/config/send-receive-buttons-config';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+const ICON_VARIANT = sendReceiveButtonsConfig.iconVariant;
 const BUTTON_HEIGHT = Sizes.Semantic.controlHeight.m;
 const BUTTON_BACKGROUND_COLOR = Colors.Components.buttonSendReceive.primary.default.background;
 const BUTTON_BACKGROUND_COLOR_DISABLED = Colors.Components.buttonSendReceive.primary.disabled.background;
@@ -46,7 +48,7 @@ const ActionButton = ({ icon, text, isLast = false, isDisabled = false, onPress 
 	return (
 		<View style={buttonStyle}>
 			<TouchableNative onPress={onPress} disabled={isDisabled} style={pressableStyle}>
-				<Icon name={icon} size="xs" />
+				<Icon name={icon} size="xs" variant={ICON_VARIANT} />
 				<Text style={styles.actionButtonText}>{text}</Text>
 			</TouchableNative>
 		</View>
@@ -67,12 +69,12 @@ const ActionButton = ({ icon, text, isLast = false, isDisabled = false, onPress 
  * @param {boolean} [props.isDisabled=false] - Disables both buttons if true.
  * @returns {React.ReactNode} SendReceiveButtons component.
  */
-export const SendReceiveButtons = ({ 
-	chainName, 
-	accountAddress, 
-	tokenName, 
-	receiveQrData, 
-	onSendPress, 
+export const SendReceiveButtons = ({
+	chainName,
+	accountAddress,
+	tokenName,
+	receiveQrData,
+	onSendPress,
 	hasMultisigSendWarning = false,
 	isDisabled = false
 }) => {

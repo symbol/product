@@ -14,6 +14,12 @@ jest.mock('@/app/config', () => ({
 					testnet: 'https://testnet.symbol.fyi'
 				}
 			},
+			nem: {
+				explorerURL: {
+					mainnet: 'https://nem.fyi',
+					testnet: 'https://testnet.nem.fyi'
+				}
+			},
 			ethereum: {
 				explorerURL: {
 					mainnet: 'https://etherscan.io',
@@ -54,6 +60,24 @@ describe('utils/explorer', () => {
 					transactionHash: 'DEF456'
 				},
 				expected: { url: 'https://testnet.symbol.fyi/transactions/DEF456' }
+			},
+			{
+				description: 'creates transaction URL for nem mainnet',
+				config: {
+					chainName: 'nem',
+					networkIdentifier: 'mainnet',
+					transactionHash: 'ABC123'
+				},
+				expected: { url: 'https://nem.fyi/transactions/ABC123' }
+			},
+			{
+				description: 'creates transaction URL for nem testnet',
+				config: {
+					chainName: 'nem',
+					networkIdentifier: 'testnet',
+					transactionHash: 'DEF456'
+				},
+				expected: { url: 'https://testnet.nem.fyi/transactions/DEF456' }
 			},
 			{
 				description: 'creates transaction URL for ethereum mainnet',
@@ -117,6 +141,24 @@ describe('utils/explorer', () => {
 				expected: { url: 'https://testnet.symbol.fyi/accounts/TABCDEF789012' }
 			},
 			{
+				description: 'creates account URL for nem mainnet',
+				config: {
+					chainName: 'nem',
+					networkIdentifier: 'mainnet',
+					address: 'NABCDEF123456'
+				},
+				expected: { url: 'https://nem.fyi/accounts/NABCDEF123456' }
+			},
+			{
+				description: 'creates account URL for nem testnet',
+				config: {
+					chainName: 'nem',
+					networkIdentifier: 'testnet',
+					address: 'TABCDEF789012'
+				},
+				expected: { url: 'https://testnet.nem.fyi/accounts/TABCDEF789012' }
+			},
+			{
 				description: 'creates account URL for ethereum mainnet',
 				config: {
 					chainName: 'ethereum',
@@ -178,6 +220,24 @@ describe('utils/explorer', () => {
 				expected: { url: 'https://testnet.symbol.fyi/mosaics/72C0212E67A08BCE' }
 			},
 			{
+				description: 'creates token URL for nem mainnet',
+				config: {
+					chainName: 'nem',
+					networkIdentifier: 'mainnet',
+					tokenId: 'nem.xem'
+				},
+				expected: { url: 'https://nem.fyi/mosaics/nem.xem' }
+			},
+			{
+				description: 'creates token URL for nem testnet',
+				config: {
+					chainName: 'nem',
+					networkIdentifier: 'testnet',
+					tokenId: 'test.token'
+				},
+				expected: { url: 'https://testnet.nem.fyi/mosaics/test.token' }
+			},
+			{
 				description: 'creates token URL for ethereum mainnet',
 				config: {
 					chainName: 'ethereum',
@@ -231,6 +291,24 @@ describe('utils/explorer', () => {
 					namespaceId: 'test.namespace'
 				},
 				expected: { url: 'https://testnet.symbol.fyi/namespaces/test.namespace' }
+			},
+			{
+				description: 'creates namespace URL for nem mainnet',
+				config: {
+					chainName: 'nem',
+					networkIdentifier: 'mainnet',
+					namespaceId: 'nem'
+				},
+				expected: { url: 'https://nem.fyi/namespaces/nem' }
+			},
+			{
+				description: 'creates namespace URL for nem testnet',
+				config: {
+					chainName: 'nem',
+					networkIdentifier: 'testnet',
+					namespaceId: 'test.namespace'
+				},
+				expected: { url: 'https://testnet.nem.fyi/namespaces/test.namespace' }
 			}
 		];
 

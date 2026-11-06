@@ -1,11 +1,6 @@
-import { 
-	getTransactionDateText,
-	getTransactionDescription, 
-	getTransactionIconName, 
-	getTransactionTypeText,
-	isTransactionAwaitingSignatureByAccount
-} from '../utils';
+import { getTransactionDateText, getTransactionTypeText, isTransactionAwaitingSignatureByAccount } from '../utils';
 import { TransactionGroup } from '@/app/constants';
+import { getTransactionDescriptionText, getTransactionTypeInfo } from '@/app/lib/transaction';
 import { useMemo } from 'react';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
@@ -56,9 +51,9 @@ export const useTransactionItemData = ({
 			networkIdentifier
 		};
 
-		const iconName = getTransactionIconName(transaction.type);
+		const iconName = getTransactionTypeInfo(transaction.type, chainName).icon;
 		const action = getTransactionTypeText(transaction, currentAccount, chainName);
-		const description = getTransactionDescription(transaction, currentAccount, resolveOptions);
+		const description = getTransactionDescriptionText(transaction, currentAccount, resolveOptions);
 		const dateText = isDateHidden ? '' : getTransactionDateText(transaction, group);
 
 		const isPartial = group === TransactionGroup.PARTIAL;

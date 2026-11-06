@@ -1,310 +1,14 @@
-import { SymbolTransactionType } from '@/app/constants';
+import { TransactionGraphicAvatarType } from '@/app/constants';
+import { createTransactionGraphicContent, getTransactionTypeInfo } from '@/app/lib/transaction';
 import { $t } from '@/app/localization';
-import {
-	CaptionType,
-	TransactionGraphicAvatarType
-} from '@/app/screens/history/types/TransactionGraphic';
 import { createAccountDisplayData } from '@/app/utils/account';
-import { truncateMiddle } from '@/app/utils/format';
-import { getTransactionTypeLocaleKey } from '@/app/utils/localization';
-import { createTokenDisplayData, getNativeCurrencyToken, hasNonNativeCurrencyTokens } from '@/app/utils/token';
-import { getSignedSupplyDelta } from '@/app/utils/transaction';
+import { createTokenDisplayData } from '@/app/utils/token';
 
-/** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicArrowCaption} TransactionGraphicArrowCaption */
 /** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicData} TransactionGraphicData */
 /** @typedef {import('@/app/screens/history/types/TransactionGraphic').TransactionGraphicSide} TransactionGraphicSide */
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
-/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
-/** @typedef {import('@/app/types/Network').ChainName} ChainName */
-/** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
-
-const SECRET_CAPTION_TRUNCATE_START = 8;
-const SECRET_CAPTION_TRUNCATE_END = 8;
-
-/**
- * Truncates a secret hash for display inside the transaction graphic arrow caption.
- * @param {string} secret - The full secret hash.
- * @returns {string} The truncated secret.
- */
-const formatSecretCaption = secret => truncateMiddle(secret, SECRET_CAPTION_TRUNCATE_START, SECRET_CAPTION_TRUNCATE_END);
-
-/**
- * Target field configuration for extracting target data from a transaction.
- * @typedef {object} TargetFieldConfig
- * @property {string} [addressField] - Transaction field containing the target address.
- * @property {string} [valueField] - Transaction field containing the target value/label.
- * @property {string} [imageIdField] - Transaction field containing the image id.
- * @property {function(*): string} [valueFormat] - Optional formatter function for computing the target value.
- */
-
-/**
- * Arrow caption configuration.
- * @typedef {object} ArrowCaptionConfig
- * @property {'icon' | 'text'} type - Type of content.
- * @property {string} [icon] - Icon name for icon type.
- * @property {string} [field] - Transaction field for text type.
- * @property {(value: any, transaction: Transaction, options: TransactionGraphicOptions) => string} [format] 
- * - Formatter function for the field value.
- * @property {(transaction: Transaction, options: TransactionGraphicOptions) => boolean} [condition] 
- * - Function returning boolean to conditionally include this caption.
- */
-
-/**
- * Transaction graphic configuration for a specific transaction type.
- * @typedef {object} TransactionGraphicConfig
- * @property {TransactionGraphicAvatarType} targetType - Avatar type for the target.
- * @property {TargetFieldConfig} targetFields - Fields configuration for extracting target data.
- * @property {ArrowCaptionConfig[]} [arrowCaptions] - Configuration for arrow captions.
- * @property {function(*): string} [typeTextKey] - Optional function to compute type text translation key.
- */
-
-/** @type {Record<number, TransactionGraphicConfig>} */
-const transactionGraphicConfigMap = {
-	[SymbolTransactionType.TRANSFER]: {
-		targetType: TransactionGraphicAvatarType.ACCOUNT,
-		targetFields: { addressField: 'recipientAddress' },
-		typeTextKey: tx => {
-			if (tx.message?.isDelegatedHarvestingMessage)
-				return 'transactionType_harvestingRequest';
-
-			return null;
-		},
-		arrowCaptions: [
-			{ 
-				type: CaptionType.ICON, 
-				icon: 'message', 
-				condition: tx => !!tx.message 
-			},
-			{ 
-				type: CaptionType.ICON, 
-				icon: 'token-custom', 
-				condition: (tx, options) => hasNonNativeCurrencyTokens(tx.tokens || [], options.nativeCurrencyTokenId) 
-			},
-			{ 
-				type: CaptionType.TEXT,
-				format: (_, tx, options) => {
-					const nativeToken = getNativeCurrencyToken(tx.tokens || [], options.nativeCurrencyTokenId);
-
-					return `${formatAmount(nativeToken?.amount)} ${options.nativeCurrencyTicker}`;
-				}
-			}
-		]
-	},
-	[SymbolTransactionType.NAMESPACE_REGISTRATION]: {
-		targetType: TransactionGraphicAvatarType.NAMESPACE,
-		targetFields: { valueField: 'namespaceName' }
-	},
-	[SymbolTransactionType.MOSAIC_ALIAS]: {
-		targetType: TransactionGraphicAvatarType.TOKEN,
-		targetFields: { valueField: 'tokenId' },
-		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'namespaceName' }
-		]
-	},
-	[SymbolTransactionType.ADDRESS_ALIAS]: {
-		targetType: TransactionGraphicAvatarType.ACCOUNT,
-		targetFields: { addressField: 'address' },
-		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'namespaceName' }
-		]
-	},
-	[SymbolTransactionType.MOSAIC_DEFINITION]: {
-		targetType: TransactionGraphicAvatarType.TOKEN,
-		targetFields: { valueField: 'tokenId' }
-	},
-	[SymbolTransactionType.MOSAIC_SUPPLY_CHANGE]: {
-		targetType: TransactionGraphicAvatarType.TOKEN,
-		targetFields: { valueField: 'tokenId' },
-		arrowCaptions: [
-			{
-				type: CaptionType.TEXT,
-				field: 'delta',
-				format: (_, tx) => `${getSignedSupplyDelta(tx)}`
-			}
-		]
-	},
-	[SymbolTransactionType.MOSAIC_SUPPLY_REVOCATION]: {
-		targetType: TransactionGraphicAvatarType.ACCOUNT,
-		targetFields: { addressField: 'sourceAddress' },
-		arrowCaptions: [
-			{ type: CaptionType.ICON, icon: 'tokens' },
-			{ type: CaptionType.TEXT, field: 'tokenId' }
-		]
-	},
-	[SymbolTransactionType.ACCOUNT_MOSAIC_RESTRICTION]: {
-		targetType: TransactionGraphicAvatarType.ACCOUNT,
-		targetFields: { addressField: 'signerAddress' },
-		arrowCaptions: [
-			{ 
-				type: CaptionType.TEXT, 
-				field: 'restrictionType', 
-				format: value => $t(`fieldValue_${value}`) 
-			}
-		]
-	},
-	[SymbolTransactionType.ACCOUNT_ADDRESS_RESTRICTION]: {
-		targetType: TransactionGraphicAvatarType.ACCOUNT,
-		targetFields: { addressField: 'signerAddress' },
-		arrowCaptions: [
-			{ 
-				type: CaptionType.TEXT, 
-				field: 'restrictionType', 
-				format: value => $t(`fieldValue_${value}`) 
-			}
-		]
-	},
-	[SymbolTransactionType.ACCOUNT_OPERATION_RESTRICTION]: {
-		targetType: TransactionGraphicAvatarType.ACCOUNT,
-		targetFields: { addressField: 'signerAddress' },
-		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'restrictionType', format: value => $t(`fieldValue_${value}`) }
-		]
-	},
-	[SymbolTransactionType.MOSAIC_GLOBAL_RESTRICTION]: {
-		targetType: TransactionGraphicAvatarType.TOKEN,
-		targetFields: { valueField: 'referenceTokenId' },
-		arrowCaptions: [
-			{
-				type: CaptionType.TEXT,
-				format: (_, tx) => `${tx.restrictionKey} ${$t(`fieldValue_${tx.newRestrictionType}`)} ${tx.newRestrictionValue}`
-			}
-		]
-	},
-	[SymbolTransactionType.MOSAIC_ADDRESS_RESTRICTION]: {
-		targetType: TransactionGraphicAvatarType.ACCOUNT,
-		targetFields: { addressField: 'targetAddress' },
-		arrowCaptions: [
-			{
-				type: CaptionType.TEXT,
-				format: (_, tx) => `${tx.restrictionKey} = ${tx.newRestrictionValue}`
-			}
-		]
-	},
-	[SymbolTransactionType.MULTISIG_ACCOUNT_MODIFICATION]: {
-		targetType: TransactionGraphicAvatarType.ACCOUNT,
-		targetFields: { addressField: 'signerAddress' }
-	},
-	[SymbolTransactionType.VRF_KEY_LINK]: {
-		targetType: TransactionGraphicAvatarType.ACCOUNT,
-		targetFields: { addressField: 'linkedAccountAddress' },
-		arrowCaptions: [
-			{   
-				type: CaptionType.TEXT, 
-				field: 'linkAction', 
-				format: value => $t(`fieldValue_${value}`) 
-			}
-		]
-	},
-	[SymbolTransactionType.NODE_KEY_LINK]: {
-		targetType: TransactionGraphicAvatarType.ACCOUNT,
-		targetFields: { addressField: 'linkedAccountAddress' },
-		arrowCaptions: [
-			{ 
-				type: CaptionType.TEXT, 
-				field: 'linkAction', 
-				format: value => $t(`fieldValue_${value}`) 
-			}
-		]
-	},
-	[SymbolTransactionType.VOTING_KEY_LINK]: {
-		targetType: TransactionGraphicAvatarType.ACCOUNT,
-		targetFields: { addressField: 'linkedAccountAddress' },
-		arrowCaptions: [
-			{ 
-				type: CaptionType.TEXT, 
-				field: 'linkAction', 
-				format: value => $t(`fieldValue_${value}`) 
-			}
-		]
-	},
-	[SymbolTransactionType.ACCOUNT_KEY_LINK]: {
-		targetType: TransactionGraphicAvatarType.ACCOUNT,
-		targetFields: { addressField: 'linkedAccountAddress' },
-		arrowCaptions: [
-			{ 
-				type: CaptionType.TEXT, 
-				field: 'linkAction', 
-				format: value => $t(`fieldValue_${value}`) 
-			}
-		]
-	},
-	[SymbolTransactionType.HASH_LOCK]: {
-		targetType: TransactionGraphicAvatarType.LOCK,
-		targetFields: {
-			valueFormat: tx => $t('transactionDescriptionShort_hashLock', { duration: tx.duration })
-		},
-		arrowCaptions: [
-			{ 
-				type: CaptionType.TEXT, 
-				field: 'lockedAmount', 
-				format: (amount, tx, options) => {
-					return `${formatAmount(amount)} ${options.nativeCurrencyTicker}`;
-				}
-			}
-		]
-	},
-	[SymbolTransactionType.SECRET_LOCK]: {
-		targetType: TransactionGraphicAvatarType.LOCK,
-		targetFields: {},
-		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'secret', format: formatSecretCaption }
-		]
-	},
-	[SymbolTransactionType.SECRET_PROOF]: {
-		targetType: TransactionGraphicAvatarType.LOCK,
-		targetFields: {},
-		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'secret', format: formatSecretCaption }
-		]
-	},
-	[SymbolTransactionType.ACCOUNT_METADATA]: {
-		targetType: TransactionGraphicAvatarType.ACCOUNT,
-		targetFields: { addressField: 'targetAddress' },
-		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'scopedMetadataKey' }
-		]
-	},
-	[SymbolTransactionType.NAMESPACE_METADATA]: {
-		targetType: TransactionGraphicAvatarType.NAMESPACE,
-		targetFields: { valueField: 'targetNamespaceId' },
-		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'scopedMetadataKey' }
-		]
-	},
-	[SymbolTransactionType.MOSAIC_METADATA]: {
-		targetType: TransactionGraphicAvatarType.TOKEN,
-		targetFields: { valueField: 'targetTokenId' },
-		arrowCaptions: [
-			{ type: CaptionType.TEXT, field: 'scopedMetadataKey' }
-		]
-	}
-};
-
-/**
- * Options for creating transaction graphic data.
- * @typedef {object} TransactionGraphicOptions
- * @property {ChainName} chainName - The name of the blockchain (e.g., 'symbol', 'ethereum').
- * @property {NetworkIdentifier} networkIdentifier - The network identifier (e.g., 'mainnet', 'testnet').
- * @property {string} nativeCurrencyTicker - The ticker symbol for the native currency.
- * @property {string} nativeCurrencyTokenId - The token ID for the native currency.
- * @property {WalletAccount[]} [walletAccounts] - The list of wallet accounts.
- * @property {object} [addressBook] - The address book instance.
- */
-
-/**
- * Formats an amount value for display. Returns absolute value as string.
- * @param {string} [amount] - The amount value.
- * @returns {string} Formatted amount string.
- */
-const formatAmount = amount => {
-	if (typeof amount !== 'string')
-		return '0';
-
-	if (amount.startsWith('-'))
-		return amount.substring(1);
-
-	return amount;
-};
+/** @typedef {import('@/app/types/Transaction').TransactionGraphicTarget} TransactionGraphicTarget */
+/** @typedef {import('@/app/types/Transaction').TransactionGraphicOptions} TransactionGraphicOptions */
 
 /**
  * Creates the source side data from the transaction.
@@ -333,20 +37,18 @@ const createSourceData = (transaction, options) => {
 };
 
 /**
- * Creates the target side data from the transaction using configuration.
- * @param {Transaction} transaction - The transaction.
- * @param {TransactionGraphicConfig} config - The graphic configuration.
+ * Creates the target side data from the target that the config (content) describes.
+ * @param {TransactionGraphicTarget} target - The graphic target.
  * @param {TransactionGraphicOptions} options - Options for creating the graphic data.
  * @returns {TransactionGraphicSide} Target side data.
  */
-const createTargetData = (transaction, config, options) => {
+const createTargetData = (target, options) => {
 	const { chainName, networkIdentifier, walletAccounts, addressBook } = options;
-	const { targetType, targetFields } = config;
-	const { addressField, valueField, valueFormat } = targetFields;
+	const { type: targetType } = target;
 
 	// Handle account type targets
 	if (targetType === TransactionGraphicAvatarType.ACCOUNT) {
-		const address = addressField ? (transaction[addressField] || '') : '';
+		const address = target.value || '';
 		const accountDisplayData = createAccountDisplayData(address, {
 			chainName,
 			networkIdentifier,
@@ -365,7 +67,7 @@ const createTargetData = (transaction, config, options) => {
 
 	// Handle token type targets
 	if (targetType === TransactionGraphicAvatarType.TOKEN) {
-		const tokenId = valueField ? (transaction[valueField] || '') : '';
+		const tokenId = target.value || '';
 		const tokenDisplayData = createTokenDisplayData(
 			{ id: tokenId },
 			chainName,
@@ -380,77 +82,8 @@ const createTargetData = (transaction, config, options) => {
 	}
 
 	// Handle namespace and lock types (no account/token display data needed)
-	let text = '';
-
-	if (valueFormat)
-		text = valueFormat(transaction);
-	else if (valueField)
-		text = transaction[valueField] || '';
-
-	return { type: targetType, text };
+	return { type: targetType, text: target.value || '' };
 };
-
-/**
- * Creates arrow captions from the transaction using configuration.
- * @param {Transaction} transaction - The transaction.
- * @param {ArrowCaptionConfig[]} captionConfigs - The caption configurations.
- * @param {TransactionGraphicOptions} options - Options for creating the graphic data.
- * @returns {TransactionGraphicArrowCaption[]} Arrow captions.
- */
-const createArrowCaptions = (transaction, captionConfigs, options) => {
-	if (!captionConfigs || captionConfigs.length === 0)
-		return [];
-
-	return captionConfigs
-		.filter(captionConfig => {
-			if (captionConfig.condition)
-				return captionConfig.condition(transaction, options);
-
-			return true;
-		})
-		.map(captionConfig => {
-			if (captionConfig.type === 'icon') {
-				return {
-					type: CaptionType.ICON,
-					value: captionConfig.icon
-				};
-			}
-
-			// Text type
-			let value = '';
-
-			if (captionConfig.field)
-				value = transaction[captionConfig.field];
-
-			if (captionConfig.format)
-				value = captionConfig.format(value, transaction, options);
-
-			return {
-				type: CaptionType.TEXT,
-				value: value ?? ''
-			};
-		})
-		.filter(caption => caption.value);
-};
-
-/**
- * Gets formatted type text for the transaction.
- * @param {Transaction} transaction - The transaction.
- * @param {TransactionGraphicConfig} [config] - The graphic configuration.
- * @param {ChainName} [chainName] - Chain name, used to namespace the descriptor key.
- * @returns {string} Formatted type text.
- */
-const getTypeText = (transaction, config, chainName) => {
-	let customKey;
-	if (config?.typeTextKey)
-		customKey = config.typeTextKey(transaction, chainName);
-
-	if (customKey)
-		return $t(customKey);
-
-	return $t(getTransactionTypeLocaleKey(transaction.type, chainName));
-};
-
 
 /**
  * Creates the transaction graphic view model from transaction.
@@ -459,11 +92,11 @@ const getTypeText = (transaction, config, chainName) => {
  * @returns {TransactionGraphicData} Transaction graphic data.
  */
 export const createTransactionGraphicData = (transaction, options) => {
-	const config = transactionGraphicConfigMap[transaction.type];
-	const typeText = getTypeText(transaction, config, options.chainName);
+	const content = createTransactionGraphicContent(transaction, options);
+	const typeText = $t(getTransactionTypeInfo(transaction.type, options.chainName).localeKey);
 
 	// Fallback for unsupported transaction types
-	if (!config) {
+	if (!content) {
 		const sourceData = createSourceData(transaction, options);
 
 		return {
@@ -483,7 +116,7 @@ export const createTransactionGraphicData = (transaction, options) => {
 	return {
 		typeText,
 		source: createSourceData(transaction, options),
-		target: createTargetData(transaction, config, options),
-		arrowCaptions: createArrowCaptions(transaction, config.arrowCaptions, options)
+		target: createTargetData(content.target, options),
+		arrowCaptions: content.arrowCaptions.filter(caption => caption.value)
 	};
 };

@@ -97,6 +97,37 @@
                     "networkIdentifier": "testnet"
                 }
             }
+        },
+        "nem": {
+            "chainName": "nem",
+            "ticker": "XEM",
+            "nodewatchURL": {
+                "testnet": "https://nodewatch.symbol.tools/testnet",
+                "mainnet": "https://nodewatch.symbol.tools"
+            },
+            "explorerURL": {
+                "testnet": "https://testnet.nem.fyi",
+                "mainnet": "https://nem.fyi"
+            },
+            "marketDataURL": "https://min-api.cryptocompare.com/data/price",
+            "defaultNetworkProperties": {
+                "mainnet": {
+                    "networkIdentifier": "mainnet",
+                    "networkCurrency": {
+                        "name": "XEM",
+                        "id": "nem.xem",
+                        "divisibility": 6
+                    }
+                },
+                "testnet": {
+                    "networkIdentifier": "testnet",
+                    "networkCurrency": {
+                        "name": "XEM",
+                        "id": "nem.xem",
+                        "divisibility": 6
+                    }
+                }
+            }
         }
     },
     "bridge": {

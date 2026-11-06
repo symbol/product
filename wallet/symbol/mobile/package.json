@@ -92,6 +92,7 @@
     "react-test-renderer": "19.2.3",
     "rn-nodeify": "^10.3.0",
     "stream-browserify": "^3.0.0",
+    "typescript": "^6.0.3",
     "util": "^0.12.5"
   },
   "engines": {

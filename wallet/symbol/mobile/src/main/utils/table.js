@@ -24,7 +24,9 @@ const keyToTypeMap = {
 		'cosignatoryDeletions',
 		'receivedCosignatures',
 		'multisigAddresses',
-		'multisigAddress'
+		'multisigAddress',
+		'rentalFeeSink',
+		'levyRecipientAddress'
 	],
 	copy: [
 		'id',
@@ -38,6 +40,7 @@ const keyToTypeMap = {
 		'secret',
 		'proof',
 		'hash',
+		'otherTransactionHash',
 		'name'
 	],
 	boolean: [
@@ -84,7 +87,8 @@ const keyToTypeMap = {
 		'restrictionType',
 		'previousRestrictionType',
 		'newRestrictionType',
-		'linkAction'
+		'linkAction',
+		'levyType'
 	]
 };
 

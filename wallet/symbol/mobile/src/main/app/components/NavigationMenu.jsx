@@ -2,7 +2,7 @@ import { StyledText, TouchableNative } from '@/app/components';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { RouteName } from '@/app/router/config';
-import { Colors, Sizes } from '@/app/styles';
+import { Colors, Shadows, Sizes } from '@/app/styles';
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -125,7 +125,8 @@ const styles = StyleSheet.create({
 	root: {
 		width: '100%',
 		backgroundColor: Colors.Components.navigationMenu.background,
-		flexDirection: 'row'
+		flexDirection: 'row',
+		boxShadow: Shadows.Components.navigationMenu
 	},
 	item: {
 		flex: 1,

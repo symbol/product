@@ -10,7 +10,7 @@ import { createAddressBookMock, mockWalletController } from '__tests__/mock-help
 const CHAIN_NAME = 'symbol';
 const NETWORK_IDENTIFIER = 'testnet';
 
-// Real entry from src/config/known-accounts.json (symbol/testnet)
+// Real entry from src/main/config/known-accounts.json (symbol/testnet)
 const KNOWN_ACCOUNT_ADDRESS = 'TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY';
 const KNOWN_ACCOUNT_NAME = 'Faucet';
 const KNOWN_ACCOUNT_IMAGE_ID = 'faucet';

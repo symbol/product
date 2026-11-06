@@ -1,4 +1,5 @@
 import { TokenDetails } from '@/app/screens/assets/TokenDetails';
+import { SymbolRouter } from '@/brand/router/SymbolRouter';
 import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
 import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
@@ -624,7 +625,7 @@ describe('screens/assets/TokenDetails', () => {
 				// Arrange:
 				const accountInfo = createAccountInfoWithToken(manageableTokenOwnedByCurrentAccount);
 				mockWalletController(createWalletControllerConfig(accountInfo, networkPropertiesActive));
-				const routerMock = mockRouter({ goToRevokeMosaic: jest.fn(), goToModifyMosaic: jest.fn() });
+				const routerMock = mockRouter({ goToRevokeMosaic: jest.fn(), goToModifyMosaic: jest.fn() }, SymbolRouter);
 
 				// Act:
 				const screenTester = new ScreenTester(

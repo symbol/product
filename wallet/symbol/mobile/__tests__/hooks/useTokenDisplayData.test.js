@@ -9,7 +9,7 @@ import { mockWalletController } from '__tests__/mock-helpers';
 const CHAIN_NAME = 'symbol';
 const NETWORK_IDENTIFIER = 'testnet';
 
-// Real entry from src/config/known-tokens.json (symbol/testnet, id 72C0212E67A08BCE)
+// Real entry from src/main/config/known-tokens.json (symbol/testnet, id 72C0212E67A08BCE)
 const KNOWN_TOKEN_NAME = 'Symbol';
 const KNOWN_TOKEN_TICKER = 'XYM';
 const KNOWN_TOKEN_IMAGE_ID = 'xym';

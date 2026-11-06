@@ -5,7 +5,8 @@ import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { MnemonicInput } from '@/app/screens/onboarding/components/MnemonicInput';
-import { WalletCreationAnimation } from '@/app/screens/onboarding/components/WalletCreationAnimation';
+import { importWalletScreenConfig } from '@/brand/config/import-wallet-screen-config';
+import { WalletCreationAnimation } from '@/brand/screens/onboarding/components/WalletCreationAnimation';
 import { useState } from 'react';
 
 export const ImportWallet = () => {
@@ -55,6 +56,9 @@ export const ImportWallet = () => {
 		passcode.show();
 	};
 
+	// Logo visibility
+	const { isLogoVisible } = importWalletScreenConfig;
+
 	const isButtonDisabled = !isMnemonicValid;
 
 	return (
@@ -68,9 +72,11 @@ export const ImportWallet = () => {
 						<ButtonClose text={$t('button_cancel')} onPress={Router.goBack} />
 					</FlexContainer>
 					<Stack>
-						<FlexContainer center>
-							<AppLogo />
-						</FlexContainer>
+						{isLogoVisible && (
+							<FlexContainer center>
+								<AppLogo />
+							</FlexContainer>
+						)}
 						<StyledText type="title">
 							{$t('screen_onboarding_importWallet_title_intro')}
 						</StyledText>

@@ -5,16 +5,23 @@ import {
 	isPrivateKey as isEthereumPrivateKey,
 	isPublicKey as isEthereumPublicKey
 } from 'wallet-common-ethereum/src/utils/account';
-import { 
-	createPrivateAccount,
-	generateKeyPair,
+import {
+	createPrivateAccount as createNemPrivateAccount,
+	generateKeyPair as generateNemKeyPair,
+	isNemAddress,
+	isPrivateKey as isNemPrivateKey,
+	isPublicKey as isNemPublicKey
+} from 'wallet-common-nem/src/utils/account';
+import {
+	createPrivateAccount as createSymbolPrivateAccount,
+	generateKeyPair as generateSymbolKeyPair,
 	isSymbolAddress,
 	isPrivateKey as isSymbolPrivateKey,
 	isPublicKey as isSymbolPublicKey
 } from 'wallet-common-symbol/src/utils/account';
 
 /** @typedef {import('@/app/types/Account').AccountDisplayData} AccountDisplayData */
-/** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
+/** @typedef {import('@/app/types/Account').AccountResolveOptions} AccountResolveOptions */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
@@ -65,11 +72,7 @@ const getWalletAccountName = (address, walletAccounts) => {
 /**
  * Retrieves the account info from various sources: wallet accounts, address book, or known accounts config.
  * @param {string} address - The account address to look up.
- * @param {object} options - The options to search for the account name.
- * @param {WalletAccount[]} [options.walletAccounts] - The list of wallet accounts.
- * @param {object} [options.addressBook] - The address book instance.
- * @param {ChainName} [options.chainName] - The name of the blockchain (e.g., 'symbol', 'ethereum').
- * @param {NetworkIdentifier} [options.networkIdentifier] - The network identifier (e.g., 'mainnet', 'testnet').
+ * @param {AccountResolveOptions} options - The options to search for the account name.
  * @returns {KnownAccountInfo} The account info if found, otherwise null.
  */
 export const getAccountKnownInfo = (address, options) => {
@@ -91,11 +94,7 @@ export const getAccountKnownInfo = (address, options) => {
 /**
  * Creates account display data by combining known account information with generated color.
  * @param {string} address - The account address to create display data for.
- * @param {object} options - The options to search for the account name and image.
- * @param {WalletAccount[]} [options.walletAccounts] - The list of wallet accounts.
- * @param {object} [options.addressBook] - The address book instance.
- * @param {ChainName} [options.chainName] - The name of the blockchain (e.g., 'symbol', 'ethereum').
- * @param {NetworkIdentifier} [options.networkIdentifier] - The network identifier (e.g., 'mainnet', 'testnet').
+ * @param {AccountResolveOptions} options - The options to search for the account name and image.
  * @returns {AccountDisplayData} An object containing the account address, name, imageId, and generated color if no image is available.
  */
 export const createAccountDisplayData = (address, options) => {
@@ -111,18 +110,9 @@ export const createAccountDisplayData = (address, options) => {
 };
 
 /**
- * Options required to resolve account display information.
- * @typedef {object} AccountDisplayOptions
- * @property {WalletAccount[]} walletAccounts - Wallet accounts associated with the current network.
- * @property {object|undefined} addressBook - Address book module (if available).
- * @property {ChainName} chainName - Blockchain name (e.g. 'symbol', 'ethereum').
- * @property {NetworkIdentifier} networkIdentifier - Network identifier (e.g., 'mainnet', 'testnet').
- */
-
-/**
  * Extracts the necessary state from a WalletController to create an options object used by `createAccountDisplayData()` function.
  * @param {WalletController} walletController - The wallet controller.
- * @returns {AccountDisplayOptions} The account display options.
+ * @returns {AccountResolveOptions} The account display options.
  */
 export const getAccountDisplayOptions = walletController => ({
 	walletAccounts: walletController.accounts[walletController.networkIdentifier],
@@ -143,7 +133,10 @@ export const isPublicKey = (value, chainName) => {
 	
 	if (chainName === 'ethereum')
 		return isEthereumPublicKey(value);
-	
+
+	if (chainName === 'nem')
+		return isNemPublicKey(value);
+
 	throw new Error(`Unsupported chain name: ${chainName}`);
 };
 
@@ -159,7 +152,10 @@ export const isPrivateKey = (value, chainName) => {
 	
 	if (chainName === 'ethereum')
 		return isEthereumPrivateKey(value);
-	
+
+	if (chainName === 'nem')
+		return isNemPrivateKey(value);
+
 	throw new Error(`Unsupported chain name: ${chainName}`);
 };
 
@@ -176,22 +172,32 @@ export const isAddress = (value, chainName, networkIdentifier) => {
 	
 	if (chainName === 'ethereum')
 		return isEthereumAddress(value);
-	
+
+	if (chainName === 'nem')
+		return isNemAddress(value, networkIdentifier);
+
 	throw new Error(`Unsupported chain name: ${chainName}`);
 };
 
 /**
- * Generates a new private account for the Symbol blockchain.
- * @param {ChainName} chainName - The blockchain name (must be 'symbol').
+ * Generates a new private account for the Symbol or NEM blockchain.
+ * @param {ChainName} chainName - The blockchain name (must be 'symbol' or 'nem').
  * @param {NetworkIdentifier} networkIdentifier - The network identifier.
  * @returns {import('@/app/types/Account').PrivateAccount} The generated private account.
  */
 export const generateAccount = (chainName, networkIdentifier) => {
-	if (chainName !== 'symbol')
-		throw new Error(`Account generation is only supported for Symbol chain. Unsupported chain: ${chainName}`);
-	
-	const { privateKey } = generateKeyPair();
-	
-	return createPrivateAccount(privateKey, networkIdentifier);
+	if (chainName === 'symbol') {
+		const { privateKey } = generateSymbolKeyPair();
+
+		return createSymbolPrivateAccount(privateKey, networkIdentifier);
+	}
+
+	if (chainName === 'nem') {
+		const { privateKey } = generateNemKeyPair();
+
+		return createNemPrivateAccount(privateKey, networkIdentifier);
+	}
+
+	throw new Error(`Account generation is only supported for Symbol and NEM chains. Unsupported chain: ${chainName}`);
 };
 

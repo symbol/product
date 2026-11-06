@@ -5,10 +5,12 @@ import { ImageBackground, StyleSheet, View } from 'react-native';
 
 const CARD_HEIGHT_MULTIPLIER = 35;
 const CARD_HEIGHT = Sizes.Semantic.spacing.m * CARD_HEIGHT_MULTIPLIER;
-const CARD_BACKGROUND_COLOR = Colors.Semantic.overlay.primary.default;
+const CARD_BACKGROUND_COLOR = Colors.Components.actionCard.default.background;
+const CARD_PRESSED_COLOR = Colors.Components.actionCard.pressed.background;
 const IMAGE_HEIGHT_PERCENT = '70%';
 const CONTENT_HEIGHT_PERCENT = '50%';
-const CONTENT_OVERLAY_OPACITY = 'rgba(0,0,0,0.7)';
+const CONTENT_BACKGROUND_COLOR = Colors.Components.actionCardContent.background;
+const CONTENT_TEXT_COLOR = Colors.Components.actionCardContent.text;
 const LOCK_ICON_SIZE = 'xl';
 
 /**
@@ -31,7 +33,7 @@ export const ActionCard = ({ title, description, imageSource, isDisabled = false
 			<TouchableNative
 				style={styles.touchable}
 				containerStyle={styles.touchableContainer}
-				colorPressed={Colors.Semantic.overlay.primary.default}
+				colorPressed={CARD_PRESSED_COLOR}
 				disabled={isDisabled}
 				onPress={onPress}
 			>
@@ -64,6 +66,7 @@ export const ActionCard = ({ title, description, imageSource, isDisabled = false
 
 const styles = StyleSheet.create({
 	card: {
+		borderRadius: Sizes.Components.actionCard.borderRadius,
 		overflow: 'hidden',
 		height: CARD_HEIGHT
 	},
@@ -102,7 +105,7 @@ const styles = StyleSheet.create({
 		left: 0,
 		width: '100%',
 		height: CONTENT_HEIGHT_PERCENT,
-		backgroundColor: CONTENT_OVERLAY_OPACITY,
+		backgroundColor: CONTENT_BACKGROUND_COLOR,
 		zIndex: 2,
 		padding: Sizes.Semantic.spacing.m
 	},
@@ -121,9 +124,11 @@ const styles = StyleSheet.create({
 	},
 	title: {
 		marginBottom: Sizes.Semantic.spacing.xs,
-		textAlign: 'center'
+		textAlign: 'center',
+		color: CONTENT_TEXT_COLOR
 	},
 	description: {
-		textAlign: 'center'
+		textAlign: 'center',
+		color: CONTENT_TEXT_COLOR
 	}
 });

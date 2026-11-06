@@ -1,0 +1,269 @@
+import { CosignatoryList, CosignatureCounter } from './components';
+import { useCosignatureInput, useMultisigTransaction, useMultisigTransactionState } from './hooks';
+import { createCosignatoryInputAlertData } from './utils/cosignatory-input-alert';
+import { SymbolRouter } from '../../router/SymbolRouter';
+import {
+	AccountListItem,
+	Alert,
+	Button,
+	ButtonPlain,
+	DialogBox,
+	Divider,
+	FeeSelector,
+	Field,
+	FlexContainer,
+	InputAddress,
+	Spacer,
+	Stack,
+	StyledText,
+	TransactionScreenTemplate
+} from '@/app/components';
+import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
+import { useAccountDisplayData, useAsyncManager, useDebounce, useTransactionFees, useWalletController } from '@/app/hooks';
+import { $t } from '@/app/localization';
+import { validateAddress } from '@/app/utils';
+import React, { useEffect, useState } from 'react';
+
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+/** @typedef {import('@/app/types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
+
+/** @type {TransactionFeeTierLevel} */
+const DEFAULT_TRANSACTION_SPEED = 'medium';
+
+/**
+ * ModifyMultisigAccount screen component. Provides the interface for modifying an existing multisig account
+ * by updating cosignatories and configuring approval thresholds.
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
+ * @param {object} props.route.params - Route parameters.
+ * @param {ChainName} props.route.params.chainName - The blockchain name.
+ * @param {string} props.route.params.accountAddress - The address of the multisig account to modify.
+ * @returns {React.ReactNode} ModifyMultisigAccount component.
+ */
+export const ModifyMultisigAccount = props => {
+	const { chainName, accountAddress, preloadedData } = props.route.params;
+	const walletController = useWalletController(chainName);
+	const {
+		currentAccount,
+		ticker
+	} = walletController;
+	const { multisig: multisigModule } = walletController.modules;
+
+	// Fetch multisig account data
+	const dataManager = useAsyncManager({
+		callback: async () => multisigModule.fetchAccountInfo(accountAddress),
+		defaultData: preloadedData
+	});
+	const multisigAccountInfo = dataManager.data;
+	const [multisigAccountDisplayData] = useAccountDisplayData(multisigAccountInfo ? [multisigAccountInfo.address] : [], chainName);
+	useEffect(() => {
+		dataManager.call();
+	}, []);
+
+	// Form state
+	const {
+		minApproval,
+		minRemoval,
+		cosignatories,
+		changeMinApproval,
+		changeMinRemoval,
+		addCosignatory,
+		removeCosignatory,
+		reset: resetFlow
+	} = useMultisigTransactionState(multisigAccountInfo);
+
+	// Cosignatory input dialog
+	const {
+		cosignatoryInput,
+		inputCosignatory,
+		isInputDialogVisible,
+		openInputDialog,
+		closeInputDialog,
+		submitInput
+	} = useCosignatureInput(addCosignatory);
+
+	// Cosignatory alert
+	const cosignatoryAlert = createCosignatoryInputAlertData(cosignatories, currentAccount);
+
+	// Transaction creation and preview
+	const {
+		createModificationTransaction,
+		getConfirmationPreview
+	} = useMultisigTransaction({
+		walletController,
+		multisigAccountInfo,
+		cosignatories,
+		minApproval,
+		minRemoval
+	});
+
+	// Transaction fees
+	const [transactionSpeed, setTransactionSpeed] = useState(DEFAULT_TRANSACTION_SPEED);
+	const {
+		data: transactionFees,
+		isLoading: isFeesLoading,
+		call: fetchFees
+	} = useTransactionFees(() => createModificationTransaction(), walletController);
+	const calculateFeesSafely = useDebounce(fetchFees, 1000);
+	useEffect(() => {
+		if (multisigAccountInfo && cosignatories.length > 0)
+			calculateFeesSafely();
+	}, [multisigAccountInfo, cosignatories.length, minApproval, minRemoval]);
+
+	// Derived state
+	const cosignatoriesCount = cosignatories.length;
+	const isButtonDisabled = isFeesLoading || cosignatoriesCount === 0 || !multisigAccountInfo;
+
+	// Handlers
+	const handleTransactionSendComplete = () => {
+		resetFlow();
+		SymbolRouter.goToHome();
+	};
+
+	// Transaction Workflow
+	const workflow = useStandardTransactionWorkflow({
+		createTransaction: createModificationTransaction,
+		walletController,
+		transactionFeeTiers: transactionFees,
+		transactionFeeTierLevel: transactionSpeed
+	});
+
+	return (
+		<TransactionScreenTemplate
+			isSendButtonDisabled={isButtonDisabled}
+			isLoading={dataManager.isLoading}
+			getConfirmationPreview={getConfirmationPreview}
+			onComplete={handleTransactionSendComplete}
+			walletController={walletController}
+			workflow={workflow}
+			isCustomSendButtonUsed={true}
+			confirmDialogTitle={$t('screen_multisig_modify_dialog_confirm_title')}
+			confirmDialogText={$t('screen_multisig_modify_dialog_confirm_description', {
+				address: accountAddress,
+				cosignatoriesCount
+			})}
+			modals={(
+				<DialogBox
+					isVisible={isInputDialogVisible}
+					title={$t('screen_multisig_dialog_addCosignatory_title')}
+					type="confirm"
+					onSuccess={submitInput}
+					onCancel={closeInputDialog}
+				>
+					<Stack>
+						<InputAddress
+							label={$t('inputLabel_address')}
+							extraValidators={[validateAddress(chainName)]}
+							chainName={chainName}
+							value={cosignatoryInput}
+							onChange={inputCosignatory}
+						/>
+					</Stack>
+				</DialogBox>
+			)}
+		>
+			{buttonProps => (
+				<Spacer bottom="l">
+					<Stack gap="l">
+						<Stack>
+							<Stack gap="none">
+								<StyledText type="title">
+									{$t('screen_multisig_modify_title_intro')}
+								</StyledText>
+								<StyledText type="body">
+									{$t('screen_multisig_modify_description_intro')}
+								</StyledText>
+							</Stack>
+							{multisigAccountInfo && (
+								<AccountListItem
+									address={multisigAccountInfo.address}
+									name={multisigAccountDisplayData?.name ?? $t('screen_multisig_title_defaultAccountName')}
+									amount={multisigAccountInfo.balance}
+									ticker={ticker}
+									imageId={multisigAccountDisplayData?.imageId}
+								/>
+							)}
+						</Stack>
+
+						<Divider />
+
+						<Stack>
+							<Stack gap="none">
+								<StyledText type="title">
+									{$t('screen_multisig_title_cosignatory')}
+								</StyledText>
+								<StyledText type="body">
+									{$t('screen_multisig_description_cosignatory')}
+								</StyledText>
+							</Stack>
+							{cosignatoryAlert.isVisible && (
+								<Alert
+									variant={cosignatoryAlert.variant}
+									body={cosignatoryAlert.text}
+								/>
+							)}
+							{cosignatoriesCount > 0 && (
+								<CosignatoryList
+									isEditable
+									cosignatories={cosignatories}
+									chainName={chainName}
+									onRemove={removeCosignatory}
+								/>
+							)}
+							<FlexContainer center>
+								<ButtonPlain
+									icon="plus"
+									text={$t('button_add')}
+									onPress={openInputDialog}
+								/>
+							</FlexContainer>
+						</Stack>
+
+						<Divider />
+
+						<Stack>
+							<Stack gap="none">
+								<StyledText type="title">
+									{$t('screen_multisig_title_approvals')}
+								</StyledText>
+								<StyledText type="body">
+									{$t('screen_multisig_description_approvals')}
+								</StyledText>
+							</Stack>
+							<Field title={$t('fieldTitle_minApprovals')}>
+								<CosignatureCounter
+									variant="min-approval"
+									value={minApproval}
+									total={Math.max(cosignatoriesCount, 1)}
+									isEditable
+									onChange={changeMinApproval}
+								/>
+							</Field>
+							<Field title={$t('fieldTitle_minRemovals')}>
+								<CosignatureCounter
+									variant="min-removal"
+									value={minRemoval}
+									total={Math.max(cosignatoriesCount, 1)}
+									isEditable
+									onChange={changeMinRemoval}
+								/>
+							</Field>
+						</Stack>
+
+						{transactionFees && (
+							<FeeSelector
+								title={$t('fieldTitle_transactionFee')}
+								feeTiers={transactionFees}
+								value={transactionSpeed}
+								ticker={ticker}
+								onChange={setTransactionSpeed}
+							/>
+						)}
+
+						<Button {...buttonProps} />
+					</Stack>
+				</Spacer>
+			)}
+		</TransactionScreenTemplate>
+	);
+};
