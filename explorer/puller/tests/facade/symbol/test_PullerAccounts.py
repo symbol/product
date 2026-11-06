@@ -1094,6 +1094,26 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertEqual(1, connector.paths.count('network/properties'))
 		self.assertEqual(1, connector.paths.count(f'mosaics/{NATIVE_MOSAIC_ID}'))
 
+	def test_refresh_accounts_publishes_node_address_height_for_snapshot(self):
+		# Arrange: address height and node chain height are intentionally different.
+		account = create_account_item(_address_hex(0), addressHeight='17')
+		set_symbol_connector(self.puller, FakeConnector(101, {}, account_pages={1: [account]}))
+
+		# Act:
+		asyncio.run(self.puller.refresh_accounts())
+
+		# Assert: the published snapshot retains the DTO value and the observed snapshot height separately.
+		database = self.puller.symbol_db
+		state = database.get_account_refresh_state()
+		self.assertEqual(
+			(state['last_successful_run_id'], state['last_successful_run_id']),
+			(state['valid_run_id'], state['height_ready_run_id']))
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT address_height, snapshot_height FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s',
+			(state['last_successful_run_id'],))
+		self.assertEqual([(17, 101)], cursor.fetchall())
+
 	def test_refresh_accounts_pages_all_accounts_and_assigns_search_order_across_pages(self):
 		# Arrange:
 		page1 = []
@@ -1416,8 +1436,10 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 	def test_sync_block_headers_reclaims_refresh_owner_after_connection_loss(self):
 		# Arrange: a refresh process acquired the session lock, wrote pages and then died.
 		database = self.puller.symbol_db
+		completed_at = datetime(2025, 12, 31)
 		seed_account_refresh_state(database, {
-			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous', 'is_retention_ready': True
+			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous', 'is_retention_ready': True,
+			'valid_run_id': 'published', 'height_ready_run_id': 'published', 'last_completed_at': completed_at
 		})
 		other = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
 		cursor = other.connection.cursor()
@@ -1440,8 +1462,10 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 		# Assert: published and previous IDs remain intact while the abandoned run is removed.
 		state = database.get_account_refresh_state()
-		self.assertEqual(('published', 'previous', None, 'unhealthy'), (
-			state['last_successful_run_id'], state['previous_successful_run_id'], state['running_run_id'], state['status']))
+		self.assertEqual(('published', 'previous', None, 'unhealthy', 'published', 'published', completed_at), (
+			state['last_successful_run_id'], state['previous_successful_run_id'], state['running_run_id'], state['status'],
+			state['valid_run_id'], state['height_ready_run_id'], state['last_completed_at']))
+		self.assertEqual(1, database.get_sync_state()['last_synced_height'])
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT refresh_run_id FROM symbol_account_list_ranks')
 		self.assertEqual([], cursor.fetchall())
