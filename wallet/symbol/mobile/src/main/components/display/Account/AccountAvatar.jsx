@@ -2,6 +2,7 @@ import { Icon } from '@/app/components/visual';
 import { accountImages } from '@/app/config/known-account-images';
 import { generateBlockie } from '@/app/lib/blockie';
 import { Sizes } from '@/app/styles';
+import { accountAvatarConfig } from '@/brand/config/account-avatar-config';
 import React, { useMemo } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
@@ -43,6 +44,7 @@ export const AccountAvatar = ({ address, imageId, size = DEFAULT_SIZE }) => {
 	const rootSizeStyle = rootSizeStyleMap[size];
 
 	// Account icon
+	const { iconVariant } = accountAvatarConfig;
 	const iconSizeMap = {
 		s: 'xs',
 		m: 'xs',
@@ -54,7 +56,7 @@ export const AccountAvatar = ({ address, imageId, size = DEFAULT_SIZE }) => {
 	return (
 		<View style={[styles.root, rootSizeStyle]}>
 			<Image source={customImageSrc ?? generatedImageSrc} style={styles.image} />
-			{!customImageSrc && <Icon name="account" size={iconSize} variant="inverse" />}
+			{!customImageSrc && <Icon name="account" size={iconSize} variant={iconVariant} />}
 		</View>
 	);
 };
