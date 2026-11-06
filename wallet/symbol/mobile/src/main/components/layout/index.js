@@ -13,4 +13,5 @@ export * from './Spacer';
 export * from './StableHeightContainer';
 export * from './Stack';
 export * from './MultiColumnList';
+export * from './WidgetAnimatedWrapper';
 export * from './WidgetContainer';

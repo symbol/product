@@ -1,7 +1,8 @@
-import { DB_UPDATE_LATENCY_AFTER_ANNOUNCE, TransactionGroup } from '@/app/constants';
-import { useAsyncManager, useTransactionListener, useWalletListener } from '@/app/hooks';
+import { TransactionGroup } from '@/app/constants';
+import { useAsyncManager, useWalletRefreshLifecycle } from '@/app/hooks';
 
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
+/** @typedef {import('@/app/types/RefreshController').RefreshController} RefreshController */
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
@@ -28,7 +29,6 @@ const PAGE_SIZE = 15;
  * Return type of the useHistoryWidget hook.
  * @typedef {object} UseHistoryWidgetResult
  * @property {boolean} isVisible - Whether the widget should be visible.
- * @property {function(): void} refresh - Function to refresh transaction data.
  * @property {HistoryWidgetProps} props - Props for the HistoryWidget component.
  */
 
@@ -36,9 +36,10 @@ const PAGE_SIZE = 15;
  * React hook for managing the history widget state. Fetches unconfirmed and
  * partial transactions, and listens to wallet events for auto-refresh.
  * @param {WalletController} walletController - Wallet controller instance.
+ * @param {RefreshController} refreshController - Screen refresh controller.
  * @returns {UseHistoryWidgetResult} Widget state and props.
  */
-export const useHistoryWidget = walletController => {
+export const useHistoryWidget = (walletController, refreshController) => {
 	const unconfirmedManager = useAsyncManager({
 		callback: async () => walletController.fetchAccountTransactions({
 			group: TransactionGroup.UNCONFIRMED,
@@ -57,47 +58,28 @@ export const useHistoryWidget = walletController => {
 		defaultData: []
 	});
 
-	const refresh = () => {
-		setTimeout(() => {
-			unconfirmedManager.call();
-			partialManager.call();
-		}, DB_UPDATE_LATENCY_AFTER_ANNOUNCE);
+	const load = () => {
+		unconfirmedManager.call();
+		partialManager.call();
 	};
 	const clear = () => {
 		unconfirmedManager.reset();
 		partialManager.reset();
 	};
 
-	const handleTransactionStatusChange = () => {
-		refresh();
-	};
-	const handleNetworkConnected = () => {
-		refresh();
-	};
-	const handleAccountChange = () => {
-		clear();
-		
-		if (walletController.isWalletReady)
-			refresh();
-	};
-
-	useTransactionListener({
-		walletControllers: [walletController],
-		onTransactionConfirmed: handleTransactionStatusChange,
-		onTransactionUnconfirmed: handleTransactionStatusChange,
-		onTransactionPartial: handleTransactionStatusChange,
-		onTransactionError: handleTransactionStatusChange
-	});
-
-	useWalletListener({
-		walletControllers: [walletController],
-		onAccountChange: handleAccountChange,
-		onNetworkConnected: handleNetworkConnected
+	useWalletRefreshLifecycle({
+		walletController,
+		refreshController,
+		onRefresh: load,
+		onClear: clear,
+		hasPartialListener: true,
+		hasErrorListener: true,
+		hasUnconfirmedListener: true,
+		shouldLoadOnMount: true
 	});
 
 	return {
 		isVisible: unconfirmedManager.data.length > 0 || partialManager.data.length > 0,
-		refresh,
 		props: {
 			unconfirmed: unconfirmedManager.data,
 			partial: partialManager.data,

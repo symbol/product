@@ -1,6 +1,8 @@
+/** @typedef {import('react')} React */
 /** @typedef {import('@/app/types/Button').ButtonType} ButtonType */
 /** @typedef {import('@/app/types/ColorVariants').IconColorVariants} IconColorVariants */
 /** @typedef {import('@/app/types/ColorVariants').InverseColorVariants} InverseColorVariants */
+/** @typedef {import('./Component').HomeWidgetProps} HomeWidgetProps */
 
 /**
  * AccountAvatar config.
@@ -24,6 +26,19 @@
  * FeeSelector config.
  * @typedef {object} FeeSelectorConfig
  * @property {boolean} isSpeedIconVisible - Whether the fee speed icon is shown on the right side of the selector.
+ */
+
+/**
+ * Widget config.
+ * @typedef {object} HomeWidgetItem
+ * @property {string} id - Random unique key.
+ * @property {function(HomeWidgetProps): React.ReactNode} Component - Widget component.
+ */
+
+/**
+ * Home screen config.
+ * @typedef {object} HomeScreenConfig
+ * @property {HomeWidgetItem[]} widgets - List of widgets that will be rendered on the Home screen.
  */
 
 /**

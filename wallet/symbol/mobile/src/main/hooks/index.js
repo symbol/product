@@ -11,6 +11,7 @@ export * from './usePasscode';
 export * from './useProp';
 export * from './useReactiveWalletControllers';
 export * from './useRefresh';
+export * from './useRefreshController';
 export * from './useTimer';
 export * from './useToggle';
 export * from './useTransactionFees';
