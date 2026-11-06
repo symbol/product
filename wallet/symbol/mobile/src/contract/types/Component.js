@@ -1,6 +1,10 @@
+/** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+/** @typedef {import('@/app/types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('@/app/types/Price').Price} Price */
 /** @typedef {import('@/app/types/RefreshController').RefreshController} RefreshController */
+/** @typedef {import('@/app/types/Token').Token} Token */
 
 /**
  * Account card widget props.
@@ -19,6 +23,17 @@
  * Props that the Home screen passes to every brand home widget.
  * @typedef {object} HomeWidgetProps
  * @property {RefreshController} refreshController - Home screen refresh controller.
+ */
+
+/**
+ * Props that TokenDetails passes to action item component.
+ * @typedef {object} TokenDetailsActionProps
+ * @property {Token} token - Token shown on the screen.
+ * @property {ChainName} chainName - Chain token belongs to.
+ * @property {string} tokenOwnerAccountAddress - Address of the account that holds the token.
+ * @property {WalletAccount} currentAccount - Current account of the token chain.
+ * Might be different from the token owner for which we show balance.
+ * @property {NetworkProperties} networkProperties - Network properties of the token chain.
  */
 
 export {};
