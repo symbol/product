@@ -1,6 +1,5 @@
-import { symbolNetworkApi } from './api';
-import { symbolWalletSdk } from './sdk';
 import { config } from '@/app/config';
+import { cachedMakeRequest } from '@/app/lib/cache';
 import { PersistentStorageInterface } from '@/app/lib/storage/PersistentStorageInterface';
 import { SecureStorageInterface } from '@/app/lib/storage/SecureStorageInterface';
 import {
@@ -12,38 +11,44 @@ import {
 	StorageInterface,
 	WalletController
 } from 'wallet-common-core';
-import { HarvestingModule, MosaicModule, MultisigModule, TransferModule } from 'wallet-common-symbol';
+import { Api, TransferModule, sdk as nemWalletSdk } from 'wallet-common-nem';
 
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
+
+const nemNetworkApi = new Api({
+	makeRequest: cachedMakeRequest,
+	config: {
+		nodewatchURL: config.chains.nem.nodewatchURL,
+		marketCurrencies: config.marketCurrencies,
+		marketDataURL: config.chains.nem.marketDataURL
+	}
+});
 
 const modules = [
 	new AddressBookModule(),
 	new MarketModule({
-		marketApi: symbolNetworkApi.market
+		marketApi: nemNetworkApi.market
 	}),
-	new MultisigModule(),
 	new TransferModule(),
-	new LocalizationModule(),
-	new HarvestingModule(),
-	new MosaicModule()
+	new LocalizationModule()
 ];
 
 /**
- * Symbol wallet controller.
+ * NEM wallet controller.
  * @type {MainWalletController}
  */
-export const symbolWalletController = /** @type {any} */ (
+export const nemWalletController = /** @type {any} */ (
 	new WalletController({
-		chainName: config.chains.symbol.chainName,
-		ticker: config.chains.symbol.ticker,
-		api: symbolNetworkApi,
-		sdk: symbolWalletSdk,
+		chainName: config.chains.nem.chainName,
+		ticker: config.chains.nem.ticker,
+		api: nemNetworkApi,
+		sdk: nemWalletSdk,
 		persistentStorageInterface: new StorageInterface(PersistentStorageInterface),
 		secureStorageInterface: new StorageInterface(SecureStorageInterface),
 		keystores: [MnemonicKeystore, ExternalAccountKeystore],
 		modules,
 		networkIdentifiers: config.networkIdentifiers,
-		createDefaultNetworkProperties: networkIdentifier => config.chains.symbol.defaultNetworkProperties[networkIdentifier],
+		createDefaultNetworkProperties: networkIdentifier => config.chains.nem.defaultNetworkProperties[networkIdentifier],
 		networkPollingInterval: config.connectionInterval
 	})
 );

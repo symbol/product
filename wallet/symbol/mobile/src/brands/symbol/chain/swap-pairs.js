@@ -1,12 +1,18 @@
-import { ethereumNetworkApi } from './ethereum/api';
-import { ethereumBridgeHelper } from './ethereum/bridge';
-import { ethereumWalletController } from './ethereum/controller';
-import { symbolBridgeHelper } from './symbol/bridge';
-import { symbolWalletController } from './symbol/controller';
+import { ethereumWalletController, symbolWalletController } from './wallet-controllers';
 import { config } from '@/app/config';
 import { cachedMakeRequest } from '@/app/lib/cache';
 import { BridgePairManager, SwapWorkflowManager } from 'wallet-common-core';
-import { UniswapPairManager, constants } from 'wallet-common-ethereum';
+import { BridgeHelper as EthereumBridgeHelper, UniswapPairManager, constants } from 'wallet-common-ethereum';
+import { BridgeHelper as SymbolBridgeHelper } from 'wallet-common-symbol';
+
+const symbolBridgeHelper = new SymbolBridgeHelper({
+	tokenApi: symbolWalletController.networkApi.token
+});
+
+const ethereumBridgeHelper = new EthereumBridgeHelper({
+	tokenApi: ethereumWalletController.networkApi.token,
+	transactionApi: ethereumWalletController.networkApi.transaction
+});
 
 const Pairs = {
 	XYM_bXYM: new BridgePairManager({
@@ -48,8 +54,8 @@ const Pairs = {
 	ETH_bXYM: new UniswapPairManager({
 		mode: 'wrap',
 		walletController: ethereumWalletController,
-		uniswapApi: ethereumNetworkApi.uniswap,
-		transactionApi: ethereumNetworkApi.transaction,
+		uniswapApi: ethereumWalletController.networkApi.uniswap,
+		transactionApi: ethereumWalletController.networkApi.transaction,
 		configs: {
 			testnet: {
 				nativeTokenId: constants.NETWORK_CURRENCY_ID,

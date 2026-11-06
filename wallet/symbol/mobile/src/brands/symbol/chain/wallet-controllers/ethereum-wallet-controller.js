@@ -1,6 +1,5 @@
-import { ethereumNetworkApi } from './api';
-import { ethereumWalletSdk } from './sdk';
 import { config } from '@/app/config';
+import { cachedMakeRequest } from '@/app/lib/cache';
 import { PersistentStorageInterface } from '@/app/lib/storage/PersistentStorageInterface';
 import { SecureStorageInterface } from '@/app/lib/storage/SecureStorageInterface';
 import {
@@ -9,9 +8,17 @@ import {
 	StorageInterface,
 	WalletController
 } from 'wallet-common-core';
-import { TransferModule } from 'wallet-common-ethereum';
+import { Api, TransferModule, sdk as ethereumWalletSdk } from 'wallet-common-ethereum';
 
 /** @typedef {import('@/app/types/Wallet').AdditionalWalletController} AdditionalWalletController */
+
+const ethereumNetworkApi = new Api({
+	makeRequest: cachedMakeRequest,
+	config: {
+		nodeList: config.chains.ethereum.nodeList,
+		erc20TokensAddresses: config.chains.ethereum.erc20TokensAddresses
+	}
+});
 
 const modules = [
 	new TransferModule()
