@@ -1,12 +1,15 @@
 # pylint: disable=duplicate-code,too-many-lines
+import asyncio
 import copy
 import datetime
 from collections import namedtuple
 from contextlib import ExitStack
 from decimal import Decimal
 from unittest import TestCase
+from unittest.mock import Mock
 
 import pytest
+from common.tests.AccountRefreshTestUtils import seed_account_refresh_state, wait_for_backend_exit
 from common.tests.PostgresTestUtils import drop_symbol_block_tables_if_present
 from psycopg2 import Error as PsycopgError
 from psycopg2.extras import Json
@@ -2102,9 +2105,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.exit_stack = ExitStack()
 		self.addCleanup(self.exit_stack.close)
 
-	def _create_database(self):
+	def _create_database(self, **database_options):
 		database = self.exit_stack.enter_context(
-			SymbolDatabase(self.db_config)
+			SymbolDatabase(self.db_config, **database_options)
 		)
 		drop_symbol_block_tables_if_present(database)
 		self.addCleanup(drop_symbol_block_tables_if_present, database)
@@ -2304,6 +2307,31 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('updated_at', 'timestamp', 'NO')
 		], cursor.fetchall())
 
+	@staticmethod
+	def _create_legacy_rank_page_index(cursor):
+		cursor.execute(
+			'CREATE INDEX idx_symbol_account_list_ranks_page '
+			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)')
+
+	def _assert_legacy_rank_page_index_absent(self, cursor):
+		cursor.execute('SELECT to_regclass(\'public.idx_symbol_account_list_ranks_page\')')
+		self.assertEqual((None,), cursor.fetchone())
+
+	def _assert_rank_primary_key_valid(self, cursor):
+		cursor.execute(
+			'''
+			SELECT index_class.relname, index_data.indisprimary, index_data.indisunique,
+				index_data.indisvalid, pg_get_indexdef(index_data.indexrelid)
+			FROM pg_index AS index_data
+			JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid
+			WHERE index_data.indrelid = 'public.symbol_account_list_ranks'::regclass AND index_data.indisprimary
+			''')
+		self.assertEqual((
+			'symbol_account_list_ranks_pkey', True, True, True,
+			'CREATE UNIQUE INDEX symbol_account_list_ranks_pkey ON public.symbol_account_list_ranks '
+			'USING btree (refresh_run_id, rank_scope, rank)'
+		), cursor.fetchone())
+
 	def test_create_tables_creates_symbol_account_indexes(self):
 		# Arrange:
 		database = self._create_uninitialized_database()
@@ -2325,7 +2353,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		self.assertEqual([
 			'idx_symbol_account_list_ranks_address',
-			'idx_symbol_account_list_ranks_page',
 			'idx_symbol_account_mosaics_address',
 			'idx_symbol_account_mosaics_mosaic',
 			'idx_symbol_account_refresh_accounts_address_text',
@@ -2341,6 +2368,241 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_accounts_harvesting',
 			'idx_symbol_accounts_importance_desc'
 		], [row[0] for row in cursor.fetchall()])
+		self._assert_rank_primary_key_valid(cursor)
+
+	def test_create_tables_removes_legacy_index_idempotently_and_preserves_published_data(self):
+		# Arrange:
+		database = self._create_database()
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'published',
+			'previous_successful_run_id': 'previous',
+			'running_run_id': 'running',
+			'is_retention_ready': True
+		})
+		cursor = database.connection.cursor()
+		self._create_legacy_rank_page_index(cursor)
+		cursor.execute(
+			'INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address) VALUES (\'published\', \'ID\', 0, %s)',
+			(bytes.fromhex('11' * 24),))
+		database.connection.commit()
+
+		# Act:
+		database.create_tables()
+		database.create_tables()
+
+		# Assert:
+		self._assert_legacy_rank_page_index_absent(cursor)
+		cursor.execute('SELECT last_successful_run_id, previous_successful_run_id, running_run_id FROM symbol_account_refresh_state WHERE id = 1')
+		self.assertEqual(('published', 'previous', 'running'), cursor.fetchone())
+		cursor.execute('SELECT refresh_run_id, rank_scope, rank, address FROM symbol_account_list_ranks')
+		row = cursor.fetchone()
+		self.assertEqual(('published', 'ID', 0, bytes.fromhex('11' * 24)), (*row[:3], bytes(row[3])))
+		self._assert_rank_primary_key_valid(cursor)
+
+	def test_create_tables_fails_without_dropping_index_on_another_table(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('CREATE INDEX idx_symbol_account_list_ranks_page ON symbol_blocks(height)')
+		database.connection.commit()
+
+		# Act:
+		with self.assertRaisesRegex(RuntimeError, 'catalog definition does not match'):
+			database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'SELECT tablename, indexdef FROM pg_indexes WHERE schemaname = \'public\' '
+			'AND indexname = \'idx_symbol_account_list_ranks_page\'')
+		self.assertEqual(
+			('symbol_blocks', 'CREATE INDEX idx_symbol_account_list_ranks_page ON public.symbol_blocks USING btree (height)'),
+			cursor.fetchone())
+
+		# Arrange: replace the unexpected index before retrying.
+		cursor.execute('DROP INDEX public.idx_symbol_account_list_ranks_page')
+		self._create_legacy_rank_page_index(cursor)
+		database.connection.commit()
+
+		# Act: retry initialization.
+		database.create_tables()
+
+		# Assert: the expected legacy index was removed.
+		self._assert_legacy_rank_page_index_absent(cursor)
+
+	def test_create_tables_fails_without_dropping_same_named_non_index_relation(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('CREATE TABLE idx_symbol_account_list_ranks_page (value int)')
+		database.connection.commit()
+
+		# Act:
+		with self.assertRaisesRegex(RuntimeError, 'catalog definition does not match'):
+			database.create_tables()
+
+		# Assert:
+		cursor.execute("""SELECT relkind FROM pg_class WHERE oid = 'public.idx_symbol_account_list_ranks_page'::regclass""")
+		self.assertEqual(('r',), cursor.fetchone())
+
+	def test_create_tables_fails_without_dropping_index_with_unexpected_order_or_operator_class(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		unexpected_definitions = [
+			(
+				'refresh_run_id, rank_scope, rank DESC',
+				'CREATE INDEX idx_symbol_account_list_ranks_page ON public.symbol_account_list_ranks '
+				'USING btree (refresh_run_id, rank_scope, rank DESC)'
+			),
+			(
+				'refresh_run_id varchar_pattern_ops, rank_scope, rank',
+				'CREATE INDEX idx_symbol_account_list_ranks_page ON public.symbol_account_list_ranks '
+				'USING btree (refresh_run_id varchar_pattern_ops, rank_scope, rank)'
+			)
+		]
+
+		for index_definition, expected_definition in unexpected_definitions:
+			with self.subTest(index_definition=index_definition):
+				cursor.execute(f'CREATE INDEX idx_symbol_account_list_ranks_page ON symbol_account_list_ranks({index_definition})')
+				database.connection.commit()
+
+				try:
+					# Act:
+					with self.assertRaisesRegex(RuntimeError, 'catalog definition does not match'):
+						database.create_tables()
+
+					# Assert:
+					cursor.execute(
+						'SELECT indexdef FROM pg_indexes WHERE schemaname = \'public\' '
+						'AND indexname = \'idx_symbol_account_list_ranks_page\'')
+					self.assertEqual((expected_definition,), cursor.fetchone())
+				finally:
+					# Reset any failed test transaction before cleaning up this subtest's index.
+					database.connection.rollback()
+					cursor.execute('DROP INDEX IF EXISTS public.idx_symbol_account_list_ranks_page')
+					database.connection.commit()
+
+	def test_create_tables_fails_without_dropping_index_with_different_columns(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'CREATE INDEX idx_symbol_account_list_ranks_page '
+			'ON symbol_account_list_ranks(refresh_run_id, rank_scope, address)')
+		database.connection.commit()
+
+		# Act:
+		with self.assertRaisesRegex(RuntimeError, 'catalog definition does not match'):
+			database.create_tables()
+
+		# Assert:
+		cursor.execute('SELECT indexdef FROM pg_indexes WHERE schemaname = \'public\' AND indexname = \'idx_symbol_account_list_ranks_page\'')
+		self.assertEqual((
+			'CREATE INDEX idx_symbol_account_list_ranks_page ON public.symbol_account_list_ranks '
+			'USING btree (refresh_run_id, rank_scope, address)',
+		), cursor.fetchone())
+
+	def test_create_tables_fails_without_dropping_index_when_primary_key_is_missing(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		self._create_legacy_rank_page_index(cursor)
+		cursor.execute('ALTER TABLE symbol_account_list_ranks DROP CONSTRAINT symbol_account_list_ranks_pkey')
+		database.connection.commit()
+
+		# Act:
+		with self.assertRaisesRegex(RuntimeError, 'symbol_account_list_ranks_pkey is missing'):
+			database.create_tables()
+
+		# Assert:
+		cursor.execute(
+			'SELECT index_class.relname FROM pg_class AS index_class '
+			'JOIN pg_namespace AS index_namespace ON index_namespace.oid = index_class.relnamespace '
+			'WHERE index_namespace.nspname = \'public\' AND index_class.relname = \'idx_symbol_account_list_ranks_page\'')
+		self.assertEqual(('idx_symbol_account_list_ranks_page',), cursor.fetchone())
+		cursor.execute(
+			'SELECT 1 FROM pg_constraint WHERE conrelid = \'symbol_account_list_ranks\'::regclass AND contype = \'p\'')
+		self.assertIsNone(cursor.fetchone())
+
+		# Arrange: restore the primary key before retrying.
+		cursor.execute(
+			'ALTER TABLE symbol_account_list_ranks ADD CONSTRAINT symbol_account_list_ranks_pkey '
+			'PRIMARY KEY (refresh_run_id, rank_scope, rank)')
+		database.connection.commit()
+
+		# Act: retry initialization.
+		database.create_tables()
+
+		# Assert: the expected legacy index was removed.
+		self._assert_legacy_rank_page_index_absent(cursor)
+
+	def test_create_tables_with_no_legacy_index_does_not_block_on_reader(self):
+		# Arrange: the reader retains a transaction on the table throughout initialization.
+		self._create_database()
+		reader = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		writer = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		self.addCleanup(reader.connection.rollback)
+		with reader.connection.cursor() as cursor:
+			cursor.execute('SELECT count(*) FROM symbol_account_list_ranks')
+			cursor.fetchone()
+
+		with writer.connection.cursor() as cursor:
+			cursor.execute('SET lock_timeout = \'3s\'')
+
+		writer.connection.commit()
+
+		# Act:
+		with writer.workflow_lock():
+			writer.create_tables()
+
+		# Assert: the old index remains absent and the primary key is still valid and unique.
+		with writer.connection.cursor() as cursor:
+			self._assert_legacy_rank_page_index_absent(cursor)
+			self._assert_rank_primary_key_valid(cursor)
+
+	def test_create_tables_fails_nowait_then_succeeds_after_reader_releases_lock(self):
+		# Arrange:
+		database = self._create_database()
+		with database.connection.cursor() as cursor:
+			self._create_legacy_rank_page_index(cursor)
+
+		database.connection.commit()
+		reader = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		writer = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		observer = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		self.addCleanup(reader.connection.rollback)
+		with writer.connection.cursor() as cursor:
+			cursor.execute('SET lock_timeout = \'3s\'')
+
+		writer.connection.commit()
+		with reader.connection.cursor() as cursor:
+			cursor.execute('SELECT count(*) FROM symbol_account_list_ranks')
+			cursor.fetchone()
+
+		# Act:
+		with self.assertRaises(PsycopgError) as error:
+			with writer.workflow_lock():
+				writer.create_tables()
+
+		# Assert: the lock conflict was reported.
+		self.assertEqual('55P03', error.exception.pgcode)
+		# The dedicated test server uses English PostgreSQL diagnostics.
+		self.assertEqual('could not obtain lock on relation "public.symbol_account_list_ranks"', error.exception.diag.message_primary)
+
+		# Arrange: release the reader before retrying.
+		reader.connection.rollback()
+
+		# Assert: the failed workflow released its lock.
+		with observer.workflow_lock():
+			pass
+
+		# Act: retry initialization.
+		with writer.workflow_lock():
+			writer.create_tables()
+
+		# Assert:
+		with writer.connection.cursor() as cursor:
+			self._assert_legacy_rank_page_index_absent(cursor)
 
 	def test_create_tables_creates_account_refresh_state_schema(self):
 		# Arrange:
@@ -2368,7 +2630,10 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('last_scanned_page', 'int4', 'YES', None),
 			('status', 'symbol_account_refresh_state_status', 'NO', "'healthy'::symbol_account_refresh_state_status"),
 			('last_error', 'text', 'YES', None),
-			('updated_at', 'timestamp', 'YES', 'CURRENT_TIMESTAMP')
+			('updated_at', 'timestamp', 'YES', 'CURRENT_TIMESTAMP'),
+			('previous_successful_run_id', 'varchar', 'YES', None),
+			('running_run_id', 'varchar', 'YES', None),
+			('is_retention_ready', 'bool', 'NO', 'false')
 		], cursor.fetchall())
 
 		cursor.execute(
@@ -2531,7 +2796,452 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act + Assert:
 		with self.assertRaises(PsycopgError):
-			database.upsert_account_refresh_state({'status': 'invalid'})
+			seed_account_refresh_state(database, {'status': 'invalid'})
+
+	def test_prune_account_refresh_generations_preserves_protected_runs_and_resumes_batches(self):
+		# Arrange: every run has a parent, child and rank, plus a rank-only interrupted run.
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		for index, run_id in enumerate(('published', 'previous', 'running', 'old', 'failed')):
+			address = bytes([index + 1]) * 24
+			cursor.execute('''
+				INSERT INTO symbol_account_refresh_accounts
+				(refresh_run_id, address, address_text, account_search_order, importance, snapshot_height, snapshot_at)
+				VALUES (%s, %s, %s, 0, 1, 1, CURRENT_TIMESTAMP)
+			''', (run_id, address, str(index)))
+			cursor.execute('''
+				INSERT INTO symbol_account_refresh_mosaics
+				(refresh_run_id, address, mosaic_id, amount, snapshot_height, snapshot_at)
+				VALUES (%s, %s, '1', 1, 1, CURRENT_TIMESTAMP)
+			''', (run_id, address))
+			cursor.execute('''
+				INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
+				VALUES (%s, 'ID', 0, %s)
+			''', (run_id, address))
+
+		cursor.execute('''
+			INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
+			VALUES ('rank-only', 'ID', 0, %s)
+		''', (bytes([9]) * 24,))
+		database.connection.commit()
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous',
+			'running_run_id': 'running', 'is_retention_ready': True
+		})
+
+		# Act: the first pass commits only two rows.
+		with database.workflow_lock():
+			database.prune_account_refresh_generations(batch_size=1, max_batches=2)
+
+		# Assert: the configured batch limit leaves work for another pass.
+		cursor.execute('SELECT COUNT(*) FROM symbol_account_list_ranks')
+		self.assertEqual((4,), cursor.fetchone())
+
+		# Act: resume cleanup.
+		with database.workflow_lock():
+			database.prune_account_refresh_generations(batch_size=1, max_batches=50)
+
+		# Assert: all three tables contain exactly the protected generations.
+		for table in ('symbol_account_list_ranks', 'symbol_account_refresh_mosaics', 'symbol_account_refresh_accounts'):
+			cursor.execute(f'SELECT refresh_run_id FROM {table} ORDER BY refresh_run_id')
+			self.assertEqual([('previous',), ('published',), ('running',)], cursor.fetchall())
+
+	def test_prune_account_refresh_generations_defers_legacy_rows_until_first_success(self):
+		# Arrange: a migrated database has an unknown old generation and a published ID.
+		database = self._create_database()
+		seed_account_refresh_state(database, {'last_successful_run_id': 'published'})
+		cursor = database.connection.cursor()
+		cursor.execute('''
+			INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
+			VALUES ('unknown', 'ID', 0, %s)
+		''', (bytes([9]) * 24,))
+		database.connection.commit()
+
+		# Act: cleanup runs before the first successful publication and after a failed refresh.
+		with database.workflow_lock():
+			database.prune_account_refresh_generations()
+
+		database.begin_account_refresh('failed', datetime.datetime(2026, 1, 1))
+		database.mark_account_refresh_failed('failed', 'failure')
+		with database.workflow_lock():
+			database.prune_account_refresh_generations()
+
+		# Assert: the unknown legacy generation remains protected.
+		cursor.execute('SELECT refresh_run_id FROM symbol_account_list_ranks')
+		self.assertEqual([('unknown',)], cursor.fetchall())
+
+		# Act: the first success records the former publication and enables cleanup atomically.
+		database.begin_account_refresh('new', datetime.datetime(2026, 1, 1))
+		database.finalize_account_refresh('new', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
+		with database.workflow_lock():
+			database.prune_account_refresh_generations()
+
+		# Assert:
+		state = database.get_account_refresh_state()
+		self.assertEqual(('new', 'published', None, True), (
+			state['last_successful_run_id'], state['previous_successful_run_id'], state['running_run_id'], state['is_retention_ready']))
+		cursor.execute('SELECT refresh_run_id FROM symbol_account_list_ranks')
+		self.assertEqual([], cursor.fetchall())
+
+	def test_create_tables_repeats_account_state_migration_and_preserves_publication(self):
+		# Arrange: reconstruct the pre-migration state table with an existing public ID.
+		database = self._create_database()
+		seed_account_refresh_state(database, {'last_successful_run_id': 'published'})
+		cursor = database.connection.cursor()
+		cursor.execute('''
+			ALTER TABLE symbol_account_refresh_state DROP COLUMN previous_successful_run_id,
+			DROP COLUMN running_run_id, DROP COLUMN is_retention_ready
+		''')
+		database.connection.commit()
+
+		# Act: initialization may run repeatedly after migration or restart.
+		database.create_tables()
+		database.create_tables()
+
+		# Assert:
+		state = database.get_account_refresh_state()
+		self.assertEqual(('published', None, None, False), (
+			state['last_successful_run_id'], state['previous_successful_run_id'], state['running_run_id'], state['is_retention_ready']))
+
+	def test_prune_account_refresh_generations_retries_after_child_delete_failure(self):
+		# Arrange: leave an account and mosaic after committing its rank deletion.
+		database = self._create_database()
+		address = bytes([1]) * 24
+		cursor = database.connection.cursor()
+		cursor.execute('''
+			INSERT INTO symbol_account_refresh_accounts
+			(refresh_run_id, address, address_text, account_search_order, importance, snapshot_height, snapshot_at)
+			VALUES ('old', %s, 'old', 0, 1, 1, CURRENT_TIMESTAMP)
+		''', (address,))
+		cursor.execute('''
+			INSERT INTO symbol_account_refresh_mosaics
+			(refresh_run_id, address, mosaic_id, amount, snapshot_height, snapshot_at)
+			VALUES ('old', %s, '1', 1, 1, CURRENT_TIMESTAMP)
+		''', (address,))
+		cursor.execute('''
+			INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address) VALUES ('old', 'ID', 0, %s)
+		''', (address,))
+		database.connection.commit()
+		seed_account_refresh_state(database, {'last_successful_run_id': 'published', 'is_retention_ready': True})
+		with database.workflow_lock():
+			database.prune_account_refresh_generations(batch_size=1, max_batches=1)
+
+		cursor.execute('''
+			CREATE FUNCTION reject_retention_delete() RETURNS trigger LANGUAGE plpgsql AS $$
+			BEGIN RAISE EXCEPTION 'injected retention failure'; END $$
+		''')
+
+		def cleanup_failure_trigger():
+			database.connection.rollback()
+			with database.connection.cursor() as cleanup_cursor:
+				cleanup_cursor.execute('DROP FUNCTION IF EXISTS reject_retention_delete() CASCADE')
+
+			database.connection.commit()
+
+		self.addCleanup(cleanup_failure_trigger)
+		cursor.execute('''
+			CREATE TRIGGER reject_retention_delete BEFORE DELETE ON symbol_account_refresh_mosaics
+			FOR EACH ROW EXECUTE FUNCTION reject_retention_delete()
+		''')
+		database.connection.commit()
+
+		# Act: the child deletion fails after the previous rank batch committed.
+		with database.workflow_lock():
+			with self.assertRaisesRegex(PsycopgError, 'injected retention failure'):
+				database.prune_account_refresh_generations(batch_size=1, max_batches=5)
+
+		# Assert: the committed rank deletion remains and the child deletion rolled back.
+		cursor.execute('SELECT COUNT(*) FROM symbol_account_list_ranks')
+		self.assertEqual((0,), cursor.fetchone())
+		cursor.execute('SELECT COUNT(*) FROM symbol_account_refresh_mosaics')
+		self.assertEqual((1,), cursor.fetchone())
+
+		# Arrange: remove the injected failure before retrying.
+		cursor.execute('DROP TRIGGER reject_retention_delete ON symbol_account_refresh_mosaics')
+		cursor.execute('DROP FUNCTION reject_retention_delete()')
+		database.connection.commit()
+
+		# Act: resume cleanup.
+		with database.workflow_lock():
+			database.prune_account_refresh_generations(batch_size=1, max_batches=5)
+
+		# Assert:
+		cursor.execute('SELECT COUNT(*) FROM symbol_account_refresh_mosaics')
+		self.assertEqual((0,), cursor.fetchone())
+		cursor.execute('SELECT COUNT(*) FROM symbol_account_refresh_accounts')
+		self.assertEqual((0,), cursor.fetchone())
+
+	def test_workflow_lock_rejects_reentry_on_same_connection(self):
+		# Arrange: hold the workflow lock on this connection.
+		database = self._create_database()
+		with database.workflow_lock():
+			# Act:
+			with self.assertRaises(RuntimeError) as context:
+				with database.workflow_lock():
+					self.fail('reentrant lock succeeded')
+
+			# Assert:
+			self.assertEqual('Symbol workflow is already running on this connection', str(context.exception))
+
+	def test_workflow_lock_rejects_another_session_while_held(self):
+		# Arrange: a separate session attempts to acquire the same lock.
+		database = self._create_database()
+		other = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		with database.workflow_lock():
+			# Act:
+			with self.assertRaises(RuntimeError) as context:
+				with other.workflow_lock():
+					self.fail('concurrent lock succeeded')
+
+			# Assert:
+			self.assertEqual('Another Symbol workflow is running', str(context.exception))
+
+	def test_workflow_lock_allows_next_session_to_replace_running_owner(self):
+		# Arrange: the former owner leaves its ID behind after releasing the lock.
+		database = self._create_database()
+		other = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		with database.workflow_lock():
+			database.begin_account_refresh('active', datetime.datetime(2026, 1, 1))
+
+		# Act: the next owner acquires the released lock and starts its own refresh.
+		with other.workflow_lock():
+			other.begin_account_refresh('replacement', datetime.datetime(2026, 1, 1))
+
+		# Assert:
+		self.assertEqual('replacement', database.get_account_refresh_state()['running_run_id'])
+
+	def test_mark_account_refresh_failed_ignores_different_owner(self):
+		# Arrange: one run owns the refresh and its publication state must remain unchanged.
+		database = self._create_database()
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous'
+		})
+		database.begin_account_refresh('active', datetime.datetime(2026, 1, 1))
+		before = database.get_account_refresh_state()
+
+		# Act: a different run tries to record its failure.
+		database.mark_account_refresh_failed('different', 'must not be recorded')
+
+		# Assert: the owner and every persisted state field remain unchanged.
+		self.assertEqual(before, database.get_account_refresh_state())
+
+	def test_workflow_lock_is_released_when_refresh_connection_dies(self):
+		# Arrange: acquire the real session lock and persist an owner before connection loss.
+		database = self._create_database()
+		other = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+		cursor = other.connection.cursor()
+		cursor.execute('SELECT pg_try_advisory_lock(%s, %s)', (0x53594D42, 0x41434354))
+		self.assertEqual((True,), cursor.fetchone())
+		other.connection.commit()
+		other.begin_account_refresh('abandoned', datetime.datetime(2026, 1, 1))
+		backend_pid = other.connection.get_backend_pid()
+
+		# Act: terminating the owner connection releases its session lock.
+		other.connection.close()
+		wait_for_backend_exit(database, backend_pid)
+		with database.workflow_lock():
+			database.begin_account_refresh('replacement', datetime.datetime(2026, 1, 1))
+
+		# Assert:
+		self.assertEqual('replacement', database.get_account_refresh_state()['running_run_id'])
+
+	def test_workflow_lock_reports_missing_lock_when_operation_succeeds(self):
+		# Arrange: acquire a real session lock and deliberately release it before the context exits.
+		database = self._create_database()
+
+		# Act: release the lock before the context exits.
+		with self.assertRaises(RuntimeError) as context:
+			with database.workflow_lock():
+				cursor = database.connection.cursor()
+				cursor.execute('SELECT pg_advisory_unlock(%s, %s)', (0x53594D42, 0x41434354))
+				self.assertEqual((True,), cursor.fetchone())
+				database.connection.commit()
+
+		# Assert: the failed release is reported and the local guard is reusable.
+		self.assertEqual('Symbol workflow lock was not held', str(context.exception))
+		with database.workflow_lock():
+			self.assertIsNotNone(database.connection)
+
+	def test_workflow_lock_releases_normally_inside_an_outer_except(self):
+		# Arrange: the caller handles an unrelated exception while the workflow body succeeds.
+		database = self._create_database()
+		other = self.exit_stack.enter_context(SymbolDatabase(self.db_config))
+
+		# Act: acquire and release the lock from within the outer handler.
+		try:
+			raise ValueError('handled outside')
+		except ValueError:
+			with database.workflow_lock():
+				pass
+
+		# Assert: both the session lock and local guard are available again.
+		with other.workflow_lock():
+			self.assertIsNotNone(other.connection)
+
+		with database.workflow_lock():
+			self.assertIsNotNone(database.connection)
+
+	def test_workflow_lock_propagates_release_failure_when_caller_is_in_an_outer_except(self):
+		# Arrange: an outer handled exception must not be mistaken for a workflow failure.
+		database = self._create_database()
+
+		# Act: the body succeeds after its lock is released, but cleanup detects the missing lock.
+		try:
+			raise ValueError('handled outside')
+		except ValueError:
+			with self.assertRaisesRegex(RuntimeError, 'Symbol workflow lock was not held'):
+				with database.workflow_lock():
+					cursor = database.connection.cursor()
+					cursor.execute('SELECT pg_advisory_unlock(%s, %s)', (0x53594D42, 0x41434354))
+					self.assertEqual((True,), cursor.fetchone())
+					database.connection.commit()
+
+		# Assert: cleanup failure propagates and the local guard was released.
+		with database.workflow_lock():
+			self.assertIsNotNone(database.connection)
+
+	def test_workflow_lock_preserves_primary_failure_when_lock_release_also_fails(self):
+		# Arrange: simulate a lost lock while preserving an independently identifiable primary error.
+		logger = Mock()
+		database = self._create_database(retention_logger=logger)
+		primary_error = ValueError('primary workflow failure')
+
+		# Act: release the real PostgreSQL lock early, then fail the operation.
+		with self.assertRaisesRegex(ValueError, 'primary workflow failure') as context:
+			with database.workflow_lock():
+				cursor = database.connection.cursor()
+				cursor.execute('SELECT pg_advisory_unlock(%s, %s)', (0x53594D42, 0x41434354))
+				self.assertEqual((True,), cursor.fetchone())
+				database.connection.commit()
+				raise primary_error
+
+		# Assert: the original failure survives and the secondary release error is observable.
+		self.assertIs(primary_error, context.exception)
+		logger.error.assert_called_once_with('Failed to release Symbol workflow lock: error_type=RuntimeError sqlstate=None')
+		with database.workflow_lock():
+			self.assertIsNotNone(database.connection)
+
+	def test_workflow_lock_preserves_base_exception_when_release_fails(self):
+		# Arrange: both cancellation and interruption must remain the primary failure.
+		for primary_error in (asyncio.CancelledError('cancelled'), KeyboardInterrupt('interrupted')):
+			with self.subTest(error=type(primary_error).__name__):
+				database = self._create_database(retention_logger=Mock())
+
+				# Act: lose the real session lock and then interrupt the protected operation.
+				with self.assertRaises(type(primary_error)) as context:
+					with database.workflow_lock():
+						cursor = database.connection.cursor()
+						cursor.execute('SELECT pg_advisory_unlock(%s, %s)', (0x53594D42, 0x41434354))
+						self.assertEqual((True,), cursor.fetchone())
+						database.connection.commit()
+						raise primary_error
+
+				# Assert: cleanup neither replaces the exception nor retains the guard.
+				self.assertIs(primary_error, context.exception)
+				with database.workflow_lock():
+					self.assertIsNotNone(database.connection)
+
+	def test_workflow_lock_keeps_primary_error_when_logging_release_failure_fails(self):
+		# Arrange: cause the real session lock to be missing on exit and make its logger fail.
+		logger = Mock()
+		logger.error.side_effect = RuntimeError('logging failed')
+		database = self._create_database(retention_logger=logger)
+		primary_error = ValueError('primary workflow failure')
+
+		# Act: trigger both the primary error and the secondary lock-release error.
+		with self.assertRaisesRegex(ValueError, 'primary workflow failure') as context:
+			with database.workflow_lock():
+				cursor = database.connection.cursor()
+				cursor.execute('SELECT pg_advisory_unlock(%s, %s)', (0x53594D42, 0x41434354))
+				self.assertEqual((True,), cursor.fetchone())
+				database.connection.commit()
+				raise primary_error
+
+		# Assert: the logger failure does not replace the original exception or retain the lock.
+		self.assertIs(primary_error, context.exception)
+		with database.workflow_lock():
+			self.assertIsNotNone(database.connection)
+
+	def test_finalize_account_refresh_rejects_a_different_running_owner(self):
+		# Arrange: another run owns the refresh and existing publication must remain untouched.
+		database = self._create_database()
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous', 'is_retention_ready': True
+		})
+		database.begin_account_refresh('owner', datetime.datetime(2026, 1, 1))
+		before = database.get_account_refresh_state()
+
+		# Act: a different run attempts to publish.
+		with self.assertRaisesRegex(RuntimeError, 'does not own the running ID'):
+			database.finalize_account_refresh('other', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
+
+		# Assert: the publication and owner are unchanged.
+		self.assertEqual(before, database.get_account_refresh_state())
+
+	def test_prune_account_refresh_generations_stops_at_deadline_and_can_resume(self):
+		# Arrange: a candidate exists when the pass reaches its time limit.
+		database = self._create_database(retention_time_source=lambda: 0, retention_time_budget_seconds=0)
+		seed_account_refresh_state(database, {'last_successful_run_id': 'published', 'is_retention_ready': True})
+		cursor = database.connection.cursor()
+		cursor.execute('''
+			INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
+			VALUES ('abandoned', 'ID', 0, %s)
+		''', (bytes([1]) * 24,))
+		database.connection.commit()
+
+		# Act: the injected retention clock has no remaining budget for a SQL statement.
+		with database.workflow_lock():
+			database.prune_account_refresh_generations()
+
+		# Assert: the candidate remains for another attempt.
+		cursor.execute('SELECT refresh_run_id FROM symbol_account_list_ranks')
+		self.assertEqual([('abandoned',)], cursor.fetchall())
+
+		database.connection.commit()
+
+		# Act: retry on a separate connection without recreating its tables.
+		with SymbolDatabase(self.db_config) as retry_database:
+			with retry_database.workflow_lock():
+				retry_database.prune_account_refresh_generations()
+
+			# Assert: the eligible row is gone before the retry connection closes.
+			cursor = retry_database.connection.cursor()
+			cursor.execute('SELECT refresh_run_id FROM symbol_account_list_ranks')
+			self.assertEqual([], cursor.fetchall())
+
+	def test_prune_account_refresh_generations_finds_run_after_large_protected_runs(self):
+		# Arrange: the first three run IDs each contain many ranks; the last run is removable.
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('''
+			INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
+			SELECT run_id, 'ID', n, decode(lpad(to_hex(n), 48, '0'), 'hex')
+			FROM unnest(ARRAY['a-published', 'b-previous', 'c-running']) run_id, generate_series(1, 10000) n
+		''')
+		cursor.execute('''
+			INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
+			VALUES ('z-abandoned', 'ID', 0, %s)
+		''', (bytes([1]) * 24,))
+		database.connection.commit()
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'a-published', 'previous_successful_run_id': 'b-previous',
+			'running_run_id': 'c-running', 'is_retention_ready': True
+		})
+		cursor.execute('ANALYZE symbol_account_list_ranks')
+		cursor.execute('''
+			EXPLAIN SELECT refresh_run_id FROM symbol_account_list_ranks
+			WHERE refresh_run_id > %s ORDER BY refresh_run_id LIMIT 1
+		''', ('b-previous',))
+		self.assertIn('Index', '\n'.join(row[0] for row in cursor.fetchall()))
+		database.connection.commit()
+
+		# Act: one small batch can skip the protected runs and delete the abandoned rank.
+		with database.workflow_lock():
+			database.prune_account_refresh_generations(batch_size=1, max_batches=1)
+
+		# Assert:
+		cursor.execute('SELECT refresh_run_id, COUNT(*) FROM symbol_account_list_ranks GROUP BY refresh_run_id ORDER BY refresh_run_id')
+		self.assertEqual([('a-published', 10000), ('b-previous', 10000), ('c-running', 10000)], cursor.fetchall())
 
 	def test_get_account_refresh_state_rolls_back_when_state_table_is_missing(self):
 		# Arrange:
@@ -2554,11 +3264,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('DROP TABLE symbol_account_refresh_state')
 		database.connection.commit()
 
-		# Act + Assert:
+		# Act:
 		with self.assertRaises(PsycopgError):
-			database.mark_account_refresh_failed('refresh failed')
+			database.mark_account_refresh_failed('run-1', 'refresh failed')
 
-		# The failed transaction must be cleared by the error handler.
+		# Assert: the failed transaction was cleared by the error handler.
 		self.assertIsNone(database.get_block_hash(1))
 
 	def test_get_recently_harvesting_addresses_rolls_back_before_failure_state_recording(self):
@@ -2571,7 +3281,9 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act:
 		with self.assertRaises(PsycopgError):
 			database.get_recently_harvesting_addresses(datetime.datetime(2026, 1, 1))
-		database.mark_account_refresh_failed('refresh failed')
+
+		database.begin_account_refresh('run-1', datetime.datetime(2026, 1, 1))
+		database.mark_account_refresh_failed('run-1', 'refresh failed')
 
 		# Assert:
 		self.assertEqual('unhealthy', database.get_account_refresh_state()['status'])
@@ -3523,20 +4235,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				'VALUES (2, \'initialized\')'
 			)
 
-	def test_can_upsert_account_refresh_state_without_overwriting_successful_run(self):
-		# Arrange:
+	def test_mark_account_refresh_failed_preserves_successful_run(self):
+		# Arrange: seed prior success, then let the public refresh workflow own the next run.
 		database = self._create_database()
-		database.upsert_account_refresh_state({
-			'status': 'healthy',
-			'last_successful_run_id': 'successful-run',
-			'last_completed_height': 100
+		seed_account_refresh_state(database, {
+			'status': 'healthy', 'last_successful_run_id': 'successful-run', 'last_completed_height': 100
 		})
 
-		# Act:
-		database.upsert_account_refresh_state({
-			'status': 'unhealthy',
-			'last_error': 'failed'
-		})
+		# Act: start a failing refresh and record its failure through the owner-checked API.
+		database.begin_account_refresh('failed-run', datetime.datetime(2026, 1, 1))
+		database.mark_account_refresh_failed('failed-run', 'failed')
 
 		# Assert:
 		result = database.get_account_refresh_state()
@@ -3817,6 +4525,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'refresh_run_id': 'run-1', 'account_search_order': 1,
 			'account_row': account_row2, 'mosaic_rows': mosaic_rows2, 'snapshot_height': 10, 'snapshot_at': snapshot_at
 		})
+		database.begin_account_refresh('run-1', datetime.datetime(2026, 1, 1))
 		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, snapshot_at)
 
 		# Assert:
@@ -3856,6 +4565,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'snapshot_at': datetime.datetime(2026, 1, 1)
 		})
 		# Act:
+		database.begin_account_refresh('run-1', datetime.datetime(2026, 1, 1))
 		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
 
 		# Assert:
@@ -3908,6 +4618,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self._seed_account_refresh_snapshot_for_ranks(database)
 
 		# Act:
+		database.begin_account_refresh('run-1', datetime.datetime(2026, 1, 1))
 		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
 
 		# Assert:
@@ -3923,6 +4634,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self._seed_account_refresh_snapshot_for_ranks(database)
 
 		# Act:
+		database.begin_account_refresh('run-1', datetime.datetime(2026, 1, 1))
 		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
 
 		# Assert:
@@ -3938,6 +4650,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self._seed_account_refresh_snapshot_for_ranks(database)
 
 		# Act:
+		database.begin_account_refresh('run-1', datetime.datetime(2026, 1, 1))
 		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
 
 		# Assert:
@@ -3963,7 +4676,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		})
 		account_row['importance_percentage'] = Decimal('0.456')
 		database.upsert_account_current_state(account_row, mosaic_rows)
-		database.upsert_account_refresh_state({
+		seed_account_refresh_state(database, {
 			'status': 'healthy',
 			'last_successful_run_id': 'previous-run',
 			'last_completed_height': 9
@@ -3978,7 +4691,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			(bytes.fromhex(ADDRESS1),))
 		database.connection.commit()
 
-		# Act + Assert:
+		# Act:
+		database.begin_account_refresh('run-1', datetime.datetime(2026, 1, 1))
 		with self.assertRaises(PsycopgError):
 			database.finalize_account_refresh(
 				'run-1', NATIVE_MOSAIC_ID, 'invalid-height', datetime.datetime(2026, 1, 1))
@@ -3997,14 +4711,17 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('SELECT importance_percentage FROM symbol_accounts WHERE address = %s', (bytes.fromhex(ADDRESS1),))
 		self.assertEqual((Decimal('0.456'),), cursor.fetchone())
 		state = database.get_account_refresh_state()
-		self.assertEqual('healthy', state['status'])
+		self.assertEqual('refreshing', state['status'])
 		self.assertEqual('previous-run', state['last_successful_run_id'])
 		self.assertEqual(9, state['last_completed_height'])
+		self.assertIsNone(state['previous_successful_run_id'])
+		self.assertEqual('run-1', state['running_run_id'])
+		self.assertFalse(state['is_retention_ready'])
 
 	def test_repair_rollback_marks_account_refresh_state_stale_when_completed_height_is_rollbacked(self):
 		# Arrange:
 		database = self._create_database()
-		database.upsert_account_refresh_state({
+		seed_account_refresh_state(database, {
 			'status': 'healthy',
 			'last_successful_run_id': 'run-1',
 			'last_completed_height': 10
@@ -4020,7 +4737,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 	def test_repair_rollback_leaves_account_refresh_state_when_completed_height_is_before_rollback(self):
 		# Arrange:
 		database = self._create_database()
-		database.upsert_account_refresh_state({
+		seed_account_refresh_state(database, {
 			'status': 'healthy',
 			'last_successful_run_id': 'run-1',
 			'last_completed_height': 9
@@ -4037,7 +4754,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Arrange:
 		database = self._create_database()
 		database.upsert_blocks([_create_block(9), _create_block(10)])
-		database.upsert_account_refresh_state({
+		seed_account_refresh_state(database, {
 			'status': 'healthy',
 			'last_successful_run_id': 'run-1',
 			'last_completed_height': 10
@@ -4109,6 +4826,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'account_row': account_row, 'mosaic_rows': mosaic_rows, 'snapshot_height': 10,
 			'snapshot_at': datetime.datetime(2026, 1, 1)
 		})
+		database.begin_account_refresh('run-1', datetime.datetime(2026, 1, 1))
 		database.finalize_account_refresh('run-1', NATIVE_MOSAIC_ID, 10, datetime.datetime(2026, 1, 1))
 
 		# Act:

@@ -1,11 +1,15 @@
 # pylint: disable=too-many-lines
+import threading
 import time
 from collections import namedtuple
 from contextlib import contextmanager
 
 from common.symbol.ReceiptTypes import RECEIPT_TYPE_LABELS
 from common.symbol.Transaction import MESSAGE_TYPE_LABELS
+from psycopg2 import Error as PsycopgError
+from psycopg2 import errorcodes, sql
 from psycopg2.extras import Json
+from zenlog import log
 
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
@@ -27,6 +31,11 @@ from puller.model.symbol.MosaicRestriction import (
 from puller.model.symbol.Namespace import NAMESPACE_ALIAS_TYPE_LABELS, NAMESPACE_REGISTRATION_TYPE_LABELS
 from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
 
+from .AccountRetentionConfiguration import (
+	ACCOUNT_RETENTION_TIME_BUDGET_SECONDS,
+	DEFAULT_ACCOUNT_RETENTION_CONFIGURATION,
+	AccountRetentionConfiguration
+)
 from .DatabaseConnection import DatabaseConnection
 
 RollbackRefreshEntries = namedtuple(
@@ -34,6 +43,11 @@ RollbackRefreshEntries = namedtuple(
 	['namespace_entries', 'mosaic_entries', 'metadata_entries', 'hash_lock_entries', 'secret_lock_entries',
 		'mosaic_restriction_entries'],
 	defaults=((), (), (), (), (), ()))
+
+
+class AccountRetentionTimeLimit(Exception):
+	"""Indicates that the current bounded retention pass reached its deadline."""
+
 
 SYNC_STATE_COLUMNS = [
 	'status',
@@ -70,8 +84,15 @@ SYMBOL_MOSAIC_RESTRICTION_ENTRY_TYPE_VALUES = tuple(entry_type.value for entry_t
 SYMBOL_LOCK_STATUS_VALUES = tuple(LOCK_STATUS_LABELS.values())
 SYMBOL_LOCK_HASH_ALGORITHM_VALUES = tuple(LOCK_HASH_ALGORITHM_LABELS.values())
 ACCOUNT_REFRESH_STATE_STATUS_VALUES = ('healthy', 'refreshing', 'stale', 'unhealthy')
+ACCOUNT_RETENTION_BATCH_SIZE = 5000
+ACCOUNT_RETENTION_MIN_BATCH_SIZE = 500
+ACCOUNT_RETENTION_MAX_BATCHES = 20
+SYMBOL_WORKFLOW_LOCK_KEY = (0x53594D42, 0x41434354)
 ACCOUNT_REFRESH_STATE_COLUMNS = [
 	'last_successful_run_id',
+	'previous_successful_run_id',
+	'running_run_id',
+	'is_retention_ready',
 	'last_started_at',
 	'last_completed_at',
 	'last_completed_height',
@@ -137,6 +158,9 @@ SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS = [
 	"status symbol_account_refresh_state_status NOT NULL DEFAULT 'healthy'",
 	'last_error text',
 	'updated_at timestamp DEFAULT CURRENT_TIMESTAMP',
+	'previous_successful_run_id varchar',
+	'running_run_id varchar',
+	'is_retention_ready boolean NOT NULL DEFAULT false',
 	'CONSTRAINT symbol_account_refresh_state_singleton CHECK (id = 1)'
 ]
 ACCOUNT_REFRESH_STATE_INDEXES = [
@@ -228,8 +252,6 @@ ACCOUNT_REFRESH_INDEXES = [
 	'ON symbol_account_refresh_mosaics(refresh_run_id, mosaic_id, amount DESC, address)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_mosaics_address '
 	'ON symbol_account_refresh_mosaics(refresh_run_id, address)',
-	'CREATE INDEX IF NOT EXISTS idx_symbol_account_list_ranks_page '
-	'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_list_ranks_address '
 	'ON symbol_account_list_ranks(refresh_run_id, rank_scope, address)'
 ]
@@ -501,12 +523,21 @@ def _create_table(cursor, name, definitions):
 class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-methods
 	"""Database containing Symbol blockchain data."""
 
-	def __init__(self, db_config, commit_observer=None, time_source=time.monotonic):
+	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+		self, db_config, commit_observer=None, time_source=time.monotonic, retention_config=None,
+		retention_time_source=None, retention_time_budget_seconds=ACCOUNT_RETENTION_TIME_BUDGET_SECONDS, retention_logger=log
+	):
 		"""Creates a Symbol database wrapper with an optional commit observation hook."""
 
 		super().__init__(db_config)
 		self._commit_observer = commit_observer
 		self._time_source = time_source
+		self.retention_config = (
+			DEFAULT_ACCOUNT_RETENTION_CONFIGURATION if retention_config is None else AccountRetentionConfiguration(*retention_config))
+		self._retention_time_source = time.monotonic if retention_time_source is None else retention_time_source
+		self._retention_time_budget_seconds = retention_time_budget_seconds
+		self._retention_logger = retention_logger
+		self._workflow_guard = threading.Lock()
 
 	def _commit(self):
 		started_at = self._read_commit_time()
@@ -536,6 +567,178 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			# Performance observation must never alter database commit semantics.
 			return
 
+	@staticmethod
+	def _fetch_account_rank_index_details(cursor, schema_name, index_name):
+		cursor.execute(
+			'''
+			SELECT
+				table_class.relname,
+				access_method.amname,
+				index_data.indisunique,
+				index_data.indisprimary,
+				index_data.indisvalid,
+				index_data.indisready,
+				index_data.indislive,
+				index_data.indnkeyatts,
+				index_data.indnatts,
+				ARRAY(
+					SELECT option_data.option_value
+					FROM unnest(index_data.indoption::smallint[]) WITH ORDINALITY AS option_data(option_value, position)
+					ORDER BY option_data.position
+				) = ARRAY[0, 0, 0]::smallint[],
+				ARRAY(
+					SELECT collation_data.collation_oid
+					FROM unnest(index_data.indcollation::oid[]) WITH ORDINALITY AS collation_data(collation_oid, position)
+					ORDER BY collation_data.position
+				) = ARRAY(
+					SELECT column_data.attcollation
+					FROM unnest(index_data.indkey::smallint[]) WITH ORDINALITY AS indexed_column(attnum, position)
+					JOIN pg_attribute AS column_data
+						ON column_data.attrelid = index_data.indrelid AND column_data.attnum = indexed_column.attnum
+					WHERE indexed_column.position <= index_data.indnkeyatts
+					ORDER BY indexed_column.position
+				),
+				ARRAY(
+					SELECT operator_data.operator_class_oid
+					FROM unnest(index_data.indclass::oid[]) WITH ORDINALITY AS operator_data(operator_class_oid, position)
+					ORDER BY operator_data.position
+				) = ARRAY(
+					SELECT operator_class.oid
+					FROM (VALUES ('text_ops', 1), ('text_ops', 2), ('int8_ops', 3)) AS expected_class(name, position)
+					JOIN pg_opclass AS operator_class
+						ON operator_class.opcmethod = access_method.oid AND operator_class.opcname::text = expected_class.name
+					JOIN pg_namespace AS operator_class_namespace
+						ON operator_class_namespace.oid = operator_class.opcnamespace AND operator_class_namespace.nspname = 'pg_catalog'
+					ORDER BY expected_class.position
+				),
+				pg_get_expr(index_data.indexprs, index_data.indrelid),
+				pg_get_expr(index_data.indpred, index_data.indrelid),
+				ARRAY(
+					SELECT pg_get_indexdef(index_data.indexrelid, key_number, true)
+					FROM generate_series(1, index_data.indnkeyatts) AS key_numbers(key_number)
+					ORDER BY key_number
+				),
+				EXISTS (
+					SELECT 1 FROM pg_constraint AS constraint_data
+					WHERE constraint_data.conindid = index_data.indexrelid
+				)
+			FROM pg_class AS index_class
+			JOIN pg_namespace AS index_namespace ON index_namespace.oid = index_class.relnamespace
+			JOIN pg_index AS index_data ON index_data.indexrelid = index_class.oid
+			JOIN pg_class AS table_class ON table_class.oid = index_data.indrelid
+			JOIN pg_am AS access_method ON access_method.oid = index_class.relam
+			WHERE index_namespace.nspname = %s AND index_class.relname = %s
+			''',
+			(schema_name, index_name))
+		return cursor.fetchone()
+
+	@staticmethod
+	def _is_expected_account_rank_primary_key(cursor, schema_name):
+		cursor.execute(
+			'''
+			SELECT
+				constraint_data.conname,
+				index_data.indisvalid,
+				index_data.indisready,
+				index_data.indislive,
+				index_data.indisunique,
+				index_data.indisprimary,
+				index_data.indnkeyatts,
+				index_data.indnatts,
+				ARRAY(
+					SELECT option_data.option_value
+					FROM unnest(index_data.indoption::smallint[]) WITH ORDINALITY AS option_data(option_value, position)
+					ORDER BY option_data.position
+				) = ARRAY[0, 0, 0]::smallint[],
+				ARRAY(
+					SELECT collation_data.collation_oid
+					FROM unnest(index_data.indcollation::oid[]) WITH ORDINALITY AS collation_data(collation_oid, position)
+					ORDER BY collation_data.position
+				) = ARRAY(
+					SELECT column_data.attcollation
+					FROM unnest(index_data.indkey::smallint[]) WITH ORDINALITY AS indexed_column(attnum, position)
+					JOIN pg_attribute AS column_data
+						ON column_data.attrelid = index_data.indrelid AND column_data.attnum = indexed_column.attnum
+					WHERE indexed_column.position <= index_data.indnkeyatts
+					ORDER BY indexed_column.position
+				),
+				ARRAY(
+					SELECT operator_data.operator_class_oid
+					FROM unnest(index_data.indclass::oid[]) WITH ORDINALITY AS operator_data(operator_class_oid, position)
+					ORDER BY operator_data.position
+				) = ARRAY(
+					SELECT operator_class.oid
+					FROM (VALUES ('text_ops', 1), ('text_ops', 2), ('int8_ops', 3)) AS expected_class(name, position)
+					JOIN pg_opclass AS operator_class
+						ON operator_class.opcmethod = access_method.oid AND operator_class.opcname::text = expected_class.name
+					JOIN pg_namespace AS operator_class_namespace
+						ON operator_class_namespace.oid = operator_class.opcnamespace AND operator_class_namespace.nspname = 'pg_catalog'
+					ORDER BY expected_class.position
+				),
+				access_method.amname,
+				pg_get_expr(index_data.indexprs, index_data.indrelid),
+				pg_get_expr(index_data.indpred, index_data.indrelid),
+				ARRAY(
+					SELECT pg_get_indexdef(index_data.indexrelid, key_number, true)
+					FROM generate_series(1, index_data.indnkeyatts) AS key_numbers(key_number)
+					ORDER BY key_number
+				)
+			FROM pg_constraint AS constraint_data
+			JOIN pg_class AS table_class ON table_class.oid = constraint_data.conrelid
+			JOIN pg_namespace AS table_namespace ON table_namespace.oid = table_class.relnamespace
+			JOIN pg_index AS index_data ON index_data.indexrelid = constraint_data.conindid
+			JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid
+			JOIN pg_am AS access_method ON access_method.oid = index_class.relam
+			WHERE table_namespace.nspname = %s
+				AND table_class.relname = 'symbol_account_list_ranks'
+				AND constraint_data.contype = 'p'
+			''',
+			(schema_name,))
+		primary_key = cursor.fetchone()
+		return primary_key == (
+			'symbol_account_list_ranks_pkey', True, True, True, True, True, 3, 3, True, True, True, 'btree', None, None,
+			['refresh_run_id', 'rank_scope', 'rank'])
+
+	def _drop_legacy_account_rank_page_index(self, cursor):
+		cursor.execute('SELECT current_schema()')
+		schema_name = cursor.fetchone()[0]
+		cursor.execute(
+			'''
+			SELECT 1
+			FROM pg_class AS index_class
+			JOIN pg_namespace AS index_namespace ON index_namespace.oid = index_class.relnamespace
+			WHERE index_namespace.nspname = %s AND index_class.relname = %s
+			''',
+			(schema_name, 'idx_symbol_account_list_ranks_page'))
+		if not cursor.fetchone():
+			return
+
+		# Fail without waiting if the table lock cannot be acquired. Once acquired,
+		# it can block reads and writes until commit or rollback; recheck the catalog under the lock.
+		cursor.execute(
+			sql.SQL('LOCK TABLE {}.{} IN ACCESS EXCLUSIVE MODE NOWAIT').format(
+				sql.Identifier(schema_name), sql.Identifier('symbol_account_list_ranks')))
+		if not self._is_expected_account_rank_primary_key(cursor, schema_name):
+			self.connection.rollback()
+			raise RuntimeError(
+				'Cannot remove idx_symbol_account_list_ranks_page: '
+				'symbol_account_list_ranks_pkey is missing or does not match the expected valid primary key')
+
+		index_details = self._fetch_account_rank_index_details(
+			cursor, schema_name, 'idx_symbol_account_list_ranks_page')
+		is_expected_page_index = index_details == (
+			'symbol_account_list_ranks', 'btree', False, False, True, True, True, 3, 3, True, True, True, None, None,
+			['refresh_run_id', 'rank_scope', 'rank'], False)
+		if not is_expected_page_index:
+			self.connection.rollback()
+			raise RuntimeError(
+				'Cannot remove idx_symbol_account_list_ranks_page: '
+				'catalog definition does not match the expected unowned rank paging index')
+
+		cursor.execute(
+			sql.SQL('DROP INDEX {}.{}').format(
+				sql.Identifier(schema_name), sql.Identifier('idx_symbol_account_list_ranks_page')))
+
 	def create_tables(self):  # pylint: disable=too-many-statements
 		"""Creates Symbol block synchronization tables."""
 
@@ -557,11 +760,24 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_enum_type(cursor, 'symbol_mosaic_restriction_entry_type', SYMBOL_MOSAIC_RESTRICTION_ENTRY_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_lock_status', SYMBOL_LOCK_STATUS_VALUES)
 		_create_enum_type(cursor, 'symbol_lock_hash_algorithm', SYMBOL_LOCK_HASH_ALGORITHM_VALUES)
-		# The Symbol schema is greenfield in this phase. Existing databases are recreated
-		# by the deployment lifecycle; CREATE TABLE is not a migration mechanism here.
+		# Account retention columns are migrated below; other schema changes retain
+		# the existing greenfield deployment lifecycle.
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_refresh_state', SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS)
+		cursor.execute('''
+			SELECT column_name FROM information_schema.columns
+			WHERE table_schema = current_schema() AND table_name = 'symbol_account_refresh_state'
+				AND column_name IN ('previous_successful_run_id', 'running_run_id', 'is_retention_ready')
+		''')
+		if len(cursor.fetchall()) != 3:
+			cursor.execute('''
+				ALTER TABLE symbol_account_refresh_state
+				ADD COLUMN IF NOT EXISTS previous_successful_run_id varchar,
+				ADD COLUMN IF NOT EXISTS running_run_id varchar,
+				ADD COLUMN IF NOT EXISTS is_retention_ready boolean NOT NULL DEFAULT false
+			''')
+
 		_create_table(cursor, 'symbol_accounts', SYMBOL_ACCOUNT_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_mosaics', SYMBOL_ACCOUNT_MOSAIC_DEFINITIONS)
 		_create_table(cursor, 'symbol_multisig', SYMBOL_MULTISIG_DEFINITIONS)
@@ -644,6 +860,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transaction_addresses_height ON symbol_transaction_addresses(height)')
 		for index_sql in SYMBOL_RECEIPT_INDEXES:
 			cursor.execute(index_sql)
+		self._drop_legacy_account_rank_page_index(cursor)
 		self._commit()
 
 	def check_connection(self):
@@ -763,20 +980,232 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			self.connection.rollback()
 			raise
 
-	def upsert_account_refresh_state(self, refresh_state):
-		"""Upserts supplied fields on the singleton Symbol account refresh state."""
+	@contextmanager
+	def workflow_lock(self):
+		"""Excludes Symbol refresh and synchronization across database sessions."""
 
-		with self._database_transaction() as cursor:
-			self._execute_upsert_account_refresh_state(cursor, refresh_state)
+		if not self._workflow_guard.acquire(blocking=False):
+			raise RuntimeError('Symbol workflow is already running on this connection')
 
-	def mark_account_refresh_failed(self, last_error):
-		"""Records a failed account refresh."""
+		is_lock_acquired = False
+		has_primary_error = False
+		try:
+			with self._database_transaction() as cursor:
+				cursor.execute('SELECT pg_try_advisory_lock(%s, %s)', SYMBOL_WORKFLOW_LOCK_KEY)
+				is_lock_acquired = cursor.fetchone()[0]
+
+			if not is_lock_acquired:
+				raise RuntimeError('Another Symbol workflow is running')
+
+			yield
+		except BaseException:  # pylint: disable=broad-exception-caught
+			has_primary_error = True
+			raise
+		finally:
+			try:
+				if is_lock_acquired:
+					# A caller error may leave its transaction aborted; release the session lock afterward.
+					try:
+						self.connection.rollback()
+						with self._database_transaction() as cursor:
+							cursor.execute('SELECT pg_advisory_unlock(%s, %s)', SYMBOL_WORKFLOW_LOCK_KEY)
+							if not cursor.fetchone()[0]:
+								raise RuntimeError('Symbol workflow lock was not held')
+					except BaseException as error:  # pylint: disable=broad-exception-caught
+						if not has_primary_error:
+							raise
+
+						sqlstate = error.pgcode if isinstance(error, PsycopgError) else None  # pylint: disable=no-member
+						try:
+							self._retention_logger.error(
+								f'Failed to release Symbol workflow lock: error_type={type(error).__name__} sqlstate={sqlstate}')
+						except BaseException:  # pylint: disable=broad-exception-caught
+							# A logging failure must not replace the primary workflow exception.
+							pass
+			finally:
+				self._workflow_guard.release()
+
+	def begin_account_refresh(self, refresh_run_id, started_at):
+		"""Records the new owner after workflow exclusion has been acquired."""
 
 		with self._database_transaction() as cursor:
 			self._execute_upsert_account_refresh_state(cursor, {
-				'status': 'unhealthy',
-				'last_error': last_error
+				'running_run_id': refresh_run_id,
+				'status': 'refreshing',
+				'last_started_at': started_at,
+				'last_scanned_page': None,
+				'last_error': None
 			})
+
+	def recover_abandoned_account_refresh(self):
+		"""Clears a former refresh owner after acquiring the shared workflow lock."""
+
+		with self._database_transaction() as cursor:
+			cursor.execute('''
+				UPDATE symbol_account_refresh_state
+				SET running_run_id = NULL, status = 'unhealthy', last_error = 'Account refresh was interrupted',
+					updated_at = CURRENT_TIMESTAMP
+				WHERE id = 1 AND running_run_id IS NOT NULL
+			''')
+
+	def mark_account_refresh_failed(self, refresh_run_id, last_error):
+		"""Records a failed account refresh."""
+
+		with self._database_transaction() as cursor:
+			cursor.execute('''
+				UPDATE symbol_account_refresh_state
+				SET status = 'unhealthy', last_error = %s, running_run_id = NULL, updated_at = CURRENT_TIMESTAMP
+				WHERE id = 1 AND running_run_id = %s
+			''', (last_error, refresh_run_id))
+
+	def prune_account_refresh_generations(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+		self, batch_size=ACCOUNT_RETENTION_BATCH_SIZE, max_batches=ACCOUNT_RETENTION_MAX_BATCHES
+	):
+		"""Deletes bounded committed batches while the caller owns the workflow lock."""
+
+		tables = ('symbol_account_list_ranks', 'symbol_account_refresh_mosaics', 'symbol_account_refresh_accounts')
+		deadline = self._retention_time_source() + self._retention_time_budget_seconds
+		minimum_batch_size = ACCOUNT_RETENTION_MIN_BATCH_SIZE
+		delete_timeout_count = 0
+		for attempt in range(1, max_batches + 1):
+			run_id = None
+			table = None
+			is_delete = False
+			try:
+				with self._database_transaction() as cursor:
+					self._execute_retention_statement(cursor, deadline, '''
+						SELECT last_successful_run_id, previous_successful_run_id, running_run_id, is_retention_ready
+						FROM symbol_account_refresh_state WHERE id = 1 FOR UPDATE
+					''')
+					state = cursor.fetchone()
+					if not state or not state[3]:
+						self._retention_logger.info(
+							f'Symbol account snapshot retention stopped reason=migration_pending attempt={attempt} batch_size={batch_size}')
+						return
+
+					protected = [run_id for run_id in state[:3] if run_id is not None]
+					run_id = self._find_unprotected_account_generation(cursor, tables, protected, deadline)
+					if run_id is None:
+						self._retention_logger.info(
+							f'Symbol account snapshot retention stopped reason=complete attempt={attempt} batch_size={batch_size}')
+						return
+
+					self._retention_logger.info(f'Symbol account snapshot retention candidate run_id={run_id}')
+					counts = dict.fromkeys(tables, 0)
+					for table in tables:
+						# Table names are the fixed internal allowlist above.
+						self._retention_logger.info(
+							f'Symbol account snapshot retention attempt={attempt} run_id={run_id} table={table} batch_size={batch_size}')
+						self._set_retention_delete_timeouts(cursor, deadline, batch_size)
+						is_delete = True
+						cursor.execute(f'''
+							DELETE FROM {table} WHERE ctid IN (
+								SELECT ctid FROM {table} WHERE refresh_run_id = %s LIMIT %s
+							)
+						''', (run_id, batch_size))
+						is_delete = False
+						counts[table] = cursor.rowcount
+						if cursor.rowcount:
+							break
+
+					if self._retention_time_source() >= deadline:
+						raise AccountRetentionTimeLimit()
+
+				self._retention_logger.info(
+					f'Symbol account snapshot retention attempt={attempt} run_id={run_id} batch_size={batch_size} deleted={counts}')
+			except AccountRetentionTimeLimit:
+				self._retention_logger.info(
+					f'Symbol account snapshot retention stopped reason=deadline attempt={attempt} '
+					f'run_id={run_id} table={table} batch_size={batch_size}')
+				return
+			except PsycopgError as error:
+				if error.pgcode == errorcodes.LOCK_NOT_AVAILABLE and error.diag.message_primary == 'canceling statement due to lock timeout':
+					self._retention_logger.info(
+						f'Symbol account snapshot retention stopped reason=lock_timeout attempt={attempt} '
+						f'run_id={run_id} table={table} batch_size={batch_size}')
+					return
+
+				# SQLSTATE 57014 also covers external cancellation. Unknown or translated diagnostics fail closed.
+				if error.pgcode != errorcodes.QUERY_CANCELED or error.diag.message_primary != 'canceling statement due to statement timeout':
+					self._retention_logger.info(
+						f'Symbol account snapshot retention reason=database_error '
+						f'error_type={type(error).__name__} sqlstate={error.pgcode}')
+					raise
+
+				if not is_delete or batch_size <= minimum_batch_size:
+					stop_reason = 'non_delete' if not is_delete else 'minimum_batch'
+					self._retention_logger.info(
+						f'Symbol account snapshot retention stopped reason=statement_timeout attempt={attempt} '
+						f'run_id={run_id} table={table} batch_size={batch_size} stop_reason={stop_reason}')
+					return
+
+				delete_timeout_count += 1
+
+				if attempt == max_batches or int((deadline - self._retention_time_source()) * 1000) <= self.retention_config.lock_timeout_ms:
+					stop_reason = 'attempt_limit' if attempt == max_batches else 'deadline'
+					self._retention_logger.info(
+						f'Symbol account snapshot retention reason=statement_timeout attempt={attempt} '
+						f'run_id={run_id} table={table} batch_size={batch_size} stop_reason={stop_reason}')
+					return
+
+				next_batch_size = (
+					max(minimum_batch_size, batch_size // 2) if delete_timeout_count == 1 else minimum_batch_size)
+				self._retention_logger.info(
+					f'Symbol account snapshot retention reason=statement_timeout attempt={attempt} '
+					f'run_id={run_id} table={table} batch_size={batch_size} next_batch_size={next_batch_size}')
+				batch_size = next_batch_size
+
+		self._retention_logger.info(
+			f'Symbol account snapshot retention stopped reason=attempt_limit attempts={max_batches} batch_size={batch_size}')
+
+	def _execute_retention_statement(self, cursor, deadline, statement, parameters=()):
+		self._set_retention_timeouts(cursor, deadline)
+		cursor.execute(statement, parameters)
+
+	def _set_retention_timeouts(self, cursor, deadline):
+		remaining_ms = int((deadline - self._retention_time_source()) * 1000)
+		if remaining_ms <= self.retention_config.lock_timeout_ms:
+			raise AccountRetentionTimeLimit()
+
+		timeout_ms = min(remaining_ms, self.retention_config.statement_timeout_ms)
+		cursor.execute(
+			"SELECT set_config('statement_timeout', %s, true), set_config('lock_timeout', %s, true)",
+			(f'{timeout_ms}ms', f'{self.retention_config.lock_timeout_ms}ms'))
+
+	def _set_retention_delete_timeouts(self, cursor, deadline, batch_size):
+		remaining_ms = int((deadline - self._retention_time_source()) * 1000)
+		if remaining_ms <= self.retention_config.lock_timeout_ms:
+			raise AccountRetentionTimeLimit()
+
+		timeout_ms = min(self.retention_config.statement_timeout_ms, remaining_ms)
+		if batch_size > ACCOUNT_RETENTION_MIN_BATCH_SIZE:
+			timeout_ms = min(
+				self.retention_config.statement_timeout_ms,
+				max(self.retention_config.lock_timeout_ms + 1, remaining_ms // 3))
+
+		cursor.execute(
+			"SELECT set_config('statement_timeout', %s, true), set_config('lock_timeout', %s, true)",
+			(f'{timeout_ms}ms', f'{self.retention_config.lock_timeout_ms}ms'))
+
+	def _find_unprotected_account_generation(self, cursor, tables, protected, deadline):
+		for table in tables:
+			# Each table's primary key begins with refresh_run_id. Skip entire protected
+			# runs with index seeks instead of scanning every row in those runs.
+			self._execute_retention_statement(
+				cursor, deadline,
+				f'SELECT refresh_run_id FROM {table} ORDER BY refresh_run_id LIMIT 1')
+			row = cursor.fetchone()
+			while row and row[0] in protected:
+				self._execute_retention_statement(
+					cursor, deadline,
+					f'SELECT refresh_run_id FROM {table} WHERE refresh_run_id > %s ORDER BY refresh_run_id LIMIT 1',
+					(row[0],))
+				row = cursor.fetchone()
+
+			if row:
+				return row[0]
+
+		return None
 
 	@staticmethod
 	def _execute_upsert_account_refresh_state(cursor, refresh_state):
@@ -1689,6 +2118,11 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		"""Publishes one refresh run: importance rates, list ranks, current-state importance, success marker."""
 
 		with self._database_transaction() as cursor:
+			cursor.execute('SELECT running_run_id FROM symbol_account_refresh_state WHERE id = 1 FOR UPDATE')
+			owner = cursor.fetchone()
+			if not owner or owner[0] != refresh_run_id:
+				raise RuntimeError('Symbol account refresh does not own the running ID')
+
 			cursor.execute(
 				'''
 				SELECT COALESCE(SUM(importance), 0)
@@ -1782,13 +2216,14 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 					AND snapshot.refresh_run_id = %s
 				''',
 				(refresh_run_id,))
-			self._execute_upsert_account_refresh_state(cursor, {
-				'status': 'healthy',
-				'last_successful_run_id': refresh_run_id,
-				'last_completed_at': completed_at,
-				'last_completed_height': completed_height,
-				'last_error': None
-			})
+			cursor.execute('''
+				UPDATE symbol_account_refresh_state
+				SET previous_successful_run_id = last_successful_run_id,
+					last_successful_run_id = %s, running_run_id = NULL, is_retention_ready = true,
+					last_completed_at = %s, last_completed_height = %s, status = 'healthy',
+					last_error = NULL, updated_at = CURRENT_TIMESTAMP
+				WHERE id = 1 AND running_run_id = %s
+			''', (refresh_run_id, completed_at, completed_height, refresh_run_id))
 
 	def get_block_hash(self, height):
 		"""Gets a block hash by height."""
