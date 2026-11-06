@@ -1,6 +1,6 @@
 import { TouchableNative } from '@/app/components';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
-import { Sizes } from '@/app/styles';
+import { Shadows, Sizes } from '@/app/styles';
 import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 import ReorderableList, { reorderItems, useReorderableDrag } from 'react-native-reorderable-list';
@@ -87,8 +87,9 @@ const styles = StyleSheet.create({
 		padding: Sizes.Semantic.layoutPadding.m
 	},
 	itemContainer: {
-		borderRadius: Sizes.Semantic.borderRadius.m,
+		borderRadius: Sizes.Components.accountCard.borderRadius,
 		overflow: 'hidden',
-		marginBottom: Sizes.Semantic.layoutSpacing.s
+		marginBottom: Sizes.Semantic.layoutSpacing.s,
+		boxShadow: Shadows.Components.accountCard
 	}
 });

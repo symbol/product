@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
 		height: Sizes.Semantic.controlHeight.m,
 		justifyContent: 'center',
 		alignItems: 'center',
-		borderRadius: Sizes.Semantic.borderRadius.s,
+		borderRadius: Sizes.Components.button.borderRadius,
 		borderWidth: Sizes.Semantic.borderWidth.m,
 		borderStyle: 'solid'
 	},

@@ -124,6 +124,6 @@ const styles = StyleSheet.create({
 	},
 	availableBalanceTextError: {
 		...Typography.Semantic.link.s,
-		color: Colors.Semantic.role.danger.default
+		color: Colors.Components.controlErrorMessage.text
 	}
 });
