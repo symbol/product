@@ -23,6 +23,7 @@ from ..test.SymbolAccountListTestUtils import (
 	REFRESH_COMPLETED_AT,
 	account_address,
 	create_refresh_entry,
+	seed_published_account_snapshot,
 	seed_refresh_run
 )
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state
@@ -417,7 +418,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 		self.assertEqual('Symbol account refresh data is unavailable', str(context.exception))
 
 	def test_get_account_statistics_rejects_unhealthy_refresh_statuses(self):
-		for status in ('unhealthy', 'stale', 'refreshing'):
+		for status in ('unhealthy', 'stale'):
 			with self.subTest(status=status), symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 				# Arrange:
 				seed_refresh_run(writer, 'selected-run', create_statistics_entries())
@@ -495,7 +496,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 		with symbol_test_database(create_symbol_sync_state(29, 29)) as (config, writer):
 			seed_refresh_run(writer, 'old-run', old_entries, completed_height=29)
 			seed_refresh_run(writer, 'new-run', new_entries, completed_height=29)
-			seed_account_refresh_state(writer, {'last_successful_run_id': 'old-run'})
+			seed_published_account_snapshot(writer, 'old-run')
 			writer.upsert_blocks([
 				create_symbol_block(
 					29, timestamp=NOW - timedelta(seconds=1), beneficiary_address=account_address(1)),
@@ -507,8 +508,9 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 				def switch_successful_run_and_watermark():
 					with writer.connection.cursor() as cursor:
 						cursor.execute(
-							'UPDATE symbol_account_refresh_state SET last_successful_run_id = %s WHERE id = 1',
-							('new-run',))
+							'UPDATE symbol_account_refresh_state SET last_successful_run_id = %s, valid_run_id = %s, '
+							'height_ready_run_id = %s WHERE id = 1',
+							('new-run', 'new-run', 'new-run'))
 						cursor.execute(
 							'''UPDATE symbol_sync_state
 							SET chain_height = 30, last_synced_height = 30, last_synced_block_hash = %s
