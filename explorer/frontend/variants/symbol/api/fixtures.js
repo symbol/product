@@ -134,13 +134,6 @@ export const stubAccountStats = {
 	harvestingAccountsChart: [[20.62, 'Harvesting'], [79.38, 'Not harvesting']]
 };
 
-export const stubBlockStats = {
-	blockTimeChart: stubBlocks.map((block, index) => [block.height, 20 + (index * 5)]).reverse(),
-	blockFeeChart: stubBlocks.map(block => [block.height, block.totalFee]).reverse(),
-	blockDifficultyChart: stubBlocks.map(block => [block.height, block.difficulty]).reverse(),
-	blockTime: 30, blockFee: 0.094, blockDifficulty: '18.46'
-};
-
 export const stubTransactionStats = { averagePerBlock: 2, total: 10667593, last30Day: 17457, last24Hours: 630 };
 
 export const stubMarketData = { price: 0.031, priceChange: 1.74, volume: 49221365.72, circulatingSupply: 7842928625, marketCap: 243130787.3, treasury: 0 };
