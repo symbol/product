@@ -1,9 +1,11 @@
 import { Icon, StyledText } from '@/app/components';
-import { MessageType } from '@/app/constants';
+import { MessageKind } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+
+/** @typedef {import('@/app/types/Transaction').MessageKind} MessageKind */
 
 const ICON_SIZE = 'xs';
 
@@ -17,7 +19,7 @@ const iconMap = {
  * for encrypted or raw message types and displaying human-readable text when available.
  * @param {object} props - Component props.
  * @param {object} props.message - Message object containing type and content information.
- * @param {number} props.message.type - The type of message. 0 - plain text, 1 - encrypted, rest - raw data.
+ * @param {MessageKind} props.message.kind - The kind of message: plain text, encrypted or raw data.
  * @param {string} [props.message.text] - Optional human-readable text. Content of the message.
  * @param {string} props.message.payload - Raw payload data.
  * @returns {React.ReactNode} MessageView component.
@@ -26,10 +28,10 @@ export const MessageView = ({ message }) => {
 	let iconName;
 	let label;
 
-	if (message.type === MessageType.ENCRYPTED_TEXT) {
+	if (message.kind === MessageKind.ENCRYPTED) {
 		iconName = iconMap.encrypted;
 		label = $t('component_messageView_label_encrypted');
-	} else if (message.type !== MessageType.PLAIN_TEXT) {
+	} else if (message.kind === MessageKind.RAW) {
 		iconName = iconMap.raw;
 		label = $t('component_messageView_label_rawData');
 	}
