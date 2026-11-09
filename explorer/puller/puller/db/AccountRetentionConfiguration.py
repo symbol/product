@@ -18,10 +18,12 @@ def _positive_milliseconds(value, name):
 
 	if isinstance(value, str):
 		value = value.lstrip('0')
-		if not value or len(value) > 10:
-			raise ValueError(error)
 
-	parsed = int(value)
+	try:
+		parsed = int(value)
+	except ValueError as exception:
+		raise ValueError(error) from exception
+
 	if not 1 <= parsed <= POSTGRES_TIMEOUT_MAX_MS:
 		raise ValueError(error)
 
