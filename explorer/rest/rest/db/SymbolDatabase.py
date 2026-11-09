@@ -85,6 +85,12 @@ SYNC_STATE_COLUMNS = [
 ]
 TRANSACTION_STATISTICS_WINDOW = 240
 TransactionStatisticsHead = namedtuple('TransactionStatisticsHead', ['height', 'timestamp', 'block_hash', 'published_hash', 'updated_at'])
+MetadataQuery = namedtuple('MetadataQuery', ['kind', 'target', 'metadata_type', 'limit', 'offset'])
+METADATA_PARENT_QUERIES = {
+	'account': ('symbol_accounts', 'address', 'last_seen_height'),
+	'mosaic': ('symbol_mosaics', 'mosaic_id', 'updated_at_height, start_height'),
+	'namespace': ('symbol_namespaces', 'namespace_id', 'updated_at_height, start_height')
+}
 ReceiptQuery = namedtuple(
 	'ReceiptQuery',
 	['limit', 'offset', 'height', 'receipt_group', 'receipt_type', 'included_receipt_types', 'target_address', 'sender_address'],
@@ -1039,6 +1045,37 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 				mosaic_id, amount, role, position, divisibility, alias_names))
 
 		return mosaics_by_transaction
+
+	def try_get_related_metadata(self, query):
+		"""Reads sync state, exact parent and metadata from one snapshot."""
+
+		table, column, heights = METADATA_PARENT_QUERIES[query.kind]
+		with self._read_snapshot() as cursor:
+			sync_state = self._fetch_sync_state(cursor)
+			readable_height = self._validate_namespace_sync_state(cursor, sync_state)
+			# Identifiers are selected solely from the fixed table above.
+			cursor.execute(f'SELECT {heights} FROM {table} WHERE {column} = %s', (query.target,))
+			parent = cursor.fetchone()
+			if parent is None:
+				return None
+
+			if any(not isinstance(height, int) or height < 0 or height > readable_height for height in parent):
+				raise SymbolDataUnavailable('Symbol metadata data is unavailable')
+
+			where = ['updated_at_height <= %s']
+			params = [readable_height]
+			where.append('target_address = %s' if query.kind == 'account' else 'target_id = %s')
+			params.append(query.target)
+			if query.metadata_type is not None:
+				where.append('metadata_type = %s::symbol_metadata_type')
+				params.append(query.metadata_type)
+
+			params.extend((query.limit, query.offset))
+			cursor.execute(
+				' SELECT scoped_metadata_key, target_id, metadata_type, source_address, target_address, value_utf8, value_hex'
+				f' FROM symbol_metadata WHERE {" AND ".join(where)}'
+				' ORDER BY updated_at_height DESC, composite_hash ASC LIMIT %s OFFSET %s', params)
+			return cursor.fetchall()
 
 	def get_mosaics(self, limit, offset, sort):
 		"""Gets current mosaics ordered by registration height, then mosaic ID, in the requested direction."""
