@@ -180,139 +180,134 @@ export const CreateMosaic = () => {
 			onComplete={handleTransactionSendComplete}
 			walletController={walletController}
 			workflow={workflow}
-			isCustomSendButtonUsed={true}
 			confirmDialogTitle={$t('screen_mosaic_create_dialog_confirm_title')}
 			confirmDialogText={$t('screen_mosaic_create_dialog_confirm_description', { supply, divisibility })}
 		>
-			{buttonProps => (
-				<Spacer bottom="l">
-					<Stack gap="l">
-						{/* Title and description */}
+			<Spacer bottom="l">
+				<Stack gap="l">
+					{/* Title and description */}
+					<Stack gap="none">
+						<StyledText type="title">
+							{$t('screen_mosaic_title_mosaic')}
+						</StyledText>
+						<StyledText type="body">
+							{$t('screen_mosaic_description_mosaic')}
+						</StyledText>
+					</Stack>
+
+					{/* Creator section */}
+					<Stack gap="none">
+						<StyledText type="title" size="s">
+							{$t('screen_mosaic_title_sender')}
+						</StyledText>
+						<SelectTransactionSender
+							value={senderAddress}
+							options={senderOptions}
+							chainName={chainName}
+							isMultisigDisabled
+							onChange={changeSenderAddress}
+						/>
+					</Stack>
+
+					<Divider />
+
+					{/* Quantity section */}
+					<Stack gap="s">
 						<Stack gap="none">
-							<StyledText type="title">
-								{$t('screen_mosaic_title_mosaic')}
+							<StyledText type="title" size="m">
+								{$t('screen_mosaic_title_quantity')}
+							</StyledText>
+							<StyledText>
+								{$t('screen_mosaic_description_quantity')}
+							</StyledText>
+						</Stack>
+						<Stack gap="m">
+							<MosaicPreviewCard
+								supply={supply}
+								divisibility={divisibility}
+								mosaicId={mosaicId}
+							/>
+							<SelectDivisibility
+								value={divisibility}
+								onChange={changeDivisibility}
+							/>
+							<TextBox
+								label={$t('screen_mosaic_label_totalSupply')}
+								keyboardType="decimal-pad"
+								errorMessage={supplyErrorMessage}
+								value={supply}
+								onChange={changeSupply}
+							/>
+						</Stack>
+					</Stack>
+
+					<Divider />
+
+					{/* Duration section */}
+					<Stack gap="l">
+						<Stack gap="none">
+							<StyledText type="title" size="m">
+								{$t('screen_mosaic_title_duration')}
 							</StyledText>
 							<StyledText type="body">
-								{$t('screen_mosaic_description_mosaic')}
+								{$t('screen_mosaic_description_duration')}
 							</StyledText>
 						</Stack>
-
-						{/* Creator section */}
-						<Stack gap="none">
-							<StyledText type="title" size="s">
-								{$t('screen_mosaic_title_sender')}
-							</StyledText>
-							<SelectTransactionSender
-								value={senderAddress}
-								options={senderOptions}
-								chainName={chainName}
-								isMultisigDisabled
-								onChange={changeSenderAddress}
-							/>
-						</Stack>
-
-						<Divider />
-
-						{/* Quantity section */}
-						<Stack gap="s">
-							<Stack gap="none">
-								<StyledText type="title" size="m">
-									{$t('screen_mosaic_title_quantity')}
-								</StyledText>
-								<StyledText>
-									{$t('screen_mosaic_description_quantity')}
-								</StyledText>
-							</Stack>
-							<Stack gap="m">
-								<MosaicPreviewCard
-									supply={supply}
-									divisibility={divisibility}
-									mosaicId={mosaicId}
-								/>
-								<SelectDivisibility
-									value={divisibility}
-									onChange={changeDivisibility}
-								/>
-								<TextBox
-									label={$t('screen_mosaic_label_totalSupply')}
-									keyboardType="decimal-pad"
-									errorMessage={supplyErrorMessage}
-									value={supply}
-									onChange={changeSupply}
-								/>
-							</Stack>
-						</Stack>
-
-						<Divider />
-
-						{/* Duration section */}
-						<Stack gap="l">
-							<Stack gap="none">
-								<StyledText type="title" size="m">
-									{$t('screen_mosaic_title_duration')}
-								</StyledText>
-								<StyledText type="body">
-									{$t('screen_mosaic_description_duration')}
-								</StyledText>
-							</Stack>
-							<Checkbox
-								text={$t('screen_mosaic_checkbox_expires')}
-								value={!isNeverExpiring}
-								onChange={handleExpiryToggle}
-							/>
-							<ExpirationSummaryCard
-								duration={duration}
-								blockGenerationTargetTime={blockGenerationTargetTime}
-								isNeverExpiring={isNeverExpiring}
-							/>
-							{!isNeverExpiring && (
-								<Animated.View
-									entering={FadeInUp.delay(ENTERING_ANIMATION_DELAY)}
-									exiting={FadeOutUp}
-								>
-									<InputDuration
-										duration={duration}
-										blockGenerationTargetTime={blockGenerationTargetTime}
-										errorMessage={durationErrorMessage}
-										onDurationChange={changeDuration}
-									/>
-								</Animated.View>
-							)}
-						</Stack>
-
-						{/* Flags section */}
-						<Animated.View layout={CustomLayout}>
-							<Stack gap="l">
-								<Divider />
-								<Stack gap="s">
-									<StyledText type="title" size="m">
-										{$t('screen_mosaic_title_flags')}
-									</StyledText>
-									<MosaicFlagList
-										flags={flags}
-										onFlagToggle={toggleFlag}
-									/>
-								</Stack>
-							</Stack>
-						</Animated.View>
-
-						{/* Fee selector */}
-						{!!transactionFees && (
-							<Animated.View entering={FadeInDown} exiting={FadeOut}>
-								<FeeSelector
-									title={$t('fieldTitle_transactionFee')}
-									feeTiers={transactionFees}
-									value={transactionSpeed}
-									ticker={ticker}
-									onChange={changeTransactionSpeed}
+						<Checkbox
+							text={$t('screen_mosaic_checkbox_expires')}
+							value={!isNeverExpiring}
+							onChange={handleExpiryToggle}
+						/>
+						<ExpirationSummaryCard
+							duration={duration}
+							blockGenerationTargetTime={blockGenerationTargetTime}
+							isNeverExpiring={isNeverExpiring}
+						/>
+						{!isNeverExpiring && (
+							<Animated.View
+								entering={FadeInUp.delay(ENTERING_ANIMATION_DELAY)}
+								exiting={FadeOutUp}
+							>
+								<InputDuration
+									duration={duration}
+									blockGenerationTargetTime={blockGenerationTargetTime}
+									errorMessage={durationErrorMessage}
+									onDurationChange={changeDuration}
 								/>
 							</Animated.View>
 						)}
-
-						<Button {...buttonProps} />
 					</Stack>
-				</Spacer>
-			)}
+
+					{/* Flags section */}
+					<Animated.View layout={CustomLayout}>
+						<Stack gap="l">
+							<Divider />
+							<Stack gap="s">
+								<StyledText type="title" size="m">
+									{$t('screen_mosaic_title_flags')}
+								</StyledText>
+								<MosaicFlagList
+									flags={flags}
+									onFlagToggle={toggleFlag}
+								/>
+							</Stack>
+						</Stack>
+					</Animated.View>
+
+					{/* Fee selector */}
+					{!!transactionFees && (
+						<Animated.View entering={FadeInDown} exiting={FadeOut}>
+							<FeeSelector
+								title={$t('fieldTitle_transactionFee')}
+								feeTiers={transactionFees}
+								value={transactionSpeed}
+								ticker={ticker}
+								onChange={changeTransactionSpeed}
+							/>
+						</Animated.View>
+					)}
+				</Stack>
+			</Spacer>
 		</TransactionScreenTemplate>
 	);
 };
