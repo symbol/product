@@ -17,6 +17,7 @@ from zenlog import log
 from rest.db.SymbolDatabase import (
 	AccountListQuery,
 	AccountSortField,
+	MetadataQuery,
 	NamespaceQuery,
 	ReceiptQuery,
 	SortOrder,
@@ -54,6 +55,9 @@ RECEIPT_MAX_OFFSET = 100000
 TRANSACTION_MAX_OFFSET = 100000
 ACCOUNT_LIST_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort_field', 'sort_order', 'mosaic_id', 'is_harvesting'])
 ACCOUNT_LIST_MAX_OFFSET = 100000
+METADATA_QUERY_PARAMETERS = frozenset(['limit', 'offset'])
+ACCOUNT_METADATA_QUERY_PARAMETERS = METADATA_QUERY_PARAMETERS | {'metadataType'}
+METADATA_TYPES = ('account', 'mosaic', 'namespace')
 MAX_TRANSACTION_HEIGHT = 9223372036854775807
 MOSAIC_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 NAMESPACE_NAME_LEVEL_PATTERN = r'[a-z0-9][a-z0-9_-]{0,63}'
@@ -254,6 +258,59 @@ def setup_symbol_routes(app, symbol_api_facade):
 	_setup_symbol_transaction_statistics_routes(app, symbol_api_facade, _run_symbol_query)
 	_setup_symbol_account_routes(app, symbol_api_facade, _run_symbol_query)
 	_setup_symbol_block_receipts_route(app, symbol_api_facade, _run_symbol_query)
+	_setup_symbol_metadata_routes(app, symbol_api_facade, _run_symbol_query)
+
+
+def _setup_symbol_metadata_routes(app, symbol_api_facade, run_symbol_query):
+	def get_metadata(kind, target):
+		try:
+			allowed = ACCOUNT_METADATA_QUERY_PARAMETERS if kind == 'account' else METADATA_QUERY_PARAMETERS
+			_validate_allowed_query_parameters(allowed)
+			limit = _parse_metadata_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
+			offset = _parse_metadata_integer('offset', _get_scalar_parameter('offset', '0'), 0, 100000)
+			if kind == 'account':
+				target = _parse_account_address(target, symbol_api_facade.network)
+				type_value = _get_scalar_parameter('metadataType')
+				metadata_type = METADATA_TYPES[_parse_metadata_integer('metadataType', type_value, 0, 2)] if type_value is not None else None
+			elif kind == 'mosaic':
+				if not MOSAIC_ID_PATTERN.fullmatch(target):
+					raise ValueError('Invalid mosaic')
+
+				target, metadata_type = target.upper(), kind
+			else:
+				target, metadata_type = _parse_namespace_id(target), kind
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.try_get_related_metadata(MetadataQuery(kind, target, metadata_type, limit, offset)),
+			'Failed to get Symbol metadata')
+		if error:
+			return error
+
+		if result is None:
+			abort(404)
+
+		return jsonify(result)
+
+	@app.route('/api/symbol/account/<address>/metadata')
+	def api_get_account_metadata(address):
+		return get_metadata('account', address)
+
+	@app.route('/api/symbol/mosaic/<mosaic_id>/metadata')
+	def api_get_mosaic_metadata(mosaic_id):
+		return get_metadata('mosaic', mosaic_id)
+
+	@app.route('/api/symbol/namespace/<name>/metadata')
+	def api_get_namespace_metadata(name):
+		return get_metadata('namespace', name)
+
+
+def _parse_metadata_integer(name, value, minimum, maximum):
+	if not re.fullmatch(r'[0-9]+', value, re.ASCII):
+		raise ValueError(f'{name} must be an integer')
+
+	return _parse_bounded_integer(name, value, minimum, maximum)
 
 
 def _setup_symbol_block_receipts_route(app, symbol_api_facade, run_symbol_query):
