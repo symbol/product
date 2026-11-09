@@ -13,6 +13,7 @@ import {
 	calculateEffectiveFee,
 	createTransactionFee,
 	decodePlainMessage,
+	getMessageKind,
 	getUnresolvedIdsFromTransactions,
 	isAggregateTransaction,
 	isIncomingTransaction,
@@ -258,6 +259,7 @@ const transferTransactionFromDTO = (transactionDTO, config) => {
 
 		transactionBody.message = {
 			type: messageType,
+			kind: getMessageKind(messageType),
 			text: messageText,
 			payload: transaction.message
 		};
