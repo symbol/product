@@ -74,16 +74,19 @@ def enableProguardInReleaseBuilds = false
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 /**
- * Signing configuration for release. Loads the key properties from the properties file if it exists.
+ * Loads the signing configuration for release for one brand from the properties file "key-<brand>.properties".
  */
-def keystoreProperties = new Properties()
-def keyPropertiesFilePath = 'key.properties'
-def keystorePropertiesFile = file(keyPropertiesFilePath)
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-    println "Key store file is set to: ${keystoreProperties['storeFile']}"
-} else {
-    println "Warning: key properties file not found. Expected: ${keyPropertiesFilePath}"
+def loadBrandKeystoreProperties = { brand ->
+    def keystoreProperties = new Properties()
+    def keystorePropertiesFile = file("key-${brand}.properties")
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+        println "Key store file for ${brand} is set to: ${keystoreProperties['storeFile']}"
+    } else {
+        println "Warning: key properties file not found. Expected: ${keystorePropertiesFile.name}"
+    }
+
+    return keystoreProperties
 }
 
 android {
@@ -116,11 +119,16 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
-        release {
-            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-            storePassword keystoreProperties['storePassword']
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
+        // Release.
+        // Signing config per brand flavor named "<brand>Release".
+        productFlavors.each { flavor ->
+            def keystoreProperties = loadBrandKeystoreProperties(flavor.name)
+            create("${flavor.name}Release") {
+                storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
         }
     }
     buildTypes {
@@ -130,7 +138,6 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
@@ -153,6 +160,7 @@ android {
  */
 androidComponents {
     onVariants(selector().withBuildType("release")) { variant ->
+        variant.signingConfig.setConfig(android.signingConfigs.getByName("${variant.flavorName}Release"))
         tasks.named("createBundle${variant.name.capitalize()}JsAndAssets").configure {
             extraPackagerArgs.addAll("--resolver-option", "brand=${variant.flavorName}".toString())
             doNotTrackState("Gradle cannot know in advance which files Metro bundles")
