@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from flask import Flask
 from psycopg2 import Error as PsycopgError
 from symbolchain.symbol.Network import Address, Network
@@ -161,7 +162,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 			writer.upsert_blocks([create_symbol_block(1, timestamp=NOW, beneficiary_address=account_address(1))])
 			with self._create_database(config) as database:
 				facade = SymbolRestFacade(
-					database, object(), NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
+					database, SymbolNodeConfiguration.from_url('http://node.test:3000'), NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
 					harvesting_balance_range=HarvestingBalanceRange(100, 200))
 				app = Flask(__name__)
 				setup_symbol_routes(app, facade)
@@ -198,7 +199,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 			seed_refresh_run(writer, 'selected-run', create_statistics_entries(), completed_at=NOW)
 			with self._create_database(config, clock=lambda: clock[0]) as database:
 				facade = SymbolRestFacade(
-					database, object(), NATIVE_MOSAIC_INFO, Network.TESTNET, 10, 7,
+					database, SymbolNodeConfiguration.from_url('http://node.test:3000'), NATIVE_MOSAIC_INFO, Network.TESTNET, 10, 7,
 					harvesting_balance_range=HarvestingBalanceRange(0, 200))
 				app = Flask(__name__)
 				setup_symbol_routes(app, facade)
@@ -220,7 +221,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 			seed_refresh_run(writer, 'selected-run', create_statistics_entries())
 			with self._create_database(config) as database:
 				facade = SymbolRestFacade(
-					database, object(), NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
+					database, SymbolNodeConfiguration.from_url('http://node.test:3000'), NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
 					harvesting_balance_range=HarvestingBalanceRange(0, 200))
 				app = Flask(__name__)
 				setup_symbol_routes(app, facade)

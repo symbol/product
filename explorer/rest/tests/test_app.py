@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo
-from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration, SymbolNodeConfigurationError
 from common.tests.PostgresTestUtils import PostgresTestDatabase, drop_symbol_block_tables_if_present
 from flask import Flask, abort, jsonify
 from psycopg2 import OperationalError
@@ -283,7 +283,7 @@ def test_injected_db_errors_return_503(rest_config_path, url):
 	def setup_facade(_app):
 		return SymbolRestFacade(
 			FailingDatabase(),
-			object(),
+			SymbolNodeConfiguration.from_url('http://node.test:3000'),
 			NativeMosaicInfo('72C0212E67A08BCE', 6),
 			Network.TESTNET)
 
