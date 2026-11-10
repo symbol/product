@@ -320,6 +320,8 @@
     "screen_actions_item_send_description": "Transfer tokens to another account on the network.",
     "screen_actions_item_send_title": "Send",
     "screen_addressBook_contactDetails_alert_blacklist_description": "This account is currently on your blacklist. Transactions from this account will be hidden from your transaction history. You will also not be able to approve or cosign transactions initiated by this account.",
+    "screen_addressBook_contactDetails_dialog_removeContact_description": "You are about to remove contact \"%{name}\" %{address} from your address book.",
+    "screen_addressBook_contactDetails_dialog_removeContact_title": "Remove Contact",
     "screen_addressBook_description_createContact": "Add a new contact to your local address book to easily recognize and manage frequently used addresses. Configure its details below.",
     "screen_addressBook_description_editContact": "Modify an existing contact in your local address book. Update its details as needed.",
     "screen_addressBook_description_intro": "This screen shows all contacts stored locally in your wallet. Whitelisted contacts help you quickly recognize and select trusted addresses, while blacklisted contacts hide their transactions and restrict approvals.",
