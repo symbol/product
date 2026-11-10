@@ -4,12 +4,13 @@ import {
 	Alert,
 	Button,
 	ButtonPlain,
+	DialogBox,
 	Divider,
 	Screen,
 	Spacer,
 	Stack
 } from '@/app/components';
-import { useAsyncManager, useWalletController } from '@/app/hooks';
+import { useAsyncManager, useToggle, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
@@ -66,12 +67,14 @@ export const ContactDetails = ({ route }) => {
 	};
 
 	// Remove contact
+	const [isRemoveConfirmVisible, toggleRemoveConfirm] = useToggle(false);
 	const removeManager = useAsyncManager({
 		callback: async () => addressBook.removeContact(contactId),
 		onSuccess: () => Router.goBack()
 	});
 	const handleRemove = () => {
 		removeManager.call();
+		toggleRemoveConfirm();
 	};
 
 	return (
@@ -115,11 +118,21 @@ export const ContactDetails = ({ route }) => {
 							variant="danger"
 							text={$t('button_remove')}
 							isDisabled={removeManager.isLoading}
-							onPress={handleRemove}
+							onPress={toggleRemoveConfirm}
 						/>
 					</Stack>
 				</Spacer>
 			</Screen.Bottom>
+			<Screen.Modals>
+				<DialogBox
+					type="confirm"
+					title={$t('screen_addressBook_contactDetails_dialog_removeContact_title')}
+					text={$t('screen_addressBook_contactDetails_dialog_removeContact_description', { name, address })}
+					isVisible={isRemoveConfirmVisible}
+					onSuccess={handleRemove}
+					onCancel={toggleRemoveConfirm}
+				/>
+			</Screen.Modals>
 		</Screen>
 	);
 };
