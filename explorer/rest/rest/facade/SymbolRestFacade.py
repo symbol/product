@@ -11,6 +11,7 @@ from rest.model.format import format_timestamp
 from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountStatisticsView, SymbolAccountView
 from rest.model.symbol.Block import SymbolBlockStatisticsView
 from rest.model.symbol.HarvestingBalanceRange import HarvestingBalanceRange
+from rest.model.symbol.MosaicRestriction import create_mosaic_restriction_dto
 from rest.model.symbol.Receipt import SymbolReceiptView
 from rest.model.symbol.Transaction import SymbolTransactionDetailView, SymbolTransactionView
 from rest.model.symbol.validation import SymbolDataInvalid
@@ -130,6 +131,15 @@ class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 
 		mosaics = self.symbol_db.get_mosaics(limit, offset, sort)
 		return [mosaic.to_dict() for mosaic in mosaics]
+
+	def try_get_mosaic_restrictions(self, query):
+		"""Returns restriction DTOs, or None when a required parent is missing.
+
+		An empty list indicates that the search succeeded without matching rows.
+		"""
+
+		rows = self.symbol_db.try_get_mosaic_restrictions(query)
+		return None if rows is None else [create_mosaic_restriction_dto(row, self.network) for row in rows]
 
 	def get_namespaces(self, query):
 		"""Gets a persisted Symbol namespace page."""

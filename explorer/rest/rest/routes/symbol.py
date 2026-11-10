@@ -10,13 +10,14 @@ from flask import abort, jsonify, request
 from psycopg2 import Error as PsycopgError
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.sc import NamespaceRegistrationType, TransactionType
-from symbolchain.symbol.IdGenerator import generate_namespace_path
+from symbolchain.symbol.IdGenerator import generate_namespace_path, is_mosaic_alias
 from symbolchain.symbol.Network import Address, Network
 from zenlog import log
 
 from rest.db.SymbolDatabase import (
 	AccountListQuery,
 	AccountSortField,
+	MosaicRestrictionQuery,
 	NamespaceQuery,
 	ReceiptQuery,
 	SortOrder,
@@ -29,12 +30,16 @@ from rest.facade.SymbolRestFacade import SymbolRestFacade
 from rest.facade.SymbolTransactionNodeBacking import AiohttpTransport, SymbolNodeNotFound, SymbolTransactionNodeBacking
 from rest.model.common import DatabaseConfig
 from rest.model.symbol.HarvestingBalanceRange import HarvestingBalanceRange
+from rest.model.symbol.MosaicRestriction import MosaicRestrictionEntryType
 from rest.model.symbol.validation import SymbolDataInvalid
 
 BLOCK_LIST_QUERY_PARAMETERS = frozenset(['limit', 'fromHeight', 'sort'])
 BLOCK_STATISTICS_QUERY_PARAMETERS = frozenset()
 MOSAIC_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort'])
 MOSAIC_MAX_OFFSET = 100000
+MOSAIC_RESTRICTION_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'mosaicId', 'targetAddress', 'type'])
+MOSAIC_RESTRICTION_CHILD_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'type'])
+MOSAIC_RESTRICTION_TYPES = {'0': MosaicRestrictionEntryType.ADDRESS, '1': MosaicRestrictionEntryType.GLOBAL}
 RECEIPT_QUERY_PARAMETERS = frozenset([
 	'limit', 'offset', 'group', 'receiptType', 'includedReceiptTypes', 'targetAddress', 'senderAddress'
 ])
@@ -232,6 +237,7 @@ def setup_symbol_routes(app, symbol_api_facade):
 		return jsonify(result)
 
 	_setup_symbol_mosaic_routes(app, symbol_api_facade, _run_symbol_query)
+	_setup_symbol_mosaic_restriction_routes(app, symbol_api_facade, _run_symbol_query)
 	_setup_symbol_namespace_routes(app, symbol_api_facade, _run_symbol_query)
 
 	@app.route('/api/symbol/receipts')
@@ -365,6 +371,64 @@ def _setup_symbol_mosaic_routes(app, symbol_api_facade, run_symbol_query):
 			abort(404)
 
 		return jsonify(result)
+
+
+def _setup_symbol_mosaic_restriction_routes(app, symbol_api_facade, run_symbol_query):
+	def get_restrictions(mosaic_id=None):
+		try:
+			should_check_parent = mosaic_id is not None
+			_validate_allowed_query_parameters(
+				MOSAIC_RESTRICTION_CHILD_QUERY_PARAMETERS if should_check_parent else MOSAIC_RESTRICTION_QUERY_PARAMETERS)
+			query = _parse_mosaic_restriction_query(mosaic_id, symbol_api_facade.network)
+		except ValueError as error:
+			abort(400, error)
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.try_get_mosaic_restrictions(query), 'Failed to get Symbol mosaic restrictions')
+		if error:
+			return error
+
+		if result is None:
+			abort(404)
+
+		return jsonify(result)
+
+	@app.route('/api/symbol/mosaic/<mosaic_id>/restrictions')
+	def api_get_symbol_mosaic_restrictions(mosaic_id):
+		return get_restrictions(mosaic_id)
+
+	@app.route('/api/symbol/mosaic-restrictions')
+	def api_get_symbol_restrictions():
+		return get_restrictions()
+
+
+def _parse_mosaic_restriction_query(path_mosaic_id, network):
+	limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
+	offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, 10000)
+	query_id = _get_scalar_parameter('mosaicId')
+	mosaic_id = path_mosaic_id if path_mosaic_id is not None else query_id
+	if mosaic_id is not None:
+		if not MOSAIC_ID_PATTERN.fullmatch(mosaic_id) or is_mosaic_alias(int(mosaic_id, 16)):
+			raise ValueError('Invalid mosaicId')
+
+		mosaic_id = mosaic_id.upper()
+
+	target = _get_scalar_parameter('targetAddress')
+	if target is not None:
+		target = _parse_account_address(target, network)
+
+	type_value = _get_scalar_parameter('type')
+	if type_value is not None and type_value not in MOSAIC_RESTRICTION_TYPES:
+		raise ValueError('Invalid restriction type')
+
+	entry_type = MOSAIC_RESTRICTION_TYPES[type_value] if type_value is not None else None
+	if target is not None and entry_type is MosaicRestrictionEntryType.GLOBAL:
+		raise ValueError('targetAddress cannot be combined with global type')
+
+	if target is not None:
+		entry_type = MosaicRestrictionEntryType.ADDRESS
+
+	return MosaicRestrictionQuery(limit, offset, mosaic_id, target, entry_type, path_mosaic_id is not None)
 
 
 def _setup_symbol_namespace_routes(app, symbol_api_facade, run_symbol_query):

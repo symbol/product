@@ -12,6 +12,7 @@ from zenlog import log
 
 from rest.model.symbol.Block import BLOCK_STATISTICS_WINDOW, SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
+from rest.model.symbol.MosaicRestriction import MosaicRestrictionEntryType
 from rest.model.symbol.Namespace import SymbolNamespaceView
 from rest.model.symbol.validation import SymbolDataInvalid
 
@@ -125,6 +126,11 @@ NamespaceQuery = namedtuple(
 	'NamespaceQuery',
 	['limit', 'offset', 'sort', 'alias_type', 'registration_type', 'owner_address'],
 	defaults=(10, 0, SortOrder.DESC, None, None, None))
+MosaicRestrictionQuery = namedtuple(
+	'MosaicRestrictionQuery', ['limit', 'offset', 'mosaic_id', 'target_address', 'entry_type', 'should_check_parent'],
+	defaults=(10, 0, None, None, None, False))
+MosaicRestrictionRecord = namedtuple(
+	'MosaicRestrictionRecord', ['composite_hash', 'mosaic_id', 'entry_type', 'target_address', 'restrictions'])
 MosaicDetailRecord = namedtuple('MosaicDetailRecord', ['view', 'start_timestamp'])
 NamespaceMosaicGroupRecord = namedtuple('NamespaceMosaicGroupRecord', ['namespace_id', 'namespace_name', 'data'])
 NamespaceDetailRecord = namedtuple('NamespaceDetailRecord', ['namespace', 'sub_namespaces', 'namespace_mosaics'])
@@ -447,6 +453,47 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 				connection.rollback()
 				raise
 			connection.commit()
+
+	def try_get_mosaic_restrictions(self, query):
+		"""Returns a restriction page, or None when a required parent is missing.
+
+		An empty list indicates that the search succeeded without matching rows.
+		"""
+
+		with self._read_snapshot() as cursor:
+			sync_state = self._fetch_sync_state(cursor)
+			self._assert_current_state_readable(sync_state)
+			published_height = sync_state['last_synced_height']
+			if query.should_check_parent:
+				cursor.execute('SELECT start_height, updated_at_height FROM symbol_mosaics WHERE mosaic_id = %s', (query.mosaic_id,))
+				parent = cursor.fetchone()
+				if parent is None:
+					return None
+
+				if parent[0] > published_height or parent[1] > published_height:
+					raise SymbolDataUnavailable('Symbol mosaic restriction data is unavailable')
+
+			clauses = ['updated_at_height <= %s']
+			parameters = [published_height]
+			for value, clause in (
+				(query.mosaic_id, 'mosaic_id = %s'),
+				(query.target_address, 'target_address = %s'),
+				(query.entry_type.value if query.entry_type is not None else None, 'entry_type = %s')
+			):
+				if value is not None:
+					clauses.append(clause)
+					parameters.append(value)
+
+			parameters.extend((query.limit, query.offset))
+			where_clause = ' AND '.join(clauses)
+			statement = (
+				'SELECT composite_hash, mosaic_id, entry_type, target_address, restrictions FROM symbol_mosaic_restrictions '
+				f'WHERE {where_clause} ORDER BY mosaic_id ASC, entry_type ASC, target_address ASC LIMIT %s OFFSET %s')
+			cursor.execute(statement, parameters)
+			return [
+				MosaicRestrictionRecord(row[0], row[1], MosaicRestrictionEntryType(row[2]), *row[3:])
+				for row in cursor.fetchall()
+			]
 
 	def _fetch_transaction_statistics_head(self, cursor):
 		"""Returns the validated published head and revision used to identify cached statistics."""
