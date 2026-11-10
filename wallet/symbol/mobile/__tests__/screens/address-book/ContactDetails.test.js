@@ -20,10 +20,12 @@ const SCREEN_TEXT = {
 	textFieldAddress: 'fieldTitle_address',
 	textFieldNotes: 'fieldTitle_notes',
 	textAlertBlacklist: 'screen_addressBook_contactDetails_alert_blacklist_description',
+	textDialogRemoveContactTitle: 'screen_addressBook_contactDetails_dialog_removeContact_title',
 	buttonSendTransaction: 'button_sendTransactionToThisAccount',
 	buttonOpenExplorer: 'button_openTransactionInExplorer',
 	buttonEdit: 'button_edit',
-	buttonRemove: 'button_remove'
+	buttonRemove: 'button_remove',
+	buttonConfirm: 'button_confirm'
 };
 
 // Contact Fixtures
@@ -306,7 +308,7 @@ describe('screens/address-book/ContactDetails', () => {
 	});
 
 	describe('remove contact', () => {
-		it('removes contact and navigates back when remove button is pressed', async () => {
+		it('removes contact and navigates back after confirmation', async () => {
 			// Arrange:
 			const { addressBook: addressBookMock, router: routerMock } = setupMocks([contactWhitelisted]);
 			const screenTester = new ScreenTester(
@@ -316,7 +318,9 @@ describe('screens/address-book/ContactDetails', () => {
 
 			// Act:
 			screenTester.pressButton(SCREEN_TEXT.buttonRemove);
-			await screenTester.waitForTimer();
+			screenTester.expectText([SCREEN_TEXT.textDialogRemoveContactTitle]);
+			screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
+			await screenTester.waitForTimer(); // complete the contact removal
 
 			// Assert:
 			expect(addressBookMock.removeContact).toHaveBeenCalledWith(contactWhitelisted.id);
