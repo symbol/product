@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from datetime import datetime
 from unittest import TestCase
 from unittest.mock import Mock
@@ -31,6 +32,50 @@ NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 
 
 class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-public-methods
+	def test_returns_selected_transfer_mosaics_in_position_order(self):
+		# Arrange:
+		first_mosaic_id = '1234567890ABCDEF'
+		second_mosaic_id = '234567890ABCDEF1'
+		transactions = [
+			create_symbol_transaction(1, 1, mosaic_rows=[
+				{'mosaic_id': second_mosaic_id, 'amount': 200, 'role': 'transfer', 'position': 1},
+				{'mosaic_id': first_mosaic_id, 'amount': 100, 'role': 'transfer', 'position': 0},
+				{'mosaic_id': '34567890ABCDEF12', 'amount': 300, 'role': 'hash_lock', 'position': 2},
+				{'mosaic_id': '4567890ABCDEF123', 'amount': 400, 'role': 'metadata_target', 'position': 3},
+			]),
+			create_symbol_transaction(1, 2),
+			create_symbol_mosaic_transfer(1, 3, '567890ABCDEF1234', 500),
+		]
+		sync_state = create_symbol_sync_state(last_synced_height=1, finalized_height=1)
+
+		with _transaction_mosaic_database(transactions, [
+			create_symbol_mosaic(first_mosaic_id, 2),
+			create_symbol_mosaic(second_mosaic_id, 3),
+		]) as (database, cursor, transaction_ids):
+			selected_id, empty_id, _ = transaction_ids
+
+			# Act:
+			mosaics_map, divisibility_map = database._fetch_transaction_mosaics(  # pylint: disable=protected-access
+				cursor, [selected_id, empty_id], sync_state)
+
+		# Assert:
+		self.assertEqual({selected_id: [(first_mosaic_id, 100), (second_mosaic_id, 200)], empty_id: []}, mosaics_map)
+		self.assertEqual({first_mosaic_id: (first_mosaic_id, 2), second_mosaic_id: (second_mosaic_id, 3)}, divisibility_map)
+
+	def test_raises_when_selected_mosaic_metadata_is_unsafe(self):
+		# Arrange:
+		transactions = [create_symbol_mosaic_transfer(1, 1, '1234567890ABCDEF', 100)]
+		with _transaction_mosaic_database(transactions) as (database, cursor, transaction_ids):
+			for status in ('healthy', 'repairing'):
+				with self.subTest(status=status):
+					sync_state = create_symbol_sync_state(
+						last_synced_height=1, finalized_height=1, status=status,
+						dirty_state_from_height=2 if status == 'healthy' else None)
+
+					# Act + Assert:
+					with self.assertRaisesRegex(SymbolDataUnavailable, 'mosaic display depends on current state'):
+						database._fetch_transaction_mosaics(cursor, transaction_ids, sync_state)  # pylint: disable=protected-access
+
 	def test_returns_empty_list_without_aggregate_hashes(self):
 		# Arrange:
 		cursor = Mock()
@@ -960,6 +1005,18 @@ def _normalize_transaction_binary_fields(record):
 		aggregate_hash=bytes(record.aggregate_hash) if record.aggregate_hash is not None else None,
 		signer_address=bytes(record.signer_address),
 		recipient_address=bytes(record.recipient_address) if record.recipient_address is not None else None)
+
+
+@contextmanager
+def _transaction_mosaic_database(transactions, mosaics=()):
+	# Arrange:
+	with symbol_test_database(blocks=[create_symbol_block(1)], mosaics=mosaics) as (db_config, puller_database):
+		puller_database.upsert_transactions_for_height(1, transactions)
+		with puller_database.connection.cursor() as cursor:
+			cursor.execute('SELECT id FROM symbol_transactions ORDER BY id')
+			transaction_ids = [row[0] for row in cursor.fetchall()]
+			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
+				yield database, cursor, transaction_ids
 
 
 def _query_symbol_transactions(transactions, sync_state, query, mosaics=None):

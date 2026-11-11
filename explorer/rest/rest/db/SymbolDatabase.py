@@ -1038,6 +1038,43 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 			transaction_ids, transaction_mosaic_rows, mosaic_state_by_id)
 		return [TransactionRecord(*row, tuple(mosaics_by_transaction[row[0]])) for row in transaction_rows]
 
+	def _fetch_transaction_mosaics(self, cursor, transaction_ids, sync_state):
+		"""Loads confirmed transfer amounts and divisibilities in one snapshot query."""
+
+		cursor.execute(
+			'''
+			SELECT
+				tm.transaction_id,
+				tm.mosaic_id,
+				tm.amount,
+				tm.role,
+				tm.position,
+				m.divisibility
+			FROM symbol_transaction_mosaics AS tm
+			LEFT JOIN symbol_mosaics AS m ON m.mosaic_id = tm.mosaic_id
+			WHERE tm.transaction_id = ANY(%s::bigint[])
+				AND tm.role <> 'metadata_target'::symbol_transaction_mosaic_role
+			ORDER BY tm.transaction_id, tm.position
+			''',
+			(transaction_ids,))
+		transaction_mosaic_rows = cursor.fetchall()
+
+		if is_non_public_state(sync_state) and self._requires_current_transaction_metadata(transaction_mosaic_rows):
+			raise SymbolDataUnavailable(
+				'Symbol transaction data is unavailable: mosaic display depends on current state '
+				'in dirty or repairing state')
+
+		mosaics_by_transaction_map = {transaction_id: [] for transaction_id in transaction_ids}
+		mosaic_divisibility_map = {}
+		for row in transaction_mosaic_rows:
+			if row[3] != 'transfer':
+				continue
+			normalized_id = normalize_mosaic_id(row[1])
+			mosaics_by_transaction_map[row[0]].append((normalized_id, row[2]))
+			mosaic_divisibility_map[normalized_id] = (normalized_id, row[5])
+
+		return mosaics_by_transaction_map, mosaic_divisibility_map
+
 	def _requires_current_transaction_metadata(self, transaction_mosaic_rows):
 		for row in transaction_mosaic_rows:
 			if self.native_mosaic_info and normalize_mosaic_id(row[1]) == self.native_mosaic_info.id:
