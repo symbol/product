@@ -13,9 +13,6 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - MongoDB 7.0.45
 - https-portal 1.25.6
 
-### Changed
-- require Python 3.11 or newer; users on Python 3.10 must upgrade.
-
 ## [0.2.4] - 5 May-2026
 
 ### Added
