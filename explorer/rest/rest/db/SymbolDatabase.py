@@ -70,6 +70,26 @@ MOSAIC_COLUMNS = '''
 	revokable,
 	alias_names
 '''
+
+TRANSACTION_COLUMNS = ', '.join(f'transactions.{column}' for column in (
+	'id',
+	'hash',
+	'is_embedded',
+	'aggregate_hash',
+	'embedded_index',
+	'height',
+	'type',
+	'signer_address',
+	'recipient_address',
+	'effective_fee',
+	'timestamp',
+	'message_type',
+	'message_payload',
+	'deadline',
+	'size',
+	'body',
+))
+
 SYMBOL_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 
 SYNC_STATE_COLUMNS = [
@@ -942,6 +962,22 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 				'Symbol transaction data is unavailable: confirmed top-level effective fee is missing')
 
 		return transaction_rows
+
+	@staticmethod
+	def _fetch_embedded_transactions(cursor, aggregate_hashes):
+		"""Loads aggregate children after page selection, without page filters."""
+
+		if not aggregate_hashes:
+			return []
+
+		cursor.execute(
+			f'''SELECT {TRANSACTION_COLUMNS}
+			FROM symbol_transactions AS transactions
+			WHERE aggregate_hash = ANY(%s::bytea[]) AND transactions.is_embedded = true
+			ORDER BY aggregate_hash, embedded_index''',
+			(aggregate_hashes,))
+
+		return cursor.fetchall()
 
 	@staticmethod
 	def _create_transaction_filter(query):

@@ -1,5 +1,6 @@
 from datetime import datetime
 from unittest import TestCase
+from unittest.mock import Mock
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
@@ -30,6 +31,35 @@ NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 
 
 class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-public-methods
+	def test_returns_empty_list_without_aggregate_hashes(self):
+		# Arrange:
+		cursor = Mock()
+
+		# Act:
+		result = SymbolDatabase._fetch_embedded_transactions(cursor, [])  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([], result)
+		cursor.execute.assert_not_called()
+
+	def test_returns_selected_parent_children_in_index_order(self):
+		# Arrange:
+		parent_hash = bytes.fromhex('AA' * 32)
+		transactions = [
+			create_symbol_transaction(4, 10, type=TransactionType.AGGREGATE_COMPLETE.value, hash=parent_hash),
+			create_symbol_transaction(4, 1, is_embedded=True, aggregate_hash=parent_hash),
+			create_symbol_transaction(4, 0, is_embedded=True, aggregate_hash=parent_hash),
+			create_symbol_transaction(4, 0, is_embedded=True, aggregate_hash=bytes.fromhex('BB' * 32)),
+		]
+		with symbol_test_database(blocks=[create_symbol_block(4)]) as (_, database):
+			database.upsert_transactions_for_height(4, transactions)
+			with database.connection.cursor() as cursor:
+				# Act:
+				result = SymbolDatabase._fetch_embedded_transactions(cursor, [parent_hash])  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([(parent_hash, 0, 4), (parent_hash, 1, 4)], [(bytes(row[3]), row[4], row[5]) for row in result])
+
 	def test_get_transactions_orders_rows_by_height_and_id_and_hides_above_watermark(self):
 		# Arrange:
 		transactions = [
