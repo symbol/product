@@ -6,8 +6,9 @@ from enum import Enum
 from pathlib import Path
 
 import pytest
-from symbolchain.CryptoTypes import PrivateKey
+from symbolchain.CryptoTypes import PrivateKey, PublicKey
 from symbolchain.PrivateKeyStorage import PrivateKeyStorage
+from symbolchain.sc import TransactionFactory
 
 from shoestring.__main__ import main
 from shoestring.internal.NodeFeatures import NodeFeatures
@@ -549,5 +550,37 @@ async def test_can_regenerate_links_voter_node(server):  # pylint: disable=redef
 
 async def test_can_regenerate_links_full_node(server):  # pylint: disable=redefined-outer-name
 	await _assert_can_regenerate_links(server, NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER)
+
+
+async def test_can_generate_linking_transaction_for_configured_multisig_signer(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	transaction_signer_public_key = PublicKey('F357F779799EAE88B400D45E7C3C232391CFD79EFEAA05BC38868356CBE0A4D3')
+
+	with tempfile.TemporaryDirectory() as output_directory:
+		with tempfile.TemporaryDirectory() as package_directory:
+			prepare_shoestring_configuration(
+				package_directory,
+				NodeFeatures.HARVESTER,
+				server.make_url(''),
+				api_https=False,
+				transaction_signer_public_key=transaction_signer_public_key)
+			_prepare_overrides(package_directory)
+			prepare_testnet_package(package_directory, 'resources.zip')
+
+			with tempfile.TemporaryDirectory() as ca_directory:
+				# Act:
+				await main([
+					'setup',
+					'--config', str(Path(package_directory) / 'sai.shoestring.ini'),
+					'--security', 'insecure',
+					'--package', f'file://{Path(package_directory) / "resources.zip"}',
+					'--directory', output_directory,
+					'--ca-key-path', str(Path(ca_directory) / 'xyz.key.pem'),
+					'--overrides', str(Path(package_directory) / 'user_overrides.ini')
+				])
+
+				# Assert:
+				transaction = TransactionFactory.deserialize(_read_file_contents(Path(output_directory) / 'linking_transaction.dat'))
+				assert transaction_signer_public_key == PublicKey(transaction.transactions[0].signer_public_key.bytes)
 
 # endregion
