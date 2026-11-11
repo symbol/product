@@ -718,7 +718,7 @@ def test_preserves_saved_messages(message_type, type_id):
 	(None, []),
 	('', [{'message': {'type': 0, 'payload': ''}}]),
 ])
-def test_preserves_empty_or_missing_saved_message_payload(message_payload, expected_payload):
+def test_preserves_empty_or_no_message(message_payload, expected_payload):
 	# Arrange:
 	transaction = _create_confirmed_transaction(message_payload=message_payload)
 
@@ -744,7 +744,7 @@ def test_preserves_non_transfer_payload():
 	assert [{'sourceAddress': str(Address(RECIPIENT_ADDRESS)), 'mosaicId': NATIVE_MOSAIC_INFO.id, 'amount': '1000000'}] == record.payload
 
 
-def test_preserves_confirmed_recipient_alias():
+def test_keeps_confirmed_recipient_alias():
 	# Arrange:
 	address = Address.from_namespace_id(NamespaceId(int('887E5DB6BB0B21F5', 16)), Network.TESTNET.identifier)
 	transaction = _create_confirmed_transaction(recipient_address=address.bytes)
