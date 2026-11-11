@@ -5,8 +5,9 @@ import { transactionPageResult } from '../test-utils/transactions';
 import * as BlockService from '@/app/api/blocks';
 import * as StatsService from '@/app/api/stats';
 import * as TransactionService from '@/app/api/transactions';
+import { TRANSACTION_GROUP } from '@/app/constants';
 import Home, { getServerSideProps } from '@/app/pages/index';
-import { act, render } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en.json';
 
@@ -71,9 +72,75 @@ describe('Home', () => {
 			// Assert:
 			expect(fetchBlockPage).toHaveBeenCalledWith({ pageSize: RECENT_BLOCK_COUNT });
 		});
+
+		it('preloads no pending transaction page when unconfirmed transactions cannot be fetched', async () => {
+			// Arrange:
+			const locale = 'en';
+			jest.spyOn(TransactionService, 'fetchTransactionPage').mockImplementation(async ({ group }) => {
+				if (group === TRANSACTION_GROUP.UNCONFIRMED)
+					throw Error('Request failed with status code 500');
+
+				return transactionPageResult;
+			});
+
+			// Act:
+			const { props } = await getServerSideProps({ locale });
+
+			// Assert:
+			expect(props.preloadedLatestTransactions).toEqual(transactionPageResult);
+			expect(props.preloadedPendingTransactions).toBeNull();
+		});
 	});
 
 	describe('page', () => {
+		const createProps = preloadedPendingTransactions => ({
+			preloadedBlocks: blockPageResult,
+			preloadedLatestTransactions: transactionPageResult,
+			preloadedPendingTransactions,
+			transactionChart: dailyTransactionChartResult,
+			transactionStats: transactionStatisticsResult,
+			marketData: marketDataResult,
+			nodeStats: nodeStatsResult,
+			blockTime: blockStatisticsResult.blockTime
+		});
+
+		it('renders an error instead of pending transactions when they are unavailable', () => {
+			// Act:
+			render(<Home {...createProps(null)} />);
+
+			// Assert:
+			expect(screen.getByText('message_pendingTransactionsUnavailable')).toBeInTheDocument();
+		});
+
+		it('replaces the error with pending transactions once a refresh succeeds', async () => {
+			// Arrange:
+			const pendingTransactionHash = 'PENDING_TRANSACTION_HASH';
+			const pendingTransactionPage = {
+				...transactionPageResult,
+				data: [{ ...transactionPageResult.data[0], hash: pendingTransactionHash, group: TRANSACTION_GROUP.UNCONFIRMED }]
+			};
+			jest.spyOn(TransactionService, 'fetchTransactionPage').mockImplementation(async ({ group }) =>
+				(group === TRANSACTION_GROUP.UNCONFIRMED ? pendingTransactionPage : transactionPageResult));
+			render(<Home {...createProps(null)} />);
+
+			// Act:
+			await act(async () => {
+				jest.advanceTimersByTime(DATA_REFRESH_INTERVAL);
+			});
+
+			// Assert:
+			expect(screen.queryByText('message_pendingTransactionsUnavailable')).not.toBeInTheDocument();
+			expect(screen.getByTitle(pendingTransactionHash)).toBeInTheDocument();
+		});
+
+		it('does not render the error when pending transactions are available', () => {
+			// Act:
+			render(<Home {...createProps(transactionPageResult)} />);
+
+			// Assert:
+			expect(screen.queryByText('message_pendingTransactionsUnavailable')).not.toBeInTheDocument();
+		});
+
 		it('requests the recent block page of the preloaded size on refresh', async () => {
 			// Arrange:
 			const fetchBlockPage = jest.spyOn(BlockService, 'fetchBlockPage');
