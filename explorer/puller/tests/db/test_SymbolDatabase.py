@@ -2675,30 +2675,34 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			seed_account_refresh_state(database, {'status': 'invalid'})
 
 	def test_prune_account_refresh_generations_preserves_protected_runs_and_resumes_batches(self):
-		# Arrange: protect the invalidated published run, previous and running runs during batched cleanup.
+		# Arrange: each generation has multiple accounts, mosaics and rank scopes.
 		database = self._create_database()
 		cursor = database.connection.cursor()
 		for index, run_id in enumerate(('published', 'previous', 'running', 'old', 'failed')):
-			address = bytes([index + 1]) * 24
-			cursor.execute('''
-				INSERT INTO symbol_account_refresh_accounts
-				(refresh_run_id, address, address_text, account_search_order, importance, snapshot_height, snapshot_at)
-				VALUES (%s, %s, %s, 0, 1, 1, CURRENT_TIMESTAMP)
-			''', (run_id, address, str(index)))
-			cursor.execute('''
-				INSERT INTO symbol_account_refresh_mosaics
-				(refresh_run_id, address, mosaic_id, amount, snapshot_height, snapshot_at)
-				VALUES (%s, %s, '1', 1, 1, CURRENT_TIMESTAMP)
-			''', (run_id, address))
-			cursor.execute('''
-				INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
-				VALUES (%s, 'ID', 0, %s)
-			''', (run_id, address))
+			for rank in range(2):
+				address = bytes([2 * index + rank + 1]) * 24
+				cursor.execute('''
+					INSERT INTO symbol_account_refresh_accounts
+					(refresh_run_id, address, address_text, account_search_order, importance, snapshot_height, snapshot_at)
+					VALUES (%s, %s, %s, %s, 1, 1, CURRENT_TIMESTAMP)
+				''', (run_id, address, str(2 * index + rank), rank))
+				for mosaic_id in ('1', '2'):
+					cursor.execute('''
+						INSERT INTO symbol_account_refresh_mosaics
+						(refresh_run_id, address, mosaic_id, amount, snapshot_height, snapshot_at)
+						VALUES (%s, %s, %s, 1, 1, CURRENT_TIMESTAMP)
+					''', (run_id, address, mosaic_id))
+
+				for scope in ('ID', 'BALANCE'):
+					cursor.execute('''
+						INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
+						VALUES (%s, %s, %s, %s)
+					''', (run_id, scope, rank, address))
 
 		cursor.execute('''
 			INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
 			VALUES ('rank-only', 'ID', 0, %s)
-		''', (bytes([9]) * 24,))
+		''', (bytes([99]) * 24,))
 		database.connection.commit()
 		seed_account_refresh_state(database, {
 			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous',
@@ -2710,18 +2714,130 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		with database.workflow_lock():
 			database.prune_account_refresh_generations(batch_size=1, max_batches=2)
 
-		# Assert: the configured batch limit leaves work for another pass.
-		cursor.execute('SELECT COUNT(*) FROM symbol_account_list_ranks')
-		self.assertEqual((4,), cursor.fetchone())
+		# Assert: only the first two ranks of the unprotected generation were deleted.
+		cursor.execute('SELECT refresh_run_id, rank_scope, rank FROM symbol_account_list_ranks ORDER BY 1, 2, 3')
+		ranks = cursor.fetchall()
+		self.assertEqual(19, len(ranks))
+		self.assertEqual([('failed', 'ID', 0), ('failed', 'ID', 1)], [row for row in ranks if row[0] == 'failed'])
 
 		# Act: resume cleanup.
 		with database.workflow_lock():
 			database.prune_account_refresh_generations(batch_size=1, max_batches=50)
 
-		# Assert: all three tables contain exactly the protected generations.
-		for table in ('symbol_account_list_ranks', 'symbol_account_refresh_mosaics', 'symbol_account_refresh_accounts'):
-			cursor.execute(f'SELECT refresh_run_id FROM {table} ORDER BY refresh_run_id')
-			self.assertEqual([('previous',), ('published',), ('running',)], cursor.fetchall())
+		# Assert: all rows of the three protected generations remain in every table.
+		expected_accounts = [
+			('previous', '03' * 24), ('previous', '04' * 24),
+			('published', '01' * 24), ('published', '02' * 24),
+			('running', '05' * 24), ('running', '06' * 24)
+		]
+		cursor.execute("SELECT refresh_run_id, encode(address, 'hex') FROM symbol_account_refresh_accounts ORDER BY 1, 2")
+		self.assertEqual(expected_accounts, cursor.fetchall())
+		expected_mosaics = []
+		for run_id, address in expected_accounts:
+			expected_mosaics.extend([(run_id, address, '1'), (run_id, address, '2')])
+
+		cursor.execute("SELECT refresh_run_id, encode(address, 'hex'), mosaic_id FROM symbol_account_refresh_mosaics ORDER BY 1, 2, 3")
+		self.assertEqual(expected_mosaics, cursor.fetchall())
+		expected_ranks = []
+		for run_id in ('previous', 'published', 'running'):
+			expected_ranks.extend([(run_id, 'BALANCE', 0), (run_id, 'BALANCE', 1), (run_id, 'ID', 0), (run_id, 'ID', 1)])
+
+		cursor.execute('SELECT refresh_run_id, rank_scope, rank FROM symbol_account_list_ranks ORDER BY 1, 2, 3')
+		self.assertEqual(expected_ranks, cursor.fetchall())
+
+	def _assert_account_retention_batch_limit(self, include_old_ranks, include_old_mosaics, target_query, expected_before, expected_remaining):
+		# Arrange: every protected generation has one row in each table; the old generation has three accounts.
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		for run_id, address_byte in (('old', 1), ('old', 2), ('old', 3), ('previous', 10), ('published', 11), ('running', 12)):
+			address = bytes([address_byte]) * 24
+			cursor.execute('''
+				INSERT INTO symbol_account_refresh_accounts
+				(refresh_run_id, address, address_text, account_search_order, importance, snapshot_height, snapshot_at)
+				VALUES (%s, %s, %s, %s, 1, 1, CURRENT_TIMESTAMP)
+			''', (run_id, address, str(address_byte), address_byte))
+			if run_id != 'old':
+				cursor.execute('''
+					INSERT INTO symbol_account_refresh_mosaics
+					(refresh_run_id, address, mosaic_id, amount, snapshot_height, snapshot_at)
+					VALUES (%s, %s, '1', 1, 1, CURRENT_TIMESTAMP)
+				''', (run_id, address))
+				cursor.execute('''
+					INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
+					VALUES (%s, 'ID', 0, %s)
+				''', (run_id, address))
+
+		if include_old_mosaics:
+			cursor.executemany('''
+				INSERT INTO symbol_account_refresh_mosaics
+				(refresh_run_id, address, mosaic_id, amount, snapshot_height, snapshot_at)
+				VALUES ('old', %s, %s, 1, 1, CURRENT_TIMESTAMP)
+			''', [(bytes([1]) * 24, mosaic_id) for mosaic_id in ('1', '2', '3')])
+
+		if include_old_ranks:
+			cursor.executemany('''
+				INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address)
+				VALUES ('old', 'ID', %s, %s)
+			''', [(rank, bytes([rank + 1]) * 24) for rank in range(3)])
+
+		database.connection.commit()
+		seed_account_refresh_state(database, {
+			'last_successful_run_id': 'published', 'previous_successful_run_id': 'previous',
+			'running_run_id': 'running', 'is_retention_ready': True, 'status': 'refreshing'
+		})
+		protected_checks = (
+			('SELECT refresh_run_id, rank_scope, rank FROM symbol_account_list_ranks ORDER BY 1, 2, 3', [
+				('previous', 'ID', 0), ('published', 'ID', 0), ('running', 'ID', 0)
+			]),
+			("SELECT refresh_run_id, encode(address, 'hex'), mosaic_id FROM symbol_account_refresh_mosaics ORDER BY 1, 2, 3", [
+				('previous', '0a' * 24, '1'), ('published', '0b' * 24, '1'), ('running', '0c' * 24, '1')
+			]),
+			("SELECT refresh_run_id, encode(address, 'hex') FROM symbol_account_refresh_accounts ORDER BY 1, 2", [
+				('previous', '0a' * 24), ('published', '0b' * 24), ('running', '0c' * 24)
+			])
+		)
+		cursor.execute(target_query)
+		self.assertEqual(expected_before, cursor.fetchall())
+
+		# Act: delete at most two rows in exactly one committed batch.
+		with database.workflow_lock():
+			database.prune_account_refresh_generations(batch_size=2, max_batches=1)
+
+		# Assert: two candidate rows were removed, the remaining identifier and every protected row match.
+		cursor.execute(target_query)
+		remaining = cursor.fetchall()
+		self.assertEqual(expected_remaining, remaining)
+		self.assertEqual(2, len(expected_before) - len(remaining))
+		for query, expected in protected_checks:
+			cursor.execute(query)
+			self.assertEqual(expected, [row for row in cursor.fetchall() if row[0] != 'old'])
+
+		# Act: subsequent bounded batches finish all remaining tables.
+		with database.workflow_lock():
+			database.prune_account_refresh_generations(batch_size=2, max_batches=20)
+
+		# Assert: only the original protected rows remain in all three tables.
+		for query, expected in protected_checks:
+			cursor.execute(query)
+			self.assertEqual(expected, cursor.fetchall())
+
+	def test_prune_account_refresh_generations_limits_rank_deletion_to_one_batch(self):
+		self._assert_account_retention_batch_limit(
+			include_old_ranks=True, include_old_mosaics=True,
+			target_query="SELECT rank FROM symbol_account_list_ranks WHERE refresh_run_id = 'old' ORDER BY rank",
+			expected_before=[(0,), (1,), (2,)], expected_remaining=[(2,)])
+
+	def test_prune_account_refresh_generations_limits_mosaic_deletion_to_one_batch(self):
+		self._assert_account_retention_batch_limit(
+			include_old_ranks=False, include_old_mosaics=True,
+			target_query="SELECT mosaic_id FROM symbol_account_refresh_mosaics WHERE refresh_run_id = 'old' ORDER BY mosaic_id",
+			expected_before=[('1',), ('2',), ('3',)], expected_remaining=[('3',)])
+
+	def test_prune_account_refresh_generations_limits_account_deletion_to_one_batch(self):
+		self._assert_account_retention_batch_limit(
+			include_old_ranks=False, include_old_mosaics=False,
+			target_query="SELECT encode(address, 'hex') FROM symbol_account_refresh_accounts WHERE refresh_run_id = 'old' ORDER BY address",
+			expected_before=[('01' * 24,), ('02' * 24,), ('03' * 24,)], expected_remaining=[('03' * 24,)])
 
 	def test_prune_account_refresh_generations_defers_legacy_rows_until_first_success(self):
 		# Arrange: a migrated database has an unknown old generation and a published ID.
@@ -2876,8 +2992,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('''
 			INSERT INTO symbol_account_refresh_mosaics
 			(refresh_run_id, address, mosaic_id, amount, snapshot_height, snapshot_at)
-			VALUES ('old', %s, '1', 1, 1, CURRENT_TIMESTAMP)
-		''', (address,))
+			VALUES ('old', %s, '1', 1, 1, CURRENT_TIMESTAMP), ('old', %s, '2', 1, 1, CURRENT_TIMESTAMP)
+		''', (address, address))
 		cursor.execute('''
 			INSERT INTO symbol_account_list_ranks (refresh_run_id, rank_scope, rank, address) VALUES ('old', 'ID', 0, %s)
 		''', (address,))
@@ -2886,21 +3002,26 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		with database.workflow_lock():
 			database.prune_account_refresh_generations(batch_size=1, max_batches=1)
 
+		cursor.execute('CREATE SEQUENCE retention_delete_attempts')
 		cursor.execute('''
 			CREATE FUNCTION reject_retention_delete() RETURNS trigger LANGUAGE plpgsql AS $$
-			BEGIN RAISE EXCEPTION 'injected retention failure'; END $$
+			BEGIN
+				IF nextval('retention_delete_attempts') = 2 THEN RAISE EXCEPTION 'injected retention failure'; END IF;
+				RETURN OLD;
+			END $$
 		''')
 
 		def cleanup_failure_trigger():
 			database.connection.rollback()
 			with database.connection.cursor() as cleanup_cursor:
 				cleanup_cursor.execute('DROP FUNCTION IF EXISTS reject_retention_delete() CASCADE')
+				cleanup_cursor.execute('DROP SEQUENCE IF EXISTS retention_delete_attempts')
 
 			database.connection.commit()
 
 		self.addCleanup(cleanup_failure_trigger)
 		cursor.execute('''
-			CREATE TRIGGER reject_retention_delete BEFORE DELETE ON symbol_account_refresh_mosaics
+			CREATE TRIGGER reject_retention_delete AFTER DELETE ON symbol_account_refresh_mosaics
 			FOR EACH ROW EXECUTE FUNCTION reject_retention_delete()
 		''')
 		database.connection.commit()
@@ -2908,13 +3029,15 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act: the child deletion fails after the previous rank batch committed.
 		with database.workflow_lock():
 			with self.assertRaisesRegex(PsycopgError, 'injected retention failure'):
-				database.prune_account_refresh_generations(batch_size=1, max_batches=5)
+				database.prune_account_refresh_generations(batch_size=2, max_batches=5)
 
 		# Assert: the committed rank deletion remains and the child deletion rolled back.
 		cursor.execute('SELECT COUNT(*) FROM symbol_account_list_ranks')
 		self.assertEqual((0,), cursor.fetchone())
 		cursor.execute('SELECT COUNT(*) FROM symbol_account_refresh_mosaics')
-		self.assertEqual((1,), cursor.fetchone())
+		self.assertEqual((2,), cursor.fetchone())
+		cursor.execute('SELECT last_value FROM retention_delete_attempts')
+		self.assertEqual((2,), cursor.fetchone())
 
 		# Arrange: remove the injected failure before retrying.
 		cursor.execute('DROP TRIGGER reject_retention_delete ON symbol_account_refresh_mosaics')

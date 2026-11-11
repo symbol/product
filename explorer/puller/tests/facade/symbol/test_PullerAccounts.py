@@ -1639,6 +1639,8 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertEqual('published', state['previous_successful_run_id'])
 		self.assertIsNone(state['running_run_id'])
 		self.assertNotEqual('published', state['last_successful_run_id'])
+		cursor.execute('SELECT refresh_run_id FROM symbol_account_list_ranks ORDER BY refresh_run_id')
+		self.assertEqual([('published',)], cursor.fetchall())
 
 	def test_rollback_re_raises_database_error(self):
 		# Arrange:

@@ -908,7 +908,12 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	):
 		"""Deletes bounded committed batches while the caller owns the workflow lock."""
 
-		tables = ('symbol_account_list_ranks', 'symbol_account_refresh_mosaics', 'symbol_account_refresh_accounts')
+		order_by_table = {
+			'symbol_account_list_ranks': 'rank_scope, rank',
+			'symbol_account_refresh_mosaics': 'address, mosaic_id',
+			'symbol_account_refresh_accounts': 'address'
+		}
+		tables = tuple(order_by_table)
 		deadline = self._retention_time_source() + self._retention_time_budget_seconds
 		minimum_batch_size = ACCOUNT_RETENTION_MIN_BATCH_SIZE
 		delete_timeout_count = 0
@@ -938,14 +943,14 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 					self._retention_logger.info(f'Symbol account snapshot retention candidate run_id={run_id}')
 					counts = dict.fromkeys(tables, 0)
 					for table in tables:
-						# Table names are the fixed internal allowlist above.
+						# Table names and primary-key ordering are fixed in the mapping above.
 						self._retention_logger.info(
 							f'Symbol account snapshot retention attempt={attempt} run_id={run_id} table={table} batch_size={batch_size}')
 						self._set_retention_delete_timeouts(cursor, deadline, batch_size)
 						is_delete = True
 						cursor.execute(f'''
 							DELETE FROM {table} WHERE ctid IN (
-								SELECT ctid FROM {table} WHERE refresh_run_id = %s LIMIT %s
+								SELECT ctid FROM {table} WHERE refresh_run_id = %s ORDER BY {order_by_table[table]} LIMIT %s
 							)
 						''', (run_id, batch_size))
 						is_delete = False
