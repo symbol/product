@@ -16,6 +16,7 @@ describe('components/RecentTransactions', () => {
 	const blockTime = 30;
 	const baseTransaction = {
 		signer: 'NBTESTADDRESS',
+		sender: 'NBTESTADDRESS',
 		hash: 'transaction-hash',
 		timestamp: 123456,
 		amount: 1000
@@ -54,5 +55,23 @@ describe('components/RecentTransactions', () => {
 		// Assert:
 		expect(screen.queryByText(/value_transactionConfirmationTime/)).not.toBeInTheDocument();
 		expect(screen.queryByText('label_awaitingCosignatures')).not.toBeInTheDocument();
+	});
+
+	itVariant('nem')('shows multisig account as sender for unconfirmed multisig transactions', () => {
+		// Arrange:
+		const data = [{
+			...baseTransaction,
+			type: TRANSACTION_TYPE.MULTISIG,
+			group: TRANSACTION_GROUP.UNCONFIRMED,
+			signer: 'NBCOSIGNATORY',
+			sender: 'NBMULTISIG'
+		}];
+
+		// Act:
+		render(<RecentTransactions data={data} blockTime={blockTime} />);
+
+		// Assert:
+		expect(screen.getByTitle(/NBMULTISIG/)).toBeInTheDocument();
+		expect(screen.queryByTitle(/NBCOSIGNATORY/)).not.toBeInTheDocument();
 	});
 });
