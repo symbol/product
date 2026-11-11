@@ -84,6 +84,7 @@ class LockConnector(FakeConnector):
 		if not args:
 			args = (1, {})
 		super().__init__(*args, **kwargs)
+		self.block_by_height = {1: create_node_block(1), self.finalized_height: create_node_block(self.finalized_height), **self.block_by_height}
 		self.hash_responses = hash_responses or {}
 		self.secret_responses = secret_responses or {}
 
@@ -897,7 +898,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		return hash_locks, secret_locks
 
 	def _seed_finalized_lock_state(self, end_height=2):
-		self._seed_blocks(self.puller.symbol_db, [1, 2, 3])
+		self._seed_blocks(self.puller.symbol_db, [1, 2])
 		self.puller.symbol_db.upsert_sync_state(create_sync_state(
 			chain_height=2,
 			finalized_height=1,
@@ -1105,6 +1106,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		capped_connector = LockConnector(
 			3,
 			{},
+			block_by_height={2: create_node_block(2)},
 			finalized_height=3,
 			hash_responses={'lock/hash/' + LOCK_HASH: {'code': 'ResourceNotFound', 'message': 'not found'}},
 			secret_responses={_secret_search_path(SIGNER_ADDRESS, SECRET): {'data': []}})
@@ -1121,7 +1123,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		uncapped_connector = LockConnector(
 			3,
 			{2: [create_node_block(3)]},
-			{3: create_node_block(3)},
+			{2: create_node_block(2), 3: create_node_block(3)},
 			finalized_height=3,
 			hash_responses={'lock/hash/' + LOCK_HASH_2: {'code': 'ResourceNotFound', 'message': 'not found'}},
 			transactions_by_path={transaction_path(3, 3): create_transaction_page([])},
@@ -1924,7 +1926,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 	def test_sync_block_headers_keeps_all_rollback_state_unchanged_when_hash_lock_replacement_fetch_fails(self):
 		# Arrange:
 		self._seed_rollback_batch_state()
-		original_state = self._fetch_complete_batch_state()
+		original_state = self._capture_preserved_state()
 		connector = LockConnector(
 			2,
 			{1: [create_node_block(2)]},
@@ -1936,14 +1938,14 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(original_state, self._fetch_complete_batch_state())
+		self._assert_preserved_state(original_state, {**original_state.sync_state, 'status': 'unhealthy'})
 		self.assertEqual(['lock/hash/' + LOCK_HASH], [
 			path for path in connector.paths if path.startswith('lock/')])
 
 	def test_sync_block_headers_keeps_all_rollback_state_unchanged_when_secret_lock_replacement_fetch_fails(self):
 		# Arrange:
 		self._seed_rollback_batch_state()
-		original_state = self._fetch_complete_batch_state()
+		original_state = self._capture_preserved_state()
 		secret_path = _secret_search_path(SIGNER_ADDRESS, SECRET)
 		connector = LockConnector(
 			2,
@@ -1957,7 +1959,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(original_state, self._fetch_complete_batch_state())
+		self._assert_preserved_state(original_state, {**original_state.sync_state, 'status': 'unhealthy'})
 		self.assertEqual(['lock/hash/' + LOCK_HASH, secret_path], [
 			path for path in connector.paths if path.startswith('lock/')])
 

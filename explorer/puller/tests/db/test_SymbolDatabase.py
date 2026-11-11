@@ -4177,13 +4177,18 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			last_synced_block_hash=b'new-checkpoint',
 			dirty_state_from_height=None), result)
 
-	def test_rejects_invalid_sync_state_status(self):
+	def test_upsert_sync_state_rolls_back_invalid_status_and_keeps_connection_usable(self):
 		# Arrange:
 		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state())
+		before_sync_state = database.get_sync_state()
 
-		# Act + Assert:
+		# Act:
 		with self.assertRaises(PsycopgError):
 			database.upsert_sync_state(_create_sync_state(status='invalid'))
+
+		# Assert: the same connection can read the committed row without a manual rollback.
+		self.assertEqual(before_sync_state, database.get_sync_state())
 
 	def test_rejects_non_singleton_sync_state_row(self):
 		# Arrange:
@@ -4984,7 +4989,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual(original_namespace_state, fetch_namespace_state(database.connection))
 		self.assertEqual(original_mosaic_state, fetch_mosaic_state(database))
 
-	def test_repair_rollback_deletes_current_state_but_preserves_account_refresh_rows(self):
+	def test_repair_rollback_preserves_current_state_and_account_refresh_rows_without_refresh_entries(self):
 		# Arrange:
 		database = self._create_database()
 		account_row, mosaic_rows = _create_account_row()
@@ -5024,11 +5029,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('SELECT refresh_run_id, address, mosaic_id, amount FROM symbol_account_refresh_mosaics')
 		refresh_mosaic_results = cursor.fetchall()
 
-		# current-state rows are deleted on rollback (last_seen_height/updated_at_height >= fork_height); they get
-		# repopulated by the next dirty-key touch or account refresh snapshot run, not by rollback repair itself.
-		self.assertEqual([], account_results)
-		self.assertEqual([], mosaic_results)
-		self.assertEqual([], multisig_results)
+		# Rollback preserves account-family rows until node-backed refresh entries replace affected addresses.
+		self.assertEqual([(expected_address,)], [(bytes(address),) for address, in account_results])
+		self.assertEqual([
+			(expected_address, expected_mosaic_row['mosaic_id'], expected_mosaic_row['amount'])
+		], [(bytes(address), mosaic_id, amount) for address, mosaic_id, amount in mosaic_results])
+		self.assertEqual([(expected_address, 1, 1)], [
+			(bytes(address), min_approval, min_removal)
+			for address, min_approval, min_removal in multisig_results])
 		self.assertEqual(
 			[('run-1', expected_address, 0)],
 			[(run_id, bytes(address), account_search_order)
@@ -5652,9 +5660,17 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('SELECT encode(address, \'hex\'), updated_at_height FROM symbol_multisig ORDER BY address')
 		multisig_results = cursor.fetchall()
 
-		self.assertEqual([(ADDRESS1.lower(), 1)], account_results)
-		self.assertEqual([(ADDRESS1.lower(), NATIVE_MOSAIC_ID, 1)], mosaic_results)
-		self.assertEqual([(ADDRESS1.lower(), 1)], multisig_results)
+		self.assertEqual(sorted([
+			(ADDRESS1.lower(), 1), (RECIPIENT_ADDRESS.lower(), 2), (ADDRESS4.lower(), 3)
+		]), account_results)
+		self.assertEqual(sorted([
+			(ADDRESS1.lower(), NATIVE_MOSAIC_ID, 1),
+			(RECIPIENT_ADDRESS.lower(), NATIVE_MOSAIC_ID, 2),
+			(ADDRESS4.lower(), NATIVE_MOSAIC_ID, 3)
+		]), mosaic_results)
+		self.assertEqual(sorted([
+			(ADDRESS1.lower(), 1), (RECIPIENT_ADDRESS.lower(), 2), (ADDRESS4.lower(), 3)
+		]), multisig_results)
 
 	def test_can_repair_rollback_from_height_in_one_transaction(self):
 		# Arrange:
@@ -5720,9 +5736,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([(1, 'kept address', 'signer')], address_results)
 		self.assertEqual([(1,)], receipt_results)
 		self.assertEqual([(1, 100)], block_reward_results)
-		self.assertEqual([(ADDRESS1.lower(), 1)], account_results)
-		self.assertEqual([(ADDRESS1.lower(), NATIVE_MOSAIC_ID, 1)], account_mosaic_results)
-		self.assertEqual([(ADDRESS1.lower(), 1)], multisig_results)
+		self.assertEqual(sorted([
+			(ADDRESS1.lower(), 1), (RECIPIENT_ADDRESS.lower(), 2)
+		]), account_results)
+		self.assertEqual(sorted([
+			(ADDRESS1.lower(), NATIVE_MOSAIC_ID, 1),
+			(RECIPIENT_ADDRESS.lower(), NATIVE_MOSAIC_ID, 2)
+		]), account_mosaic_results)
+		self.assertEqual(sorted([
+			(ADDRESS1.lower(), 1), (RECIPIENT_ADDRESS.lower(), 2)
+		]), multisig_results)
 		self.assertEqual('repairing', sync_state['status'])
 		self.assertEqual(1, sync_state['last_synced_height'])
 		self.assertEqual(
@@ -7095,6 +7118,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'metadata_entries',
 			'hash_lock_entries',
 			'secret_lock_entries',
-			'mosaic_restriction_entries'), entries._fields)
-		self.assertEqual(((), (), (), (), (), ()), entries)
+			'mosaic_restriction_entries',
+			'account_entries'), entries._fields)
+		self.assertEqual(((), (), (), (), (), (), ()), entries)
 		self.assertEqual((), entries.mosaic_restriction_entries)

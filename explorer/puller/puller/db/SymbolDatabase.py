@@ -9,6 +9,7 @@ from common.symbol.Transaction import MESSAGE_TYPE_LABELS
 from psycopg2 import Error as PsycopgError
 from psycopg2 import errorcodes, sql
 from psycopg2.extras import Json
+from symbolchain.sc import ReceiptType, TransactionType
 from zenlog import log
 
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
@@ -41,8 +42,8 @@ from .DatabaseConnection import DatabaseConnection
 RollbackRefreshEntries = namedtuple(
 	'RollbackRefreshEntries',
 	['namespace_entries', 'mosaic_entries', 'metadata_entries', 'hash_lock_entries', 'secret_lock_entries',
-		'mosaic_restriction_entries'],
-	defaults=((), (), (), (), (), ()))
+		'mosaic_restriction_entries', 'account_entries'],
+	defaults=((), (), (), (), (), (), ()))
 
 
 class AccountRetentionTimeLimit(Exception):
@@ -725,9 +726,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def upsert_sync_state(self, sync_state):
 		"""Upserts the singleton Symbol sync state."""
 
-		cursor = self.connection.cursor()
-		self._execute_upsert_sync_state(cursor, sync_state)
-		self._commit()
+		with self._database_transaction() as cursor:
+			self._execute_upsert_sync_state(cursor, sync_state)
 
 	def checkpoint_sync_state(self, sync_state):
 		"""Publishes one fully written Symbol batch and clears its dirty marker atomically."""
@@ -1820,9 +1820,13 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		"""Upserts or deletes one Symbol multisig current-state row."""
 
 		cursor = self.connection.cursor()
+		self._execute_upsert_multisig(cursor, address, multisig_row_or_none)
+		self._commit()
+
+	@staticmethod
+	def _execute_upsert_multisig(cursor, address, multisig_row_or_none):
 		if multisig_row_or_none is None:
 			cursor.execute('DELETE FROM symbol_multisig WHERE address = %s', (address,))
-			self._commit()
 			return
 
 		cursor.execute(
@@ -1851,7 +1855,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				updated_at_height = EXCLUDED.updated_at_height
 			''',
 			multisig_row_or_none)
-		self._commit()
 
 	@staticmethod
 	def _execute_insert_account_refresh_snapshot_rows(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -2090,17 +2093,199 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def get_block_hashes(self, start_height, end_height):
 		"""Gets block hashes for an inclusive height range."""
 
-		cursor = self.connection.cursor()
-		cursor.execute(
-			'''
-			SELECT height, hash
-			FROM symbol_blocks
-			WHERE height BETWEEN %s AND %s
-			ORDER BY height ASC
-			''',
-			(start_height, end_height))
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				SELECT height, hash
+				FROM symbol_blocks
+				WHERE height BETWEEN %s AND %s
+				ORDER BY height ASC
+				''',
+				(start_height, end_height))
+			block_hashes = cursor.fetchall()
 
-		return cursor.fetchall()
+		return block_hashes
+
+	def get_max_block_height(self):
+		"""Gets the highest persisted block height, including an incomplete dirty batch."""
+
+		with self._database_transaction() as cursor:
+			cursor.execute('SELECT MAX(height) FROM symbol_blocks')
+			result = cursor.fetchone()
+
+		return result[0] if result else None
+
+	def get_rollback_account_addresses(self, height):
+		"""Gets account keys touched by orphaned block beneficiaries, transaction roles, or receipt addresses."""
+
+		restriction_types = (
+			TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value,
+			TransactionType.MOSAIC_ADDRESS_RESTRICTION.value)
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				SELECT address FROM (
+					SELECT beneficiary_address AS address FROM symbol_blocks WHERE height >= %s
+					UNION
+					SELECT transaction_address.address
+					FROM symbol_transaction_addresses AS transaction_address
+					JOIN symbol_transactions AS t ON t.id = transaction_address.transaction_id
+					WHERE transaction_address.height >= %s
+					AND NOT (t.type = ANY(%s) AND transaction_address.role = 'target')
+					UNION
+					SELECT target_address AS address FROM symbol_receipts WHERE height >= %s AND target_address IS NOT NULL
+					UNION
+					SELECT sender_address AS address FROM symbol_receipts WHERE height >= %s AND sender_address IS NOT NULL
+					UNION
+					SELECT recipient_address AS address FROM symbol_receipts WHERE height >= %s AND recipient_address IS NOT NULL
+				) AS rollback_addresses
+				WHERE address IS NOT NULL
+				ORDER BY address
+				''',
+				(height, height, list(restriction_types), height, height, height))
+			rows = cursor.fetchall()
+
+		return [bytes(row[0]) for row in rows]
+
+	def get_rollback_inflation_mosaic_ids(self, height):
+		"""Gets mosaic ids paid by orphaned inflation receipts before those receipts are deleted."""
+
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				SELECT DISTINCT mosaic_id
+				FROM symbol_receipts
+				WHERE height >= %s AND receipt_group = 'inflation' AND mosaic_id IS NOT NULL
+				ORDER BY mosaic_id
+				''',
+				(height,))
+			rows = cursor.fetchall()
+
+		return [row[0] for row in rows]
+
+	def get_rollback_beneficiary_timestamps(self, height, addresses):
+		"""Gets the latest surviving beneficiary block timestamp for each supplied account key."""
+
+		if not addresses:
+			return {}
+
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				SELECT beneficiary_address, MAX(timestamp)
+				FROM symbol_blocks
+				WHERE height < %s AND beneficiary_address = ANY(%s)
+				GROUP BY beneficiary_address
+				''',
+				(height, addresses))
+			rows = cursor.fetchall()
+
+		return {bytes(address): timestamp for address, timestamp in rows}
+
+	def has_rollback_lock_events(self, height):
+		"""Checks whether orphaned history contains lock events whose finalized key may have been pruned."""
+
+		lock_transaction_types = (
+			TRANSACTION_TYPE_LABELS[TransactionType.AGGREGATE_BONDED.value],
+			TRANSACTION_TYPE_LABELS[TransactionType.HASH_LOCK.value],
+			TRANSACTION_TYPE_LABELS[TransactionType.SECRET_LOCK.value],
+			TRANSACTION_TYPE_LABELS[TransactionType.SECRET_PROOF.value])
+		lock_receipt_types = tuple(
+			RECEIPT_TYPE_LABELS[receipt_type.value]
+			for receipt_type in (
+				ReceiptType.LOCK_HASH_CREATED,
+				ReceiptType.LOCK_HASH_COMPLETED,
+				ReceiptType.LOCK_HASH_EXPIRED,
+				ReceiptType.LOCK_SECRET_CREATED,
+				ReceiptType.LOCK_SECRET_COMPLETED,
+				ReceiptType.LOCK_SECRET_EXPIRED))
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				SELECT EXISTS (
+					SELECT 1 FROM symbol_transactions WHERE height >= %s AND type_name::text = ANY(%s)
+					UNION ALL
+					SELECT 1 FROM symbol_receipts WHERE height >= %s AND receipt_type::text = ANY(%s)
+				)
+				''',
+				(height, list(lock_transaction_types), height, list(lock_receipt_types)))
+			result = cursor.fetchone()[0]
+
+		return result
+
+	def has_artifact_state_gaps(self, height):
+		"""Checks whether orphaned artifact events lack current-state keys needed for refresh."""
+
+		namespace_transaction_types = tuple(
+			TRANSACTION_TYPE_LABELS[transaction_type.value]
+			for transaction_type in (
+				TransactionType.NAMESPACE_REGISTRATION,
+				TransactionType.ADDRESS_ALIAS,
+				TransactionType.MOSAIC_ALIAS))
+		mosaic_transaction_types = tuple(
+			TRANSACTION_TYPE_LABELS[transaction_type.value]
+			for transaction_type in (
+				TransactionType.MOSAIC_DEFINITION,
+				TransactionType.MOSAIC_SUPPLY_CHANGE))
+		namespace_receipt_types = tuple(
+			RECEIPT_TYPE_LABELS[receipt_type.value]
+			for receipt_type in (ReceiptType.NAMESPACE_EXPIRED, ReceiptType.NAMESPACE_DELETED))
+		mosaic_receipt_types = (RECEIPT_TYPE_LABELS[ReceiptType.MOSAIC_EXPIRED.value],)
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				SELECT EXISTS (
+					SELECT 1
+					FROM symbol_transactions AS tx
+					WHERE tx.height >= %s
+						AND tx.type_name::text = ANY(%s)
+						AND (
+							CASE WHEN tx.type = %s THEN tx.body->>'id' ELSE tx.body->>'namespaceId' END IS NULL
+							OR NOT EXISTS (
+								SELECT 1 FROM symbol_namespaces AS current_namespace
+								WHERE current_namespace.namespace_id = CASE WHEN tx.type = %s
+									THEN tx.body->>'id' ELSE tx.body->>'namespaceId' END
+									AND current_namespace.updated_at_height >= %s))
+					UNION ALL
+					SELECT 1
+					FROM symbol_transactions AS tx
+					LEFT JOIN symbol_transaction_mosaics AS tx_mosaic
+						ON tx_mosaic.transaction_id = tx.id AND tx_mosaic.role::text = 'definition'
+					WHERE tx.height >= %s
+						AND tx.type_name::text = ANY(%s)
+						AND (
+							tx_mosaic.mosaic_id IS NULL
+							OR NOT EXISTS (
+								SELECT 1 FROM symbol_mosaics AS current_mosaic
+								WHERE current_mosaic.mosaic_id = tx_mosaic.mosaic_id
+									AND current_mosaic.updated_at_height >= %s))
+					UNION ALL
+					SELECT 1
+					FROM symbol_receipts AS receipt
+					WHERE receipt.height >= %s
+						AND receipt.receipt_type::text = ANY(%s)
+					UNION ALL
+					SELECT 1
+					FROM symbol_receipts AS receipt
+					WHERE receipt.height >= %s
+						AND receipt.receipt_type::text = ANY(%s)
+						AND (
+							receipt.artifact_id IS NULL
+							OR NOT EXISTS (
+								SELECT 1 FROM symbol_mosaics AS current_mosaic
+								WHERE current_mosaic.mosaic_id = receipt.artifact_id
+									AND current_mosaic.updated_at_height >= %s))
+				)
+				''',
+				(
+					height, list(namespace_transaction_types), TransactionType.NAMESPACE_REGISTRATION.value,
+					TransactionType.NAMESPACE_REGISTRATION.value, height,
+					height, list(mosaic_transaction_types), height,
+					height, list(namespace_receipt_types),
+					height, list(mosaic_receipt_types), height))
+			result = cursor.fetchone()[0]
+
+		return result
 
 	def delete_blocks_from_height(self, height):
 		"""Deletes blocks from the supplied height for rollback repair."""
@@ -2121,6 +2306,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			self._execute_hash_lock_entries(cursor, refresh_entries.hash_lock_entries)
 			self._execute_secret_lock_entries(cursor, refresh_entries.secret_lock_entries)
 			self._execute_mosaic_restriction_entries(cursor, refresh_entries.mosaic_restriction_entries)
+			self._execute_rollback_account_entries(cursor, refresh_entries.account_entries)
 			self._execute_upsert_sync_state(cursor, sync_state)
 
 	@staticmethod
@@ -2130,12 +2316,25 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('DELETE FROM symbol_transactions WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_receipts WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_blocks WHERE height >= %s', (height,))
-		cursor.execute('DELETE FROM symbol_multisig WHERE updated_at_height >= %s', (height,))
-		cursor.execute('DELETE FROM symbol_account_mosaics WHERE updated_at_height >= %s', (height,))
-		cursor.execute('DELETE FROM symbol_accounts WHERE last_seen_height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_hash_locks WHERE updated_at_height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_secret_locks WHERE updated_at_height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_mosaic_restrictions WHERE updated_at_height >= %s', (height,))
+
+	@staticmethod
+	def _execute_rollback_account_entries(cursor, entries):
+		for entry in entries:
+			if entry['account_row'] is None:
+				cursor.execute('DELETE FROM symbol_multisig WHERE address = %s', (entry['address'],))
+				cursor.execute('DELETE FROM symbol_account_mosaics WHERE address = %s', (entry['address'],))
+				cursor.execute('DELETE FROM symbol_accounts WHERE address = %s', (entry['address'],))
+				continue
+
+			SymbolDatabase._execute_upsert_account_current_state(
+				cursor,
+				entry['account_row'],
+				entry['mosaic_rows'],
+				entry['overwrite_is_harvesting_active'])
+			SymbolDatabase._execute_upsert_multisig(cursor, entry['address'], entry['multisig_row'])
 
 	def upsert_transactions_for_height(self, height, transaction_entries):
 		"""Replaces persisted Symbol transactions and child index rows for one height atomically."""

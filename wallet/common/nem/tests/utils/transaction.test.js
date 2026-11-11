@@ -1,4 +1,4 @@
-import { TransactionType } from '../../src/constants';
+import { MessageKind, MessageType, TransactionType } from '../../src/constants';
 import {
 	cosignTransaction,
 	createDeadline,
@@ -6,6 +6,7 @@ import {
 	decryptMessage,
 	encodePlainMessage,
 	encryptMessage,
+	getMessageKind,
 	isIncomingTransaction,
 	isMultisigTransaction,
 	isOutgoingTransaction,
@@ -25,6 +26,7 @@ import { TransactionBundle } from 'wallet-common-core';
 const NETWORK_TIME = networkProperties.networkTime;
 const NEM_TIMESTAMP_SECONDS = NETWORK_TIME / 1000;
 const MULTISIG_HASH = 'A'.repeat(64);
+const UNKNOWN_MESSAGE_TYPE = 3;
 
 // Deterministic hash of the signed transfer below (the transaction's identity).
 const SIGNED_TRANSFER_HASH = '7DC799D4B3EBE14C5525EF3CCC94EF11AF9F8D73F8A28DE723BCB9B0B2A76F41';
@@ -209,6 +211,38 @@ describe('utils/transaction', () => {
 			// Assert:
 			expect(result).toBe(expectedText);
 		});
+	});
+
+	describe('getMessageKind', () => {
+		const runGetMessageKindTest = (description, config, expected) => {
+			it(description, () => {
+				// Act:
+				const result = getMessageKind(config.type);
+
+				// Assert:
+				expect(result).toBe(expected.kind);
+			});
+		};
+
+		const getMessageKindTests = [
+			{
+				description: 'returns plain for the plain text type',
+				config: { type: MessageType.PlainText },
+				expected: { kind: MessageKind.PLAIN }
+			},
+			{
+				description: 'returns encrypted for the encrypted text type',
+				config: { type: MessageType.EncryptedText },
+				expected: { kind: MessageKind.ENCRYPTED }
+			},
+			{
+				description: 'returns raw for an unknown type',
+				config: { type: UNKNOWN_MESSAGE_TYPE },
+				expected: { kind: MessageKind.RAW }
+			}
+		];
+
+		getMessageKindTests.forEach(test => runGetMessageKindTest(test.description, test.config, test.expected));
 	});
 
 	describe('encryptMessage', () => {

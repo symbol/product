@@ -347,6 +347,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 class RestrictionResponseConnector(FakeConnector):
 	def __init__(self, *args, restriction_responses=None, **kwargs):
 		super().__init__(*args, **kwargs)
+		self.block_by_height = {1: create_node_block(1), **self.block_by_height}
 		self.restriction_responses = restriction_responses or {}
 
 	async def get(self, url_path, *args):
@@ -919,7 +920,7 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 		connector, response_path = self._seed_rollback_restriction_state(current_row=True, transaction_row=True)
 		self._seed_existing_current_state()
 		connector.restriction_responses[response_path] = RuntimeError('rollback restriction fetch failed')
-		before_state = self._fetch_complete_batch_state()
+		before_state = self._capture_preserved_state()
 
 		# Act + Assert:
 		with self.assertRaisesRegex(RuntimeError, 'rollback restriction fetch failed'):
@@ -927,4 +928,4 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 
 		# Assert:
 		self.assertEqual([1, 2, 3], self._fetch_block_heights(self.puller.symbol_db))
-		self.assertEqual(before_state, self._fetch_complete_batch_state())
+		self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
