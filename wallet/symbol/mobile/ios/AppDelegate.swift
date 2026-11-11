@@ -39,9 +39,23 @@ class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
 
   override func bundleURL() -> URL? {
 #if DEBUG
-    RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
+    addBrand(to: RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index"))
 #else
     Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
   }
+
+#if DEBUG
+  /// Adds the app brand to a Metro bundle URL.
+  /// A file URL (prebuilt bundle, no Metro) is returned as is.
+  private func addBrand(to url: URL?) -> URL? {
+    guard let url, !url.isFileURL, var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+      return url
+    }
+    let brand = Bundle.main.object(forInfoDictionaryKey: "AppBrand") as? String
+    components.queryItems = (components.queryItems ?? []) + [URLQueryItem(name: "resolver.brand", value: brand)]
+
+    return components.url
+  }
+#endif
 }

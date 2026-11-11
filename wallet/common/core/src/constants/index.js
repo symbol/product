@@ -75,10 +75,9 @@ export const TransactionGroup = {
 	FAILED: 'failed'
 };
 
-// Common, chain-agnostic message kinds. Each chain maps its native protocol message-type code to one
-// of these for the wallet-facing Transaction.message.type; the raw protocol code is kept per chain in
-// message.native.type. Chain-specific kinds collapse to RAW (see message model migration notes).
-export const MessageType = {
+// Chain-agnostic transaction message kind.
+// Used for easier detecting message type without dealing with the chain-specific raw message type values.
+export const MessageKind = {
 	PLAIN: 'plain',
 	ENCRYPTED: 'encrypted',
 	RAW: 'raw'

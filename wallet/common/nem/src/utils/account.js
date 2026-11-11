@@ -181,12 +181,15 @@ export const isPublicKey = stringToTest => {
 /**
  * Checks if a given string is a valid NEM address.
  * @param {string} address - The address to test.
- * @param {string} networkIdentifier - The network identifier.
+ * @param {string} [networkIdentifier] - The network identifier (optional).
  * @returns {boolean} A boolean indicating if the string is a valid NEM address.
  */
 export const isNemAddress = (address, networkIdentifier) => {
 	if (typeof address !== 'string')
 		return false;
+
+	if (!networkIdentifier)
+		return Network.MAINNET.isValidAddressString(address) || Network.TESTNET.isValidAddressString(address);
 
 	const networkMap = {
 		[NetworkIdentifier.MAIN_NET]: Network.MAINNET,

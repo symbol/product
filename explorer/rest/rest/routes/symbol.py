@@ -1,6 +1,6 @@
 import configparser
 import re
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from common.symbol.NativeMosaic import create_native_mosaic_info
@@ -43,6 +43,7 @@ TRANSACTION_QUERY_PARAMETERS = frozenset([
 	'limit', 'offset', 'height', 'transactionTypes', 'address', 'senderAddress', 'signerPublicKey', 'recipientAddress',
 	'mosaic', 'embedded', 'order'
 ])
+TRANSACTION_STATISTICS_QUERY_PARAMETERS = frozenset()
 NAMESPACE_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort', 'aliasType', 'registrationType', 'ownerAddress'])
 NAMESPACE_MAX_OFFSET = 100000
 NAMESPACE_ALIAS_TYPES = {0: 'none', 1: 'mosaic', 2: 'address'}
@@ -158,6 +159,8 @@ def _create_harvesting_balance_range(app_config):
 
 
 def setup_symbol_routes(app, symbol_api_facade):
+	"""Registers Symbol API routes and their shared database error boundary."""
+
 	def _run_symbol_query(query_fn, error_log):
 		try:
 			return None, query_fn()
@@ -248,6 +251,7 @@ def setup_symbol_routes(app, symbol_api_facade):
 		return jsonify(result)
 
 	_setup_symbol_transactions_route(app, symbol_api_facade, _run_symbol_query)
+	_setup_symbol_transaction_statistics_routes(app, symbol_api_facade, _run_symbol_query)
 	_setup_symbol_account_routes(app, symbol_api_facade, _run_symbol_query)
 	_setup_symbol_block_receipts_route(app, symbol_api_facade, _run_symbol_query)
 
@@ -401,8 +405,12 @@ def _setup_symbol_namespace_routes(app, symbol_api_facade, run_symbol_query):
 
 
 def _setup_symbol_transactions_route(app, symbol_api_facade, run_symbol_query):
+	"""Registers confirmed transaction search with canonical query parsing."""
+
 	@app.route('/api/symbol/transactions')
 	def api_get_symbol_transactions():
+		"""Validates transaction filters and returns the confirmed transaction page."""
+
 		try:
 			_validate_allowed_query_parameters(TRANSACTION_QUERY_PARAMETERS)
 			query = _parse_transaction_query()
@@ -439,6 +447,53 @@ def _setup_symbol_transaction_detail_route(app, symbol_api_facade):
 			abort(404)
 		except (PsycopgError, SymbolDataUnavailable, SymbolDataInvalid):
 			return _service_unavailable('Symbol backend data is unavailable')
+
+		return jsonify(result)
+
+
+def _setup_symbol_transaction_statistics_routes(app, symbol_api_facade, run_symbol_query):
+	"""Registers summary and calendar-range transaction statistics endpoints."""
+
+	@app.route('/api/symbol/transaction/statistics')
+	def api_get_symbol_tx_statistics():
+		"""Returns statistics for the healthy published Symbol chain."""
+
+		_validate_allowed_query_parameters(TRANSACTION_STATISTICS_QUERY_PARAMETERS)
+
+		error, result = run_symbol_query(
+			symbol_api_facade.get_transaction_statistics,
+			'Failed to get Symbol transaction statistics')
+		if error:
+			return error
+
+		return jsonify(result)
+
+	@app.route('/api/symbol/transaction/statistics/range')
+	def api_get_symbol_tx_statistics_range():
+		"""Validates inclusive calendar dates and returns totals grouped by day or month."""
+
+		start_date = request.args.get('startDate', '').strip()
+		end_date = request.args.get('endDate', '').strip()
+		period_type = request.args.get('periodType', '').strip().upper()
+		if not all((start_date, end_date, period_type)):
+			abort(400, 'startDate, endDate and period type are required')
+
+		try:
+			start_date, end_date = (date.fromisoformat(value) for value in (start_date, end_date))
+		except ValueError as error:
+			abort(400, error)
+
+		if start_date > end_date:
+			abort(400, 'start date must be less than or equal to end date')
+
+		if period_type not in ('DAY', 'MONTH'):
+			abort(400, 'Period type must be either DAY or MONTH')
+
+		error, result = run_symbol_query(
+			lambda: symbol_api_facade.get_transaction_statistics_range(start_date, end_date, period_type),
+			'Failed to get Symbol transaction statistics range')
+		if error:
+			return error
 
 		return jsonify(result)
 

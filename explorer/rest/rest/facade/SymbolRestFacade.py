@@ -5,6 +5,8 @@ from zenlog import log
 
 from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolTransactionNodeBacking import SymbolNodeNotFound, SymbolNodeUnavailable
+from rest.facade.TtlCache import TtlCache
+from rest.model.common import STATISTICS_CACHE_MAX_ENTRIES, STATISTICS_CACHE_TTL_SECONDS
 from rest.model.format import format_timestamp
 from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountStatisticsView, SymbolAccountView
 from rest.model.symbol.Block import SymbolBlockStatisticsView
@@ -16,10 +18,10 @@ from rest.model.symbol.validation import SymbolDataInvalid
 DATABASE_UNAVAILABLE_MESSAGE = 'Symbol database is unavailable'
 
 
-class SymbolRestFacade:
+class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 	"""Symbol Rest Facade."""
 
-	# The setup boundary owns independently configured REST dependencies.
+	# The facade owns independent REST dependencies, account settings and the statistics cache.
 	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		self, symbol_db, node_config, native_mosaic_info, network, account_refresh_max_age_seconds=None,
 		harvesting_active_window_days=None, harvesting_balance_range=None, node_backing=None):
@@ -43,6 +45,7 @@ class SymbolRestFacade:
 		self.account_refresh_max_age_seconds = account_refresh_max_age_seconds
 		self.harvesting_active_window_days = harvesting_active_window_days
 		self.harvesting_balance_range = harvesting_balance_range
+		self.statistics_cache = TtlCache(STATISTICS_CACHE_TTL_SECONDS, STATISTICS_CACHE_MAX_ENTRIES)
 		self.node_backing = node_backing
 
 	def get_health(self):
@@ -187,6 +190,26 @@ class SymbolRestFacade:
 
 		transactions = self.symbol_db.get_transactions(query)
 		return [SymbolTransactionView(transaction).to_dict(self.native_mosaic_info) for transaction in transactions]
+
+	def get_transaction_statistics(self):
+		"""Gets Symbol transaction statistics."""
+
+		statistics = self.symbol_db.get_transaction_statistics(self.statistics_cache)
+		return {
+			'total': statistics.total,
+			'last30Days': statistics.last30_day,
+			'last24Hours': statistics.last24_hours,
+			'averagePerBlock': statistics.average_per_block
+		}
+
+	def get_transaction_statistics_range(self, start_date, end_date, period_type):
+		"""Gets transaction totals for the requested calendar range."""
+
+		rows = self.symbol_db.get_transaction_statistics_range(start_date, end_date, period_type)
+		return {
+			'periodType': period_type.lower(),
+			'data': [{'period': row.period, 'totalTransactions': row.total_transactions} for row in rows]
+		}
 
 	async def get_transaction_detail(self, transaction_hash):
 		"""Gets a confirmed or Node-backed Symbol transaction detail DTO."""

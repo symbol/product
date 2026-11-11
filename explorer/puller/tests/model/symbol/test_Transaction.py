@@ -3,12 +3,12 @@ import copy
 from datetime import datetime, timezone
 from unittest import TestCase
 
+from common.symbol.Transaction import MESSAGE_TYPE_LABELS
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Network
 
 from puller.model.symbol.Transaction import (
-	MESSAGE_TYPE_LABELS,
 	TRANSACTION_TYPE_LABELS,
 	create_transaction_address_rows,
 	create_transaction_mosaic_rows,

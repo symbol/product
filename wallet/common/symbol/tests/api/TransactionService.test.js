@@ -31,7 +31,8 @@ jest.unstable_mockModule('../../src/utils', () => {
 });
 jest.unstable_mockModule('wallet-common-core', () => ({
 	ApiError: class ApiError extends Error { },
-	NotFoundError: class NotFoundError extends Error { }
+	NotFoundError: class NotFoundError extends Error { },
+	constants: {}
 }));
 
 const { TransactionService } = await import('../../src/api/TransactionService');

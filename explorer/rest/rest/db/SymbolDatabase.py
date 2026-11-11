@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines  # Namespace REST data access remains owned by this database facade.
 import re
 from collections import namedtuple
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 
@@ -82,6 +83,8 @@ SYNC_STATE_COLUMNS = [
 	'dirty_state_from_height',
 	'updated_at'
 ]
+TRANSACTION_STATISTICS_WINDOW = 240
+TransactionStatisticsHead = namedtuple('TransactionStatisticsHead', ['height', 'timestamp', 'block_hash', 'published_hash', 'updated_at'])
 ReceiptQuery = namedtuple(
 	'ReceiptQuery',
 	['limit', 'offset', 'height', 'receipt_group', 'receipt_type', 'included_receipt_types', 'target_address', 'sender_address'],
@@ -115,6 +118,9 @@ TransactionQuery = namedtuple(
 	['limit', 'offset', 'height', 'transaction_types', 'address', 'signer_public_key', 'recipient_address',
 		'transfer_mosaic_id', 'include_embedded', 'sender_address'],
 	defaults=(10, 0, None, (), None, None, None, None, False, None))
+TransactionStatisticsRecord = namedtuple(
+	'TransactionStatisticsRecord', ['total', 'last30_day', 'last24_hours', 'average_per_block'])
+TransactionRangeRecord = namedtuple('TransactionRangeRecord', ['period', 'total_transactions'])
 NamespaceQuery = namedtuple(
 	'NamespaceQuery',
 	['limit', 'offset', 'sort', 'alias_type', 'registration_type', 'owner_address'],
@@ -354,6 +360,118 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 					return []
 
 				return self._fetch_transaction_records(cursor, transaction_rows, sync_state)
+
+	def get_transaction_statistics(self, cache=None):
+		"""Gets statistics, validating publication before cache lookup in the aggregation snapshot."""
+
+		with self._read_snapshot() as cursor:
+			head = self._fetch_transaction_statistics_head(cursor)
+			if cache is None:
+				return self._fetch_transaction_statistics(cursor, head)
+
+			# The key and loader share this snapshot: a concurrent publication cannot label old totals with a new head.
+			return cache.get_or_load(head, lambda: self._fetch_transaction_statistics(cursor, head))
+
+	@staticmethod
+	def _fetch_transaction_statistics(cursor, head):
+		"""Aggregates totals and the latest block average independently within the published bounds."""
+
+		cursor.execute(
+			'''
+			WITH bounded_blocks AS NOT MATERIALIZED (
+				SELECT blocks.height, blocks.timestamp AS block_timestamp,
+					blocks.transactions_count, blocks.total_transactions_count
+				FROM symbol_blocks AS blocks
+				WHERE blocks.height <= %s
+			), totals AS (
+				SELECT
+					COALESCE(SUM(total_transactions_count), 0)::bigint AS total,
+					COALESCE(SUM(total_transactions_count) FILTER (
+						WHERE block_timestamp > %s::timestamp - %s
+							AND block_timestamp <= %s), 0)::bigint AS last30_day,
+					COALESCE(SUM(total_transactions_count) FILTER (
+						WHERE block_timestamp > %s::timestamp - %s
+							AND block_timestamp <= %s), 0)::bigint AS last24_hours
+				FROM bounded_blocks
+			), avg_latest AS (
+				SELECT COALESCE(AVG(transactions_count)::double precision, 0.0) AS average_per_block
+				FROM (
+					SELECT transactions_count
+					FROM bounded_blocks
+					ORDER BY height DESC
+					LIMIT %s
+				) AS latest_blocks
+			)
+			SELECT totals.total, totals.last30_day, totals.last24_hours, avg_latest.average_per_block
+			FROM totals, avg_latest
+			''',
+			(head.height, head.timestamp, timedelta(days=30), head.timestamp,
+				head.timestamp, timedelta(hours=24), head.timestamp, TRANSACTION_STATISTICS_WINDOW))
+		return TransactionStatisticsRecord(*cursor.fetchone())
+
+	def get_transaction_statistics_range(self, start_date, end_date, period_type):
+		"""Aggregates existing blocks in the requested period and published snapshot."""
+
+		if period_type not in ('DAY', 'MONTH'):
+			raise ValueError('Invalid transaction statistics period')
+
+		period_format = 'YYYY-MM-DD' if period_type == 'DAY' else 'YYYY-MM'
+		with self._read_snapshot() as cursor:
+			head = self._fetch_transaction_statistics_head(cursor)
+			cursor.execute(
+				"""
+				SELECT to_char(date_trunc(%s, blocks.timestamp), %s),
+					SUM(blocks.transactions_count)::bigint
+				FROM symbol_blocks AS blocks
+				WHERE blocks.height <= %s
+					AND blocks.timestamp >= %s::date
+					AND blocks.timestamp < %s::date + INTERVAL '1 day'
+					AND blocks.timestamp <= %s
+				GROUP BY 1
+				ORDER BY 1
+				""",
+				(period_type, period_format, head.height, start_date, end_date, head.timestamp))
+			return [TransactionRangeRecord(*row) for row in cursor.fetchall()]
+
+	@contextmanager
+	def _read_snapshot(self):
+		"""Provides one read-only repeatable-read cursor and resets failed connections."""
+
+		with self.connection() as connection:
+			try:
+				with connection.cursor() as cursor:
+					self._start_read_transaction(cursor)
+					cursor.execute('SET TRANSACTION READ ONLY')
+					yield cursor
+			except Exception:
+				connection.rollback()
+				raise
+			connection.commit()
+
+	def _fetch_transaction_statistics_head(self, cursor):
+		"""Returns the validated published head and revision used to identify cached statistics."""
+
+		sync_state = self._fetch_sync_state(cursor)
+		if not sync_state:
+			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
+
+		if sync_state['status'] != 'healthy' or sync_state['dirty_state_from_height'] is not None:
+			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
+
+		last_synced_height = sync_state['last_synced_height']
+		if isinstance(last_synced_height, bool) or not isinstance(last_synced_height, int) or last_synced_height < 1:
+			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
+
+		cursor.execute('SELECT timestamp, hash FROM symbol_blocks WHERE height = %s', (last_synced_height,))
+		result = cursor.fetchone()
+		if not result or not isinstance(result[0], datetime):
+			raise SymbolDataUnavailable('Symbol transaction statistics are unavailable')
+
+		# Include both block identity and publication revision, so same-height replacement and republishing miss the cache.
+		return TransactionStatisticsHead(
+			last_synced_height, result[0], bytes(result[1]),
+			bytes(sync_state['last_synced_block_hash']) if sync_state['last_synced_block_hash'] is not None else None,
+			sync_state['updated_at'])
 
 	def try_get_account(self, address=None, public_key=None):
 		"""Gets one current-state Symbol account and its detail relations."""

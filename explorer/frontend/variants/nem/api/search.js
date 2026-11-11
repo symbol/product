@@ -8,8 +8,10 @@ const ADDRESS_LENGTH = 40;
 const HEX_KEY_LENGTH = 64;
 
 const searchAccount = query => {
-	if (ADDRESS_LENGTH === query.length)
-		return fetchAccountInfo(query);
+	const address = query.replace(/-/g, '');
+
+	if (ADDRESS_LENGTH === address.length)
+		return fetchAccountInfo(address);
 
 	if (HEX_KEY_LENGTH === query.length)
 		return fetchAccountInfoByPublicKey(query);
