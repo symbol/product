@@ -816,7 +816,7 @@ class SymbolPuller:  # pylint: disable=too-many-instance-attributes
 		if repair_height > 1:
 			try:
 				local_parent_hash = self.symbol_db.get_block_hash(repair_height - 1)
-				if dirty_state_from_height == repair_height and dirty_state_from_height <= verify_end_height:
+				if repair_height == dirty_state_from_height <= verify_end_height:
 					remote_parent_hash = scan_parent_hash
 				elif latest_node_finalized_height == repair_height - 1 and remote_finalized_block is not None:
 					remote_parent_hash = remote_finalized_block[0]
