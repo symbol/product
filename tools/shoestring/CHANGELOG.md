@@ -13,6 +13,9 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - MongoDB 7.0.45
 - https-portal 1.25.6
 
+### Changed
+- require Python 3.11 or newer; users on Python 3.10 must upgrade.
+
 ## [0.2.4] - 5 May-2026
 
 ### Added
@@ -65,7 +68,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - fix openssl generating x509 v3 certificates by explicitly specify x509_extensions
 - health check was failing nodes with https REST due to accessing wrong property from context.  the health agent node using domain name when available.
 
-[0.2.5]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.2.4...tools%2Fshoestring%2Fv0.2.5
+[0.2.5]: https://github.com/symbol/product/compare/tools%2Fshoestring%2Fv0.2.4...tools%2Fshoestring%2Fv0.2.5
 [0.2.4]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.2.3...tools%2Fshoestring%2Fv0.2.4
 [0.2.3]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.2.2...tools%2Fshoestring%2Fv0.2.3
 [0.2.2]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.2.1...tools%2Fshoestring%2Fv0.2.2
