@@ -45,6 +45,65 @@ TransactionViewRecord = namedtuple('TransactionViewRecord', [
 ], defaults=(None, 0, None))
 
 
+def create_confirmed_record(transaction, mosaics, native_mosaic_info):  # pylint: disable=too-many-locals
+	"""Normalizes database columns and transaction body."""
+
+	try:
+		(
+			transaction_hash,
+			is_embedded,
+			aggregate_hash,
+			embedded_index,
+			height,
+			transaction_type,
+			signer_address,
+			recipient_address,
+			effective_fee,
+			timestamp,
+			message_type,
+			message_payload,
+			deadline,
+			size,
+			body_map,
+		) = transaction[1:]
+
+		transaction_type = TransactionType(transaction_type)
+		version = body_map['version']
+		signature = None if is_embedded else body_map['signature']
+		payload_map = dict(body_map)
+
+		if transaction_type == TransactionType.TRANSFER:
+			# Dedicated columns and resolved mosaic relations own confirmed transfer display.
+			payload_map.pop('message', None)
+			payload_map.pop('mosaics', None)
+		payload, _ = create_transaction_payload(payload_map, transaction_type)
+
+		if transaction_type == TransactionType.TRANSFER and message_payload is not None:
+			payload.insert(0, {'message': {
+				'type': MESSAGE_TYPE_ID_MAP.get(message_type),
+				'payload': message_payload,
+			}})
+
+		return TransactionViewRecord(
+			transaction_hash=None if is_embedded else bytes(transaction_hash).hex().upper(),
+			aggregate_hash=bytes(aggregate_hash).hex().upper() if is_embedded else None,
+			embedded_index=embedded_index,
+			transaction_type=transaction_type,
+			from_address=str(Address(bytes(signer_address))),
+			to_address=str(Address(bytes(recipient_address))) if recipient_address is not None else None,
+			payload=payload,
+			mosaics=mosaics,
+			deadline=None if is_embedded else deadline,
+			signature=signature.upper() if signature is not None else None,
+			size=None if is_embedded else size,
+			version=version,
+			fee=None if is_embedded else format_amount(effective_fee, native_mosaic_info.divisibility),
+			height=height,
+			timestamp=timestamp)
+	except (KeyError, TypeError, ValueError) as error:
+		raise SymbolDataInvalid('confirmed_transaction', 'invalid persisted transaction') from error
+
+
 def create_unconfirmed_record(item_map, network):
 	"""Parses one flat entry from a Symbol unconfirmed transaction search response."""
 
