@@ -2,6 +2,7 @@ import CustomImage from './CustomImage';
 import { TRANSACTION_TYPE } from '@/app/constants';
 import styles from '@/app/styles/components/IconTransactionType.module.scss';
 import { createAssetURL } from '@/app/utils';
+import { utils } from '@/app/variants/utils';
 
 const iconTypeMap = {
 	[TRANSACTION_TYPE.TRANSFER]: createAssetURL('/images/transaction/transfer.svg'),
@@ -14,7 +15,8 @@ const iconTypeMap = {
 };
 
 const IconTransactionType = ({ value, className, style }) => {
-	return <CustomImage src={iconTypeMap[value]} className={`${styles.iconTransactionType} ${className}`} style={style} alt={value} />;
+	const src = utils.transactions.getTransactionTypeIcon?.(value) ?? iconTypeMap[value];
+	return <CustomImage src={src} className={`${styles.iconTransactionType} ${className}`} style={style} alt={value} />;
 };
 
 export default IconTransactionType;

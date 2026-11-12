@@ -1,7 +1,7 @@
 import { fetchAccountHarvestedBlockPage, fetchAccountInfo } from '@/app/api/accounts';
 import { search } from '@/app/api/search';
 import { fetchPriceByDate } from '@/app/api/stats';
-import { fetchTransactionPage } from '@/app/api/transactions';
+import { fetchAccountTransactionPage } from '@/app/api/transactions';
 import AccountMultisigTree from '@/app/components/AccountMultisigTree';
 import Avatar from '@/app/components/Avatar';
 import ButtonCSV from '@/app/components/ButtonCSV';
@@ -52,7 +52,7 @@ export const getServerSideProps = async ({ locale, params }) => {
 		};
 	}
 
-	const transactionsPage = await fetchTransactionPage({ address: params.address });
+	const transactionsPage = await fetchAccountTransactionPage({ address: params.address });
 
 	return {
 		props: {
@@ -69,7 +69,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	const [contacts] = useStorage(STORAGE_KEY.ADDRESS_BOOK, []);
 	const balanceInUserCurrency = useUserCurrencyAmount(fetchPriceByDate, accountInfo.balance, userCurrency);
 	const { t } = useTranslation();
-	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions, { address });
+	const transactionPagination = usePagination(fetchAccountTransactionPage, preloadedTransactions, { address });
 	const harvestedBlockPagination = usePagination(fetchAccountHarvestedBlockPage, [], { address });
 	const mosaics = useClientSideFilter(accountInfo.mosaics);
 	const isMultisigSectionShown = accountInfo.isMultisig || accountInfo.cosignatoryOf.length > 0;
@@ -172,7 +172,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			title: t('filter_type'),
 			conflicts: ['mosaic', 'to'],
 			type: 'transaction-type',
-			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
+			options: (pageConfig.transactions?.transactionTypes ?? Object.values(TRANSACTION_TYPE)).map(type => ({ type }))
 		},
 		{
 			name: 'from',

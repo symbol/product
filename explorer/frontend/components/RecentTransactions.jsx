@@ -10,8 +10,8 @@ import { utils } from '@/app/variants/utils';
 import { useTranslation } from 'next-i18next';
 
 const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, blockTime }) => {
-	const { t } = useTranslation();
-	const typeText = t(`transactionType_${type}`);
+	const { t, i18n } = useTranslation();
+	const typeText = utils.transactions.getTransactionTypeLabel?.(type, i18n?.language) ?? t(`transactionType_${type}`);
 	const labelSenderText = t('table_field_sender');
 	const isUnconfirmed = group !== TRANSACTION_GROUP.CONFIRMED;
 	const isAwaitingSignatures = utils.transactions.isTransactionAwaitingSignatures({ type, group });
