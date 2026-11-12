@@ -61,7 +61,7 @@ def create_namespace_descendant_rows(root_id, child_id, descendant_id, alias_mos
 	return rows
 
 
-def expected_symbol_namespace_child_dto(root_id, child_id, creator, alias_mosaic_id, sub_namespace_count=0):
+def expected_symbol_namespace_child_dto(root_id, child_id, owner, alias_mosaic_id, sub_namespace_count=0):
 	"""Returns an independently hardcoded expected child namespace DTO."""
 	return {
 		'id': child_id,
@@ -73,9 +73,9 @@ def expected_symbol_namespace_child_dto(root_id, child_id, creator, alias_mosaic
 		'aliasType': 'mosaic',
 		'aliasMosaicId': alias_mosaic_id,
 		'aliasAddress': None,
-		'creator': creator,
-		'registrationHeight': 1,
-		'startTimestamp': '2026-01-01 00:00:00',
+		'owner': owner,
+		'registeredHeight': 1,
+		'registeredTimestamp': '2026-01-01 00:00:00',
 		'registrationType': 'child',
 		'expirationHeight': None,
 		'isUnlimitedDuration': True,

@@ -51,9 +51,9 @@ class SymbolNamespaceViewTest(TestCase):
 			'aliasType': 'address',
 			'aliasMosaicId': None,
 			'aliasAddress': str(Address(ALIAS_ADDRESS)),
-			'creator': str(Address(OWNER_ADDRESS)),
-			'registrationHeight': 12,
-			'startTimestamp': '2026-01-02 03:04:05',
+			'owner': str(Address(OWNER_ADDRESS)),
+			'registeredHeight': 12,
+			'registeredTimestamp': '2026-01-02 03:04:05',
 			'registrationType': 'child',
 			'expirationHeight': 99,
 			'isUnlimitedDuration': False,
@@ -92,4 +92,4 @@ class SymbolNamespaceViewTest(TestCase):
 		result = view.to_dict()
 
 		# Assert:
-		self.assertIsNone(result['startTimestamp'])
+		self.assertIsNone(result['registeredTimestamp'])
