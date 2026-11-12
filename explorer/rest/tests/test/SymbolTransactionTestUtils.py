@@ -57,8 +57,8 @@ def create_symbol_transaction(height, transaction_number, is_embedded=False, **o
 		'size': None if is_embedded else 1,
 		'message_type': None,
 		'message_payload': None,
-		'body': {'transactionNumber': transaction_number},
-		'raw_payload': {'transactionNumber': transaction_number},
+		'body': {'version': 1, **({'signature': 'AB' * 64} if not is_embedded else {})},
+		'raw_payload': {'transaction': {'version': 1, **({'signature': 'AB' * 64} if not is_embedded else {})}},
 		'mosaic_rows': [],
 		'address_rows': [
 			{'address': SIGNER_ADDRESS, 'role': 'signer'},
