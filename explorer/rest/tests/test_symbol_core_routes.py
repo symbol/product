@@ -2314,6 +2314,108 @@ def test_native_setup_list_skips_get(symbol_database_config):
 	assert not node_server.request_paths
 
 
+@pytest.mark.parametrize('query', [
+	pytest.param('', id='omitted'),
+	pytest.param('?sort_field=BALANCE', id='balance-only'),
+	pytest.param(f'?sort_field=BALANCE&mosaic_id={NATIVE_MOSAIC_ID}&sort_order=DESC', id='explicit-native')
+])
+def test_accounts_default_native_sort(query):
+	# Arrange: two holders tie, one has zero and one does not hold the native Mosaic.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		expected = _expected_account_list()
+		expected = [expected[index] for index in (1, 2, 0)]
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts' + query)
+
+	# Assert:
+	assert (200, expected) == (response.status_code, response.json)
+
+
+def test_accounts_sort_by_given_mosaic():
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		expected = _expected_account_list()
+		expected = [expected[index] for index in (3, 1, 2, 0)]
+		for item, amount in zip(expected, (2, 1, 1, 0)):
+			item['balance'] = amount
+
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get(f'/api/symbol/accounts?mosaic_id={CUSTOM_MOSAIC_ID}')
+
+	# Assert:
+	assert (200, expected) == (response.status_code, response.json)
+
+
+@pytest.mark.parametrize('offset,indices', [
+	pytest.param(0, [1], id='first-tied-holder'),
+	pytest.param(1, [2], id='second-tied-holder'),
+	pytest.param(2, [0], id='zero-balance'),
+	pytest.param(3, [], id='end')
+])
+def test_accounts_default_balance_pages(offset, indices):
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		expected = _expected_account_list()
+		expected = [expected[index] for index in indices]
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get(f'/api/symbol/accounts?limit=1&offset={offset}')
+
+	# Assert:
+	assert (200, expected) == (response.status_code, response.json)
+
+
+def test_accounts_balance_filter_paging():
+	# Arrange: the first native-balance holder is inactive, so filtering must precede offset.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		writer.upsert_blocks([
+			create_symbol_block(1, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(1)),
+			create_symbol_block(2, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(2))])
+		expected = _expected_account_list()[0]
+		expected['isHarvestingActive'] = True
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get('/api/symbol/accounts?is_harvesting=true&limit=1&offset=1')
+
+	# Assert:
+	assert (200, [expected]) == (response.status_code, response.json)
+
+
+def test_accounts_configured_native_sort():
+	# Arrange: use a different configured native ID and build the matching rank through the existing writer.
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries(), native_mosaic_id=CUSTOM_MOSAIC_ID)
+		with tempfile.TemporaryDirectory() as directory:
+			db_path = _create_config_file(directory, database_config=config)
+			app_path = _create_app_config(directory, db_path, native_mosaic_id=CUSTOM_MOSAIC_ID.lower())
+			app = Flask(__name__)
+			app.config.from_pyfile(app_path)
+			facade = setup_symbol_facade(app, clock=lambda: REFRESH_COMPLETED_AT)
+			with app.extensions['symbol_database']:
+				setup_symbol_routes(app, facade)
+				client = app.test_client()
+				expected_addresses = [str(Address(account_address(identity))) for identity in (4, 3, 1, 2)]
+
+				# Act:
+				default = client.get('/api/symbol/accounts')
+				explicit = client.get(f'/api/symbol/accounts?sort_field=BALANCE&mosaic_id={CUSTOM_MOSAIC_ID}')
+
+	# Assert:
+	assert (200, explicit.json) == (default.status_code, default.json)
+	assert 200 == explicit.status_code
+	assert expected_addresses == [item['address'] for item in default.json]
+
+
 def test_list_http_snapshot_dto(symbol_database_config):
 	# Arrange:
 	entries = create_account_list_entries()
@@ -2325,7 +2427,7 @@ def test_list_http_snapshot_dto(symbol_database_config):
 			app = _create_symbol_app()
 			try:
 				# Act:
-				response = app.test_client().get('/api/symbol/accounts')
+				response = app.test_client().get('/api/symbol/accounts?sort_field=ID')
 			finally:
 				app.extensions['symbol_database'].close()
 
@@ -2378,9 +2480,9 @@ def test_list_http_setup_harvesting_window(window_days, is_active, symbol_databa
 			expected = _expected_account_list()
 			expected[2]['isHarvestingActive'] = is_active
 			# Act:
-			omitted = client.get('/api/symbol/accounts')
-			false_flag = client.get('/api/symbol/accounts?is_harvesting=false')
-			true_flag = client.get('/api/symbol/accounts?is_harvesting=true')
+			omitted = client.get('/api/symbol/accounts?sort_field=ID')
+			false_flag = client.get('/api/symbol/accounts?sort_field=ID&is_harvesting=false')
+			true_flag = client.get('/api/symbol/accounts?sort_field=ID&is_harvesting=true')
 
 	# Assert: setup carries the configured window into the request and snapshot values remain unchanged.
 	assert (200, expected) == (omitted.status_code, omitted.json)
@@ -2404,8 +2506,8 @@ def test_list_http_harvesting_flags():
 		writer.connection.commit()
 		with _account_list_http_client(config, clock=lambda: REFRESH_COMPLETED_AT + timedelta(seconds=7200)) as (client, _):
 			# Act:
-			all_response = client.get('/api/symbol/accounts?is_harvesting=false')
-			active_response = client.get('/api/symbol/accounts?is_harvesting=true')
+			all_response = client.get('/api/symbol/accounts?sort_field=ID&is_harvesting=false')
+			active_response = client.get('/api/symbol/accounts?sort_field=ID&is_harvesting=true')
 
 	# Assert: full JSON values are independently checked for both filtering and computed flags.
 	expected_all = _expected_account_list()
@@ -2437,7 +2539,7 @@ def test_list_http_multisig_states():
 			'cosignatory_addresses': [], 'multisig_addresses': [], 'updated_at_height': 100})
 		with _account_list_http_client(config) as (client, _):
 			# Act:
-			response = client.get('/api/symbol/accounts')
+			response = client.get('/api/symbol/accounts?sort_field=ID')
 
 	# Assert: own cosignatories make accounts 1 and 2 multisig; participation alone does not.
 	expected = _expected_account_list() + [{
@@ -2464,11 +2566,11 @@ def test_list_http_multisig_recovery(symbol_database_config, mutated_row):
 		writer.upsert_multisig(account_address(1), {'address': account_address(1), **mutated_row, 'updated_at_height': 100})
 		with _account_list_create_app_client(symbol_database_config) as client:
 			# Act:
-			failed = client.get('/api/symbol/accounts')
+			failed = client.get('/api/symbol/accounts?sort_field=ID')
 			writer.upsert_multisig(account_address(1), {
 				'address': account_address(1), 'min_approval': 1, 'min_removal': 1,
 				'cosignatory_addresses': [account_address(2)], 'multisig_addresses': [], 'updated_at_height': 100})
-			recovered = client.get('/api/symbol/accounts')
+			recovered = client.get('/api/symbol/accounts?sort_field=ID')
 
 	# Assert:
 	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
@@ -2490,7 +2592,7 @@ def test_list_stale_detail_unchanged(symbol_database_config):
 			app = _create_symbol_app()
 			try:
 				# Act:
-				list_response = app.test_client().get('/api/symbol/accounts')
+				list_response = app.test_client().get('/api/symbol/accounts?sort_field=ID')
 				detail_response = app.test_client().get(f'/api/symbol/account?address={str(Address(account_address(1)))}')
 			finally:
 				app.extensions['symbol_database'].close()
@@ -2697,7 +2799,7 @@ def test_list_http_recovers_fixed_ranks(symbol_database_config):
 		writer.connection.commit()
 		with _account_list_create_app_client(symbol_database_config) as client:
 			# Act: read the corrupt scope through the configured app.
-			failed = client.get('/api/symbol/accounts')
+			failed = client.get('/api/symbol/accounts?sort_field=ID')
 
 			# Assert:
 			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
@@ -2706,7 +2808,7 @@ def test_list_http_recovers_fixed_ranks(symbol_database_config):
 			writer.finalize_account_refresh('selected-run', NATIVE_MOSAIC_ID, 100, datetime.now(timezone.utc))
 
 			# Act: reuse the same app after the failed request.
-			recovered = client.get('/api/symbol/accounts')
+			recovered = client.get('/api/symbol/accounts?sort_field=ID')
 
 			# Assert:
 			assert (200, _expected_account_list()) == (recovered.status_code, recovered.json)
@@ -2803,8 +2905,8 @@ def test_list_http_repeatable_read(change):
 
 		with _account_list_http_client(config, PausingAccountListDatabase) as (client, database):
 			# Act:
-			response = read_during_database_snapshot(database, lambda: client.get('/api/symbol/accounts'), update)
-			next_response = client.get('/api/symbol/accounts')
+			response = read_during_database_snapshot(database, lambda: client.get('/api/symbol/accounts?sort_field=ID'), update)
+			next_response = client.get('/api/symbol/accounts?sort_field=ID')
 
 	# Assert:
 	assert isinstance(database, PausingAccountListDatabase)
@@ -2925,17 +3027,17 @@ def test_list_http_expires_harvesting_with_one_clock_read_per_request():  # pyli
 		expected[2]['isHarvestingActive'] = True
 		with _account_list_http_client(config, clock=clock) as (client, _):
 			# Act + Assert: every request reads the clock once for age and harvesting.
-			first = client.get('/api/symbol/accounts')
+			first = client.get('/api/symbol/accounts?sort_field=ID')
 			assert (200, expected) == (first.status_code, first.json)
 			assert [REFRESH_COMPLETED_AT] == clock_calls
-			filtered = client.get('/api/symbol/accounts?is_harvesting=true')
+			filtered = client.get('/api/symbol/accounts?sort_field=ID&is_harvesting=true')
 			assert (200, [expected[2]]) == (filtered.status_code, filtered.json)
 			assert [REFRESH_COMPLETED_AT] * 2 == clock_calls
 			moments[0] += timedelta(seconds=1)
-			expired = client.get('/api/symbol/accounts')
+			expired = client.get('/api/symbol/accounts?sort_field=ID')
 			assert (200, _expected_account_list()) == (expired.status_code, expired.json)
 			assert [REFRESH_COMPLETED_AT] * 2 + [moments[0]] == clock_calls
-			empty = client.get('/api/symbol/accounts?is_harvesting=true')
+			empty = client.get('/api/symbol/accounts?sort_field=ID&is_harvesting=true')
 			assert (200, []) == (empty.status_code, empty.json)
 			assert [REFRESH_COMPLETED_AT] * 2 + [moments[0]] * 2 == clock_calls
 
@@ -3033,7 +3135,7 @@ def test_account_list_http_age_boundary(seconds, status):
 		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
 		with _account_list_http_client(config, clock=lambda: REFRESH_COMPLETED_AT + timedelta(seconds=seconds)) as (client, _):
 			# Act:
-			response = client.get('/api/symbol/accounts')
+			response = client.get('/api/symbol/accounts?sort_field=ID')
 
 	# Assert:
 	assert status == response.status_code
@@ -3064,7 +3166,7 @@ def _assert_selected_run_http_query(query, expected):
 
 
 @pytest.mark.parametrize('query,indices,balance_values', [
-	('', [0, 1, 2, 3], [0, .00005, .00005, 0]),
+	('?sort_field=ID', [0, 1, 2, 3], [0, .00005, .00005, 0]),
 	('?sort_field=IMPORTANCE', [2, 1, 3, 0], [.00005, .00005, 0, 0]),
 	(f'?sort_field=BALANCE&mosaic_id={NATIVE_MOSAIC_ID}', [1, 2, 0], [.00005, .00005, 0]),
 	(f'?sort_field=BALANCE&mosaic_id={CUSTOM_MOSAIC_ID}', [3, 1, 2, 0], [2, 1, 1, 0])
@@ -3074,12 +3176,12 @@ def test_list_http_orders_selected_successful_run(query, indices, balance_values
 
 
 @pytest.mark.parametrize('query,indices,balance_values', [
-	('?limit=2&offset=1', [1, 2], [.00005, .00005]),
-	('?limit=2&offset=2', [2, 3], [.00005, 0]),
-	('?limit=2&offset=3', [3], [0]),
+	('?sort_field=ID&limit=2&offset=1', [1, 2], [.00005, .00005]),
+	('?sort_field=ID&limit=2&offset=2', [2, 3], [.00005, 0]),
+	('?sort_field=ID&limit=2&offset=3', [3], [0]),
 	(f'?sort_field=BALANCE&mosaic_id={CUSTOM_MOSAIC_ID}&limit=2&offset=1', [1, 2], [1, 1]),
-	('?offset=4', [], []),
-	('?offset=100000', [], []),
+	('?sort_field=ID&offset=4', [], []),
+	('?sort_field=ID&offset=100000', [], []),
 	('?sort_field=BALANCE&mosaic_id=FEDCBA9876543210', [], [])
 ], ids=['id-offset-1', 'id-offset-2', 'id-short-page', 'custom-offset', 'id-empty', 'id-large-offset', 'unknown-custom'])
 def test_list_http_paginates_selected_successful_run(query, indices, balance_values):  # pylint: disable=invalid-name
@@ -3094,7 +3196,7 @@ def test_list_http_sql_failure_reuse(caplog):
 		with _account_list_http_client(config, FailingAccountListDatabase) as (client, database):
 			# Act: provoke a SQL failure through the public request path.
 			with caplog.at_level(logging.ERROR, logger='pythonConfig'):
-				failed = client.get('/api/symbol/accounts')
+				failed = client.get('/api/symbol/accounts?sort_field=ID')
 
 			# Assert:
 			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
@@ -3106,7 +3208,7 @@ def test_list_http_sql_failure_reuse(caplog):
 			database.should_fail = False
 
 			# Act:
-			recovered = client.get('/api/symbol/accounts')
+			recovered = client.get('/api/symbol/accounts?sort_field=ID')
 
 			# Assert:
 			assert (200, _expected_account_list()) == (recovered.status_code, recovered.json)
@@ -3133,7 +3235,7 @@ def test_list_http_recovers_fixed_dto(symbol_database_config, statement, paramet
 
 			# Act: read the malformed data through create_app wiring.
 			with caplog.at_level(logging.ERROR, logger='pythonConfig'):
-				failed = client.get('/api/symbol/accounts')
+				failed = client.get('/api/symbol/accounts?sort_field=ID')
 			error_log = '\n'.join(record.getMessage() for record in caplog.records if record.levelno >= logging.ERROR)
 
 			# Assert:
@@ -3147,7 +3249,7 @@ def test_list_http_recovers_fixed_dto(symbol_database_config, statement, paramet
 			seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
 
 			# Act:
-			recovered = client.get('/api/symbol/accounts')
+			recovered = client.get('/api/symbol/accounts?sort_field=ID')
 
 			# Assert:
 			assert (200, _expected_account_list()) == (recovered.status_code, recovered.json)
@@ -3160,7 +3262,7 @@ def test_list_http_returns_nullable_dto():
 		seed_refresh_run(writer, 'selected-run', [entry])
 		with _account_list_http_client(config) as (client, _):
 			# Act:
-			response = client.get('/api/symbol/accounts')
+			response = client.get('/api/symbol/accounts?sort_field=ID')
 
 	# Assert:
 	assert (200, [{
@@ -3170,13 +3272,18 @@ def test_list_http_returns_nullable_dto():
 	}]) == (response.status_code, response.json)
 
 
-def test_list_http_returns_empty_run():
+@pytest.mark.parametrize('query', [
+	pytest.param('', id='default-balance'),
+	pytest.param('?sort_field=BALANCE', id='explicit-balance'),
+	pytest.param('?sort_field=ID', id='id')
+])
+def test_list_http_returns_empty_run(query):
 	# Arrange:
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 		seed_refresh_run(writer, 'empty-run', [])
 		with _account_list_http_client(config) as (client, _):
 			# Act:
-			response = client.get('/api/symbol/accounts')
+			response = client.get('/api/symbol/accounts' + query)
 
 	# Assert:
 	assert (200, []) == (response.status_code, response.json)
@@ -3188,7 +3295,7 @@ def test_list_http_missing_metadata():
 		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
 		with _account_list_http_client(config) as (client, _):
 			# Act:
-			response = client.get('/api/symbol/accounts')
+			response = client.get('/api/symbol/accounts?sort_field=ID')
 
 	# Assert:
 	assert (200, [
@@ -3207,7 +3314,7 @@ def test_list_http_invalid_address():
 		seed_refresh_run(writer, 'selected-run', [entry])
 		with _account_list_http_client(config) as (client, _):
 			# Act:
-			response = client.get('/api/symbol/accounts')
+			response = client.get('/api/symbol/accounts?sort_field=ID')
 
 	# Assert:
 	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (response.status_code, response.json)
@@ -3352,7 +3459,7 @@ def test_list_window_date_boundary(extra_days):
 				facade = setup_symbol_facade(app, clock=lambda: setup_now)
 				with app.extensions['symbol_database']:
 					setup_symbol_routes(app, facade)
-					response = app.test_client().get('/api/symbol/accounts?is_harvesting=true')
+					response = app.test_client().get('/api/symbol/accounts?sort_field=ID&is_harvesting=true')
 
 					# Assert:
 					assert maximum == facade.harvesting_active_window_days
