@@ -21,7 +21,7 @@ msgstr ""
 #: shoestring/commands/import_harvesters.py:97 shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:38
-#: shoestring/commands/renew_voting_keys.py:112
+#: shoestring/commands/renew_voting_keys.py:122
 #: shoestring/commands/reset_data.py:86 shoestring/commands/setup.py:147
 #: shoestring/commands/signer.py:92
 msgid "argument-help-config"
@@ -29,7 +29,7 @@ msgstr ""
 
 #: shoestring/commands/health.py:75
 #: shoestring/commands/renew_certificates.py:39
-#: shoestring/commands/renew_voting_keys.py:113
+#: shoestring/commands/renew_voting_keys.py:123
 #: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:149
 msgid "argument-help-directory"
 msgstr ""
@@ -106,6 +106,10 @@ msgstr ""
 msgid "argument-help-renew-certificates-retain-node-key"
 msgstr ""
 
+#: shoestring/commands/renew_voting_keys.py:124
+msgid "argument-help-renew-voting-keys-compact"
+msgstr ""
+
 #: shoestring/commands/reset_data.py:88
 msgid "argument-help-reset-data-purge-harvesters"
 msgstr ""
@@ -166,7 +170,7 @@ msgstr ""
 msgid "general-copying-tree"
 msgstr ""
 
-#: shoestring/commands/renew_voting_keys.py:46
+#: shoestring/commands/renew_voting_keys.py:53
 #: shoestring/internal/Preparer.py:415
 msgid "general-created-aggregate-transaction"
 msgstr ""
@@ -419,19 +423,19 @@ msgstr ""
 msgid "pemview-show-public-key"
 msgstr ""
 
-#: shoestring/commands/renew_voting_keys.py:89
+#: shoestring/commands/renew_voting_keys.py:96
 msgid "renew-voting-keys-maximum-already-registered"
 msgstr ""
 
-#: shoestring/commands/renew_voting_keys.py:85
+#: shoestring/commands/renew_voting_keys.py:92
 msgid "renew-voting-keys-no-voting-keys-found"
 msgstr ""
 
-#: shoestring/commands/renew_voting_keys.py:72
+#: shoestring/commands/renew_voting_keys.py:79
 msgid "renew-voting-keys-not-voting"
 msgstr ""
 
-#: shoestring/commands/renew_voting_keys.py:58
+#: shoestring/commands/renew_voting_keys.py:65
 msgid "renew-voting-keys-removing-expired-voting-keys"
 msgstr ""
 
