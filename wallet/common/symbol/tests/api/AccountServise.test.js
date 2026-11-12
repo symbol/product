@@ -49,7 +49,7 @@ describe('AccountService', () => {
 			// Arrange:
 			mockMakeRequest.mockResolvedValueOnce(accountResponse);
 			mockApi.token.fetchTokenInfos.mockResolvedValueOnce(tokenInfos);
-			mockApi.namespace.fetchAccountNamespaces.mockResolvedValueOnce([]);
+			mockApi.namespace.fetchAccountNamespaces.mockResolvedValueOnce({ data: [], nextCursor: null });
 
 			if (shouldThrowMultisigRequest) 
 				accountService.fetchMultisigInfo = jest.fn().mockRejectedValueOnce(new ApiError());
@@ -66,7 +66,7 @@ describe('AccountService', () => {
 			expect(mockApi.token.fetchTokenInfos)
 				.toHaveBeenCalledWith(networkProperties, accountResponse.account.mosaics.map(mosaic => mosaic.id));
 			expect(accountService.fetchMultisigInfo).toHaveBeenCalledWith(networkProperties, address);
-			expect(mockApi.namespace.fetchAccountNamespaces).toHaveBeenCalledWith(networkProperties, address);
+			expect(mockApi.namespace.fetchAccountNamespaces).toHaveBeenCalledWith(networkProperties, address, { pageSize: 100 });
 		};
         
 		it('fetches and formats account info for a non-multisig account', async () => {

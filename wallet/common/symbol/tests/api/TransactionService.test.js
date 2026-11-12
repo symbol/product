@@ -6,8 +6,12 @@ import { currentAccount as currentAccountFixture } from '../__fixtures__/local/w
 import { runApiTest } from '../test-utils';
 import { expect, jest } from '@jest/globals';
 
+const { nextCursorFromPageNumber, pageNumberFromCursor } = await import('../../src/utils/helper');
+
 jest.unstable_mockModule('../../src/utils', () => {
 	return {
+		nextCursorFromPageNumber,
+		pageNumberFromCursor,
 		createSearchUrl: jest.fn((nodeUrl, path, base, additional) => {
 			const q = encodeURIComponent(JSON.stringify({ base, additional }));
 			return `${nodeUrl}${path}?q=${q}`;
@@ -79,6 +83,7 @@ describe('TransactionService', () => {
 			const {
 				group,
 				pageNumber = 1,
+				cursor = null,
 				pageSize = 15,
 				order = 'desc',
 				filter,
@@ -118,11 +123,11 @@ describe('TransactionService', () => {
 				transactionService.fetchAccountTransactions(
 					networkProperties,
 					currentAccount,
-					{ group, pageNumber, pageSize, order, filter }
+					{ group, cursor, pageSize, order, filter }
 				);
 
 			// Act & Assert:
-			await runApiTest(mockMakeRequest, functionToTest, expectedCalls, expectedResult);
+			await runApiTest(mockMakeRequest, functionToTest, expectedCalls, { data: expectedResult, nextCursor: null });
 		};
 
 		it('builds search URL (no filters), fetches list and resolves DTOs', async () => {

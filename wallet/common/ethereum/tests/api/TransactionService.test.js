@@ -51,7 +51,7 @@ describe('api/TransactionService', () => {
 			const latestBlock = 10880893;
 			const provider = {
 				getBlockNumber: jest.fn().mockResolvedValue(latestBlock),
-				send: jest.fn().mockResolvedValue({ txs: transactionDTOs })
+				send: jest.fn().mockResolvedValue({ txs: transactionDTOs, lastPage: true })
 			};
 			createEthereumJrpcProviderMock.mockReturnValue(provider);
 
@@ -73,7 +73,7 @@ describe('api/TransactionService', () => {
 				pageSize
 			]);
 			expect(resolveSpy).toHaveBeenCalledWith(networkProperties, transactionDTOs, currentAccount);
-			expect(result).toBe(resolvedTransactions);
+			expect(result).toStrictEqual({ data: resolvedTransactions, nextCursor: null });
 		});
 
 		it('uses default pageSize when not provided', async () => {

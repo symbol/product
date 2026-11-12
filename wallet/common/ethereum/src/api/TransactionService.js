@@ -19,6 +19,11 @@ const applyGasLimitSafetyMargin = gasLimit => gasLimit + ((gasLimit * GAS_LIMIT_
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../types/Transaction').SignedTransaction} SignedTransaction */
+/** @typedef {import('../types/SearchCriteria').PageCursor} PageCursor */
+/**
+ * @template T
+ * @typedef {import('../types/SearchCriteria').Page<T>} Page
+ */
 
 export class TransactionService {
 	/** @type {import('../api').Api} */
@@ -34,20 +39,26 @@ export class TransactionService {
 	 * @param {PublicAccount} account - Requested account.
 	 * @param {Object} [searchCriteria] - Search criteria.
 	 * @property {number} [searchCriteria.pageSize=15] - Number of transactions to return.
-	 * @returns {Promise<Transaction[]>} - The account transactions.
+	 * @property {PageCursor|null} [searchCriteria.cursor=null] - The block number from which to fetch the page.
+	 * @returns {Promise<Page<Transaction>>} - The page of account transactions.
 	 */
 	fetchAccountTransactions = async (networkProperties, account, searchCriteria = {}) => {
-		const { pageSize = 15 } = searchCriteria;
+		const { pageSize = 15, cursor = null } = searchCriteria;
 		const provider = createEthereumJrpcProvider(networkProperties);
 
-		const latestBlock = await provider.getBlockNumber();
-		const { txs: transactionDTOs } = await provider.send('ots_searchTransactionsBefore', [
+		const searchBeforeBlock = cursor === null
+			? await provider.getBlockNumber() + 1
+			: Number(cursor);
+		const { txs: transactionDTOs, lastPage: isLastPage } = await provider.send('ots_searchTransactionsBefore', [
 			account.address,
-			latestBlock + 1,
+			searchBeforeBlock,
 			pageSize
 		]);
+		const isNextPageAvailable = !isLastPage && transactionDTOs.length > 0;
+		const nextCursor = isNextPageAvailable ? String(Number(transactionDTOs.at(-1).blockNumber)) : null;
+		const data = await this.resolveTransactionDTOs(networkProperties, transactionDTOs, account);
 
-		return this.resolveTransactionDTOs(networkProperties, transactionDTOs, account);
+		return { data, nextCursor };
 	};
 
 	/**
