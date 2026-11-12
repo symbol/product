@@ -3,6 +3,7 @@ from contextlib import contextmanager
 
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from flask import Flask
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address, Network
@@ -744,7 +745,7 @@ def _create_transaction_test_client(db_config):
 		setup_error_handlers(app)
 		facade = SymbolRestFacade(
 			database,
-			object(),
+			SymbolNodeConfiguration.from_url('http://node.test:3000'),
 			NATIVE_MOSAIC_INFO,
 			Network.TESTNET,
 			None,

@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 from symbolchain.symbol.Network import Address, Network
 
@@ -998,7 +999,7 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 		try:
 			def setup_facade(app):
 				app.extensions['symbol_database'] = database
-				return SymbolRestFacade(database, object(), NATIVE_MOSAIC_INFO, Network.TESTNET)
+				return SymbolRestFacade(database, SymbolNodeConfiguration.from_url('http://node.test:3000'), NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 			def update_related_data():
 				# pylint: disable=protected-access

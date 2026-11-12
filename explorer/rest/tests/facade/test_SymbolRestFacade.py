@@ -4,8 +4,10 @@ from unittest import TestCase
 from unittest.mock import create_autospec
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from psycopg2 import Error as PsycopgError
 from psycopg2 import OperationalError
+from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Network
 
 from rest.db.SymbolDatabase import (
@@ -21,8 +23,10 @@ from rest.db.SymbolDatabase import (
 )
 from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
+from rest.model.symbol.TransactionView import SymbolTransactionView
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
+from ..test.SymbolUnconfirmedTransactionTestUtils import get_unconfirmed_transaction
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 
@@ -280,11 +284,12 @@ class ReceiptReadErrorSymbolDatabase:
 
 
 def _create_configured_facade():
-	return SymbolRestFacade(HealthySymbolDatabase(), object(), NATIVE_MOSAIC_INFO, Network.TESTNET)
+	return _create_facade_with_database(HealthySymbolDatabase())
 
 
 def _create_facade_with_database(symbol_db):
-	return SymbolRestFacade(symbol_db, object(), NATIVE_MOSAIC_INFO, Network.TESTNET)
+	node_config = SymbolNodeConfiguration.from_url('http://node.test:3000')
+	return SymbolRestFacade(symbol_db, node_config, NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 
 class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
@@ -314,7 +319,8 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 				raise AssertionError('Node must not be queried for an unsafe database status')
 
 		facade = SymbolRestFacade(
-			Database(), object(), NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=NodeBacking())
+			Database(), SymbolNodeConfiguration.from_url('http://node.test:3000'), NATIVE_MOSAIC_INFO,
+			Network.TESTNET, node_backing=NodeBacking())
 
 		# Act + Assert:
 		with self.assertRaisesRegex(
@@ -330,7 +336,8 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Act:
 		facade = SymbolRestFacade(
-			HealthySymbolDatabase(), object(), NATIVE_MOSAIC_INFO, Network.TESTNET, node_backing=backing)
+			HealthySymbolDatabase(), SymbolNodeConfiguration.from_url('http://node.test:3000'), NATIVE_MOSAIC_INFO,
+			Network.TESTNET, node_backing=backing)
 
 		# Assert:
 		self.assertIs(backing, facade.node_backing)
@@ -754,3 +761,42 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Act + Assert:
 		with self.assertRaises(PsycopgError):
 			facade.get_receipts(ReceiptQuery())
+
+	def test_get_unconfirmed_transactions_returns_empty_list(self):
+		# Arrange:
+		symbol_db = create_autospec(SymbolDatabase, instance=True, spec_set=True)
+		symbol_db.get_unconfirmed_transactions.return_value = []
+		facade = _create_facade_with_database(symbol_db)
+		facade.symbol_connector.get_unconfirmed_transactions = create_autospec(
+			facade.symbol_connector.get_unconfirmed_transactions, return_value=[])
+
+		# Act:
+		result = asyncio.run(facade.get_unconfirmed_transactions())
+
+		# Assert:
+		self.assertEqual([], result)
+		facade.symbol_connector.get_unconfirmed_transactions.assert_awaited_once_with()
+		symbol_db.get_unconfirmed_transactions.assert_called_once_with([], Network.TESTNET)
+
+	def test_can_get_unconfirmed_transactions(self):
+		# Arrange:
+		transactions = [get_unconfirmed_transaction(TransactionType.TRANSFER)]
+
+		view = create_autospec(SymbolTransactionView, instance=True, spec_set=True)
+		view.to_dict.return_value = {'transactionType': 'TRANSFER', 'value': []}
+
+		symbol_db = create_autospec(SymbolDatabase, instance=True, spec_set=True)
+		symbol_db.get_unconfirmed_transactions.return_value = [view]
+
+		facade = _create_facade_with_database(symbol_db)
+		facade.symbol_connector.get_unconfirmed_transactions = create_autospec(
+			facade.symbol_connector.get_unconfirmed_transactions, return_value=transactions)
+
+		# Act:
+		result = asyncio.run(facade.get_unconfirmed_transactions())
+
+		# Assert:
+		self.assertEqual([{'transactionType': 'TRANSFER', 'value': []}], result)
+		facade.symbol_connector.get_unconfirmed_transactions.assert_awaited_once_with()
+		symbol_db.get_unconfirmed_transactions.assert_called_once_with(transactions, Network.TESTNET)
+		view.to_dict.assert_called_once_with()
