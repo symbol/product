@@ -8,6 +8,7 @@ from symbolchain.symbol.Network import Address, Network
 from rest.model.symbol.TransactionView import (
 	SymbolTransactionView,
 	TransactionViewRecord,
+	create_confirmed_record,
 	create_transaction_payload,
 	create_unconfirmed_record
 )
@@ -16,6 +17,8 @@ from rest.model.symbol.validation import SymbolDataInvalid
 from ...test.SymbolUnconfirmedTransactionTestUtils import get_unconfirmed_aggregate_children, get_unconfirmed_transaction
 
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
+SENDER_ADDRESS = bytes.fromhex('9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95')
+RECIPIENT_ADDRESS = bytes.fromhex('98534F7E1D0A26CA4E316F901E23E55C8701DB20DF11A7B2')
 
 
 def _create_record(**overrides):
@@ -620,3 +623,157 @@ def test_can_format_unconfirmed_transfer():
 		'size': 176,
 		'version': 1
 	} == result
+
+
+def _create_confirmed_transaction(**overrides):
+	transaction_map = {
+		'id': 1,
+		'hash': bytes.fromhex('ab' * 32),
+		'is_embedded': False,
+		'aggregate_hash': None,
+		'embedded_index': None,
+		'height': 1234,
+		'transaction_type': TransactionType.TRANSFER.value,
+		'signer_address': SENDER_ADDRESS,
+		'recipient_address': RECIPIENT_ADDRESS,
+		'effective_fee': 12345,
+		'timestamp': datetime(2026, 6, 9),
+		'message_type': 'plain',
+		'message_payload': '4869',
+		'deadline': datetime(2026, 6, 10),
+		'size': 176,
+		'body': {'version': 1, 'signature': 'CD' * 64},
+		**overrides,
+	}
+	return tuple(transaction_map.values())
+
+
+def test_can_normalize_saved_transaction():
+	# Arrange:
+	transaction = _create_confirmed_transaction(body={
+		'version': 1,
+		'signature': 'CD' * 64,
+		'message': '01424F4459',
+		'mosaics': [{'id': 'FEDCBA9876543210', 'amount': '999'}],
+	})
+	mosaics = ((NATIVE_MOSAIC_INFO.id, 1234567), ('1234567890ABCDEF', 12345))
+
+	# Act:
+	record = create_confirmed_record(transaction, mosaics, NATIVE_MOSAIC_INFO)
+
+	# Assert:
+	assert TransactionViewRecord(
+		transaction_hash='AB' * 32,
+		aggregate_hash=None,
+		embedded_index=None,
+		transaction_type=TransactionType.TRANSFER,
+		from_address='TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+		to_address='TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
+		payload=[{'message': {'type': 0, 'payload': '4869'}}],
+		mosaics=mosaics,
+		deadline=datetime(2026, 6, 10),
+		signature='CD' * 64,
+		size=176,
+		version=1,
+		fee=0.012345,
+		height=1234,
+		timestamp=datetime(2026, 6, 9),
+	) == record
+
+
+def test_returns_embedded_headers():
+	# Arrange:
+	transaction = _create_confirmed_transaction(
+		is_embedded=True,
+		aggregate_hash=bytes.fromhex('AB' * 32),
+		embedded_index=0,
+		body={'version': 1})
+
+	# Act:
+	record = create_confirmed_record(transaction, (), NATIVE_MOSAIC_INFO)
+
+	# Assert:
+	assert record.transaction_hash is None
+	assert 'AB' * 32 == record.aggregate_hash
+	assert 0 == record.embedded_index
+	assert 1234 == record.height
+	assert datetime(2026, 6, 9) == record.timestamp
+	for field in ('deadline', 'signature', 'size', 'fee'):
+		assert getattr(record, field) is None
+
+
+@pytest.mark.parametrize('message_type,type_id', [('plain', 0), ('encrypted', 1), ('persistentDelegationHarvesting', 254), (None, None)])
+def test_preserves_saved_messages(message_type, type_id):
+	# Arrange:
+	transaction = _create_confirmed_transaction(message_type=message_type, message_payload='FF')
+
+	# Act:
+	record = create_confirmed_record(transaction, (), NATIVE_MOSAIC_INFO)
+
+	# Assert:
+	assert [{'message': {'type': type_id, 'payload': 'FF'}}] == record.payload
+
+
+@pytest.mark.parametrize('message_payload,expected_payload', [
+	(None, []),
+	('', [{'message': {'type': 0, 'payload': ''}}]),
+])
+def test_preserves_empty_or_no_message(message_payload, expected_payload):
+	# Arrange:
+	transaction = _create_confirmed_transaction(message_payload=message_payload)
+
+	# Act:
+	record = create_confirmed_record(transaction, (), NATIVE_MOSAIC_INFO)
+
+	# Assert:
+	assert expected_payload == record.payload
+
+
+def test_preserves_non_transfer_payload():
+	# Arrange:
+	transaction = _create_confirmed_transaction(
+		transaction_type=TransactionType.MOSAIC_SUPPLY_REVOCATION.value,
+		body={
+			'version': 1, 'signature': 'CD' * 64, 'sourceAddress': RECIPIENT_ADDRESS.hex(),
+			'mosaicId': NATIVE_MOSAIC_INFO.id, 'amount': '1000000'})
+
+	# Act:
+	record = create_confirmed_record(transaction, (), NATIVE_MOSAIC_INFO)
+
+	# Assert:
+	assert [{'sourceAddress': str(Address(RECIPIENT_ADDRESS)), 'mosaicId': NATIVE_MOSAIC_INFO.id, 'amount': '1000000'}] == record.payload
+
+
+def test_keeps_confirmed_recipient_alias():
+	# Arrange:
+	address = Address.from_namespace_id(NamespaceId(int('887E5DB6BB0B21F5', 16)), Network.TESTNET.identifier)
+	transaction = _create_confirmed_transaction(recipient_address=address.bytes)
+
+	# Act:
+	record = create_confirmed_record(transaction, (), NATIVE_MOSAIC_INFO)
+
+	# Assert:
+	assert str(address) == record.to_address
+
+
+@pytest.mark.parametrize('body', [None, {}, {'version': 1}, {'signature': 'CD' * 64}])
+def test_raises_on_missing_body_fields(body):
+	# Arrange:
+	transaction = _create_confirmed_transaction(body=body)
+
+	# Act + Assert:
+	with pytest.raises(SymbolDataInvalid, match='invalid persisted transaction'):
+		create_confirmed_record(transaction, (), NATIVE_MOSAIC_INFO)
+
+
+@pytest.mark.parametrize('overrides', [
+	{'transaction_type': 0},
+	{'signer_address': b'invalid'},
+])
+def test_raises_on_failed_conversion(overrides):
+	# Arrange:
+	transaction = _create_confirmed_transaction(**overrides)
+
+	# Act + Assert:
+	with pytest.raises(SymbolDataInvalid, match='invalid persisted transaction'):
+		create_confirmed_record(transaction, (), NATIVE_MOSAIC_INFO)
