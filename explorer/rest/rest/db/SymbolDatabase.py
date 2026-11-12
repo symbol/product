@@ -13,7 +13,7 @@ from zenlog import log
 from rest.model.symbol.Block import BLOCK_STATISTICS_WINDOW, SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
 from rest.model.symbol.Namespace import SymbolNamespaceView
-from rest.model.symbol.TransactionView import AGGREGATE_TYPES, SymbolTransactionView, create_unconfirmed_record
+from rest.model.symbol.TransactionView import AGGREGATE_TYPES, SymbolTransactionView, create_confirmed_record, create_unconfirmed_record
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -1037,6 +1037,28 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 		mosaics_by_transaction = SymbolDatabase._map_transaction_mosaics(
 			transaction_ids, transaction_mosaic_rows, mosaic_state_by_id)
 		return [TransactionRecord(*row, tuple(mosaics_by_transaction[row[0]])) for row in transaction_rows]
+
+	def _fetch_transaction_views(self, cursor, transaction_rows, embedded_transaction_rows, sync_state):
+		"""Builds transaction views with their embedded transactions and mosaics."""
+
+		all_rows_by_id_map = {row[0]: row for row in (*transaction_rows, *embedded_transaction_rows)}
+		mosaics_by_transaction_map, mosaic_divisibility_map = self._fetch_transaction_mosaics(
+			cursor, list(all_rows_by_id_map), sync_state)
+
+		records_by_id_map = {
+			row[0]: create_confirmed_record(row, tuple(mosaics_by_transaction_map[row[0]]), self.native_mosaic_info)
+			for row in all_rows_by_id_map.values()
+		}
+		embedded_transactions_by_hash_map = {}
+		for row in embedded_transaction_rows:
+			record = records_by_id_map[row[0]]
+			embedded_transactions_by_hash_map.setdefault(record.aggregate_hash, []).append(record)
+
+		return [SymbolTransactionView(
+			records_by_id_map[row[0]],
+			mosaic_divisibility_map,
+			embedded_transactions_by_hash_map.get(records_by_id_map[row[0]].transaction_hash, ()))
+			for row in transaction_rows]
 
 	def _fetch_transaction_mosaics(self, cursor, transaction_ids, sync_state):
 		"""Loads confirmed transfer amounts and divisibilities in one snapshot query."""
