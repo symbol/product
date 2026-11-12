@@ -1,4 +1,5 @@
 <resources>
     <color name="background">#E8F2F7</color>
     <color name="ic_launcher_background">#FFFFFF</color>
+    <color name="navigation_bar">#000000</color>
 </resources>

@@ -1,4 +1,4 @@
-import { NavigationMenu, NetworkConnectionStatusBar, PopupMessage, SystemStatusBar } from '../components';
+import { NavigationMenu, NetworkConnectionStatusBar, PopupMessage } from '../components';
 import { RouteName } from '@/app/router/config';
 import { Colors } from '@/app/styles';
 import React from 'react';
@@ -33,7 +33,6 @@ export const RootLayout = ({
 				<SafeAreaProvider>
 					<SafeAreaView style={styles.safeAreaOuter}>
 						<View style={styles.safeAreaInner}>
-							<SystemStatusBar />
 							{isNetworkStatusShown && (
 								<NetworkConnectionStatusBar networkStatus={networkStatus} />
 							)}
