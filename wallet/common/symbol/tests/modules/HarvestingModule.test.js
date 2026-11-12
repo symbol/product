@@ -473,14 +473,15 @@ describe('HarvestingModule', () => {
 	describe('fetchAccountHarvestedBlocks()', () => {
 		it('fetches harvested blocks with pagination criteria', async () => {
 			// Arrange:
-			const searchCriteria = { pageNumber: 2, pageSize: 5 };
-			api.harvesting.fetchHarvestedBlocks.mockResolvedValue(harvestedBlocks);
+			const searchCriteria = { cursor: '2', pageSize: 5 };
+			const harvestedBlockPage = { data: harvestedBlocks, nextCursor: null };
+			api.harvesting.fetchHarvestedBlocks.mockResolvedValue(harvestedBlockPage);
 
 			// Act:
 			const result = await harvestingModule.fetchAccountHarvestedBlocks(searchCriteria);
 
 			// Assert:
-			expect(result).toStrictEqual(harvestedBlocks);
+			expect(result).toStrictEqual(harvestedBlockPage);
 			expect(api.harvesting.fetchHarvestedBlocks).toHaveBeenCalledTimes(1);
 			expect(api.harvesting.fetchHarvestedBlocks).toHaveBeenCalledWith(
 				networkProperties,

@@ -20,7 +20,7 @@ const defaultParameters = {
 			fetchAccountInfo: jest.fn().mockResolvedValue(null)
 		},
 		transaction: {
-			fetchAccountTransactions: jest.fn().mockResolvedValue([]),
+			fetchAccountTransactions: jest.fn().mockResolvedValue({ data: [], nextCursor: null }),
 			fetchAccountTransaction: jest.fn().mockResolvedValue(),
 			fetchTransactionStatus: jest.fn().mockResolvedValue({}),
 			announceTransaction: jest.fn().mockResolvedValue(),
@@ -585,7 +585,7 @@ describe('WalletController', () => {
 			const updatedAccountTransactions = updatedWalletTransactions[networkIdentifier][accountPublicKey];
 			const expectedConfig = {
 				group: options.group || 'confirmed',
-				pageNumber: options.pageNumber || 1,
+				cursor: options.cursor ?? null,
 				pageSize: options.pageSize || 15,
 				filter: options.filter || {}
 			};
@@ -593,24 +593,25 @@ describe('WalletController', () => {
 				.mockResolvedValue(walletController._state.latestTransactions);
 			jest.spyOn(walletController._persistentStorageRepository, 'setLatestTransactions')
 				.mockResolvedValue();
+			const expectedReturnedPageByApi = { data: expectedReturnedTransactionsByApi, nextCursor: 'next-cursor' };
 			jest.spyOn(walletController._api.transaction, 'fetchAccountTransactions')
-				.mockResolvedValue(expectedReturnedTransactionsByApi);
+				.mockResolvedValue(expectedReturnedPageByApi);
 
 			// Act:
-			const returnedTransactions = await walletController.fetchAccountTransactions(options);
+			const returnedPage = await walletController.fetchAccountTransactions(options);
 
 			// Assert:
 			if (shouldCacheTransactions) {
 				expect(walletController._persistentStorageRepository.setLatestTransactions).toHaveBeenCalledWith(updatedWalletTransactions);
 				expect(walletController._state.latestTransactions).toStrictEqual(updatedWalletTransactions);
 				expect(walletController.currentAccountLatestTransactions).toStrictEqual(updatedAccountTransactions);
-				expect(returnedTransactions).toStrictEqual(updatedAccountTransactions);
+				expect(returnedPage).toStrictEqual(expectedReturnedPageByApi);
 			}
 			else {
 				expect(walletController._persistentStorageRepository.setLatestTransactions).not.toHaveBeenCalled();
 				expect(walletController._state.latestTransactions).toStrictEqual(initialWalletTransactions);
 				expect(walletController.currentAccountLatestTransactions).toStrictEqual(initialAccountTransactions);
-				expect(returnedTransactions).toStrictEqual(updatedAccountTransactions);
+				expect(returnedPage).toStrictEqual(expectedReturnedPageByApi);
 			}
 
 			expect(walletController._api.transaction.fetchAccountTransactions)
@@ -644,9 +645,9 @@ describe('WalletController', () => {
 			await runFetchTransactionsTest(options, shouldCacheTransactions);
 		});
 
-		it('returns transactions without caching them when page number is not 1', async () => {
+		it('returns transactions without caching them when the page is requested with a cursor', async () => {
 			// Arrange:
-			const options = { pageNumber: 2 };
+			const options = { cursor: 'page-cursor' };
 			const shouldCacheTransactions = false;
 
 			// Act & Assert:

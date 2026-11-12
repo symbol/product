@@ -1,12 +1,19 @@
 /**
- * @typedef {Object} SearchCriteria
- * @property {number} pageNumber - The page number.
- * @property {number} pageSize - The page size.
+ * @typedef {string} PageCursor - The marker from which next page is fetched. Can be a page number or a cursor value depending on the API.
  */
 
 /**
- * @typedef {SearchCriteria} SortableSearchCriteria
- * @property {"asc" | "desc"} order - The sort order.
+ * @template T
+ * @typedef {Object} Page
+ * @property {T[]} data - The items of the page.
+ * @property {PageCursor|null} nextCursor - The cursor of the next page, null when no next page is available.
+ */
+
+/**
+ * @typedef {Object} PageSearchCriteria
+ * @property {PageCursor|null} [cursor] - The cursor of the page to fetch. The first page is fetched when omitted.
+ * @property {number} [pageSize] - The page size.
+ * @property {"asc" | "desc"} [order] - The sort order.
  */
 
 /**
@@ -17,13 +24,9 @@
  */
 
 /**
- * @typedef {SortableSearchCriteria} TransactionSearchCriteria
+ * @typedef {PageSearchCriteria} TransactionSearchCriteria
  * @property {"confirmed" | "partial" | "unconfirmed"} group - The transaction group.
  * @property {TransactionFiler} [filter] - The transaction filter.
- */
-
-/**
- * @typedef {SortableSearchCriteria} HarvestedBlockSearchCriteria
  */
 
 export default {};

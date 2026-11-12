@@ -25,6 +25,11 @@ import { StorageInterface } from '../storage/StorageInterface';
 /** @typedef {import('../../types/ProtocolNetworkApi').ProtocolNetworkApi} ProtocolNetworkApi */
 /** @typedef {import('../../types/ProtocolWalletSdk').ProtocolWalletSdk} ProtocolWalletSdk */
 /** @typedef {import('../../types/Transaction').Transaction} Transaction */
+/** @typedef {import('../../types/SearchCriteria').PageCursor} PageCursor */
+/**
+ * @template T
+ * @typedef {import('../../types/SearchCriteria').Page<T>} Page
+ */
 /** @typedef {import('../../types/Logger').Logger} Logger */
 
 const STORAGE_ROOT_SCOPE = 'wallet';
@@ -706,27 +711,28 @@ export class WalletController {
 	 * Fetch current account transactions
 	 * @param {object} options - fetch options
 	 * @param {string} options.group - 'confirmed', 'unconfirmed' or 'partial'
-	 * @param {number} options.pageNumber - page number
+	 * @param {PageCursor|null} options.cursor - page number (or cursor pagination value) to fetch. When empty fetches the first page.
 	 * @param {number} options.pageSize - page size
 	 * @param {object} options.filter - filter object
-	 * @returns {Promise<Array>} - a promise that resolves to the list of transactions
+	 * @returns {Promise<Page<Transaction>>} - a promise that resolves to the page of transactions
 	 */
 	fetchAccountTransactions = async (options = {}) => {
-		const { group = TransactionGroup.CONFIRMED, pageNumber = 1, pageSize = 15, filter = {} } = options;
+		const { group = TransactionGroup.CONFIRMED, cursor = null, pageSize = 15, filter = {} } = options;
 		const { networkIdentifier, networkProperties } = this._state;
 		const { publicKey } = this.currentAccount;
 
 		// Fetch transactions from chain
-		const transactions = await this._api.transaction.fetchAccountTransactions(networkProperties, this.currentAccount, {
+		const transactionPage = await this._api.transaction.fetchAccountTransactions(networkProperties, this.currentAccount, {
 			group,
 			filter,
-			pageNumber,
+			cursor,
 			pageSize
 		});
 
 		// Cache transactions for current account
 		const isFilterActivated = filter && Object.keys(filter).length > 0;
-		if (!isFilterActivated && group === TransactionGroup.CONFIRMED && pageNumber === 1) {
+		const isFirstPage = cursor === null;
+		if (!isFilterActivated && group === TransactionGroup.CONFIRMED && isFirstPage) {
 			const latestTransactionsOrNull = await this._persistentStorageRepository.getLatestTransactions();
 			const defaultState = createDefaultState(this.networkIdentifiers, this.#createDefaultNetworkProperties);
 			const latestTransactions = cloneNetworkObjectMap(
@@ -734,7 +740,7 @@ export class WalletController {
 				this.networkIdentifiers,
 				defaultState.latestTransactions
 			);
-			latestTransactions[networkIdentifier][publicKey] = transactions;
+			latestTransactions[networkIdentifier][publicKey] = transactionPage.data;
 
 			await this._persistentStorageRepository.setLatestTransactions(latestTransactions);
 			this.#setState(() => {
@@ -742,7 +748,7 @@ export class WalletController {
 			});
 		}
 
-		return transactions;
+		return transactionPage;
 	};
 
 	/**

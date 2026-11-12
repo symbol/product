@@ -158,7 +158,7 @@ const setupMocks = (overrides = {}) => {
 		announceSignedTransactionBundle: jest.fn().mockResolvedValue({}),
 		modules: {
 			mosaic: {
-				fetchMosaicOwners: jest.fn().mockResolvedValue(overrides.owners ?? holders),
+				fetchMosaicOwners: jest.fn().mockResolvedValue({ data: overrides.owners ?? holders, nextCursor: null }),
 				// Balance of a holder outside the loaded list, reached only by typing its address
 				fetchMosaicBalance: jest.fn().mockResolvedValue(TYPED_HOLDER_BALANCE),
 				createRevocationTransaction: jest.fn().mockReturnValue(revokeTransactionBundle)

@@ -8,7 +8,6 @@ import { useAsyncManager, useWalletRefreshLifecycle } from '@/app/hooks';
 /** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
 
-const FIRST_PAGE_NUMBER = 1;
 const PAGE_SIZE = 15;
 
 /**
@@ -41,20 +40,26 @@ const PAGE_SIZE = 15;
  */
 export const useHistoryWidget = (walletController, refreshController) => {
 	const unconfirmedManager = useAsyncManager({
-		callback: async () => walletController.fetchAccountTransactions({
-			group: TransactionGroup.UNCONFIRMED,
-			pageNumber: FIRST_PAGE_NUMBER,
-			pageSize: PAGE_SIZE
-		}),
+		callback: async () => {
+			const transactionPage = await walletController.fetchAccountTransactions({
+				group: TransactionGroup.UNCONFIRMED,
+				pageSize: PAGE_SIZE
+			});
+
+			return transactionPage.data;
+		},
 		defaultData: []
 	});
 
 	const partialManager = useAsyncManager({
-		callback: async () => walletController.fetchAccountTransactions({
-			group: TransactionGroup.PARTIAL,
-			pageNumber: FIRST_PAGE_NUMBER,
-			pageSize: PAGE_SIZE
-		}),
+		callback: async () => {
+			const transactionPage = await walletController.fetchAccountTransactions({
+				group: TransactionGroup.PARTIAL,
+				pageSize: PAGE_SIZE
+			});
+
+			return transactionPage.data;
+		},
 		defaultData: []
 	});
 

@@ -141,7 +141,7 @@ describe('TokenService', () => {
 				// Assert:
 				expect(mockMakeRequest).toHaveBeenCalledWith(expected.endpoint);
 				expect(mockApi.namespace.fetchTokenNames).toHaveBeenCalledWith(networkProperties, expected.tokenIds);
-				expect(result).toStrictEqual(expected.tokenInfos);
+				expect(result).toStrictEqual(expected.page);
 			});
 		};
 
@@ -153,34 +153,35 @@ describe('TokenService', () => {
 					tokenNames
 				},
 				expected: {
-					endpoint: `${mosaicsEndpoint}?pageNumber=1&pageSize=100&order=desc&ownerAddress=${tokenCreatorAddress}`,
+					endpoint: `${mosaicsEndpoint}?pageNumber=1&pageSize=15&order=desc&ownerAddress=${tokenCreatorAddress}`,
 					tokenIds: Object.keys(tokenInfos),
-					tokenInfos: Object.values(tokenInfos)
+					page: { data: Object.values(tokenInfos), nextCursor: null }
 				}
 			},
 			{
-				description: 'forwards the search criteria to the mosaics search url',
+				description: 'requests the page number carried by the cursor and returns the next cursor for a full page',
 				config: {
 					mosaicsResponse: tokenInfosResponse,
 					tokenNames,
-					searchCriteria: { pageNumber: 2, pageSize: 10, order: 'asc' }
+					searchCriteria: { cursor: '2', pageSize: tokenInfosResponse.length, order: 'asc' }
 				},
 				expected: {
-					endpoint: `${mosaicsEndpoint}?pageNumber=2&pageSize=10&order=asc&ownerAddress=${tokenCreatorAddress}`,
+					endpoint: `${mosaicsEndpoint}?pageNumber=2&pageSize=${tokenInfosResponse.length}&order=asc`
+						+ `&ownerAddress=${tokenCreatorAddress}`,
 					tokenIds: Object.keys(tokenInfos),
-					tokenInfos: Object.values(tokenInfos)
+					page: { data: Object.values(tokenInfos), nextCursor: '3' }
 				}
 			},
 			{
-				description: 'returns an empty list when the account has not created any token',
+				description: 'returns an empty page when the account has not created any token',
 				config: {
 					mosaicsResponse: [],
 					tokenNames: {}
 				},
 				expected: {
-					endpoint: `${mosaicsEndpoint}?pageNumber=1&pageSize=100&order=desc&ownerAddress=${tokenCreatorAddress}`,
+					endpoint: `${mosaicsEndpoint}?pageNumber=1&pageSize=15&order=desc&ownerAddress=${tokenCreatorAddress}`,
 					tokenIds: [],
-					tokenInfos: []
+					page: { data: [], nextCursor: null }
 				}
 			}
 		];
@@ -205,7 +206,7 @@ describe('TokenService', () => {
 				// Assert:
 				expect(mockMakeRequest).toHaveBeenCalledTimes(config.requestResponses.length);
 				expect(mockMakeRequest).toHaveBeenNthCalledWith(1, expected.endpoint);
-				expect(result).toStrictEqual(expected.tokenOwners);
+				expect(result).toStrictEqual({ data: expected.tokenOwners, nextCursor: null });
 			});
 		};
 
@@ -216,7 +217,7 @@ describe('TokenService', () => {
 					requestResponses: [accountsSearchResponse, findMosaicInfosResponse(tokenId)]
 				},
 				expected: {
-					endpoint: `${accountsEndpoint}?pageNumber=1&pageSize=100&order=desc&mosaicId=${tokenId}`,
+					endpoint: `${accountsEndpoint}?pageNumber=1&pageSize=15&order=desc&mosaicId=${tokenId}`,
 					tokenOwners
 				}
 			},
@@ -224,7 +225,7 @@ describe('TokenService', () => {
 				description: 'forwards the search criteria to the accounts search url',
 				config: {
 					requestResponses: [accountsSearchResponse, findMosaicInfosResponse(tokenId)],
-					searchCriteria: { pageNumber: 2, pageSize: 10, order: 'asc' }
+					searchCriteria: { cursor: '2', pageSize: 10, order: 'asc' }
 				},
 				expected: {
 					endpoint: `${accountsEndpoint}?pageNumber=2&pageSize=10&order=asc&mosaicId=${tokenId}`,
@@ -237,7 +238,7 @@ describe('TokenService', () => {
 					requestResponses: [{ data: [] }]
 				},
 				expected: {
-					endpoint: `${accountsEndpoint}?pageNumber=1&pageSize=100&order=desc&mosaicId=${tokenId}`,
+					endpoint: `${accountsEndpoint}?pageNumber=1&pageSize=15&order=desc&mosaicId=${tokenId}`,
 					tokenOwners: []
 				}
 			}

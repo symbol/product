@@ -279,22 +279,24 @@ const createAddressBookMock = (overrides = {}) => {
 };
 
 const createHarvestingModuleMock = (receipts = []) => ({
-	fetchAccountHarvestedBlocks: jest.fn().mockResolvedValue(receipts)
+	fetchAccountHarvestedBlocks: jest.fn().mockResolvedValue({ data: receipts, nextCursor: null })
 });
 
 const createFetchAccountTransactionsMock = (config = {}) => {
 	const { confirmed = [], unconfirmed = [], partial = [] } = config;
 
+	const createPage = data => ({ data, nextCursor: null });
+
 	return jest.fn().mockImplementation(({ group }) => {
 		switch (group) {
 		case TransactionGroup.CONFIRMED:
-			return Promise.resolve(confirmed);
+			return Promise.resolve(createPage(confirmed));
 		case TransactionGroup.UNCONFIRMED:
-			return Promise.resolve(unconfirmed);
+			return Promise.resolve(createPage(unconfirmed));
 		case TransactionGroup.PARTIAL:
-			return Promise.resolve(partial);
+			return Promise.resolve(createPage(partial));
 		default:
-			return Promise.resolve([]);
+			return Promise.resolve(createPage([]));
 		}
 	});
 };

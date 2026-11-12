@@ -3,6 +3,8 @@ import { useAsyncManager } from '@/app/hooks';
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
 /** @typedef {import('wallet-common-symbol/src/types/Token').TokenOwner} TokenOwner */
 
+const PAGE_SIZE = 100;
+
 /**
  * Return type for useMosaicOwners hook.
  * @typedef {object} UseMosaicOwnersReturnType
@@ -21,7 +23,13 @@ import { useAsyncManager } from '@/app/hooks';
  */
 export const useMosaicOwners = ({ walletController, mosaicId }) => {
 	const mosaicOwnersManager = useAsyncManager({
-		callback: () => walletController.modules.mosaic.fetchMosaicOwners(mosaicId),
+		callback: async () => {
+			const mosaicOwnerPage = await walletController.modules.mosaic.fetchMosaicOwners(mosaicId, {
+				pageSize: PAGE_SIZE
+			});
+
+			return mosaicOwnerPage.data;
+		},
 		defaultData: []
 	});
 

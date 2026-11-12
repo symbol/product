@@ -1,4 +1,11 @@
-import { addressFromRaw, createSearchUrl, getTokenAmount, tokenInfoFromDTO } from '../utils';
+import {
+	addressFromRaw,
+	createSearchUrl,
+	getTokenAmount,
+	nextCursorFromPageNumber,
+	pageNumberFromCursor,
+	tokenInfoFromDTO
+} from '../utils';
 import _ from 'lodash';
 import { NotFoundError, absoluteToRelativeAmount } from 'wallet-common-core';
 
@@ -6,7 +13,11 @@ import { NotFoundError, absoluteToRelativeAmount } from 'wallet-common-core';
 /** @typedef {import('../types/Token').TokenOwner} TokenOwner */
 /** @typedef {import('../types/Token').MosaicDTO} MosaicDTO */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
-/** @typedef {import('../types/SearchCriteria').SearchCriteria} SearchCriteria */
+/** @typedef {import('../types/SearchCriteria').PageSearchCriteria} PageSearchCriteria */
+/**
+ * @template T
+ * @typedef {import('../types/SearchCriteria').Page<T>} Page
+ */
 
 export class TokenService {
 	#api;
@@ -93,47 +104,53 @@ export class TokenService {
 	 * Fetches the list of tokens created by a given account from the node.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string} address - The token creator address.
-	 * @param {SearchCriteria} [searchCriteria] - Search criteria.
-	 * @returns {Promise<TokenInfo[]>} - The created tokens.
+	 * @param {PageSearchCriteria} [searchCriteria] - Search criteria.
+	 * @returns {Promise<Page<TokenInfo>>} - The page of created tokens.
 	 */
-	fetchCreatedTokens = async (networkProperties, address, searchCriteria) => {
-		const endpoint = createSearchUrl(networkProperties.nodeUrl, '/mosaics', searchCriteria, {
+	fetchCreatedTokens = async (networkProperties, address, searchCriteria = {}) => {
+		const { cursor = null, pageSize = 15, order } = searchCriteria;
+		const pageNumber = pageNumberFromCursor(cursor);
+		const endpoint = createSearchUrl(networkProperties.nodeUrl, '/mosaics', { pageNumber, pageSize, order }, {
 			ownerAddress: address
 		});
 		const { data } = await this.#makeRequest(endpoint);
 		const tokenInfos = data.map(mosaicDTO => tokenInfoFromDTO(mosaicDTO.mosaic));
 		const tokenIds = tokenInfos.map(tokenInfo => tokenInfo.id);
 		const tokenNames = await this.#api.namespace.fetchTokenNames(networkProperties, tokenIds);
-
-		return tokenInfos.map(tokenInfo => ({
+		const createdTokens = tokenInfos.map(tokenInfo => ({
 			...tokenInfo,
 			names: tokenNames[tokenInfo.id] || [],
 			name: tokenNames[tokenInfo.id]?.[0] || null
 		}));
+
+		return { data: createdTokens, nextCursor: nextCursorFromPageNumber(pageNumber, data.length, pageSize) };
 	};
 
 	/**
 	 * Fetches the list of accounts holding a given token from the node.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string} tokenId - The token id to search holders for.
-	 * @param {SearchCriteria} [searchCriteria] - Search criteria.
-	 * @returns {Promise<TokenOwner[]>} - The token owners with their held amounts in relative units.
+	 * @param {PageSearchCriteria} [searchCriteria] - Search criteria.
+	 * @returns {Promise<Page<TokenOwner>>} - The page of token owners with their held amounts in relative units.
 	 */
-	fetchTokenOwners = async (networkProperties, tokenId, searchCriteria) => {
-		const endpoint = createSearchUrl(networkProperties.nodeUrl, '/accounts', searchCriteria, {
+	fetchTokenOwners = async (networkProperties, tokenId, searchCriteria = {}) => {
+		const { cursor = null, pageSize = 15, order } = searchCriteria;
+		const pageNumber = pageNumberFromCursor(cursor);
+		const endpoint = createSearchUrl(networkProperties.nodeUrl, '/accounts', { pageNumber, pageSize, order }, {
 			mosaicId: tokenId
 		});
 		const { data } = await this.#makeRequest(endpoint);
 
 		if (!data.length)
-			return [];
+			return { data: [], nextCursor: null };
 
 		const divisibility = await this.#fetchTokenDivisibility(networkProperties, tokenId);
-
-		return data.map(accountDTO => ({
+		const tokenOwners = data.map(accountDTO => ({
 			address: addressFromRaw(accountDTO.account.address),
 			amount: absoluteToRelativeAmount(getTokenAmount(accountDTO.account.mosaics, tokenId), divisibility)
 		}));
+
+		return { data: tokenOwners, nextCursor: nextCursorFromPageNumber(pageNumber, data.length, pageSize) };
 	};
 
 	/**

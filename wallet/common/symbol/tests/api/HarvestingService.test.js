@@ -202,7 +202,16 @@ describe('HarvestingService', () => {
 			mockApi.network.pingNode.mockResolvedValueOnce(chainHeight);
 			const spyFetchHarvestedBlocks = jest
 				.spyOn(harvestingService, 'fetchHarvestedBlocks')
-				.mockImplementation(async (_np, _addr, { pageNumber }) => pages[pageNumber - 1] || []);
+				.mockImplementation(async (_np, _addr, { cursor }) => {
+					const pageNumber = cursor === null ? 1 : Number(cursor);
+					const nextPageNumber = pageNumber + 1;
+					const isNextPageAvailable = pages[nextPageNumber] !== undefined;
+
+					return {
+						data: pages[pageNumber] ?? [],
+						nextCursor: isNextPageAvailable ? String(nextPageNumber) : null
+					};
+				});
 
 			const functionToTest = () => harvestingService.fetchSummary(networkProperties, address);
 
@@ -219,10 +228,10 @@ describe('HarvestingService', () => {
 			const recent1 = { height: 100_000, amount: '12.3456', timestamp: 1000 };
 			const recent2 = { height: 99_999, amount: '3.3333', timestamp: 2000 };
 			const older = { height: 13_000, amount: '10', timestamp: 3000 };
-			const pages = [
-				[recent1, recent2],
-				[older]
-			];
+			const pages = {
+				1: [recent1, recent2],
+				2: [older]
+			};
 			const expectedResult = {
 				latestAmount: recent1.amount,
 				latestHeight: recent1.height,
@@ -238,7 +247,7 @@ describe('HarvestingService', () => {
 		it('returns zeros when no harvested blocks in last 30 days', async () => {
 			// Arrange:
 			const chainHeight = 1_000;
-			const pages = [[]];
+			const pages = { 1: [] };
 			const expectedResult = {
 				latestAmount: 0,
 				latestHeight: null,
@@ -256,14 +265,14 @@ describe('HarvestingService', () => {
 		it('builds search URL and maps harvested block receipts to amounts and dates', async () => {
 			// Arrange:
 			const receiptType = 8515;
-			const searchCriteria = { pageNumber: 1, pageSize: 20, order: 'desc' };
+			const searchCriteria = { cursor: null, pageSize: 20, order: 'desc' };
 			const expectedUrl = createSearchUrl(
 				networkProperties.nodeUrl,
 				'/statements/transaction',
-				searchCriteria,
+				{ pageNumber: 1, pageSize: 20, order: 'desc' },
 				{ receiptType, targetAddress: address }
 			);
-			const expectedResult = harvestedBlocks;
+			const expectedResult = { data: harvestedBlocks, nextCursor: null };
 			const functionToTest = () =>
 				harvestingService.fetchHarvestedBlocks(networkProperties, address, searchCriteria);
 

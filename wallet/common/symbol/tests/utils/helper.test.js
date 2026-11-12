@@ -1,6 +1,8 @@
 import {
 	createSearchUrl,
 	networkTimestampToUnix,
+	nextCursorFromPageNumber,
+	pageNumberFromCursor,
 	parseBlockGenerationTargetTime,
 	toFixedNumber,
 	toFixedNumericString
@@ -143,6 +145,69 @@ describe('utils/helper', () => {
 				{ nodeUrl, path, searchCriteria, additionalParams },
 				expectedUrl
 			);
+		});
+	});
+
+	describe('pageNumberFromCursor', () => {
+		const runPageNumberFromCursorTest = (description, config, expected) => {
+			it(description, () => {
+				// Act:
+				const result = pageNumberFromCursor(config.cursor);
+
+				// Assert:
+				expect(result).toBe(expected.pageNumber);
+			});
+		};
+
+		const pageNumberFromCursorTests = [
+			{
+				description: 'returns the first page number when no cursor is given',
+				config: { cursor: null },
+				expected: { pageNumber: 1 }
+			},
+			{
+				description: 'returns the page number carried by the cursor',
+				config: { cursor: '3' },
+				expected: { pageNumber: 3 }
+			}
+		];
+
+		pageNumberFromCursorTests.forEach(test => {
+			runPageNumberFromCursorTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('nextCursorFromPageNumber', () => {
+		const runNextCursorFromPageNumberTest = (description, config, expected) => {
+			it(description, () => {
+				// Act:
+				const result = nextCursorFromPageNumber(config.pageNumber, config.itemCount, config.pageSize);
+
+				// Assert:
+				expect(result).toBe(expected.nextCursor);
+			});
+		};
+
+		const nextCursorFromPageNumberTests = [
+			{
+				description: 'returns the next page number as a cursor when the page is full',
+				config: { pageNumber: 2, itemCount: 15, pageSize: 15 },
+				expected: { nextCursor: '3' }
+			},
+			{
+				description: 'returns null when the page has fewer items than the page size',
+				config: { pageNumber: 2, itemCount: 14, pageSize: 15 },
+				expected: { nextCursor: null }
+			},
+			{
+				description: 'returns null when the page is empty',
+				config: { pageNumber: 1, itemCount: 0, pageSize: 15 },
+				expected: { nextCursor: null }
+			}
+		];
+
+		nextCursorFromPageNumberTests.forEach(test => {
+			runNextCursorFromPageNumberTest(test.description, test.config, test.expected);
 		});
 	});
 

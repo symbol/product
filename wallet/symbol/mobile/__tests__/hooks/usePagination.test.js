@@ -1,9 +1,8 @@
 import { usePagination } from '@/app/hooks/usePagination';
+import { createPagedFetchMock } from '__tests__/mock-factories';
 import { act, renderHook } from '@testing-library/react-native';
 
 const DEFAULT_PAGE_SIZE = 10;
-const FIRST_PAGE_NUMBER = 1;
-const CUSTOM_FIRST_PAGE_NUMBER = 0;
 const ERROR_MESSAGE = 'Fetch error';
 
 const PAGE_1_DATA = [{ id: 1, name: 'item1' }, { id: 2, name: 'item2' }];
@@ -13,9 +12,7 @@ const INCOMPLETE_PAGE_DATA = [{ id: 5, name: 'item5' }];
 const DEFAULT_DATA = [{ id: 0, name: 'default' }];
 
 const createMockCallback = (pages = { 1: PAGE_1_DATA, 2: PAGE_2_DATA }) => {
-	return jest.fn().mockImplementation(({ pageNumber }) => {
-		return Promise.resolve(pages[pageNumber] ?? EMPTY_PAGE_DATA);
-	});
+	return jest.fn().mockImplementation(createPagedFetchMock(pages));
 };
 
 const createFailingCallback = (error = new Error(ERROR_MESSAGE)) => {
@@ -27,7 +24,6 @@ const createConfig = (overrides = {}) => ({
 	defaultData: [],
 	onError: null,
 	pageSize: DEFAULT_PAGE_SIZE,
-	firstPageNumber: FIRST_PAGE_NUMBER,
 	dataUpdater: undefined,
 	defaultLoadingState: false,
 	...overrides
@@ -53,7 +49,7 @@ describe('hooks/usePagination', () => {
 				// Assert:
 				expect(result.current.isLoading).toBe(expected.isLoading);
 				expect(result.current.isLastPage).toBe(expected.isLastPage);
-				expect(result.current.pageNumber).toBe(expected.pageNumber);
+				expect(result.current.loadedPageCount).toBe(expected.loadedPageCount);
 				expect(result.current.data).toEqual(expected.data);
 				expect(result.current.error).toBe(expected.error);
 			});
@@ -66,7 +62,7 @@ describe('hooks/usePagination', () => {
 				expected: {
 					isLoading: false,
 					isLastPage: false,
-					pageNumber: FIRST_PAGE_NUMBER,
+					loadedPageCount: 0,
 					data: [],
 					error: null
 				}
@@ -77,19 +73,8 @@ describe('hooks/usePagination', () => {
 				expected: {
 					isLoading: false,
 					isLastPage: false,
-					pageNumber: FIRST_PAGE_NUMBER,
+					loadedPageCount: 0,
 					data: DEFAULT_DATA,
-					error: null
-				}
-			},
-			{
-				description: 'initializes with custom first page number',
-				config: createConfig({ firstPageNumber: CUSTOM_FIRST_PAGE_NUMBER }),
-				expected: {
-					isLoading: false,
-					isLastPage: false,
-					pageNumber: CUSTOM_FIRST_PAGE_NUMBER,
-					data: [],
 					error: null
 				}
 			},
@@ -99,7 +84,7 @@ describe('hooks/usePagination', () => {
 				expected: {
 					isLoading: true,
 					isLastPage: false,
-					pageNumber: FIRST_PAGE_NUMBER,
+					loadedPageCount: 0,
 					data: [],
 					error: null
 				}
@@ -120,7 +105,7 @@ describe('hooks/usePagination', () => {
 			// Assert:
 			expect(result.current).toHaveProperty('isLoading');
 			expect(result.current).toHaveProperty('isLastPage');
-			expect(result.current).toHaveProperty('pageNumber');
+			expect(result.current).toHaveProperty('loadedPageCount');
 			expect(result.current).toHaveProperty('data');
 			expect(result.current).toHaveProperty('error');
 			expect(result.current).toHaveProperty('fetchFirstPage');
@@ -164,11 +149,11 @@ describe('hooks/usePagination', () => {
 
 			// Assert:
 			expect(result.current.data).toEqual(PAGE_1_DATA);
-			expect(result.current.pageNumber).toBe(2);
+			expect(result.current.loadedPageCount).toBe(1);
 			expect(result.current.isLoading).toBe(false);
 		});
 
-		it('passes pageNumber and pageSize to callback', async () => {
+		it('passes cursor and pageSize to callback', async () => {
 			// Arrange:
 			const mockCallback = createMockCallback();
 			const expectedPageSize = 20;
@@ -184,7 +169,7 @@ describe('hooks/usePagination', () => {
 
 			// Assert:
 			expect(mockCallback).toHaveBeenCalledWith({
-				pageNumber: FIRST_PAGE_NUMBER,
+				cursor: null,
 				pageSize: expectedPageSize
 			});
 		});
@@ -210,7 +195,7 @@ describe('hooks/usePagination', () => {
 
 			// Assert:
 			expect(result.current.data).toEqual(expectedData);
-			expect(result.current.pageNumber).toBe(3);
+			expect(result.current.loadedPageCount).toBe(2);
 		});
 
 		it('does not fetch when already loading', async () => {
@@ -218,7 +203,7 @@ describe('hooks/usePagination', () => {
 			let resolveCallback;
 			const slowCallback = jest.fn().mockImplementation(() =>
 				new Promise(resolve => {
-					resolveCallback = () => resolve(PAGE_1_DATA);
+					resolveCallback = () => resolve({ data: PAGE_1_DATA, nextCursor: null });
 				}));
 			const config = createConfig({ callback: slowCallback });
 			const { result } = renderHook(() => usePagination(config));
@@ -288,32 +273,13 @@ describe('hooks/usePagination', () => {
 
 			const tests = [
 				{
-					description: 'sets isLastPage to true when page is empty',
-					config: { callback: createMockCallback({ 1: EMPTY_PAGE_DATA }) },
+					description: 'sets isLastPage when the page has no next cursor',
+					config: { callback: createMockCallback({ 1: PAGE_1_DATA }) },
 					expected: { isLastPage: true }
 				},
 				{
-					description: 'sets isLastPage to true when page has fewer items than pageSize',
-					config: {
-						callback: createMockCallback({ 1: INCOMPLETE_PAGE_DATA }),
-						pageSize: DEFAULT_PAGE_SIZE
-					},
-					expected: { isLastPage: true }
-				},
-				{
-					description: 'does not set isLastPage when page is full',
-					config: {
-						callback: createMockCallback({ 1: PAGE_1_DATA }),
-						pageSize: PAGE_1_DATA.length
-					},
-					expected: { isLastPage: false }
-				},
-				{
-					description: 'does not set isLastPage when pageSize is null',
-					config: {
-						callback: createMockCallback({ 1: INCOMPLETE_PAGE_DATA }),
-						pageSize: null
-					},
+					description: 'does not set isLastPage when the page has a next cursor',
+					config: { callback: createMockCallback({ 1: PAGE_1_DATA, 2: PAGE_2_DATA }) },
 					expected: { isLastPage: false }
 				}
 			];
@@ -346,7 +312,7 @@ describe('hooks/usePagination', () => {
 
 			// Assert:
 			expect(result.current.data).toEqual(PAGE_1_DATA);
-			expect(result.current.pageNumber).toBe(2);
+			expect(result.current.loadedPageCount).toBe(1);
 		});
 
 		it('resets isLastPage before fetching', async () => {
@@ -363,7 +329,7 @@ describe('hooks/usePagination', () => {
 			expect(result.current.isLastPage).toBe(true);
 
 			// Override callback to return full page data
-			mockCallback.mockImplementation(() => Promise.resolve(PAGE_1_DATA));
+			mockCallback.mockImplementation(() => Promise.resolve({ data: PAGE_1_DATA, nextCursor: '2' }));
 
 			// Act:
 			await act(async () => {
@@ -381,7 +347,7 @@ describe('hooks/usePagination', () => {
 			let resolveCallback;
 			const slowCallback = jest.fn().mockImplementation(() =>
 				new Promise(resolve => {
-					resolveCallback = () => resolve(PAGE_1_DATA);
+					resolveCallback = () => resolve({ data: PAGE_1_DATA, nextCursor: null });
 				}));
 			const config = createConfig({ callback: slowCallback });
 			const { result } = renderHook(() => usePagination(config));
@@ -490,34 +456,10 @@ describe('hooks/usePagination', () => {
 
 			// Assert:
 			expect(result.current.data).toEqual(DEFAULT_DATA);
-			expect(result.current.pageNumber).toBe(FIRST_PAGE_NUMBER);
+			expect(result.current.loadedPageCount).toBe(0);
 			expect(result.current.isLastPage).toBe(false);
 			expect(result.current.isLoading).toBe(false);
 			expect(result.current.error).toBe(null);
-		});
-
-		it('resets to custom first page number', async () => {
-			// Arrange:
-			const mockCallback = createMockCallback({ 0: PAGE_1_DATA, 1: PAGE_2_DATA });
-			const config = createConfig({
-				callback: mockCallback,
-				firstPageNumber: CUSTOM_FIRST_PAGE_NUMBER
-			});
-			const { result } = renderHook(() => usePagination(config));
-
-			await act(async () => {
-				const promise = result.current.fetchNextPage();
-				jest.runAllTimers();
-				await promise;
-			});
-
-			// Act:
-			act(() => {
-				result.current.reset();
-			});
-
-			// Assert:
-			expect(result.current.pageNumber).toBe(CUSTOM_FIRST_PAGE_NUMBER);
 		});
 
 		it('resets error state', async () => {
@@ -636,7 +578,7 @@ describe('hooks/usePagination', () => {
 			let resolveCallback;
 			const slowCallback = jest.fn().mockImplementation(() =>
 				new Promise(resolve => {
-					resolveCallback = () => resolve(PAGE_1_DATA);
+					resolveCallback = () => resolve({ data: PAGE_1_DATA, nextCursor: null });
 				}));
 			const config = createConfig({ callback: slowCallback, defaultData: DEFAULT_DATA });
 			const { result } = renderHook(() => usePagination(config));

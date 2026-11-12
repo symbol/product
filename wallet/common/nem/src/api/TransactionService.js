@@ -9,6 +9,10 @@ import { ApiError, NotFoundError } from 'wallet-common-core';
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/SearchCriteria').TransactionSearchCriteria} TransactionSearchCriteria */
+/**
+ * @template T
+ * @typedef {import('../types/SearchCriteria').Page<T>} Page
+ */
 
 export class TransactionService {
 	#api;
@@ -24,16 +28,17 @@ export class TransactionService {
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {PublicAccount} currentAccount - The account whose transactions are fetched.
 	 * @param {TransactionSearchCriteria} [searchCriteria] - Group, pagination and direction filter.
-	 * @returns {Promise<Transaction[]>} The account transactions.
+	 * @returns {Promise<Page<Transaction>>} The page of account transactions.
 	 */
 	fetchAccountTransactions = async (networkProperties, currentAccount, searchCriteria = {}) => {
-		const { group = TransactionGroup.CONFIRMED, filter, pageNumber = 1, pageSize = 15 } = searchCriteria;
+		const { group = TransactionGroup.CONFIRMED, filter, cursor = null, pageSize = 15 } = searchCriteria;
 		const { address } = currentAccount;
 
 		if (group === TransactionGroup.PARTIAL)
-			return [];
+			return { data: [], nextCursor: null };
 
 		let transactionDTOs;
+		let nextCursor = null;
 
 		if (group === TransactionGroup.UNCONFIRMED) {
 			const url = `${networkProperties.nodeUrl}/account/unconfirmedTransactions?address=${address}`;
@@ -45,13 +50,21 @@ export class TransactionService {
 				: filter?.direction === 'incoming'
 					? '/account/transfers/incoming'
 					: '/account/transfers/all';
-			const params = new URLSearchParams({ address, pageNumber, pageSize });
+			const params = new URLSearchParams({ address, pageSize });
+
+			if (cursor !== null)
+				params.set('id', cursor);
+
 			const url = `${networkProperties.nodeUrl}${endpoint}?${params.toString()}`;
 			const response = await this.#makeRequest(url);
 			transactionDTOs = response.data || [];
+			const isNextPageAvailable = transactionDTOs.length >= pageSize;
+			nextCursor = isNextPageAvailable ? String(transactionDTOs.at(-1).meta.id) : null;
 		}
 
-		return this.resolveTransactionDTOs(networkProperties, transactionDTOs, currentAccount);
+		const data = await this.resolveTransactionDTOs(networkProperties, transactionDTOs, currentAccount);
+
+		return { data, nextCursor };
 	};
 
 	/**

@@ -1,6 +1,10 @@
 /** @typedef {import('./Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('./Account').PublicAccount} PublicAccount */
 /** @typedef {import('./SearchCriteria').TransactionSearchCriteria} TransactionSearchCriteria */
+/**
+ * @template T
+ * @typedef {import('./SearchCriteria').Page<T>} Page
+ */
 /** @typedef {import('./Transaction').Transaction} Transaction */
 /** @typedef {import('./Transaction').SignedTransactionDTO} SignedTransactionDTO */
 /** @typedef {import('../lib/models/TransactionBundle').TransactionBundle} TransactionBundle */
@@ -18,7 +22,7 @@
  * @param {NetworkProperties} networkProperties - The network properties.
  * @param {PublicAccount} account - The public account to fetch transactions for.
  * @param {TransactionSearchCriteria} searchCriteria - The search criteria for transactions.
- * @returns {Promise<Transaction[]>} A promise that resolves to an array of transactions.
+ * @returns {Promise<Page<Transaction>>} A promise that resolves to a page of transactions.
  * @throws {Error} If the transactions cannot be fetched.
  */
 

@@ -1,11 +1,22 @@
-import { addressFromRaw, createSearchUrl, namespaceFromDTO, namespaceIdFromRaw } from '../utils';
+import {
+	addressFromRaw,
+	createSearchUrl,
+	namespaceFromDTO,
+	namespaceIdFromRaw,
+	nextCursorFromPageNumber,
+	pageNumberFromCursor
+} from '../utils';
 import _ from 'lodash';
 import { ApiError } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').UnresolvedAddressWithLocation} UnresolvedAddressWithLocation */
 /** @typedef {import('../types/Namespace').Namespace} Namespace */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
-/** @typedef {import('../types/SearchCriteria').SearchCriteria} SearchCriteria */
+/** @typedef {import('../types/SearchCriteria').PageSearchCriteria} PageSearchCriteria */
+/**
+ * @template T
+ * @typedef {import('../types/SearchCriteria').Page<T>} Page
+ */
 
 export class NamespaceService {
 	#makeRequest;
@@ -18,11 +29,13 @@ export class NamespaceService {
 	 * Fetches namespace list that is registered by a given account from the node.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string} address - Requested account address.
-	 * @param {SearchCriteria} [searchCriteria] - Search criteria.
-	 * @returns {Promise<Namespace[]>} - The account namespaces.
+	 * @param {PageSearchCriteria} [searchCriteria] - Search criteria.
+	 * @returns {Promise<Page<Namespace>>} - The page of account namespaces.
 	 */
-	fetchAccountNamespaces = async (networkProperties, address, searchCriteria) => {
-		const endpoint = createSearchUrl(networkProperties.nodeUrl, '/namespaces', searchCriteria, {
+	fetchAccountNamespaces = async (networkProperties, address, searchCriteria = {}) => {
+		const { cursor = null, pageSize = 15, order } = searchCriteria;
+		const pageNumber = pageNumberFromCursor(cursor);
+		const endpoint = createSearchUrl(networkProperties.nodeUrl, '/namespaces', { pageNumber, pageSize, order }, {
 			ownerAddress: address
 		});
 		const { data } = await this.#makeRequest(endpoint);
@@ -33,7 +46,9 @@ export class NamespaceService {
 			.filter(namespaceId => !!namespaceId);
 		const namespaceNames = await this.fetchNamespaceNames(networkProperties, namespaceIds);
 
-		return data.map(namespaceDTO => namespaceFromDTO(namespaceDTO, namespaceNames));
+		const accountNamespaces = data.map(namespaceDTO => namespaceFromDTO(namespaceDTO, namespaceNames));
+
+		return { data: accountNamespaces, nextCursor: nextCursorFromPageNumber(pageNumber, data.length, pageSize) };
 	};
 
 	/**

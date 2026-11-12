@@ -1,4 +1,5 @@
 /** @typedef {import('../types/SearchCriteria').SortableSearchCriteria} SortableSearchCriteria */
+/** @typedef {import('../types/SearchCriteria').PageCursor} PageCursor */
 
 /**
  * Formats a number to a fixed number of digits.
@@ -77,6 +78,30 @@ export const createSearchUrl = (nodeUrl, path, searchCriteria = {}, additionalPa
 	});
 
 	return url;
+};
+
+/**
+ * Returns page number from the given page-number-cursor. Converts string to number with the first page fallback.
+ * @param {PageCursor|null} cursor - The page cursor. Null treats as the first page.
+ * @returns {number} The page number.
+ */
+export const pageNumberFromCursor = cursor => {
+	const firstPageNumber = 1;
+
+	return cursor === null ? firstPageNumber : Number(cursor);
+};
+
+/**
+ * Creates a page cursor for the next page from the given current page number and other page details. Returns null when the current page is the last page.
+ * @param {number} pageNumber - The number of the current page
+ * @param {number} itemCount - The number of items in the current page.
+ * @param {number} pageSize - The requested page size.
+ * @returns {PageCursor|null} The next page cursor, null when no next page is available.
+ */
+export const nextCursorFromPageNumber = (pageNumber, itemCount, pageSize) => {
+	const isNextPageAvailable = itemCount >= pageSize;
+
+	return isNextPageAvailable ? String(pageNumber + 1) : null;
 };
 
 /**

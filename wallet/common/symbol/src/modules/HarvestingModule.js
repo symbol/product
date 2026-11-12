@@ -21,6 +21,10 @@ import {
 /** @typedef {import('../types/Harvesting').HarvestedBlock} HarvestedBlock */
 /** @typedef {import('../types/Harvesting').HarvestingStatus} HarvestingStatus */
 /** @typedef {import('../types/SearchCriteria').HarvestedBlockSearchCriteria} HarvestedBlockSearchCriteria */
+/**
+ * @template T
+ * @typedef {import('../types/SearchCriteria').Page<T>} Page
+ */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 
@@ -149,7 +153,7 @@ export class HarvestingModule {
 	/**
 	 * Fetches harvested blocks by current account.
 	 * @param {HarvestedBlockSearchCriteria} [searchCriteria] - Pagination params.
-	 * @returns {Promise<HarvestedBlock[]>} - The harvested blocks.
+	 * @returns {Promise<Page<HarvestedBlock>>} - The page of harvested blocks.
 	 */
 	fetchAccountHarvestedBlocks = async (searchCriteria = {}) => {
 		const { currentAccount, networkProperties } = this.#walletController;

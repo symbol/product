@@ -7,7 +7,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 /** @typedef {import('@/app/types/Wallet').MainWalletController} MainWalletController */
 /** @typedef {import('../types/Mosaic').CreatedMosaicSection} CreatedMosaicSection */
 
-const FIRST_PAGE_NUMBER = 1;
 const PAGE_SIZE = 15;
 // Visible-item count below which further pages are fetched to keep the list filled
 const AUTO_FILL_MIN_ITEMS = 10;
@@ -44,9 +43,8 @@ export const useCreatedMosaicList = walletController => {
 
 	// Data fetching
 	const pagination = usePagination({
-		callback: ({ pageNumber, pageSize }) => mosaicModule.fetchAccountMosaics(currentAccount.address, { pageNumber, pageSize }),
+		callback: ({ cursor, pageSize }) => mosaicModule.fetchAccountMosaics(currentAccount.address, { cursor, pageSize }),
 		pageSize: PAGE_SIZE,
-		firstPageNumber: FIRST_PAGE_NUMBER,
 		defaultData: []
 	});
 
@@ -67,8 +65,8 @@ export const useCreatedMosaicList = walletController => {
 	const mosaics = filterCreatedMosaics(mergeHeldAmounts(pagination.data, heldMosaics), filter, networkProperties.chainHeight);
 	const sections = buildCreatedMosaicListSections(mosaics);
 
-	// The page number advances only after a successful fetch, so it also signals that the first page is in
-	const hasLoadedFirstPage = pagination.pageNumber > FIRST_PAGE_NUMBER;
+	// The loaded page count advances only after a successful fetch, so it also signals that the first page is in
+	const hasLoadedFirstPage = pagination.loadedPageCount > 0;
 	const isUnderFilled = hasLoadedFirstPage && mosaics.length < AUTO_FILL_MIN_ITEMS;
 
 	// Filters and hidden expired mosaics narrow the fetched pages, so keep pulling until the list fills up

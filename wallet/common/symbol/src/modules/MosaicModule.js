@@ -21,7 +21,11 @@ import { TransactionBundle, relativeToAbsoluteAmount } from 'wallet-common-core'
 /** @typedef {import('../types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('../types/Token').TokenOwner} TokenOwner */
 /** @typedef {import('../types/Network').TransactionFees} TransactionFees */
-/** @typedef {import('../types/SearchCriteria').SearchCriteria} SearchCriteria */
+/** @typedef {import('../types/SearchCriteria').PageSearchCriteria} PageSearchCriteria */
+/**
+ * @template T
+ * @typedef {import('../types/SearchCriteria').Page<T>} Page
+ */
 
 export class MosaicModule {
 	static name = 'mosaic';
@@ -161,8 +165,8 @@ export class MosaicModule {
 	/**
 	 * Fetches the list of mosaics created by the current account or a given account.
 	 * @param {string} [address] - The creator address. Defaults to the current account.
-	 * @param {SearchCriteria} [searchCriteria] - Pagination params.
-	 * @returns {Promise<TokenInfo[]>} The created mosaics.
+	 * @param {PageSearchCriteria} [searchCriteria] - Pagination params.
+	 * @returns {Promise<Page<TokenInfo>>} The page of created mosaics.
 	 */
 	fetchAccountMosaics = async (address, searchCriteria) => {
 		const { currentAccount, networkProperties } = this.#walletController;
@@ -174,8 +178,8 @@ export class MosaicModule {
 	/**
 	 * Fetches the list of accounts holding a given mosaic.
 	 * @param {string} mosaicId - The mosaic id.
-	 * @param {SearchCriteria} [searchCriteria] - Pagination params.
-	 * @returns {Promise<TokenOwner[]>} The mosaic owners with their held amounts in relative units.
+	 * @param {PageSearchCriteria} [searchCriteria] - Pagination params.
+	 * @returns {Promise<Page<TokenOwner>>} The page of mosaic owners with their held amounts in relative units.
 	 */
 	fetchMosaicOwners = async (mosaicId, searchCriteria) => {
 		const { networkProperties } = this.#walletController;
