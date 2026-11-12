@@ -1,12 +1,15 @@
+from contextlib import contextmanager
 from datetime import datetime
 from unittest import TestCase
+from unittest.mock import Mock
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import TransactionType
 
-from rest.db.SymbolDatabase import SymbolDatabase, SymbolMosaicAliasNotFound, TransactionQuery, TransactionRecord
+from rest.db.SymbolDatabase import TRANSACTION_COLUMNS, SymbolDatabase, SymbolMosaicAliasNotFound, TransactionQuery, TransactionRecord
 from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable, TransactionMosaicRecord
+from rest.model.symbol.TransactionView import SymbolTransactionView
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state
 from ..test.SymbolDatabaseTestUtils import (
@@ -30,6 +33,132 @@ NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 
 
 class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-public-methods
+	def test_returns_selected_views_with_complete_embedded_transactions(self):
+		# Arrange:
+		mosaic_id = '1234567890ABCDEF'
+		aggregate_hash = bytes.fromhex('AA' * 32)
+		transactions = [
+			create_symbol_transaction(1, 10, type=TransactionType.AGGREGATE_COMPLETE.value, hash=aggregate_hash),
+			create_symbol_transaction(
+				1, 1, is_embedded=True, aggregate_hash=aggregate_hash,
+				mosaic_rows=[{'mosaic_id': mosaic_id, 'amount': 100, 'role': 'transfer', 'position': 0}]),
+			create_symbol_transaction(
+				1, 0, is_embedded=True, aggregate_hash=aggregate_hash,
+				mosaic_rows=[{'mosaic_id': mosaic_id, 'amount': 200, 'role': 'transfer', 'position': 0}]),
+		]
+		sync_state = create_symbol_sync_state(last_synced_height=1, finalized_height=1)
+		with _transaction_mosaic_database(transactions, [create_symbol_mosaic(mosaic_id, 2)]) as (database, cursor, _):
+			cursor.execute(f'SELECT {TRANSACTION_COLUMNS} FROM symbol_transactions AS transactions WHERE hash = %s', (aggregate_hash,))
+			parent_row = cursor.fetchone()
+			embedded_transaction_rows = database._fetch_embedded_transactions(cursor, [aggregate_hash])  # pylint: disable=protected-access
+
+			# Act:
+			views = database._fetch_transaction_views(  # pylint: disable=protected-access
+				cursor, [parent_row], embedded_transaction_rows, sync_state)
+
+		# Assert:
+		self.assertEqual(1, len(views))
+		view = views[0]
+		self.assertIsInstance(view, SymbolTransactionView)
+		self.assertEqual(aggregate_hash.hex().upper(), view.transaction.transaction_hash)
+		self.assertEqual([0, 1], [transaction.embedded_index for transaction in view.embedded_transactions])
+		self.assertEqual(
+			[((mosaic_id, 200),), ((mosaic_id, 100),)],
+			[transaction.mosaics for transaction in view.embedded_transactions])
+		self.assertEqual({mosaic_id: (mosaic_id, 2)}, view.mosaic_divisibility_map)
+
+	def test_raises_when_embedded_view_depends_on_unsafe_mosaic_metadata(self):
+		# Arrange:
+		aggregate_hash = bytes.fromhex('AA' * 32)
+		transactions = [
+			create_symbol_transaction(1, 10, type=TransactionType.AGGREGATE_COMPLETE.value, hash=aggregate_hash),
+			create_symbol_transaction(
+				1, 0, is_embedded=True, aggregate_hash=aggregate_hash,
+				mosaic_rows=[{'mosaic_id': '1234567890ABCDEF', 'amount': 100, 'role': 'transfer', 'position': 0}]),
+		]
+		dirty_sync_state = create_symbol_sync_state(last_synced_height=1, finalized_height=1, dirty_state_from_height=2)
+		with _transaction_mosaic_database(transactions) as (database, cursor, _):
+			cursor.execute(f'SELECT {TRANSACTION_COLUMNS} FROM symbol_transactions AS transactions WHERE hash = %s', (aggregate_hash,))
+			parent_rows = cursor.fetchall()
+			embedded_transaction_rows = database._fetch_embedded_transactions(cursor, [aggregate_hash])  # pylint: disable=protected-access
+
+			# Act + Assert:
+			with self.assertRaisesRegex(SymbolDataUnavailable, 'mosaic display depends on current state'):
+				database._fetch_transaction_views(cursor, parent_rows, embedded_transaction_rows, dirty_sync_state)  # pylint: disable=protected-access
+
+	def test_returns_selected_transfer_mosaics_in_position_order(self):
+		# Arrange:
+		first_mosaic_id = '1234567890ABCDEF'
+		second_mosaic_id = '234567890ABCDEF1'
+		transactions = [
+			create_symbol_transaction(1, 1, mosaic_rows=[
+				{'mosaic_id': second_mosaic_id, 'amount': 200, 'role': 'transfer', 'position': 1},
+				{'mosaic_id': first_mosaic_id, 'amount': 100, 'role': 'transfer', 'position': 0},
+				{'mosaic_id': '34567890ABCDEF12', 'amount': 300, 'role': 'hash_lock', 'position': 2},
+				{'mosaic_id': '4567890ABCDEF123', 'amount': 400, 'role': 'metadata_target', 'position': 3},
+			]),
+			create_symbol_transaction(1, 2),
+			create_symbol_mosaic_transfer(1, 3, '567890ABCDEF1234', 500),
+		]
+		sync_state = create_symbol_sync_state(last_synced_height=1, finalized_height=1)
+
+		with _transaction_mosaic_database(transactions, [
+			create_symbol_mosaic(first_mosaic_id, 2),
+			create_symbol_mosaic(second_mosaic_id, 3),
+		]) as (database, cursor, transaction_ids):
+			selected_id, empty_id, _ = transaction_ids
+
+			# Act:
+			mosaics_map, divisibility_map = database._fetch_transaction_mosaics(  # pylint: disable=protected-access
+				cursor, [selected_id, empty_id], sync_state)
+
+		# Assert:
+		self.assertEqual({selected_id: [(first_mosaic_id, 100), (second_mosaic_id, 200)], empty_id: []}, mosaics_map)
+		self.assertEqual({first_mosaic_id: (first_mosaic_id, 2), second_mosaic_id: (second_mosaic_id, 3)}, divisibility_map)
+
+	def test_raises_when_selected_mosaic_metadata_is_unsafe(self):
+		# Arrange:
+		transactions = [create_symbol_mosaic_transfer(1, 1, '1234567890ABCDEF', 100)]
+		with _transaction_mosaic_database(transactions) as (database, cursor, transaction_ids):
+			for status in ('healthy', 'repairing'):
+				with self.subTest(status=status):
+					sync_state = create_symbol_sync_state(
+						last_synced_height=1, finalized_height=1, status=status,
+						dirty_state_from_height=2 if status == 'healthy' else None)
+
+					# Act + Assert:
+					with self.assertRaisesRegex(SymbolDataUnavailable, 'mosaic display depends on current state'):
+						database._fetch_transaction_mosaics(cursor, transaction_ids, sync_state)  # pylint: disable=protected-access
+
+	def test_returns_empty_list_without_aggregate_hashes(self):
+		# Arrange:
+		cursor = Mock()
+
+		# Act:
+		result = SymbolDatabase._fetch_embedded_transactions(cursor, [])  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([], result)
+		cursor.execute.assert_not_called()
+
+	def test_returns_selected_parent_children_in_index_order(self):
+		# Arrange:
+		parent_hash = bytes.fromhex('AA' * 32)
+		transactions = [
+			create_symbol_transaction(4, 10, type=TransactionType.AGGREGATE_COMPLETE.value, hash=parent_hash),
+			create_symbol_transaction(4, 1, is_embedded=True, aggregate_hash=parent_hash),
+			create_symbol_transaction(4, 0, is_embedded=True, aggregate_hash=parent_hash),
+			create_symbol_transaction(4, 0, is_embedded=True, aggregate_hash=bytes.fromhex('BB' * 32)),
+		]
+		with symbol_test_database(blocks=[create_symbol_block(4)]) as (_, database):
+			database.upsert_transactions_for_height(4, transactions)
+			with database.connection.cursor() as cursor:
+				# Act:
+				result = SymbolDatabase._fetch_embedded_transactions(cursor, [parent_hash])  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([(parent_hash, 0, 4), (parent_hash, 1, 4)], [(bytes(row[3]), row[4], row[5]) for row in result])
+
 	def test_get_transactions_orders_rows_by_height_and_id_and_hides_above_watermark(self):
 		# Arrange:
 		transactions = [
@@ -930,6 +1059,18 @@ def _normalize_transaction_binary_fields(record):
 		aggregate_hash=bytes(record.aggregate_hash) if record.aggregate_hash is not None else None,
 		signer_address=bytes(record.signer_address),
 		recipient_address=bytes(record.recipient_address) if record.recipient_address is not None else None)
+
+
+@contextmanager
+def _transaction_mosaic_database(transactions, mosaics=()):
+	# Arrange:
+	with symbol_test_database(blocks=[create_symbol_block(1)], mosaics=mosaics) as (db_config, puller_database):
+		puller_database.upsert_transactions_for_height(1, transactions)
+		with puller_database.connection.cursor() as cursor:
+			cursor.execute('SELECT id FROM symbol_transactions ORDER BY id')
+			transaction_ids = [row[0] for row in cursor.fetchall()]
+			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
+				yield database, cursor, transaction_ids
 
 
 def _query_symbol_transactions(transactions, sync_state, query, mosaics=None):

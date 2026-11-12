@@ -13,7 +13,7 @@ from zenlog import log
 from rest.model.symbol.Block import BLOCK_STATISTICS_WINDOW, SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
 from rest.model.symbol.Namespace import SymbolNamespaceView
-from rest.model.symbol.TransactionView import AGGREGATE_TYPES, SymbolTransactionView, create_unconfirmed_record
+from rest.model.symbol.TransactionView import AGGREGATE_TYPES, SymbolTransactionView, create_confirmed_record, create_unconfirmed_record
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -70,6 +70,26 @@ MOSAIC_COLUMNS = '''
 	revokable,
 	alias_names
 '''
+
+TRANSACTION_COLUMNS = ', '.join(f'transactions.{column}' for column in (
+	'id',
+	'hash',
+	'is_embedded',
+	'aggregate_hash',
+	'embedded_index',
+	'height',
+	'type',
+	'signer_address',
+	'recipient_address',
+	'effective_fee',
+	'timestamp',
+	'message_type',
+	'message_payload',
+	'deadline',
+	'size',
+	'body',
+))
+
 SYMBOL_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 
 SYNC_STATE_COLUMNS = [
@@ -944,6 +964,22 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 		return transaction_rows
 
 	@staticmethod
+	def _fetch_embedded_transactions(cursor, aggregate_hashes):
+		"""Loads aggregate children after page selection, without page filters."""
+
+		if not aggregate_hashes:
+			return []
+
+		cursor.execute(
+			f'''SELECT {TRANSACTION_COLUMNS}
+			FROM symbol_transactions AS transactions
+			WHERE aggregate_hash = ANY(%s::bytea[]) AND transactions.is_embedded = true
+			ORDER BY aggregate_hash, embedded_index''',
+			(aggregate_hashes,))
+
+		return cursor.fetchall()
+
+	@staticmethod
 	def _create_transaction_filter(query):
 		where_clauses = ['transactions.height <= sync_state.last_synced_height']
 		parameters = []
@@ -1001,6 +1037,65 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 		mosaics_by_transaction = SymbolDatabase._map_transaction_mosaics(
 			transaction_ids, transaction_mosaic_rows, mosaic_state_by_id)
 		return [TransactionRecord(*row, tuple(mosaics_by_transaction[row[0]])) for row in transaction_rows]
+
+	def _fetch_transaction_views(self, cursor, transaction_rows, embedded_transaction_rows, sync_state):
+		"""Builds transaction views with their embedded transactions and mosaics."""
+
+		all_rows_by_id_map = {row[0]: row for row in (*transaction_rows, *embedded_transaction_rows)}
+		mosaics_by_transaction_map, mosaic_divisibility_map = self._fetch_transaction_mosaics(
+			cursor, list(all_rows_by_id_map), sync_state)
+
+		records_by_id_map = {
+			row[0]: create_confirmed_record(row, tuple(mosaics_by_transaction_map[row[0]]), self.native_mosaic_info)
+			for row in all_rows_by_id_map.values()
+		}
+		embedded_transactions_by_hash_map = {}
+		for row in embedded_transaction_rows:
+			record = records_by_id_map[row[0]]
+			embedded_transactions_by_hash_map.setdefault(record.aggregate_hash, []).append(record)
+
+		return [SymbolTransactionView(
+			records_by_id_map[row[0]],
+			mosaic_divisibility_map,
+			embedded_transactions_by_hash_map.get(records_by_id_map[row[0]].transaction_hash, ()))
+			for row in transaction_rows]
+
+	def _fetch_transaction_mosaics(self, cursor, transaction_ids, sync_state):
+		"""Loads confirmed transfer amounts and divisibilities in one snapshot query."""
+
+		cursor.execute(
+			'''
+			SELECT
+				tm.transaction_id,
+				tm.mosaic_id,
+				tm.amount,
+				tm.role,
+				tm.position,
+				m.divisibility
+			FROM symbol_transaction_mosaics AS tm
+			LEFT JOIN symbol_mosaics AS m ON m.mosaic_id = tm.mosaic_id
+			WHERE tm.transaction_id = ANY(%s::bigint[])
+				AND tm.role <> 'metadata_target'::symbol_transaction_mosaic_role
+			ORDER BY tm.transaction_id, tm.position
+			''',
+			(transaction_ids,))
+		transaction_mosaic_rows = cursor.fetchall()
+
+		if is_non_public_state(sync_state) and self._requires_current_transaction_metadata(transaction_mosaic_rows):
+			raise SymbolDataUnavailable(
+				'Symbol transaction data is unavailable: mosaic display depends on current state '
+				'in dirty or repairing state')
+
+		mosaics_by_transaction_map = {transaction_id: [] for transaction_id in transaction_ids}
+		mosaic_divisibility_map = {}
+		for row in transaction_mosaic_rows:
+			if row[3] != 'transfer':
+				continue
+			normalized_id = normalize_mosaic_id(row[1])
+			mosaics_by_transaction_map[row[0]].append((normalized_id, row[2]))
+			mosaic_divisibility_map[normalized_id] = (normalized_id, row[5])
+
+		return mosaics_by_transaction_map, mosaic_divisibility_map
 
 	def _requires_current_transaction_metadata(self, transaction_mosaic_rows):
 		for row in transaction_mosaic_rows:
