@@ -6,6 +6,8 @@ import os
 import sys
 from pathlib import Path
 
+from shoestring.internal.DirectoryResolver import resolve_directory
+
 
 def register_subcommand(subparsers, name, help_text):
 	parser = subparsers.add_parser(name, help=help_text)
@@ -36,6 +38,12 @@ def parse_args(args):
 	if not hasattr(args, 'func'):
 		parser.print_help()
 		raise SystemExit()
+
+	if hasattr(args, 'directory'):
+		try:
+			args.directory = resolve_directory(args.directory)
+		except ValueError as ex:
+			parser.error(str(ex))
 
 	return args
 

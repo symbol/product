@@ -59,6 +59,20 @@ In commands that require `--package` switch, the list of currently supported net
 
 As documented below, alternatively full path to package zip file can be provided using `file:///filename` or `http(s)://`.
 
+The installation directory is selected in this order: `--directory`, `$SHOESTRING_HOME`, then the current directory.
+An unset or empty `$SHOESTRING_HOME` uses the current directory. `$HOME` is not used as a directory default.
+A nonempty `$SHOESTRING_HOME` must be an absolute path;
+a relative path causes an error unless `--directory` overrides it. For example:
+
+```sh
+export SHOESTRING_HOME="$HOME/symbol"
+```
+
+The wizard uses the same default for its destination directory field. You can edit that field to override it.
+An invalid `$SHOESTRING_HOME` prevents the wizard from starting. The wizard retains its existing check that the destination directory exists.
+Explicit directory selections can still be relative to the current directory. Shoestring does not expand `~` or environment variables
+inside paths; any expansion when invoking the CLI is performed by the shell.
+
 ## Setup Commands
 
 ### init
@@ -155,7 +169,7 @@ setup \
 
   --config CONFIG                       path to shoestring configuration file
   --package PACKAGE                     Network configuration package. Possible values: (name | file:///filename | http(s)://uri) (default: mainnet)
-  --directory DIRECTORY                 installation directory (default: $HOME)
+  --directory DIRECTORY                 installation directory (default: $SHOESTRING_HOME or current directory)
   --overrides OVERRIDES                 path to custom user settings
   --rest-overrides REST_OVERRIDES       path to custom user REST settings (this is only valid for API roles)
   --security                            security mode (default: default)
@@ -201,7 +215,7 @@ Checks the health of the local Symbol node.
 health [-h] --config CONFIG [--directory DIRECTORY]
 
   --config CONFIG       path to shoestring configuration file
-  --directory DIRECTORY installation directory (default: $HOME)
+  --directory DIRECTORY installation directory (default: $SHOESTRING_HOME or current directory)
 ```
 
 ## Upgrade Commands
@@ -220,7 +234,7 @@ upgrade \
 
   --config CONFIG                       path to shoestring configuration file
   --package PACKAGE                     Network configuration package. Possible values: (name | file:///filename | http(s)://uri) (default: mainnet)
-  --directory DIRECTORY                 installation directory (default: $HOME)
+  --directory DIRECTORY                 installation directory (default: $SHOESTRING_HOME or current directory)
   --overrides OVERRIDES                 path to custom user settings
   --rest-overrides REST_OVERRIDES       path to custom user REST settings (this is only valid for API roles)
 ```
@@ -233,7 +247,7 @@ Renews peer certificates.
 renew-certificates --config CONFIG [--directory DIRECTORY] --ca-key-path CA_KEY_PATH [--renew-ca] [--retain-node-key]
 
   --config CONFIG           path to shoestring configuration file
-  --directory DIRECTORY     installation directory (default: $HOME)
+  --directory DIRECTORY     installation directory (default: $SHOESTRING_HOME or current directory)
   --ca-key-path CA_KEY_PATH path to main private key PEM file
   --renew-ca                renews CA certificate too
   --retain-node-key         retain node key
@@ -250,7 +264,7 @@ Renews voting keys.
 renew-voting-keys --config CONFIG [--directory DIRECTORY]
 
   --config CONFIG           path to shoestring configuration file
-  --directory DIRECTORY     installation directory (default: $HOME)
+  --directory DIRECTORY     installation directory (default: $SHOESTRING_HOME or current directory)
 ```
 
 This command will generate a transaction that will need to be sent to the network using `announce-transaction` to update the network state.
@@ -263,7 +277,7 @@ Resets blockchain state to allow a resync from scratch.
 reset-data --config CONFIG [--directory DIRECTORY] [--purge-harvesters]
 
   --config CONFIG           path to shoestring configuration file
-  --directory DIRECTORY     installation directory (default: $HOME)
+  --directory DIRECTORY     installation directory (default: $SHOESTRING_HOME or current directory)
   --purge-harvesters        purge harvesters.dat file
 ```
 
