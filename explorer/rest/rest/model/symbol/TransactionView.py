@@ -22,6 +22,7 @@ PAYLOAD_EXCLUDED_FIELDS = frozenset({
 	'recipientAddress'
 })
 MESSAGE_TYPE_ID_MAP = {label: type_id for type_id, label in MESSAGE_TYPE_LABELS.items()}
+AGGREGATE_TYPES = (TransactionType.AGGREGATE_COMPLETE, TransactionType.AGGREGATE_BONDED)
 
 # Records carry display-ready addresses, hex strings, and relative fees.
 # Payload and mosaics are prepared by the source-specific adapter.
