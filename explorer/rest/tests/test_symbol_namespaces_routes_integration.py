@@ -122,9 +122,9 @@ def test_http_items_and_empty_filters():
 			'aliasType': 'none',
 			'aliasMosaicId': None,
 			'aliasAddress': None,
-			'creator': str(Address(OWNER)),
-			'registrationHeight': 1,
-			'startTimestamp': '2026-01-01 00:00:00',
+			'owner': str(Address(OWNER)),
+			'registeredHeight': 1,
+			'registeredTimestamp': '2026-01-01 00:00:00',
 			'registrationType': 'root',
 			'expirationHeight': None,
 			'isUnlimitedDuration': True,
@@ -133,6 +133,64 @@ def test_http_items_and_empty_filters():
 		expected_symbol_namespace_child_dto(
 			ROOT_ID, CHILD_ID, str(Address(OWNER)), NATIVE_MOSAIC_INFO.id)
 	] == response.json
+
+
+def test_list_null_times_no_start_blocks():
+	# Arrange: retain the synced tip, but omit both namespace start blocks.
+	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
+	rows = [
+		_namespace(ROOT_ID, name='root', full_name='root', start_height=2, end_height=12),
+		_namespace(
+			CHILD_ID, parent_id=ROOT_ID, root_id=ROOT_ID, name='child', full_name='root.child', depth=2,
+			registration_type='child', start_height=3, end_height=12, alias_type='address', alias_address=MOSAIC_OWNER)
+	]
+	with symbol_test_database() as (database_config, _):
+		client = _create_symbol_client(database_config, sync_state, [create_symbol_block(10)], rows)
+
+		# Act:
+		response = client.get('/api/symbol/namespaces?sort=ASC')
+
+	# Assert:
+	assert 200 == response.status_code
+	assert [
+		{
+			'id': ROOT_ID,
+			'name': ROOT_ID,
+			'namespaceName': 'root',
+			'namespaceLevels': [{'name': 'root', 'namespaceId': ROOT_ID, 'parentId': None}],
+			'aliasType': 'none',
+			'aliasMosaicId': None,
+			'aliasAddress': None,
+			'owner': str(Address(OWNER)),
+			'registeredHeight': 2,
+			'registeredTimestamp': None,
+			'registrationType': 'root',
+			'expirationHeight': 12,
+			'isUnlimitedDuration': False,
+			'subNamespaceCount': 1
+		},
+		{
+			'id': CHILD_ID,
+			'name': CHILD_ID,
+			'namespaceName': 'root.child',
+			'namespaceLevels': [
+				{'name': 'root', 'namespaceId': ROOT_ID, 'parentId': None},
+				{'name': 'child', 'namespaceId': CHILD_ID, 'parentId': ROOT_ID}
+			],
+			'aliasType': 'address',
+			'aliasMosaicId': None,
+			'aliasAddress': str(Address(MOSAIC_OWNER)),
+			'owner': str(Address(OWNER)),
+			'registeredHeight': 3,
+			'registeredTimestamp': None,
+			'registrationType': 'child',
+			'expirationHeight': 12,
+			'isUnlimitedDuration': False,
+			'subNamespaceCount': 0
+		}
+	] == response.json
+	for item in response.json:
+		assert isinstance(item['registeredHeight'], int) and not isinstance(item['registeredHeight'], bool)
 
 
 def test_http_filter_precedes_offset():
@@ -488,8 +546,8 @@ def test_namespace_detail_returns_root_and_child_fields():
 		'id': ROOT_ID, 'name': ROOT_ID, 'namespaceName': 'root',
 		'namespaceLevels': [{'name': 'root', 'namespaceId': ROOT_ID, 'parentId': None}],
 		'aliasType': 'none', 'aliasMosaicId': None, 'aliasAddress': None,
-		'creator': str(Address(OWNER)),
-		'registrationHeight': 1, 'startTimestamp': '2026-01-01 00:00:00', 'registrationType': 'root',
+		'registrationType': 'root',
+		'owner': str(Address(OWNER)), 'registeredHeight': 1, 'registeredTimestamp': '2026-01-01 00:00:00',
 		'expirationHeight': 2, 'isUnlimitedDuration': False, 'subNamespaceCount': 3,
 		'subNamespaces': [
 			{'namespaceId': CHILD_ID, 'namespaceName': 'root.aaa', 'parentId': ROOT_ID},
@@ -509,8 +567,8 @@ def test_namespace_detail_returns_root_and_child_fields():
 			{'name': 'aaa', 'namespaceId': CHILD_ID, 'parentId': ROOT_ID}
 		],
 		'aliasType': 'mosaic', 'aliasMosaicId': MOSAIC_ID, 'aliasAddress': None,
-		'creator': str(Address(OWNER)),
-		'registrationHeight': 2, 'startTimestamp': '2026-01-02 00:00:00', 'registrationType': 'child',
+		'registrationType': 'child',
+		'owner': str(Address(OWNER)), 'registeredHeight': 2, 'registeredTimestamp': '2026-01-02 00:00:00',
 		'expirationHeight': 2, 'isUnlimitedDuration': False, 'subNamespaceCount': 1,
 		'subNamespaces': [{'namespaceId': LEAF_ID, 'namespaceName': 'root.aaa.leaf', 'parentId': CHILD_ID}],
 		'namespaceMosaics': [
@@ -528,8 +586,8 @@ def test_namespace_detail_name_and_lowercase_id_return_same_json():
 		'id': ROOT_ID, 'name': ROOT_ID, 'namespaceName': 'symbol',
 		'namespaceLevels': [{'name': 'symbol', 'namespaceId': ROOT_ID, 'parentId': None}],
 		'aliasType': 'none', 'aliasMosaicId': None, 'aliasAddress': None,
-		'creator': str(Address(OWNER)),
-		'registrationHeight': 1, 'startTimestamp': '2026-01-01 00:00:00', 'registrationType': 'root',
+		'registrationType': 'root',
+		'owner': str(Address(OWNER)), 'registeredHeight': 1, 'registeredTimestamp': '2026-01-01 00:00:00',
 		'expirationHeight': None, 'isUnlimitedDuration': True, 'subNamespaceCount': 0,
 		'subNamespaces': [], 'namespaceMosaics': []
 	}
@@ -567,8 +625,8 @@ def test_namespace_detail_uses_id_when_leaf_name_is_missing():
 			{'name': LEAF_ID, 'namespaceId': LEAF_ID, 'parentId': CHILD_ID}
 		],
 		'aliasType': 'mosaic', 'aliasMosaicId': MOSAIC_ID, 'aliasAddress': None,
-		'creator': str(Address(OWNER)),
-		'registrationHeight': 3, 'startTimestamp': '2026-01-03 00:00:00', 'registrationType': 'child',
+		'registrationType': 'child',
+		'owner': str(Address(OWNER)), 'registeredHeight': 3, 'registeredTimestamp': '2026-01-03 00:00:00',
 		'expirationHeight': None, 'isUnlimitedDuration': True, 'subNamespaceCount': 0, 'subNamespaces': [],
 		'namespaceMosaics': [
 			{'namespaceId': LEAF_ID, 'namespaceName': LEAF_ID, 'data': [_expected_detail_mosaic()]}
@@ -588,6 +646,7 @@ def test_namespace_detail_returns_address_alias_for_sibling():
 	# Assert:
 	assert 200 == response.status_code
 	assert 'address' == response.json['aliasType']
+	assert str(Address(OWNER)) == response.json['owner']
 	assert str(Address(MOSAIC_OWNER)) == response.json['aliasAddress']
 	assert [] == response.json['namespaceMosaics']
 	assert [] == response.json['subNamespaces']
@@ -629,13 +688,52 @@ def test_namespace_detail_returns_null_for_missing_start_blocks():
 
 	# Assert:
 	assert 200 == root_response.status_code
-	assert '2026-01-02 00:00:00' == root_response.json['startTimestamp']
+	assert '2026-01-02 00:00:00' == root_response.json['registeredTimestamp']
 	assert ['2026-01-04 00:00:00', None] == [
 		group['data'][0]['startTimestamp'] for group in root_response.json['namespaceMosaics']]
 	assert 200 == child_response.status_code
-	assert None is child_response.json['startTimestamp']
+	assert None is child_response.json['registeredTimestamp']
 	assert '2026-01-04 00:00:00' == child_response.json['namespaceMosaics'][0]['data'][0]['startTimestamp']
 	assert None is child_response.json['namespaceMosaics'][1]['data'][0]['startTimestamp']
+
+
+def test_namespace_detail_returns_null_timestamps_when_root_start_block_is_missing():
+	# Arrange: omit the target root's start block; retain the synced tip and Mosaic start block.
+	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
+
+	# Act:
+	response, = _request_namespace_details(
+		sync_state, [create_symbol_block(height) for height in (2, 3, 4, 10)], _detail_rows(), [ROOT_ID],
+		_detail_mosaics(), _detail_alias_names())
+
+	# Assert:
+	assert 200 == response.status_code
+	assert {
+		'id': ROOT_ID,
+		'name': ROOT_ID,
+		'namespaceName': 'root',
+		'namespaceLevels': [{'name': 'root', 'namespaceId': ROOT_ID, 'parentId': None}],
+		'aliasType': 'none',
+		'aliasMosaicId': None,
+		'aliasAddress': None,
+		'owner': str(Address(OWNER)),
+		'registeredHeight': 1,
+		'registeredTimestamp': None,
+		'registrationType': 'root',
+		'expirationHeight': 2,
+		'isUnlimitedDuration': False,
+		'subNamespaceCount': 3,
+		'subNamespaces': [
+			{'namespaceId': CHILD_ID, 'namespaceName': 'root.aaa', 'parentId': ROOT_ID},
+			{'namespaceId': LEAF_ID, 'namespaceName': 'root.aaa.leaf', 'parentId': CHILD_ID},
+			{'namespaceId': SIBLING_ID, 'namespaceName': 'root.zzz', 'parentId': ROOT_ID}
+		],
+		'namespaceMosaics': [
+			{'namespaceId': CHILD_ID, 'namespaceName': 'root.aaa', 'data': [_expected_detail_mosaic()]},
+			{'namespaceId': LEAF_ID, 'namespaceName': 'root.aaa.leaf', 'data': [_expected_detail_mosaic()]}
+		]
+	} == response.json
+	assert isinstance(response.json['registeredHeight'], int) and not isinstance(response.json['registeredHeight'], bool)
 
 
 def test_namespace_detail_preserves_zero_mosaic_supply():
@@ -1031,7 +1129,7 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 	# Assert:
 	assert 200 == old_response.status_code
 	assert {
-		'id': ROOT_ID, 'namespaceName': 'old', 'startTimestamp': '2026-01-01 00:00:00', 'aliasMosaicId': MOSAIC_ID,
+		'id': ROOT_ID, 'namespaceName': 'old', 'registeredTimestamp': '2026-01-01 00:00:00', 'aliasMosaicId': MOSAIC_ID,
 		'subNamespaceCount': 1,
 		'subNamespaces': [{'namespaceId': CHILD_ID, 'namespaceName': 'old.child', 'parentId': ROOT_ID}],
 		'namespaceMosaics': [{'namespaceId': ROOT_ID, 'namespaceName': 'old', 'data': [{
@@ -1041,10 +1139,10 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 			'isRestrictable': False, 'isRevokable': False,
 			'startTimestamp': '2026-01-02 00:00:00'}]}]
 	} == {key: old_response.json[key] for key in (
-		'id', 'namespaceName', 'startTimestamp', 'aliasMosaicId', 'subNamespaceCount', 'subNamespaces', 'namespaceMosaics')}
+		'id', 'namespaceName', 'registeredTimestamp', 'aliasMosaicId', 'subNamespaceCount', 'subNamespaces', 'namespaceMosaics')}
 	assert 200 == new_response.status_code
 	assert {
-		'id': ROOT_ID, 'namespaceName': 'new', 'startTimestamp': '2027-02-03 00:00:00', 'aliasMosaicId': UNRELATED_MOSAIC_ID,
+		'id': ROOT_ID, 'namespaceName': 'new', 'registeredTimestamp': '2027-02-03 00:00:00', 'aliasMosaicId': UNRELATED_MOSAIC_ID,
 		'subNamespaceCount': 1,
 		'subNamespaces': [{'namespaceId': SIBLING_ID, 'namespaceName': 'new.fresh', 'parentId': ROOT_ID}],
 		'namespaceMosaics': [{'namespaceId': ROOT_ID, 'namespaceName': 'new', 'data': [{
@@ -1054,4 +1152,4 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 			'isRestrictable': False, 'isRevokable': False,
 			'startTimestamp': '2026-01-03 00:00:00'}]}]
 	} == {key: new_response.json[key] for key in (
-		'id', 'namespaceName', 'startTimestamp', 'aliasMosaicId', 'subNamespaceCount', 'subNamespaces', 'namespaceMosaics')}
+		'id', 'namespaceName', 'registeredTimestamp', 'aliasMosaicId', 'subNamespaceCount', 'subNamespaces', 'namespaceMosaics')}

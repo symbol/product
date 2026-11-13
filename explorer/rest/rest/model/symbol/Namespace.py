@@ -19,7 +19,10 @@ class SymbolNamespaceView:  # pylint: disable=too-many-instance-attributes
 		self.sub_namespace_count = kwargs['sub_namespace_count']
 
 	def to_dict(self):
-		"""Formats the namespace as the public list JSON object."""
+		"""Formats the namespace using the common NEM field names.
+
+		Registration fields still describe the node's lifetime start, not its last renewal.
+		"""
 
 		return {
 			'id': self.namespace_id,
@@ -29,9 +32,9 @@ class SymbolNamespaceView:  # pylint: disable=too-many-instance-attributes
 			'aliasType': self.alias_type,
 			'aliasMosaicId': self.alias_mosaic_id.upper() if self.alias_mosaic_id is not None else None,
 			'aliasAddress': self.alias_address,
-			'creator': self.owner_address,
-			'registrationHeight': self.start_height,
-			'startTimestamp': format_timestamp(self.start_timestamp),
+			'owner': self.owner_address,
+			'registeredHeight': self.start_height,
+			'registeredTimestamp': format_timestamp(self.start_timestamp),
 			'registrationType': self.registration_type,
 			'expirationHeight': self.end_height,
 			'isUnlimitedDuration': self.end_height is None,
