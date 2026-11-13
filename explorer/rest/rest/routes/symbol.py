@@ -3,7 +3,6 @@ import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-import simplejson
 from common.symbol.NativeMosaic import create_native_mosaic_info
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from common.symbol.ReceiptTypes import RECEIPT_GROUP_LABELS, RECEIPT_TYPE_GROUPS, RECEIPT_TYPE_LABELS
@@ -328,11 +327,6 @@ def _setup_symbol_account_routes(app, symbol_api_facade, run_symbol_query):
 
 
 def _setup_symbol_mosaic_routes(app, symbol_api_facade, run_symbol_query):
-	def mosaic_response(result):
-		body = simplejson.dumps(
-			result, use_decimal=True, ensure_ascii=app.json.ensure_ascii, sort_keys=app.json.sort_keys, separators=(',', ':'))
-		return app.response_class(f'{body}\n', mimetype='application/json')
-
 	@app.route('/api/symbol/mosaics')
 	def api_get_symbol_mosaics():
 		try:
@@ -351,7 +345,7 @@ def _setup_symbol_mosaic_routes(app, symbol_api_facade, run_symbol_query):
 		if error:
 			return error
 
-		return mosaic_response(result)
+		return jsonify(result)
 
 	@app.route('/api/symbol/mosaic/<name>')
 	def api_get_symbol_mosaic(name):
@@ -370,7 +364,7 @@ def _setup_symbol_mosaic_routes(app, symbol_api_facade, run_symbol_query):
 		if result is None:
 			abort(404)
 
-		return mosaic_response(result)
+		return jsonify(result)
 
 
 def _setup_symbol_namespace_routes(app, symbol_api_facade, run_symbol_query):

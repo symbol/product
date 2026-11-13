@@ -1,6 +1,5 @@
 import unittest
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal, localcontext
 
 from ...test.SymbolMosaicTestUtils import create_symbol_mosaic_view
 
@@ -46,7 +45,8 @@ class SymbolMosaicViewTest(unittest.TestCase):
 			'id': '72C0212E67A08BCE',
 			'creator': 'TATNE7Q5BITMUTRRN6IB4I7FLSDRDWZA34I2PMQ',
 			'aliasNames': ['example', 'example.token'],
-			'totalSupply': Decimal('1.234567'),
+			'supply': 1234567,
+			'value': 1.234567,
 			'divisibility': 6,
 			'mosaicRegisteredHeight': 123,
 			'mosaicRegisteredTimestamp': '2026-01-01 00:00:00',
@@ -125,16 +125,17 @@ class SymbolMosaicViewTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(divisibility, result_map['divisibility'])
-		self.assertEqual(expected_value, result_map['totalSupply'])
+		self.assertEqual(supply, result_map['supply'])
+		self.assertEqual(expected_value, result_map['value'])
 
 	def test_can_format_zero_supply(self):
-		self._assert_formatted_supply(0, 6, 0)
+		self._assert_formatted_supply(0, 6, 0.0)
 
 	def test_can_format_supply_with_zero_divisibility(self):
-		self._assert_formatted_supply(1234567, 0, 1234567)
+		self._assert_formatted_supply(1234567, 0, 1234567.0)
 
 	def test_can_format_supply_with_maximum_divisibility(self):
-		self._assert_formatted_supply(1234567, 6, Decimal('1.234567'))
+		self._assert_formatted_supply(1234567, 6, 1.234567)
 
 	def test_can_convert_mutable_supply(self):
 		# Arrange:
@@ -175,20 +176,6 @@ class SymbolMosaicViewTest(unittest.TestCase):
 
 		# Assert:
 		self.assertIs(False, result_map['revokable'])
-
-	def test_total_supply_remains_exact_under_low_decimal_precision(self):
-		# Arrange: limit Decimal precision to expose context-dependent rounding.
-		mosaic_view = self._create_default_mosaic_view(('supply', 8999999999999999))
-		mosaic_view.divisibility = 6
-		with localcontext() as context:
-			context.prec = 2
-
-			# Act:
-			result_map = mosaic_view.to_mosaic_dict()
-
-		# Assert:
-		self.assertEqual(6, result_map['divisibility'])
-		self.assertEqual(Decimal('8999999999.999999'), result_map['totalSupply'])
 
 	def test_can_format_missing_timestamp(self):
 		# Arrange:
