@@ -1,5 +1,5 @@
 import { BridgeHelper } from '../../src/bridge/BridgeHelper';
-import { MessageType, TransactionType } from '../../src/constants';
+import { MessageKind, TransactionType } from '../../src/constants';
 import { encodePlainMessage } from '../../src/utils';
 import { expect, jest } from '@jest/globals';
 
@@ -50,7 +50,8 @@ describe('BridgeHelper', () => {
 			const expectedMessage = {
 				text: recipientAddress,
 				payload: encodePlainMessage(recipientAddress).substring(2),
-				type: MessageType.PlainText
+				type: null,
+				kind: MessageKind.RAW
 			};
 			const expectedResult = {
 				type: TransactionType.TRANSFER,

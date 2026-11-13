@@ -1,3 +1,5 @@
+import { constants } from 'wallet-common-core';
+
 export const TransactionGroup = {
 	CONFIRMED: 'confirmed',
 	UNCONFIRMED: 'unconfirmed',
@@ -10,6 +12,8 @@ export const TransactionAnnounceGroup = {
 	PARTIAL: 'partial',
 	COSIGNATURE: 'cosignature'
 };
+
+export const { MessageKind } = constants;
 
 export const MessageType = {
 	PlainText: 0,

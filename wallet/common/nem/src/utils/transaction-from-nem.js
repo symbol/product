@@ -1,13 +1,16 @@
 import { addressFromPublicKey } from './account';
+import { createTransactionFee } from './fee';
 import { getTokenAmount, tokenListFromDTO } from './token';
-import { decodePlainMessage, isIncomingTransaction, isOutgoingTransaction, nemTimestampToDate } from './transaction';
+import { decodePlainMessage, getMessageKind, isIncomingTransaction, isOutgoingTransaction, nemTimestampToDate } from './transaction';
 import {
+	LinkActionMessage,
 	MessageType,
 	MosaicPropertyName,
+	MosaicSupplyChangeActionMessage,
+	MosaicTransferFeeTypeMessage,
+	MultisigAccountModificationType,
 	NETWORK_CURRENCY_ID,
-	NativeMessageType,
-	TransactionType,
-	nativeToCommonMessageType
+	TransactionType
 } from '../constants';
 import { absoluteToRelativeAmount } from 'wallet-common-core';
 
@@ -80,20 +83,20 @@ const mapMosaicProperties = properties => {
 	return {
 		divisibility: parseInt(propertyMap[MosaicPropertyName.DIVISIBILITY] ?? '0'),
 		initialSupply: parseInt(propertyMap[MosaicPropertyName.INITIAL_SUPPLY] ?? '0'),
-		supplyMutable: propertyMap[MosaicPropertyName.SUPPLY_MUTABLE] === 'true',
-		transferable: propertyMap[MosaicPropertyName.TRANSFERABLE] !== 'false'
+		isSupplyMutable: propertyMap[MosaicPropertyName.SUPPLY_MUTABLE] === 'true',
+		isTransferable: propertyMap[MosaicPropertyName.TRANSFERABLE] !== 'false'
 	};
 };
 
 const mapMosaicLevy = levy => {
 	if (!levy)
-		return null;
+		return {};
 
 	return {
-		type: levy.transferFeeType.value,
-		recipientAddress: mapAddress(levy.recipientAddress),
-		mosaicId: mapTokenId(levy.mosaicId),
-		fee: Number(levy.fee.value)
+		levyType: MosaicTransferFeeTypeMessage[levy.transferFeeType.value],
+		levyRecipientAddress: mapAddress(levy.recipientAddress),
+		levyTokenId: mapTokenId(levy.mosaicId),
+		levyFee: Number(levy.fee.value)
 	};
 };
 
@@ -153,7 +156,10 @@ const baseTransactionFromNem = (transaction, config) => {
 		type,
 		timestamp: nemTimestampToDate(Number(transaction.timestamp.value)),
 		deadline: mapDeadline(transaction),
-		fee: absoluteToRelativeAmount(Number(transaction.fee.value), networkProperties.networkCurrency.divisibility),
+		fee: createTransactionFee(
+			networkProperties,
+			absoluteToRelativeAmount(Number(transaction.fee.value), networkProperties.networkCurrency.divisibility)
+		),
 		signerAddress,
 		signerPublicKey
 	};
@@ -170,15 +176,15 @@ const transferTransactionFromNem = (transaction, config) => {
 	};
 
 	if (transaction.message?.message?.length) {
-		const nativeType = transaction.message.messageType.value;
+		const messageType = transaction.message.messageType.value;
 		const payload = Buffer.from(transaction.message.message).toString('hex');
-		const text = nativeType === NativeMessageType.PlainText ? decodePlainMessage(payload) : null;
+		const text = messageType === MessageType.PlainText ? decodePlainMessage(payload) : null;
 
 		transactionBody.message = {
-			type: nativeToCommonMessageType[nativeType] ?? MessageType.RAW,
+			type: messageType,
+			kind: getMessageKind(messageType),
 			text,
-			payload,
-			native: { type: nativeType }
+			payload
 		};
 	}
 
@@ -192,29 +198,35 @@ const transferTransactionFromNem = (transaction, config) => {
 // NEM models the importance transfer (delegated harvesting) transaction as an account key link.
 const accountKeyLinkTransactionFromNem = (transaction, config) => {
 	const baseTransaction = baseTransactionFromNem(transaction, config);
-	const remotePublicKey = transaction.remotePublicKey.toString();
+	const linkedPublicKey = transaction.remotePublicKey.toString();
 
 	return {
 		...baseTransaction,
-		linkAction: transaction.linkAction.value,
-		remotePublicKey,
-		remoteAccountAddress: addressFromPublicKey(remotePublicKey, config.networkProperties.networkIdentifier)
+		linkAction: LinkActionMessage[transaction.linkAction.value],
+		linkedPublicKey,
+		linkedAccountAddress: addressFromPublicKey(linkedPublicKey, config.networkProperties.networkIdentifier)
 	};
 };
 
 const multisigAccountModificationTransactionFromNem = (transaction, config) => {
+	const { networkIdentifier } = config.networkProperties;
 	const baseTransaction = baseTransactionFromNem(transaction, config);
-	const modifications = transaction.modifications.map(({ modification }) => ({
-		modificationType: modification.modificationType.value,
-		cosignatoryPublicKey: modification.cosignatoryPublicKey.toString()
-	}));
-	const result = {
-		...baseTransaction,
-		modifications,
-		minApprovalDelta: transaction.minApprovalDelta ?? 0
-	};
+	const { modifications } = transaction;
+	const publicKeyAdditions = modifications
+		.filter(({ modification }) => modification.modificationType.value === MultisigAccountModificationType.ADD_COSIGNATORY)
+		.map(({ modification }) => modification.cosignatoryPublicKey.toString());
+	const publicKeyDeletions = modifications
+		.filter(({ modification }) => modification.modificationType.value === MultisigAccountModificationType.DELETE_COSIGNATORY)
+		.map(({ modification }) => modification.cosignatoryPublicKey.toString());
 
-	return result;
+	return {
+		...baseTransaction,
+		minApprovalDelta: transaction.minApprovalDelta ?? 0,
+		addressAdditions: publicKeyAdditions.map(publicKey => addressFromPublicKey(publicKey, networkIdentifier)),
+		addressDeletions: publicKeyDeletions.map(publicKey => addressFromPublicKey(publicKey, networkIdentifier)),
+		publicKeyAdditions,
+		publicKeyDeletions
+	};
 };
 
 const cosignatureTransactionFromNem = (transaction, config) => {
@@ -223,7 +235,7 @@ const cosignatureTransactionFromNem = (transaction, config) => {
 	return {
 		...baseTransaction,
 		otherTransactionHash: transaction.otherTransactionHash.toString(),
-		multisigAccountAddress: mapAddress(transaction.multisigAccountAddress)
+		multisigAddress: mapAddress(transaction.multisigAccountAddress)
 	};
 };
 
@@ -262,7 +274,10 @@ const namespaceRegistrationTransactionFromNem = (transaction, config) => {
 		parentName,
 		namespaceId: parentName ? `${parentName}.${namespaceName}` : namespaceName,
 		rentalFeeSink: mapAddress(transaction.rentalFeeSink),
-		rentalFee: absoluteToRelativeAmount(Number(transaction.rentalFee.value), divisibility)
+		rentalFee: createTransactionFee(
+			config.networkProperties,
+			absoluteToRelativeAmount(Number(transaction.rentalFee.value), divisibility)
+		)
 	};
 };
 
@@ -273,15 +288,16 @@ const mosaicDefinitionTransactionFromNem = (transaction, config) => {
 
 	return {
 		...baseTransaction,
-		mosaicDefinition: {
-			id: mapTokenId(mosaicDefinition.id),
-			ownerPublicKey: mosaicDefinition.ownerPublicKey.toString(),
-			description: mapBytesToString(mosaicDefinition.description),
-			properties: mapMosaicProperties(mosaicDefinition.properties),
-			levy: mapMosaicLevy(mosaicDefinition.levy)
-		},
+		tokenId: mapTokenId(mosaicDefinition.id),
+		description: mapBytesToString(mosaicDefinition.description),
+		...mapMosaicProperties(mosaicDefinition.properties),
+		creatorPublicKey: mosaicDefinition.ownerPublicKey.toString(),
+		...mapMosaicLevy(mosaicDefinition.levy),
 		rentalFeeSink: mapAddress(transaction.rentalFeeSink),
-		rentalFee: absoluteToRelativeAmount(Number(transaction.rentalFee.value), divisibility)
+		rentalFee: createTransactionFee(
+			config.networkProperties,
+			absoluteToRelativeAmount(Number(transaction.rentalFee.value), divisibility)
+		)
 	};
 };
 
@@ -291,7 +307,7 @@ const mosaicSupplyChangeTransactionFromNem = (transaction, config) => {
 	return {
 		...baseTransaction,
 		tokenId: mapTokenId(transaction.mosaicId),
-		action: transaction.action.value,
+		action: MosaicSupplyChangeActionMessage[transaction.action.value],
 		delta: Number(transaction.delta.value)
 	};
 };

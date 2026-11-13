@@ -21,14 +21,14 @@ export const generateNonce = () => {
 };
 
 /**
- * Derives the mosaic id from the owner address and nonce, matching the value the network assigns to the
+ * Derives the mosaic id from the creator address and nonce, matching the value the network assigns to the
  * mosaic definition transaction. Used to reference a freshly created mosaic in the paired supply change.
- * @param {string} ownerAddress - The mosaic creator address.
+ * @param {string} creatorAddress - The mosaic creator address.
  * @param {number} nonce - The mosaic nonce.
  * @returns {string} The mosaic id.
  */
-export const mosaicIdFromNonce = (ownerAddress, nonce) => {
-	const mosaicId = generateMosaicId(new Address(ownerAddress), nonce);
+export const mosaicIdFromNonce = (creatorAddress, nonce) => {
+	const mosaicId = generateMosaicId(new Address(creatorAddress), nonce);
 
 	return mosaicId.toString(16).toUpperCase().padStart(16, '0');
 };

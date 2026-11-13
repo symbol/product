@@ -155,6 +155,20 @@ describe('variants/nem/api/search', () => {
 		await runSearchTest(searchQuery, responseMap, expectedResult);
 	});
 
+	it('searches account by address with dashes', async () => {
+		// Arrange:
+		const searchQuery = 'NADMEH-CFJD45-GPTDL4-HZP2LJ-LZVAZR-LYWYPN-EMLY';
+		const responseMap = {
+			'https://explorer.backend/account?address=NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY': accountInfoResponse
+		};
+		const expectedResult = {
+			account: accountInfoResult
+		};
+
+		// Act + Assert:
+		await runSearchTest(searchQuery, responseMap, expectedResult);
+	});
+
 	it('searches account by public key', async () => {
 		// Arrange:
 		const searchQuery = '63D2E7B4F5479B0BF67AC34B0656F4A265B039CE66BF6CA9BDD7C196365D8E23';
@@ -192,6 +206,34 @@ describe('variants/nem/api/search', () => {
 
 		// Act + Assert:
 		await runScopedSearchTest(searchQuery, 'account', responseMap, expectedResult);
+	});
+
+	it('requests only the account when scoped to account and the address has dashes', async () => {
+		// Arrange:
+		const searchQuery = 'nadmeh-cfjd45-gptdl4-hzp2lj-lzvazr-lywypn-emly';
+		const responseMap = {
+			'https://explorer.backend/account?address=NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY': accountInfoResponse
+		};
+		const expectedResult = {
+			account: accountInfoResult
+		};
+
+		// Act + Assert:
+		await runScopedSearchTest(searchQuery, 'account', responseMap, expectedResult);
+	});
+
+	it('keeps dashes in namespace name when the text is not an address', async () => {
+		// Arrange:
+		const searchQuery = 'namespace-name';
+		const responseMap = {
+			'https://explorer.backend/namespace/namespace-name': namespaceInfoResponse
+		};
+		const expectedResult = {
+			namespace: namespaceInfoResult
+		};
+
+		// Act + Assert:
+		await runScopedSearchTest(searchQuery, 'namespace', responseMap, expectedResult);
 	});
 
 	it('requests only the mosaic when scoped to mosaic', async () => {

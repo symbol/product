@@ -14,13 +14,6 @@
  */
 
 /**
- * @typedef {Object} TransactionMessage
- * @property {string} payload - The message payload HEX.
- * @property {number} type - The message type. The first byte of the payload.
- * @property {string} text - Utf-8 decoded payload.
- */
-
-/**
  * @typedef {Object} SignedTransactionDTO
  * @property {string} payload - The transaction payload.
  */
