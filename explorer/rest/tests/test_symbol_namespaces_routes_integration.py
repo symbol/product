@@ -1,7 +1,6 @@
 # pylint: disable=too-many-lines  # Namespace list and detail share one HTTP/PostgreSQL integration fixture.
 import tempfile
 from datetime import datetime, timezone
-from pathlib import Path
 
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo
@@ -26,6 +25,7 @@ from .test.SymbolNamespaceTestUtils import (
 	create_symbol_namespace,
 	expected_symbol_namespace_child_dto
 )
+from .test.SymbolRestConfigTestUtils import write_symbol_rest_config
 
 _namespace = create_symbol_namespace
 
@@ -39,34 +39,6 @@ THIRD_ROOT_ID = 'B95F1F8A96159516'
 MOSAIC_ID = '1234567890ABCDEF'
 UNRELATED_MOSAIC_ID = '2234567890ABCDEF'
 MOSAIC_OWNER = bytes.fromhex('9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95')
-
-
-def _write_config(directory, database_config):
-	db_path = Path(directory) / 'db.ini'
-	db_path.write_text(
-		'[symbol_db]\n'
-		f'database = {database_config.database}\n'
-		f'user = {database_config.user}\n'
-		'password = \n'
-		f'host = {database_config.host}\n'
-		f'port = {database_config.port}\n',
-		encoding='utf8')
-	app_path = Path(directory) / 'app.config'
-	app_path.write_text(
-		'REST_CHAIN="symbol"\n'
-		'NETWORK_NAME="testnet"\n'
-		f'DATABASE_CONFIG_FILEPATH="{db_path}"\n'
-		f'SYMBOL_NATIVE_MOSAIC_ID={NATIVE_MOSAIC_INFO.id!r}\n'
-		'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200\n'
-		'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7\n'
-		'SYMBOL_HARVESTING_MIN_BALANCE=0\n'
-		'SYMBOL_HARVESTING_MAX_BALANCE=18446744073709551615\n'
-		'SYMBOL_NODE_URL="http://127.0.0.1:1"\n'
-		'SYMBOL_NODE_ALLOWED_HOSTS="127.0.0.1:1"\n'
-		'SYMBOL_NODE_ALLOW_LOOPBACK="true"\n'
-		'SYMBOL_NODE_ALLOW_PRIVATE="false"\n',
-		encoding='utf8')
-	return app_path
 
 
 def _create_symbol_client(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -83,9 +55,10 @@ def _create_symbol_client(  # pylint: disable=too-many-arguments,too-many-positi
 			database.upsert_namespace(row, alias_name_rows)
 
 	with tempfile.TemporaryDirectory() as temp_directory:
-		config_path = _write_config(temp_directory, database_config)
+		config_path = write_symbol_rest_config(temp_directory, database_config, NATIVE_MOSAIC_INFO.id)
 		with rest_settings_env(config_path):
 			app = create_app()
+
 	return app.test_client()
 
 
@@ -701,7 +674,7 @@ def test_namespace_detail_returns_404_when_target_is_deleted():
 		puller_database.upsert_blocks([create_symbol_block(1), create_symbol_block(10)])
 		puller_database.upsert_namespace(rows[0], [])
 		with tempfile.TemporaryDirectory() as temp_directory:
-			config_path = _write_config(temp_directory, database_config)
+			config_path = write_symbol_rest_config(temp_directory, database_config, NATIVE_MOSAIC_INFO.id)
 			with rest_settings_env(config_path):
 				app = create_app()
 			client = app.test_client()
@@ -739,7 +712,7 @@ def test_namespace_detail_excludes_deleted_descendant():
 		for row in rows:
 			puller_database.upsert_namespace(row, [])
 		with tempfile.TemporaryDirectory() as temp_directory:
-			config_path = _write_config(temp_directory, database_config)
+			config_path = write_symbol_rest_config(temp_directory, database_config, NATIVE_MOSAIC_INFO.id)
 			with rest_settings_env(config_path):
 				client = create_app().test_client()
 			puller_database.delete_namespace(LEAF_ID)
@@ -1014,7 +987,7 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 				# pylint: enable=protected-access
 
 			with tempfile.TemporaryDirectory() as temp_directory:
-				config_path = _write_config(temp_directory, database_config)
+				config_path = write_symbol_rest_config(temp_directory, database_config, NATIVE_MOSAIC_INFO.id)
 				with rest_settings_env(config_path):
 					app = create_app({'symbol': (setup_facade, setup_symbol_routes)})
 					client = app.test_client()
