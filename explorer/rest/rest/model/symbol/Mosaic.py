@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from rest.model.format import format_timestamp
 from rest.model.symbol.format import format_amount
 
@@ -71,4 +73,28 @@ class SymbolMosaicView:  # pylint: disable=too-many-instance-attributes
 			'isTransferable': self.transferable,
 			'isRestrictable': self.restrictable,
 			'isRevokable': self.revokable
+		}
+
+	def to_mosaic_dict(self):
+		"""Formats the Mosaic endpoint contract independently of namespace detail."""
+
+		supply_digits = Decimal(self.supply).as_tuple()
+		total_supply = Decimal((supply_digits.sign, supply_digits.digits, -self.divisibility))
+		if self.divisibility <= 0 or 0 == self.supply % (10 ** self.divisibility):
+			total_supply = int(total_supply)
+
+		return {
+			'id': self.mosaic_id,
+			'creator': self.owner_address,
+			'aliasNames': self.alias_names,
+			'mosaicRegisteredHeight': self.start_height,
+			'mosaicRegisteredTimestamp': format_timestamp(self.registration_timestamp),
+			'totalSupply': total_supply,
+			'divisibility': self.divisibility,
+			'supplyMutable': self.supply_mutable,
+			'transferable': self.transferable,
+			'restrictable': self.restrictable,
+			'revokable': self.revokable,
+			'mosaicExpirationHeight': self.expiration_height,
+			'unlimitedDuration': self.duration == 0
 		}

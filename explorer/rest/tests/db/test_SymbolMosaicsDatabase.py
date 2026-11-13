@@ -132,7 +132,7 @@ class SymbolDatabaseMosaicsTest(TestCase):
 		# Assert:
 		self.assertEqual([], result)
 
-	def test_mosaic_queries_raise_unavailable_when_registration_block_is_missing(self):
+	def test_mosaic_queries_preserve_missing_registration_timestamp(self):
 		# Arrange:
 		valid_mosaic = _create_default_mosaic_row()
 		missing_mosaic = create_symbol_mosaic('1111111111111111', 6)
@@ -141,13 +141,17 @@ class SymbolDatabaseMosaicsTest(TestCase):
 			create_symbol_sync_state(10, 9),
 			blocks=[create_symbol_block(10)],
 			mosaics=[valid_mosaic, missing_mosaic]) as (db_config, _puller_database):
+			# Act:
 			with SymbolDatabase(db_config) as database:
-				# Act + Assert: a valid page row cannot hide another row without its registration block.
-				with self.assertRaisesRegex(SymbolDataUnavailable, 'Symbol mosaic data is unavailable'):
-					database.get_mosaics(10, 0, SortOrder.DESC)
+				page = database.get_mosaics(10, 0, SortOrder.DESC)
+				detail = database.get_mosaic('1111111111111111')
 
-				with self.assertRaisesRegex(SymbolDataUnavailable, 'Symbol mosaic data is unavailable'):
-					database.get_mosaic('1111111111111111')
+		# Assert: the valid row and the missing-block row both remain visible.
+		self.assertEqual(
+			[('1234567890ABCDEF', datetime(2026, 1, 10)), ('1111111111111111', None)],
+			[(mosaic.mosaic_id, mosaic.registration_timestamp) for mosaic in page])
+		self.assertEqual('1111111111111111', detail.mosaic_id)
+		self.assertIsNone(detail.registration_timestamp)
 
 	def _assert_unavailable_mosaic_state(self, sync_state_map):
 		# Act + Assert: current mosaics are unsafe even if their registration height is in the clean prefix.

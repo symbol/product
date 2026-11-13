@@ -50,8 +50,8 @@ def test_mosaics_registration_timestamp(mosaic_route):
 	mosaic_map = {
 		'id': '72C0212E67A08BCE',
 		'aliasNames': ['symbol.xym'],
-		'supply': 1234567,
-		'registrationTimestamp': '2026-01-01 00:00:00'
+		'totalSupply': 1.234567,
+		'mosaicRegisteredTimestamp': '2026-01-01 00:00:00'
 	}
 	facade.get_mosaics.return_value = [mosaic_map]
 
@@ -203,8 +203,8 @@ def test_mosaic_returns_metadata(mosaic_route, name, expected_id):
 	mosaic_map = {
 		'id': '72C0212E67A08BCE',
 		'aliasNames': ['symbol.xym'],
-		'supply': 1234567,
-		'registrationTimestamp': '2026-01-01 00:00:00'
+		'totalSupply': 1.234567,
+		'mosaicRegisteredTimestamp': '2026-01-01 00:00:00'
 	}
 	facade.get_mosaic.return_value = mosaic_map
 
