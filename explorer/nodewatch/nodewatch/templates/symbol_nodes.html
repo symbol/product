@@ -48,7 +48,7 @@
           {% endif %}
         </td>
         <td>
-          {% if descriptor.endpoint.endswith(":3000") %}
+          {% if descriptor.endpoint.endswith((":3000", ":3001")) %}
           <a href="{{ descriptor.endpoint }}/node/info" target="_blank">
             {{ descriptor.endpoint }}
           </a>
