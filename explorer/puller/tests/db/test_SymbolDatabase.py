@@ -28,6 +28,7 @@ from tests.test.SymbolMetadataTestUtils import (
 	create_expected_metadata_row,
 	create_metadata_item,
 	fetch_metadata_rows,
+	fetch_symbol_metadata_indexes,
 	find_metadata_row
 )
 from tests.test.SymbolMosaicTestUtils import (
@@ -789,13 +790,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.create_tables()
 
 		# Assert:
-		cursor.execute(
-			'''
-			SELECT indexname, indexdef
-			FROM pg_indexes
-			WHERE schemaname = 'public' AND tablename = 'symbol_metadata'
-			ORDER BY indexname
-			''')
 		self.assertEqual([
 			(
 				'idx_symbol_metadata_scoped_key',
@@ -808,7 +802,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			(
 				'idx_symbol_metadata_target_address_height',
 				'CREATE INDEX idx_symbol_metadata_target_address_height ON public.symbol_metadata '
-				'USING btree (target_address, updated_at_height DESC)'
+				'USING btree (target_address, updated_at_height DESC, composite_hash)'
+			),
+			(
+				'idx_symbol_metadata_target_address_type_height_hash',
+				'CREATE INDEX idx_symbol_metadata_target_address_type_height_hash ON public.symbol_metadata '
+				'USING btree (target_address, metadata_type, updated_at_height DESC, composite_hash)'
 			),
 			(
 				'idx_symbol_metadata_target_id',
@@ -819,11 +818,43 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				'CREATE INDEX idx_symbol_metadata_type ON public.symbol_metadata USING btree (metadata_type)'
 			),
 			(
+				'idx_symbol_metadata_type_target_id_height_hash',
+				'CREATE INDEX idx_symbol_metadata_type_target_id_height_hash ON public.symbol_metadata '
+				'USING btree (metadata_type, target_id, updated_at_height DESC, composite_hash)'
+			),
+			(
 				'idx_symbol_metadata_updated_height',
 				'CREATE INDEX idx_symbol_metadata_updated_height ON public.symbol_metadata USING btree (updated_at_height)'
 			),
 			('symbol_metadata_pkey', 'CREATE UNIQUE INDEX symbol_metadata_pkey ON public.symbol_metadata USING btree (composite_hash)')
-		], cursor.fetchall())
+		], fetch_symbol_metadata_indexes(cursor))
+
+	def test_create_tables_preserves_symbol_metadata_rows_when_run_again(self):
+		# Arrange:
+		database = self._create_database()
+		item = create_metadata_item(metadata_type=1, target_id='72C0212E67A08BCE')
+		row = create_expected_metadata_row(
+			item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id='72C0212E67A08BCE', value_utf8='hello')
+		database.upsert_metadata(row)
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual(row, find_metadata_row(database, row['composite_hash']))
+
+	def test_create_tables_preserves_symbol_metadata_indexes_when_run_again(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		expected_indexes = fetch_symbol_metadata_indexes(cursor)
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual(expected_indexes, fetch_symbol_metadata_indexes(cursor))
 
 	def test_upsert_namespace_persists_fresh_namespace_and_full_alias_row_set(self):
 		# Arrange:
