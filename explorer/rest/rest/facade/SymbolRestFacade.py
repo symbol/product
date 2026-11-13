@@ -129,7 +129,7 @@ class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 		"""Gets a current mosaic page."""
 
 		mosaics = self.symbol_db.get_mosaics(limit, offset, sort)
-		return [mosaic.to_mosaic_dict() for mosaic in mosaics]
+		return [mosaic.to_dict() for mosaic in mosaics]
 
 	def get_namespaces(self, query):
 		"""Gets a persisted Symbol namespace page."""
@@ -150,13 +150,7 @@ class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 			{
 				'namespaceId': group.namespace_id,
 				'namespaceName': group.namespace_name,
-				'data': [
-					{key: value for key, value in {
-						**mosaic.view.to_dict(),
-						'startTimestamp': format_timestamp(mosaic.start_timestamp)
-					}.items() if key != 'registrationTimestamp'}
-					for mosaic in group.data
-				]
+				'data': [mosaic.to_dict() for mosaic in group.data]
 			}
 			for group in detail.namespace_mosaics
 		]
@@ -167,7 +161,7 @@ class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 
 		mosaic = self.symbol_db.get_mosaic(mosaic_id)
 
-		return mosaic.to_mosaic_dict() if mosaic else None
+		return mosaic.to_dict() if mosaic else None
 
 	def get_block(self, height):
 		"""Gets a Symbol block by height."""

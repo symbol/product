@@ -197,7 +197,7 @@ class MosaicView:
 	def __init__(self, mosaic_id):
 		self.mosaic_id = mosaic_id
 
-	def to_mosaic_dict(self):
+	def to_dict(self):
 		return {'id': self.mosaic_id}
 
 

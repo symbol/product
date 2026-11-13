@@ -38,7 +38,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		mosaic_view = self._create_default_mosaic_view()
 
 		# Act:
-		result_map = mosaic_view.to_mosaic_dict()
+		result_map = mosaic_view.to_dict()
 
 		# Assert:
 		self.assertEqual({
@@ -88,7 +88,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		mosaic_view = self._create_default_mosaic_view(('registration_timestamp', registration_timestamp))
 
 		# Act:
-		result_map = mosaic_view.to_mosaic_dict()
+		result_map = mosaic_view.to_dict()
 
 		# Assert:
 		self.assertEqual('2026-01-01 00:00:00', result_map['mosaicRegisteredTimestamp'])
@@ -99,7 +99,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		mosaic_view.expiration_height = None
 
 		# Act:
-		result_map = mosaic_view.to_mosaic_dict()
+		result_map = mosaic_view.to_dict()
 
 		# Assert:
 		self.assertIs(True, result_map['unlimitedDuration'])
@@ -110,7 +110,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		mosaic_view = self._create_default_mosaic_view(('alias_names', []))
 
 		# Act:
-		result_map = mosaic_view.to_mosaic_dict()
+		result_map = mosaic_view.to_dict()
 
 		# Assert:
 		self.assertEqual([], result_map['aliasNames'])
@@ -121,7 +121,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		mosaic_view.divisibility = divisibility
 
 		# Act:
-		result_map = mosaic_view.to_mosaic_dict()
+		result_map = mosaic_view.to_dict()
 
 		# Assert:
 		self.assertEqual(divisibility, result_map['divisibility'])
@@ -142,7 +142,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		mosaic_view = self._create_default_mosaic_view(('supply_mutable', True))
 
 		# Act:
-		result_map = mosaic_view.to_mosaic_dict()
+		result_map = mosaic_view.to_dict()
 
 		# Assert:
 		self.assertIs(True, result_map['supplyMutable'])
@@ -152,7 +152,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		mosaic_view = self._create_default_mosaic_view(('transferable', False))
 
 		# Act:
-		result_map = mosaic_view.to_mosaic_dict()
+		result_map = mosaic_view.to_dict()
 
 		# Assert:
 		self.assertIs(False, result_map['transferable'])
@@ -162,7 +162,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		mosaic_view = self._create_default_mosaic_view(('restrictable', True))
 
 		# Act:
-		result_map = mosaic_view.to_mosaic_dict()
+		result_map = mosaic_view.to_dict()
 
 		# Assert:
 		self.assertIs(True, result_map['restrictable'])
@@ -172,7 +172,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		mosaic_view = self._create_default_mosaic_view(('revokable', False))
 
 		# Act:
-		result_map = mosaic_view.to_mosaic_dict()
+		result_map = mosaic_view.to_dict()
 
 		# Assert:
 		self.assertIs(False, result_map['revokable'])
@@ -182,7 +182,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		mosaic_view = self._create_default_mosaic_view(('registration_timestamp', None))
 
 		# Act:
-		result_map = mosaic_view.to_mosaic_dict()
+		result_map = mosaic_view.to_dict()
 
 		# Assert:
 		self.assertIsNone(result_map['mosaicRegisteredTimestamp'])

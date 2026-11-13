@@ -463,14 +463,37 @@ def _detail_alias_names():
 def _expected_detail_mosaic():
 	return {
 		'id': MOSAIC_ID, 'creator': str(Address(MOSAIC_OWNER)), 'aliasNames': ['leaf.alias', 'saved.alias', 'unrelated.name'],
-		'supply': 123456789, 'divisibility': 3, 'registrationHeight': 4, 'expirationHeight': 9, 'value': 123456.789,
-		'isUnlimitedDuration': False, 'isSupplyMutable': True, 'isTransferable': True, 'isRestrictable': True, 'isRevokable': True,
-		'startTimestamp': '2026-01-04 00:00:00'
+		'supply': 123456789, 'divisibility': 3, 'mosaicRegisteredHeight': 4, 'mosaicExpirationHeight': 9, 'value': 123456.789,
+		'unlimitedDuration': False, 'supplyMutable': True, 'transferable': True, 'restrictable': True, 'revokable': True,
+		'mosaicRegisteredTimestamp': '2026-01-04 00:00:00'
 	}
 
 
 # Namespace detail test names intentionally spell out the contract condition and result.
 # pylint: disable=invalid-name
+def test_namespace_mosaic_matches_list_and_detail_contract():
+	# Arrange:
+	with symbol_test_database() as (database_config, _):
+		client = _create_symbol_client(
+			database_config, create_symbol_sync_state(last_synced_height=10, finalized_height=10),
+			[create_symbol_block(height) for height in (1, 2, 3, 4, 10)],
+			_detail_rows(), _detail_mosaics(), _detail_alias_names())
+		expected = _expected_detail_mosaic()
+
+		# Act:
+		namespace_response = client.get(f'/api/symbol/namespace/{ROOT_ID}')
+		list_response = client.get('/api/symbol/mosaics')
+		detail_response = client.get(f'/api/symbol/mosaic/{MOSAIC_ID}')
+
+	# Assert: every route exposes the same fields, values and unchanged supply units.
+	assert 200 == namespace_response.status_code
+	assert 200 == list_response.status_code
+	assert 200 == detail_response.status_code
+	assert expected == namespace_response.json['namespaceMosaics'][0]['data'][0]
+	assert expected == next(mosaic for mosaic in list_response.json if mosaic['id'] == MOSAIC_ID)
+	assert expected == detail_response.json
+
+
 def test_namespace_detail_returns_root_and_child_fields():
 	# Arrange:
 	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
@@ -631,11 +654,11 @@ def test_namespace_detail_returns_null_for_missing_start_blocks():
 	assert 200 == root_response.status_code
 	assert '2026-01-02 00:00:00' == root_response.json['startTimestamp']
 	assert ['2026-01-04 00:00:00', None] == [
-		group['data'][0]['startTimestamp'] for group in root_response.json['namespaceMosaics']]
+		group['data'][0]['mosaicRegisteredTimestamp'] for group in root_response.json['namespaceMosaics']]
 	assert 200 == child_response.status_code
 	assert None is child_response.json['startTimestamp']
-	assert '2026-01-04 00:00:00' == child_response.json['namespaceMosaics'][0]['data'][0]['startTimestamp']
-	assert None is child_response.json['namespaceMosaics'][1]['data'][0]['startTimestamp']
+	assert '2026-01-04 00:00:00' == child_response.json['namespaceMosaics'][0]['data'][0]['mosaicRegisteredTimestamp']
+	assert None is child_response.json['namespaceMosaics'][1]['data'][0]['mosaicRegisteredTimestamp']
 
 
 def test_namespace_detail_preserves_zero_mosaic_supply():
@@ -658,15 +681,15 @@ def test_namespace_detail_preserves_zero_mosaic_supply():
 		'aliasNames': ['foo.bar'],
 		'supply': 0,
 		'divisibility': 6,
-		'registrationHeight': 4,
-		'expirationHeight': None,
+		'mosaicRegisteredHeight': 4,
+		'mosaicExpirationHeight': None,
 		'value': 0.0,
-		'isUnlimitedDuration': True,
-		'isSupplyMutable': False,
-		'isTransferable': False,
-		'isRestrictable': False,
-		'isRevokable': False,
-		'startTimestamp': '2026-01-04 00:00:00'
+		'unlimitedDuration': True,
+		'supplyMutable': False,
+		'transferable': False,
+		'restrictable': False,
+		'revokable': False,
+		'mosaicRegisteredTimestamp': '2026-01-04 00:00:00'
 	}] == response.json['namespaceMosaics'][0]['data']
 
 
@@ -1036,10 +1059,10 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 		'subNamespaces': [{'namespaceId': CHILD_ID, 'namespaceName': 'old.child', 'parentId': ROOT_ID}],
 		'namespaceMosaics': [{'namespaceId': ROOT_ID, 'namespaceName': 'old', 'data': [{
 			'id': MOSAIC_ID, 'creator': str(Address(MOSAIC_OWNER)), 'aliasNames': ['old'],
-			'supply': 111, 'divisibility': 1, 'registrationHeight': 2, 'expirationHeight': None, 'value': 11.1,
-			'isUnlimitedDuration': True, 'isSupplyMutable': False, 'isTransferable': False,
-			'isRestrictable': False, 'isRevokable': False,
-			'startTimestamp': '2026-01-02 00:00:00'}]}]
+			'supply': 111, 'divisibility': 1, 'mosaicRegisteredHeight': 2, 'mosaicExpirationHeight': None, 'value': 11.1,
+			'unlimitedDuration': True, 'supplyMutable': False, 'transferable': False,
+			'restrictable': False, 'revokable': False,
+			'mosaicRegisteredTimestamp': '2026-01-02 00:00:00'}]}]
 	} == {key: old_response.json[key] for key in (
 		'id', 'namespaceName', 'startTimestamp', 'aliasMosaicId', 'subNamespaceCount', 'subNamespaces', 'namespaceMosaics')}
 	assert 200 == new_response.status_code
@@ -1049,9 +1072,9 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 		'subNamespaces': [{'namespaceId': SIBLING_ID, 'namespaceName': 'new.fresh', 'parentId': ROOT_ID}],
 		'namespaceMosaics': [{'namespaceId': ROOT_ID, 'namespaceName': 'new', 'data': [{
 			'id': UNRELATED_MOSAIC_ID, 'creator': str(Address(MOSAIC_OWNER)), 'aliasNames': ['new'],
-			'supply': 9876, 'divisibility': 2, 'registrationHeight': 3, 'expirationHeight': None, 'value': 98.76,
-			'isUnlimitedDuration': True, 'isSupplyMutable': False, 'isTransferable': False,
-			'isRestrictable': False, 'isRevokable': False,
-			'startTimestamp': '2026-01-03 00:00:00'}]}]
+			'supply': 9876, 'divisibility': 2, 'mosaicRegisteredHeight': 3, 'mosaicExpirationHeight': None, 'value': 98.76,
+			'unlimitedDuration': True, 'supplyMutable': False, 'transferable': False,
+			'restrictable': False, 'revokable': False,
+			'mosaicRegisteredTimestamp': '2026-01-03 00:00:00'}]}]
 	} == {key: new_response.json[key] for key in (
 		'id', 'namespaceName', 'startTimestamp', 'aliasMosaicId', 'subNamespaceCount', 'subNamespaces', 'namespaceMosaics')}
