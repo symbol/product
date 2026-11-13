@@ -46,16 +46,16 @@ class SymbolMosaicViewTest(unittest.TestCase):
 			'creator': 'TATNE7Q5BITMUTRRN6IB4I7FLSDRDWZA34I2PMQ',
 			'aliasNames': ['example', 'example.token'],
 			'supply': 1234567,
-			'divisibility': 6,
-			'registrationHeight': 123,
-			'registrationTimestamp': '2026-01-01 00:00:00',
-			'expirationHeight': 579,
 			'value': 1.234567,
-			'isUnlimitedDuration': False,
-			'isSupplyMutable': False,
-			'isTransferable': True,
-			'isRestrictable': False,
-			'isRevokable': True
+			'divisibility': 6,
+			'mosaicRegisteredHeight': 123,
+			'mosaicRegisteredTimestamp': '2026-01-01 00:00:00',
+			'mosaicExpirationHeight': 579,
+			'unlimitedDuration': False,
+			'supplyMutable': False,
+			'transferable': True,
+			'restrictable': False,
+			'revokable': True
 		}, result_map)
 
 	def test_eq_is_supported(self):
@@ -91,7 +91,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		result_map = mosaic_view.to_dict()
 
 		# Assert:
-		self.assertEqual('2026-01-01 00:00:00', result_map['registrationTimestamp'])
+		self.assertEqual('2026-01-01 00:00:00', result_map['mosaicRegisteredTimestamp'])
 
 	def test_can_convert_unlimited_duration(self):
 		# Arrange:
@@ -102,8 +102,8 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		result_map = mosaic_view.to_dict()
 
 		# Assert:
-		self.assertIs(True, result_map['isUnlimitedDuration'])
-		self.assertIsNone(result_map['expirationHeight'])
+		self.assertIs(True, result_map['unlimitedDuration'])
+		self.assertIsNone(result_map['mosaicExpirationHeight'])
 
 	def test_can_convert_empty_alias_names(self):
 		# Arrange:
@@ -124,8 +124,8 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		result_map = mosaic_view.to_dict()
 
 		# Assert:
-		self.assertEqual(supply, result_map['supply'])
 		self.assertEqual(divisibility, result_map['divisibility'])
+		self.assertEqual(supply, result_map['supply'])
 		self.assertEqual(expected_value, result_map['value'])
 
 	def test_can_format_zero_supply(self):
@@ -145,7 +145,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		result_map = mosaic_view.to_dict()
 
 		# Assert:
-		self.assertIs(True, result_map['isSupplyMutable'])
+		self.assertIs(True, result_map['supplyMutable'])
 
 	def test_can_convert_non_transferable_mosaic(self):
 		# Arrange:
@@ -155,7 +155,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		result_map = mosaic_view.to_dict()
 
 		# Assert:
-		self.assertIs(False, result_map['isTransferable'])
+		self.assertIs(False, result_map['transferable'])
 
 	def test_can_convert_restrictable_mosaic(self):
 		# Arrange:
@@ -165,7 +165,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		result_map = mosaic_view.to_dict()
 
 		# Assert:
-		self.assertIs(True, result_map['isRestrictable'])
+		self.assertIs(True, result_map['restrictable'])
 
 	def test_can_convert_non_revokable_mosaic(self):
 		# Arrange:
@@ -175,4 +175,14 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		result_map = mosaic_view.to_dict()
 
 		# Assert:
-		self.assertIs(False, result_map['isRevokable'])
+		self.assertIs(False, result_map['revokable'])
+
+	def test_can_format_missing_timestamp(self):
+		# Arrange:
+		mosaic_view = self._create_default_mosaic_view(('registration_timestamp', None))
+
+		# Act:
+		result_map = mosaic_view.to_dict()
+
+		# Assert:
+		self.assertIsNone(result_map['mosaicRegisteredTimestamp'])

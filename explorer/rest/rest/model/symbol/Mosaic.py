@@ -54,21 +54,21 @@ class SymbolMosaicView:  # pylint: disable=too-many-instance-attributes
 		])
 
 	def to_dict(self):
-		"""Formats current mosaic metadata as a public JSON object."""
+		"""Formats mosaic metadata for list, detail and namespace responses."""
 
 		return {
 			'id': self.mosaic_id,
 			'creator': self.owner_address,
 			'aliasNames': self.alias_names,
+			'mosaicRegisteredHeight': self.start_height,
+			'mosaicRegisteredTimestamp': format_timestamp(self.registration_timestamp),
 			'supply': self.supply,
-			'divisibility': self.divisibility,
-			'registrationHeight': self.start_height,
-			'registrationTimestamp': format_timestamp(self.registration_timestamp),
-			'expirationHeight': self.expiration_height,
 			'value': format_amount(self.supply, self.divisibility),
-			'isUnlimitedDuration': self.duration == 0,
-			'isSupplyMutable': self.supply_mutable,
-			'isTransferable': self.transferable,
-			'isRestrictable': self.restrictable,
-			'isRevokable': self.revokable
+			'divisibility': self.divisibility,
+			'supplyMutable': self.supply_mutable,
+			'transferable': self.transferable,
+			'restrictable': self.restrictable,
+			'revokable': self.revokable,
+			'mosaicExpirationHeight': self.expiration_height,
+			'unlimitedDuration': self.duration == 0
 		}

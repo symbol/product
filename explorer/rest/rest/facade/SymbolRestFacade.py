@@ -150,13 +150,7 @@ class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 			{
 				'namespaceId': group.namespace_id,
 				'namespaceName': group.namespace_name,
-				'data': [
-					{key: value for key, value in {
-						**mosaic.view.to_dict(),
-						'startTimestamp': format_timestamp(mosaic.start_timestamp)
-					}.items() if key != 'registrationTimestamp'}
-					for mosaic in group.data
-				]
+				'data': [mosaic.to_dict() for mosaic in group.data]
 			}
 			for group in detail.namespace_mosaics
 		]

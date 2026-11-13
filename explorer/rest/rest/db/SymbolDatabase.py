@@ -125,7 +125,6 @@ NamespaceQuery = namedtuple(
 	'NamespaceQuery',
 	['limit', 'offset', 'sort', 'alias_type', 'registration_type', 'owner_address'],
 	defaults=(10, 0, SortOrder.DESC, None, None, None))
-MosaicDetailRecord = namedtuple('MosaicDetailRecord', ['view', 'start_timestamp'])
 NamespaceMosaicGroupRecord = namedtuple('NamespaceMosaicGroupRecord', ['namespace_id', 'namespace_name', 'data'])
 NamespaceDetailRecord = namedtuple('NamespaceDetailRecord', ['namespace', 'sub_namespaces', 'namespace_mosaics'])
 TransactionRecord = namedtuple(
@@ -1268,25 +1267,22 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 			raise SymbolDataInvalid('symbol_namespaces.alias_mosaic_id', 'linked mosaic is missing')
 
 		mosaic_views = {}
-		start_heights = []
 		for mosaic_id in mosaic_ids:
 			row = mosaic_rows[mosaic_id]
 			if row[-1] > readable_height or row[2] > readable_height:
 				raise SymbolDataUnavailable('Symbol namespace data is unavailable')
 
 			try:
-				mosaic_views[mosaic_id] = cls._create_mosaic_view(row[:-1], require_registration_timestamp=False)
+				mosaic_views[mosaic_id] = cls._create_mosaic_view(row[:-1])
 			except (TypeError, ValueError) as error:
 				raise SymbolDataInvalid('symbol_mosaics', 'invalid persisted Mosaic row') from error
 
-			start_heights.append(mosaic_views[mosaic_id].start_height)
-		mosaic_timestamps = cls._fetch_namespace_block_timestamps(cursor, start_heights)
 		groups = []
 		for namespace in sorted(alias_rows, key=lambda row: (cls._namespace_public_name(row), row['namespace_id'].upper())):
 			view = mosaic_views[namespace['alias_mosaic_id']]
 			groups.append(NamespaceMosaicGroupRecord(
 				namespace['namespace_id'].upper(), cls._namespace_public_name(namespace),
-				[MosaicDetailRecord(view, mosaic_timestamps.get(view.start_height))]))
+				[view]))
 		return groups
 
 	@staticmethod
@@ -1661,15 +1657,12 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 		)
 
 	@staticmethod
-	def _create_mosaic_view(result, require_registration_timestamp=True):
+	def _create_mosaic_view(result):
 		(
 			mosaic_id, owner_address, start_height, expiration_height,
 			duration, supply, divisibility, supply_mutable,
 			transferable, restrictable, revokable, alias_names, registration_timestamp
 		) = result
-		if require_registration_timestamp and registration_timestamp is None:
-			raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
-
 		return SymbolMosaicView(
 			mosaic_id=mosaic_id,
 			owner_address=_address(owner_address),
