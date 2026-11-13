@@ -13,6 +13,7 @@ from unittest.mock import patch
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo, NativeMosaicValidationError
 from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
+from common.tests.AccountRefreshTestUtils import seed_account_refresh_state
 from common.tests.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_configuration, drop_symbol_block_tables_if_present
 from flask import Flask
 from psycopg2 import OperationalError
@@ -726,7 +727,8 @@ def test_account_current_beats_snapshot(symbol_database_config):
 			symbol_database_config,
 			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150),
 			current_amount=70000000)
-		with PullerSymbolDatabase(symbol_database_config) as database:
+		with PullerSymbolDatabase(symbol_database_config) as database, database.workflow_lock():
+			database.begin_account_refresh('successful-run', datetime(2026, 1, 1, tzinfo=timezone.utc))
 			database.upsert_account_refresh_page([{
 				'refresh_run_id': 'successful-run',
 				'account_search_order': 1,
@@ -742,6 +744,7 @@ def test_account_current_beats_snapshot(symbol_database_config):
 			}], last_scanned_page=1)
 			database.finalize_account_refresh(
 				'successful-run', NATIVE_MOSAIC_INFO.id, 100, datetime(2026, 1, 1, tzinfo=timezone.utc))
+			database.begin_account_refresh('failed-run', datetime(2026, 1, 1, 0, 0, 1, tzinfo=timezone.utc))
 			database.upsert_account_refresh_page([{
 				'refresh_run_id': 'failed-run',
 				'account_search_order': 1,
@@ -755,11 +758,12 @@ def test_account_current_beats_snapshot(symbol_database_config):
 				'snapshot_height': 100,
 				'snapshot_at': datetime(2026, 1, 1, 0, 0, 1, tzinfo=timezone.utc)
 			}], last_scanned_page=2)
-			database.mark_account_refresh_failed('failed refresh')
+			database.mark_account_refresh_failed('failed-run', 'failed refresh')
 			database.upsert_account_current_state(create_symbol_account_row(), [
 				{'address': ACCOUNT_ADDRESS, 'mosaic_id': NATIVE_MOSAIC_INFO.id, 'amount': 70000000, 'updated_at_height': 100},
 				{'address': ACCOUNT_ADDRESS, 'mosaic_id': '1234567890ABCDEF', 'amount': 12345, 'updated_at_height': 100}
 			])
+
 		with rest_settings_env(app_config_path):
 			app = _create_symbol_app()
 			try:
@@ -867,7 +871,7 @@ def test_account_ignores_refresh_state(symbol_database_config):
 					{'status': 'stale', 'last_completed_at': datetime(2000, 1, 1)},
 					{'status': 'unhealthy', 'last_error': 'refresh failed'}):
 					with PullerSymbolDatabase(symbol_database_config) as database:
-						database.upsert_account_refresh_state(refresh_state)
+						seed_account_refresh_state(database, refresh_state)
 
 					# Act:
 					response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
@@ -2685,7 +2689,7 @@ def test_list_custom_without_rank(symbol_database_config):
 	]) == (response.status_code, response.json)
 
 
-def test_list_http_recovers_fixed_ranks(symbol_database_config):
+def test_list_http_recovers_new_run(symbol_database_config):
 	# Arrange: corrupt one required ID rank in an otherwise readable successful run.
 	_seed_symbol_account_list_database(
 		symbol_database_config, create_symbol_sync_state(100, 100), create_account_list_entries())
@@ -2702,8 +2706,8 @@ def test_list_http_recovers_fixed_ranks(symbol_database_config):
 			# Assert:
 			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
 
-			# Arrange: repair the stored ranks through the existing Puller writer.
-			writer.finalize_account_refresh('selected-run', NATIVE_MOSAIC_ID, 100, datetime.now(timezone.utc))
+			# Arrange: publish a fresh generation with complete ranks.
+			seed_refresh_run(writer, 'recovered-run', create_account_list_entries('recovered-run'), completed_at=datetime.now(timezone.utc))
 
 			# Act: reuse the same app after the failed request.
 			recovered = client.get('/api/symbol/accounts')
@@ -2778,7 +2782,7 @@ def test_list_http_repeatable_read(change):
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 		seed_refresh_run(writer, 'old-run', create_account_list_entries('old-run'))
 		seed_refresh_run(writer, 'new-run', create_account_list_entries('new-run', is_new=True))
-		writer.upsert_account_refresh_state({'last_successful_run_id': 'old-run'})
+		seed_account_refresh_state(writer, {'last_successful_run_id': 'old-run'})
 		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2, account_address(1))
 		seed_alias(writer, 'account', str(Address(account_address(1))), 'before.account')
 		seed_alias(writer, 'mosaic', CUSTOM_MOSAIC_ID, 'before.mosaic')
@@ -2791,7 +2795,7 @@ def test_list_http_repeatable_read(change):
 
 		def update():
 			if change == 'run':
-				writer.upsert_account_refresh_state({'last_successful_run_id': 'new-run'})
+				seed_account_refresh_state(writer, {'last_successful_run_id': 'new-run'})
 			else:
 				with writer.connection.cursor() as cursor:
 					cursor.execute('UPDATE symbol_alias_names SET name = \'after.account\' WHERE artifact_type = \'account\'')
@@ -2945,7 +2949,7 @@ def test_list_http_reads_run_height_harvesting_and_multisig_in_one_snapshot():  
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 		seed_refresh_run(writer, 'old-run', create_account_list_entries('old-run'))
 		seed_refresh_run(writer, 'new-run', create_account_list_entries('new-run', is_new=True))
-		writer.upsert_account_refresh_state({'last_successful_run_id': 'old-run'})
+		seed_account_refresh_state(writer, {'last_successful_run_id': 'old-run'})
 		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
 		writer.upsert_blocks([
 			create_symbol_block(1, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(1)),
@@ -2960,7 +2964,7 @@ def test_list_http_reads_run_height_harvesting_and_multisig_in_one_snapshot():  
 		writer.connection.commit()
 
 		def update():
-			writer.upsert_account_refresh_state({'last_successful_run_id': 'new-run'})
+			seed_account_refresh_state(writer, {'last_successful_run_id': 'new-run'})
 			writer.upsert_blocks([create_symbol_block(1, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(4))])
 			writer.upsert_multisig(account_address(1), None)
 			writer.upsert_multisig(account_address(3), {
@@ -3052,8 +3056,12 @@ def _assert_selected_run_http_query(query, expected):
 	with symbol_test_database(create_symbol_sync_state(100, 100, chain_height=200, finalized_epoch=None)) as (config, writer):
 		seed_refresh_run(writer, 'old-run', create_account_list_entries('old-run', is_new=True))
 		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
-		writer.upsert_account_refresh_page(create_account_list_entries('failed-run', is_new=True), last_scanned_page=1)
-		writer.upsert_account_refresh_state({'status': 'healthy'})
+		with writer.workflow_lock():
+			writer.begin_account_refresh('failed-run', REFRESH_COMPLETED_AT)
+			writer.upsert_account_refresh_page(create_account_list_entries('failed-run', is_new=True), last_scanned_page=1)
+			writer.mark_account_refresh_failed('failed-run', 'fixture failure')
+
+		seed_account_refresh_state(writer, {'status': 'healthy'})
 		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
 		with _account_list_http_client(config) as (client, _):
 			# Act:

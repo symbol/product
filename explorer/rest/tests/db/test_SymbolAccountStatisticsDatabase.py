@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
+from common.tests.AccountRefreshTestUtils import seed_account_refresh_state
 from flask import Flask
 from psycopg2 import Error as PsycopgError
 from symbolchain.symbol.Network import Address, Network
@@ -420,7 +421,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 			with self.subTest(status=status), symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 				# Arrange:
 				seed_refresh_run(writer, 'selected-run', create_statistics_entries())
-				writer.upsert_account_refresh_state({'status': status})
+				seed_account_refresh_state(writer, {'status': status})
 				with self._create_database(config) as database:
 					# Act:
 					with self.assertRaises(SymbolDataUnavailable) as context:
@@ -494,7 +495,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 		with symbol_test_database(create_symbol_sync_state(29, 29)) as (config, writer):
 			seed_refresh_run(writer, 'old-run', old_entries, completed_height=29)
 			seed_refresh_run(writer, 'new-run', new_entries, completed_height=29)
-			writer.upsert_account_refresh_state({'last_successful_run_id': 'old-run'})
+			seed_account_refresh_state(writer, {'last_successful_run_id': 'old-run'})
 			writer.upsert_blocks([
 				create_symbol_block(
 					29, timestamp=NOW - timedelta(seconds=1), beneficiary_address=account_address(1)),
