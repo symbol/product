@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo, NativeMosaicValidationError
-from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration, SymbolNodeConfigurationError
 from common.tests.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_configuration, drop_symbol_block_tables_if_present
 from flask import Flask
 from psycopg2 import OperationalError
@@ -2752,7 +2752,7 @@ def _account_list_http_client(config, database_type=SymbolDatabase, clock=None):
 	with database_type(config, NATIVE_MOSAIC_INFO, clock or (lambda: REFRESH_COMPLETED_AT + timedelta(seconds=7200))) as database:
 		app = Flask(__name__)
 		facade = SymbolRestFacade(
-			database, object(), NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
+			database, SymbolNodeConfiguration.from_url('http://node.test:3000'), NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
 			harvesting_balance_range=HarvestingBalanceRange(0, 18446744073709551615))
 		setup_symbol_routes(app, facade)
 		yield app.test_client(), database
