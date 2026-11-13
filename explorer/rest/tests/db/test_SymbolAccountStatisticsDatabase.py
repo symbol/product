@@ -263,6 +263,28 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 			(Decimal('0.1'), str(Address(account_address(4))))
 		), result.top_accounts)
 
+	def test_get_account_statistics_includes_readable_height_and_excludes_next_height(self):
+		# Arrange: distinct beneficiaries isolate the inclusive height boundary.
+		with symbol_test_database(create_symbol_sync_state(29, 29)) as (config, writer):
+			entries = [create_refresh_entry('selected-run', identity, identity, 1) for identity in (1, 2)]
+			for entry in entries:
+				entry['snapshot_height'] = 29
+
+			seed_refresh_run(writer, 'selected-run', entries, completed_height=29)
+			writer.upsert_blocks([
+				create_symbol_block(29, timestamp=NOW, beneficiary_address=account_address(1)),
+				create_symbol_block(30, timestamp=NOW, beneficiary_address=account_address(2))
+			])
+			with self._create_database(config) as database:
+				# Act:
+				result = database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE)
+
+		# Assert:
+		self.assertEqual(AccountStatisticsRecord(2, 1, 0, 0, Decimal('1'), (
+			(Decimal('0.5'), str(Address(account_address(1)))),
+			(Decimal('0.5'), str(Address(account_address(2))))
+		)), result)
+
 	def test_get_account_statistics_uses_configured_native_mosaic_id_for_eligibility(self):
 		# Arrange:
 		configured_mosaic_info = NativeMosaicInfo(CUSTOM_MOSAIC_ID, 6)
