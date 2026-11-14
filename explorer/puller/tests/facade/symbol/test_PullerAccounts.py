@@ -27,6 +27,7 @@ from .puller_test_utils import (
 	create_node_block,
 	create_node_transaction,
 	create_resolution_statement,
+	create_sync_state,
 	create_transaction_page,
 	set_symbol_connector,
 	statement_path,
@@ -1267,6 +1268,80 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self._assert_complete_account_snapshot(state['last_successful_run_id'])
 		self._assert_complete_mosaic_snapshot(state['last_successful_run_id'])
 		self._assert_complete_rank_results(state['last_successful_run_id'])
+
+	def test_rollback_stales_published_account_generation_and_refresh_publishes_new_generation(self):
+		# Arrange:
+		database = self.puller.symbol_db
+		self._seed_blocks(database, [1, 2, 3], {2: 'D' * 64})
+		database.upsert_sync_state(create_sync_state(last_synced_height=3))
+		old_page = [create_account_item(
+			_address_hex(1),
+			'account-generation-old',
+			importance='101',
+			mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': str(20_000 * 10 ** 6)}])]
+		set_symbol_connector(self.puller, FakeConnector(3, {}, account_pages={1: old_page}))
+		asyncio.run(self.puller.refresh_accounts())
+		old_state = database.get_account_refresh_state()
+		old_run_id = old_state['last_successful_run_id']
+		self.assertEqual('healthy', old_state['status'])
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'SELECT importance, snapshot_height FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s',
+			(old_run_id,))
+		self.assertEqual([(101, 3)], cursor.fetchall())
+		cursor.execute(
+			'SELECT mosaic_id, amount FROM symbol_account_refresh_mosaics WHERE refresh_run_id = %s',
+			(old_run_id,))
+		self.assertEqual([(NATIVE_MOSAIC_ID, 20_000 * 10 ** 6)], cursor.fetchall())
+
+		replacement_block = create_node_block(2, block_hash='B' * 64)
+		terminal_block = create_node_block(3, previous_hash='B' * 64)
+		sync_connector = FakeConnector(
+			3,
+			{1: [replacement_block, terminal_block]},
+			block_by_height={1: create_node_block(1), 2: replacement_block, 3: terminal_block},
+			finalized_height=3,
+			transactions_by_path={transaction_path(2, 3): create_transaction_page([])},
+			statement_pages={statement_path(2, 3): {'data': []}},
+			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS))
+
+		# Act: public sync repairs the fork and invalidates the completed account generation.
+		set_symbol_connector(self.puller, sync_connector)
+		asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		stale_state = database.get_account_refresh_state()
+		self.assertEqual('stale', stale_state['status'])
+		self.assertEqual(old_run_id, stale_state['last_successful_run_id'])
+		cursor.execute(
+			'SELECT COUNT(*) FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s', (old_run_id,))
+		self.assertEqual(1, cursor.fetchone()[0])
+
+		# Act: a new complete account refresh publishes the next generation.
+		new_page = [create_account_item(
+			_address_hex(1),
+			'account-generation-new',
+			importance='202',
+			mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': str(30_000 * 10 ** 6)}])]
+		set_symbol_connector(self.puller, FakeConnector(3, {}, account_pages={1: new_page}))
+		asyncio.run(self.puller.refresh_accounts())
+
+		# Assert: the old rows remain inspectable and the newly published generation is complete.
+		new_state = database.get_account_refresh_state()
+		self.assertEqual('healthy', new_state['status'])
+		self.assertNotEqual(old_run_id, new_state['last_successful_run_id'])
+		self.assertEqual(3, new_state['last_completed_height'])
+		cursor.execute(
+			'SELECT importance, snapshot_height FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s',
+			(new_state['last_successful_run_id'],))
+		self.assertEqual([(202, 3)], cursor.fetchall())
+		cursor.execute(
+			'SELECT mosaic_id, amount FROM symbol_account_refresh_mosaics WHERE refresh_run_id = %s',
+			(new_state['last_successful_run_id'],))
+		self.assertEqual([(NATIVE_MOSAIC_ID, 30_000 * 10 ** 6)], cursor.fetchall())
+		cursor.execute(
+			'SELECT COUNT(*) FROM symbol_account_refresh_accounts WHERE refresh_run_id = %s', (old_run_id,))
+		self.assertEqual(1, cursor.fetchone()[0])
 
 	def test_refresh_accounts_rolls_back_failed_page_and_records_original_database_error(self):
 		# Arrange:

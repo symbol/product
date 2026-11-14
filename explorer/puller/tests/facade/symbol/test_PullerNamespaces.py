@@ -84,13 +84,15 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 		total_transactions_count=0
 	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		start_height = height
+		finalized_height = max(1, start_height - 1)
 		return FakeConnector(
 			height,
 			{height - 1: [create_node_block(
 				height,
 				transactions_count=transactions_count,
 				total_transactions_count=total_transactions_count)]},
-			finalized_height=max(1, start_height - 1),
+			block_by_height={finalized_height: create_node_block(finalized_height)},
+			finalized_height=finalized_height,
 			transactions_by_path={transaction_path(height, height): create_transaction_page(transactions)},
 			statement_pages={statement_path(height, height): {'data': statement_items or []}},
 			namespace_by_id=namespace_by_id,
