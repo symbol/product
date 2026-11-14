@@ -1,10 +1,12 @@
 # pylint: disable=duplicate-code,too-many-lines
 import asyncio
 
+from psycopg2 import Error as PsycopgError
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address
 
 from puller.facade.SymbolPuller import SymbolRollbackError
+from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
 from tests.test.SymbolDatabaseTestUtils import fetch_full_block_state, fetch_normalized_sync_state
 from tests.test.SymbolMetadataTestUtils import create_expected_metadata_row, create_metadata_item, fetch_metadata_rows, metadata_path
@@ -27,8 +29,10 @@ from ...test.SymbolTestConstants import BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS, 
 from ...test.SymbolTransactionTestUtils import create_transaction_entry
 from .puller_test_utils import (
 	NATIVE_MOSAIC_ID,
+	ChainInfoOverrideConnector,
 	FakeConnector,
 	SymbolPullerTestBase,
+	create_account_item,
 	create_amount_statement_item,
 	create_node_block,
 	create_node_transaction,
@@ -40,7 +44,207 @@ from .puller_test_utils import (
 )
 
 
+class FailingBlockHashRangeCursor:
+	"""Raises a real PostgreSQL error during one saved-block range read."""
+
+	def __init__(self, cursor, connection):
+		self._cursor = cursor
+		self._connection = connection
+
+	def execute(self, query, variables=None):
+		if self._connection.fail_range_read and 'SELECT height, hash' in query:
+			self._connection.fail_range_read = False
+			try:
+				self._cursor.execute('SELECT 1 / 0')
+			except PsycopgError as exception:
+				self._connection.range_error = exception
+				raise
+
+		if self._connection.fail_status_write and (
+			'INSERT INTO symbol_sync_state' in query or 'UPDATE symbol_sync_state' in query):
+			self._connection.fail_status_write = False
+			try:
+				self._cursor.execute('SELECT 1 / 0')
+			except PsycopgError as exception:
+				self._connection.status_error = exception
+				raise
+
+		return self._cursor.execute(query, variables)
+
+	def __getattr__(self, name):
+		return getattr(self._cursor, name)
+
+
+class FailingBlockHashRangeConnection:
+	"""Delegates to the same PostgreSQL connection after the injected SQL failure."""
+
+	def __init__(self, connection, fail_status_write=False):
+		self._connection = connection
+		self.fail_range_read = True
+		self.fail_status_write = fail_status_write
+		self.range_error = None
+		self.status_error = None
+
+	def cursor(self, *args, **kwargs):
+		return FailingBlockHashRangeCursor(self._connection.cursor(*args, **kwargs), self)
+
+	def __getattr__(self, name):
+		return getattr(self._connection, name)
+
+
 class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-many-public-methods
+	def _seed_block_range_read_failure(self):
+		"""Seeds saved fork history and a current account before a range-read failure."""
+
+		database = self.puller.symbol_db
+		self._seed_blocks(database, [1, 2, 3], {2: 'D' * 64})
+		database.upsert_transactions_for_height(2, [create_transaction_entry(
+			2,
+			'range-read-failure',
+			signer_address=bytes.fromhex(BENEFICIARY_ADDRESS),
+			address_rows=[{'address': bytes.fromhex(BENEFICIARY_ADDRESS), 'role': 'signer'}])])
+		database.upsert_receipts_for_height(2, [{
+			'height': 2,
+			'receipt_type': 'harvestFee',
+			'receipt_group': 'balanceChange',
+			'version': 1,
+			'source_primary_id': 2,
+			'source_secondary_id': 0,
+			'sender_address': None,
+			'recipient_address': None,
+			'target_address': bytes.fromhex(BENEFICIARY_ADDRESS),
+			'mosaic_id': NATIVE_MOSAIC_ID,
+			'amount': 17,
+			'artifact_id': None,
+			'raw_payload': {'amount': '17'}
+		}], 0)
+		account_row, mosaic_rows = create_account_row(
+			create_account_item(BENEFICIARY_ADDRESS), self.puller.symbol_facade.network, 2, NATIVE_MOSAIC_ID, 6)
+		database.upsert_account_current_state(account_row, mosaic_rows)
+		database.upsert_account_refresh_state({
+			'status': 'healthy', 'last_successful_run_id': 'range-read-failure', 'last_completed_height': 3
+		})
+		database.upsert_sync_state(create_sync_state())
+		replacement_block = create_node_block(2)
+		connector = self._create_rollback_connector(
+			3,
+			{1: [replacement_block, create_node_block(3)]},
+			{2: replacement_block})
+		set_symbol_connector(self.puller, connector)
+
+		return database, connector
+
+	def test_sync_block_headers_rolls_back_failed_saved_hash_range_read_and_retries_on_same_connection(self):
+		# Arrange:
+		database, connector = self._seed_block_range_read_failure()
+		before_state = self._fetch_complete_batch_state()
+		before_sync_state = before_state.pop('symbol_sync_state')[0][0]
+		original_connection = database.connection
+		cursor = original_connection.cursor()
+		cursor.execute('SELECT pg_backend_pid()')
+		backend_pid = cursor.fetchone()[0]
+		failing_connection = FailingBlockHashRangeConnection(original_connection)
+		database.connection = failing_connection
+
+		try:
+			# Act:
+			with self.assertRaises(SymbolRollbackError) as exception_context:
+				asyncio.run(self.puller.sync_block_headers())
+
+			# Assert:
+			self.assertIs(failing_connection.range_error, exception_context.exception.__cause__)
+			after_state = self._fetch_complete_batch_state()
+			after_sync_state = after_state.pop('symbol_sync_state')[0][0]
+			self.assertEqual(before_state, after_state)
+			self.assertEqual('unhealthy', after_sync_state['status'])
+			self.assertEqual(before_sync_state['finalized_height'], after_sync_state['finalized_height'])
+			self.assertEqual(before_sync_state['finalized_hash'], after_sync_state['finalized_hash'])
+			self.assertEqual(before_sync_state['last_synced_height'], after_sync_state['last_synced_height'])
+			self.assertEqual(before_sync_state['last_synced_block_hash'], after_sync_state['last_synced_block_hash'])
+			self.assertEqual(before_sync_state['dirty_state_from_height'], after_sync_state['dirty_state_from_height'])
+			self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+
+			# Act: the failed cursor has been rolled back, so this is the same PostgreSQL session.
+			asyncio.run(self.puller.sync_block_headers())
+
+			# Assert:
+			self.assertEqual('healthy', database.get_sync_state()['status'])
+			self.assertEqual(bytes.fromhex(f'{2:064X}'), self._fetch_block_hash(database, 2))
+			self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
+			cursor.execute('SELECT pg_backend_pid()')
+			self.assertEqual(backend_pid, cursor.fetchone()[0])
+		finally:
+			original_connection.rollback()
+			database.connection = original_connection
+
+	def test_sync_block_headers_keeps_original_range_sql_error_when_unhealthy_write_fails(self):
+		# Arrange:
+		database, connector = self._seed_block_range_read_failure()
+		before_state = self._fetch_complete_batch_state()
+		original_connection = database.connection
+		failing_connection = FailingBlockHashRangeConnection(original_connection, fail_status_write=True)
+		database.connection = failing_connection
+
+		try:
+			# Act:
+			with self.assertRaises(SymbolRollbackError) as exception_context:
+				asyncio.run(self.puller.sync_block_headers())
+
+			# Assert:
+			self.assertIs(failing_connection.range_error, exception_context.exception.__cause__)
+			self.assertIsNotNone(failing_connection.status_error)
+			self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+			original_connection.rollback()
+			self.assertEqual(before_state, self._fetch_complete_batch_state())
+		finally:
+			original_connection.rollback()
+			database.connection = original_connection
+
+	def test_sync_block_headers_rejects_conflicting_finalized_hash_above_saved_fork_before_deletion(self):
+		# Arrange:
+		database, _ = self._seed_block_range_read_failure()
+		before_state = self._fetch_complete_batch_state()
+		before_sync_state = before_state.pop('symbol_sync_state')[0][0]
+		replacement_block = create_node_block(2)
+		connector = ChainInfoOverrideConnector(
+			5,
+			{1: [replacement_block, create_node_block(3), create_node_block(4), create_node_block(5)]},
+			block_by_height={
+				1: create_node_block(1),
+				2: replacement_block,
+				3: create_node_block(3),
+				4: create_node_block(4),
+				5: create_node_block(5)
+			},
+			finalized_height=5,
+			finalized_fields={'hash': 'A' * 64})
+		set_symbol_connector(self.puller, connector)
+
+		# Act:
+		with self.assertRaisesRegex(SymbolRollbackError, 'finalized block hash does not match chain info'):
+			asyncio.run(self.puller.sync_block_headers())
+
+		# Assert:
+		after_state = self._fetch_complete_batch_state()
+		after_sync_state = after_state.pop('symbol_sync_state')[0][0]
+		self.assertEqual(before_state, after_state)
+		self.assertEqual('unhealthy', after_sync_state['status'])
+		self.assertEqual(before_sync_state['finalized_height'], after_sync_state['finalized_height'])
+		self.assertEqual(before_sync_state['finalized_hash'], after_sync_state['finalized_hash'])
+		self.assertEqual(before_sync_state['last_synced_height'], after_sync_state['last_synced_height'])
+		self.assertEqual(before_sync_state['last_synced_block_hash'], after_sync_state['last_synced_block_hash'])
+		self.assertEqual(before_sync_state['dirty_state_from_height'], after_sync_state['dirty_state_from_height'])
+		self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
+		self.assertEqual(1, connector.paths.count('blocks/5'))
+		self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+
+	@staticmethod
+	def _create_rollback_connector(chain_height, pages, *args, **kwargs):
+		# Each rollback scenario starts from a saved height-1 finalized anchor.
+		block_by_height = args[0] if args else kwargs.pop('block_by_height', None)
+		block_by_height = {1: create_node_block(1), **(block_by_height or {})}
+		return FakeConnector(chain_height, pages, block_by_height, *args[1:], **kwargs)
+
 	def _fetch_namespace_rows(self):
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute(
@@ -83,7 +287,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			target_address=bytes.fromhex(RECIPIENT_ADDRESS),
 			body=body,
 			mosaic_rows=mosaic_rows)])
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{1: [create_node_block(2), create_node_block(3)]},
 			{2: create_node_block(2)},
@@ -118,7 +322,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			create_namespace_item(NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID),
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'orphaned'},
 			3)
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{1: [create_node_block(2), create_node_block(3)]},
 			{2: create_node_block(2)},
@@ -165,7 +369,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			2)
 		original_sync_state = self.puller.symbol_db.get_sync_state()
 		original_namespace_rows = self._fetch_namespace_rows()
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{},
 			{2: create_node_block(2)},
@@ -179,7 +383,9 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			asyncio.run(self.puller.sync_block_headers())
 
 		self.assertEqual([1, 2, 3], self._fetch_block_heights(self.puller.symbol_db))
-		self.assertEqual(original_sync_state, self.puller.symbol_db.get_sync_state())
+		self.assertEqual(
+			{**original_sync_state, 'status': 'unhealthy'},
+			self.puller.symbol_db.get_sync_state())
 		self.assertEqual(original_namespace_rows, self._fetch_namespace_rows())
 
 	def test_sync_block_headers_refreshes_mosaics_at_or_above_rollback_height_and_deletes_fork_only_rows(self):
@@ -211,11 +417,11 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			mosaic_id=survivor_id,
 			supply='999',
 			item_id='000000000000000000000005')
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{1: [create_node_block(2), create_node_block(3)]},
 			{2: create_node_block(2)},
-			mosaics_by_id={survivor_id: canonical_survivor_item})
+			mosaics_by_id={survivor_id: canonical_survivor_item, fork_only_id: None})
 		set_symbol_connector(self.puller, connector)
 
 		# Act:
@@ -231,6 +437,9 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			payload for path, payload in connector.post_requests if 'mosaics' == path
 		])
 		self.assertEqual(1, connector.paths.count('mosaics'))
+		self.assertEqual([f'mosaics/{fork_only_id}'], [
+			path for path in connector.paths if path == f'mosaics/{fork_only_id}'
+		])
 
 	def test_sync_block_headers_leaves_rollback_state_unchanged_when_mosaic_fetch_fails(self):
 		# Arrange:
@@ -249,7 +458,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		original_sync_state = self.puller.symbol_db.get_sync_state()
 		original_mosaic_state = fetch_mosaic_state(self.puller.symbol_db)
 		original_namespace_state = self._fetch_namespace_rows()
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{},
 			{2: create_node_block(2)},
@@ -264,7 +473,9 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 		# Assert:
 		self.assertEqual([1, 2, 3], self._fetch_block_heights(self.puller.symbol_db))
-		self.assertEqual(original_sync_state, self.puller.symbol_db.get_sync_state())
+		self.assertEqual(
+			{**original_sync_state, 'status': 'unhealthy'},
+			self.puller.symbol_db.get_sync_state())
 		self.assertEqual(original_mosaic_state, fetch_mosaic_state(self.puller.symbol_db))
 		self.assertEqual(original_namespace_state, self._fetch_namespace_rows())
 
@@ -310,7 +521,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.puller.symbol_db.upsert_metadata(create_expected_metadata_row(
 			fork_only_item, 3, composite_hash=bytes.fromhex('33' * 32), metadata_type='mosaic',
 			scoped_metadata_key='0000000000000003', target_id=mosaic_id, value_hex='666F726B', value_utf8='fork'))
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{1: [create_node_block(2), create_node_block(3)]},
 			{2: create_node_block(2)},
@@ -399,7 +610,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertEqual(1, len(original_namespace_state[0]))
 		self.assertEqual(1, len(original_mosaic_state))
 		self.assertEqual(1, len(original_metadata_rows))
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{},
 			{2: create_node_block(2)},
@@ -415,7 +626,9 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 		# Assert:
 		self.assertEqual(original_block_state, fetch_full_block_state(self.puller.symbol_db))
-		self.assertEqual(original_sync_state, fetch_normalized_sync_state(self.puller.symbol_db))
+		self.assertEqual(
+			{**original_sync_state, 'status': 'unhealthy'},
+			fetch_normalized_sync_state(self.puller.symbol_db))
 		self.assertEqual(original_namespace_state, fetch_namespace_state(self.puller.symbol_db.connection))
 		self.assertEqual(original_mosaic_state, fetch_mosaic_state(self.puller.symbol_db))
 		self.assertEqual(original_metadata_rows, fetch_metadata_rows(self.puller.symbol_db))
@@ -714,7 +927,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			unaffected_item,
 			{'B95F1F8A96159516': 'unaffected'},
 			1)
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{1: [create_node_block(2), create_node_block(3)]},
 			{2: create_node_block(2)},
@@ -780,7 +993,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'},
 			2)
 		# The root remains on the canonical node; both known descendants explicitly return ResourceNotFound.
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{1: [create_node_block(2), create_node_block(3)]},
 			{2: create_node_block(2)},
@@ -854,10 +1067,11 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_sync_block_headers_repairs_shallow_unfinalized_rollback(self):
 		# Arrange:
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{1: [create_node_block(2), create_node_block(3)]},
 			{2: create_node_block(2)},
+			mosaics_by_id={NATIVE_MOSAIC_ID: create_mosaic_item(NATIVE_MOSAIC_ID)},
 			statement_pages={
 				statement_path(2, 3): {
 					'data': [
@@ -916,7 +1130,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 	def test_sync_block_headers_repairs_transaction_rows_on_shallow_unfinalized_rollback(self):
 		# Arrange:
 		replacement_transaction_hash = 'C' * 64
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{1: [create_node_block(2, transactions_count=1, total_transactions_count=1), create_node_block(3)]},
 			{2: create_node_block(2)},
@@ -945,7 +1159,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 				'position': 0
 			}],
 			address_rows=[{
-				'address': b'old address',
+				'address': bytes.fromhex(SIGNER_ADDRESS),
 				'role': 'signer'
 			}]
 		)])
@@ -973,7 +1187,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_sync_block_headers_keeps_transaction_rows_idempotent_when_restarted(self):
 		# Arrange:
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{1: [
 				create_node_block(2, transactions_count=1, total_transactions_count=1),
@@ -1014,7 +1228,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_sync_block_headers_marks_deep_finalized_mismatch_unhealthy(self):
 		# Arrange:
-		connector = FakeConnector(3, {})
+		connector = self._create_rollback_connector(3, {})
 		self._seed_blocks(self.puller.symbol_db, [1], {1: b'local mismatch'.hex()})
 		self.puller.symbol_db.upsert_sync_state(create_sync_state(
 			finalized_hash=b'old finalized'
@@ -1024,7 +1238,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# Act / Assert:
 		with self.assertRaisesRegex(
 			SymbolRollbackError,
-			'Finalized block hash does not match local database'
+			'Recorded finalized anchor is missing or inconsistent in local database'
 		):
 			asyncio.run(self.puller.sync_block_headers())
 
@@ -1035,14 +1249,14 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_sync_block_headers_marks_missing_finalized_block_unhealthy(self):
 		# Arrange:
-		connector = FakeConnector(3, {})
+		connector = self._create_rollback_connector(3, {})
 		self.puller.symbol_db.upsert_sync_state(create_sync_state())
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
 		with self.assertRaisesRegex(
 			SymbolRollbackError,
-			'Finalized block is missing from local database'
+			'Recorded finalized anchor is missing or inconsistent in local database'
 		):
 			asyncio.run(self.puller.sync_block_headers())
 
@@ -1059,7 +1273,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self
 	):
 		# Arrange:
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{},
 			{2: create_node_block(2), 3: create_node_block(3)},
@@ -1088,7 +1302,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self
 	):
 		# Arrange:
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{},
 			{2: create_node_block(2), 3: create_node_block(3)}
@@ -1107,13 +1321,13 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertEqual([1, 2, 3], block_heights)
 		self.assertEqual(3, sync_state['last_synced_height'])
 		self.assertEqual(
-			['chain/info', 'network/properties', f'mosaics/{NATIVE_MOSAIC_ID}', 'blocks/2', 'blocks/3'],
+			['chain/info', 'network/properties', f'mosaics/{NATIVE_MOSAIC_ID}', 'blocks/1', 'blocks/2', 'blocks/3'],
 			connector.paths
 		)
 
 	def test_sync_block_headers_repairs_missing_unfinalized_block_hash(self):
 		# Arrange:
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{2: [create_node_block(3)]},
 			{2: create_node_block(2)}
@@ -1135,7 +1349,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_sync_block_headers_repairs_gap_in_unfinalized_block_hashes(self):
 		# Arrange:
-		connector = FakeConnector(
+		connector = self._create_rollback_connector(
 			3,
 			{1: [create_node_block(2), create_node_block(3)]}
 		)
@@ -1156,7 +1370,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_sync_block_headers_rejects_empty_page_before_chain_height(self):
 		# Arrange:
-		connector = FakeConnector(1, {0: []})
+		connector = self._create_rollback_connector(1, {0: []})
 
 		# Act / Assert:
 		self._assert_sync_rejects_node_response(
@@ -1167,7 +1381,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_sync_block_headers_rejects_page_past_target_height(self):
 		# Arrange:
-		connector = FakeConnector(1, {0: [create_node_block(2)]})
+		connector = self._create_rollback_connector(1, {0: [create_node_block(2)]})
 
 		# Act / Assert:
 		self._assert_sync_rejects_node_response(
@@ -1179,7 +1393,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_sync_block_headers_rejects_unexpected_height_sequence(self):
 		# Arrange:
-		connector = FakeConnector(2, {0: [create_node_block(2)]})
+		connector = self._create_rollback_connector(2, {0: [create_node_block(2)]})
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:

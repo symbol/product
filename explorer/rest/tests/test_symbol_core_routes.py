@@ -13,6 +13,7 @@ from unittest.mock import patch
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo, NativeMosaicValidationError
 from common.symbol.NodeConfiguration import SymbolNodeConfigurationError
+from common.tests.AccountRefreshTestUtils import seed_account_refresh_state
 from common.tests.PostgresTestUtils import PostgresTestDatabase, create_unreachable_db_configuration, drop_symbol_block_tables_if_present
 from flask import Flask
 from psycopg2 import OperationalError
@@ -40,6 +41,7 @@ from .test.SymbolAccountListTestUtils import (
 	create_account_list_entries,
 	create_refresh_entry,
 	seed_current_mosaic,
+	seed_published_account_snapshot,
 	seed_refresh_run
 )
 from .test.SymbolAccountTestUtils import ACCOUNT_ADDRESS, OTHER_ADDRESS, create_symbol_account_row, seed_alias
@@ -726,7 +728,8 @@ def test_account_current_beats_snapshot(symbol_database_config):
 			symbol_database_config,
 			create_symbol_sync_state(last_synced_height=100, finalized_height=100, finalized_epoch=150),
 			current_amount=70000000)
-		with PullerSymbolDatabase(symbol_database_config) as database:
+		with PullerSymbolDatabase(symbol_database_config) as database, database.workflow_lock():
+			database.begin_account_refresh('successful-run', datetime(2026, 1, 1, tzinfo=timezone.utc))
 			database.upsert_account_refresh_page([{
 				'refresh_run_id': 'successful-run',
 				'account_search_order': 1,
@@ -742,6 +745,7 @@ def test_account_current_beats_snapshot(symbol_database_config):
 			}], last_scanned_page=1)
 			database.finalize_account_refresh(
 				'successful-run', NATIVE_MOSAIC_INFO.id, 100, datetime(2026, 1, 1, tzinfo=timezone.utc))
+			database.begin_account_refresh('failed-run', datetime(2026, 1, 1, 0, 0, 1, tzinfo=timezone.utc))
 			database.upsert_account_refresh_page([{
 				'refresh_run_id': 'failed-run',
 				'account_search_order': 1,
@@ -755,11 +759,12 @@ def test_account_current_beats_snapshot(symbol_database_config):
 				'snapshot_height': 100,
 				'snapshot_at': datetime(2026, 1, 1, 0, 0, 1, tzinfo=timezone.utc)
 			}], last_scanned_page=2)
-			database.mark_account_refresh_failed('failed refresh')
+			database.mark_account_refresh_failed('failed-run', 'failed refresh')
 			database.upsert_account_current_state(create_symbol_account_row(), [
 				{'address': ACCOUNT_ADDRESS, 'mosaic_id': NATIVE_MOSAIC_INFO.id, 'amount': 70000000, 'updated_at_height': 100},
 				{'address': ACCOUNT_ADDRESS, 'mosaic_id': '1234567890ABCDEF', 'amount': 12345, 'updated_at_height': 100}
 			])
+
 		with rest_settings_env(app_config_path):
 			app = _create_symbol_app()
 			try:
@@ -867,7 +872,7 @@ def test_account_ignores_refresh_state(symbol_database_config):
 					{'status': 'stale', 'last_completed_at': datetime(2000, 1, 1)},
 					{'status': 'unhealthy', 'last_error': 'refresh failed'}):
 					with PullerSymbolDatabase(symbol_database_config) as database:
-						database.upsert_account_refresh_state(refresh_state)
+						seed_account_refresh_state(database, refresh_state)
 
 					# Act:
 					response = client.get('/api/symbol/account?address=TD6TLAMJMDD3DC3S6SNFLGH2T5YSUNKNWM7N4VY')
@@ -2685,7 +2690,7 @@ def test_list_custom_without_rank(symbol_database_config):
 	]) == (response.status_code, response.json)
 
 
-def test_list_http_recovers_fixed_ranks(symbol_database_config):
+def test_list_http_recovers_new_run(symbol_database_config):
 	# Arrange: corrupt one required ID rank in an otherwise readable successful run.
 	_seed_symbol_account_list_database(
 		symbol_database_config, create_symbol_sync_state(100, 100), create_account_list_entries())
@@ -2702,8 +2707,8 @@ def test_list_http_recovers_fixed_ranks(symbol_database_config):
 			# Assert:
 			assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (failed.status_code, failed.json)
 
-			# Arrange: repair the stored ranks through the existing Puller writer.
-			writer.finalize_account_refresh('selected-run', NATIVE_MOSAIC_ID, 100, datetime.now(timezone.utc))
+			# Arrange: publish a fresh generation with complete ranks.
+			seed_refresh_run(writer, 'recovered-run', create_account_list_entries('recovered-run'), completed_at=datetime.now(timezone.utc))
 
 			# Act: reuse the same app after the failed request.
 			recovered = client.get('/api/symbol/accounts')
@@ -2778,7 +2783,7 @@ def test_list_http_repeatable_read(change):
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 		seed_refresh_run(writer, 'old-run', create_account_list_entries('old-run'))
 		seed_refresh_run(writer, 'new-run', create_account_list_entries('new-run', is_new=True))
-		writer.upsert_account_refresh_state({'last_successful_run_id': 'old-run'})
+		seed_published_account_snapshot(writer, 'old-run')
 		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2, account_address(1))
 		seed_alias(writer, 'account', str(Address(account_address(1))), 'before.account')
 		seed_alias(writer, 'mosaic', CUSTOM_MOSAIC_ID, 'before.mosaic')
@@ -2791,7 +2796,7 @@ def test_list_http_repeatable_read(change):
 
 		def update():
 			if change == 'run':
-				writer.upsert_account_refresh_state({'last_successful_run_id': 'new-run'})
+				seed_published_account_snapshot(writer, 'new-run')
 			else:
 				with writer.connection.cursor() as cursor:
 					cursor.execute('UPDATE symbol_alias_names SET name = \'after.account\' WHERE artifact_type = \'account\'')
@@ -2840,7 +2845,7 @@ def _seed_height_http_fixture(writer):
 		address=account_address(99), address_text=str(Address(account_address(99))), address_height=999), [])
 	with writer.connection.cursor() as cursor:
 		cursor.execute(
-			'UPDATE symbol_accounts SET address_height = CASE WHEN address = %s THEN 9223372036854775807 '
+			'UPDATE symbol_account_refresh_accounts SET address_height = CASE WHEN address = %s THEN 9223372036854775807 '
 			'WHEN address = %s THEN NULL ELSE 4 END',
 			(account_address(1), account_address(2)))
 	writer.connection.commit()
@@ -2864,7 +2869,7 @@ def test_list_http_height_negative_is_unavailable():  # pylint: disable=invalid-
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 		_seed_height_http_fixture(writer)
 		with writer.connection.cursor() as cursor:
-			cursor.execute('UPDATE symbol_accounts SET address_height = -1 WHERE address = %s', (account_address(1),))
+			cursor.execute('UPDATE symbol_account_refresh_accounts SET address_height = -1 WHERE address = %s', (account_address(1),))
 		writer.connection.commit()
 		with _account_list_http_client(config) as (client, _):
 			# Act:
@@ -2875,12 +2880,11 @@ def test_list_http_height_negative_is_unavailable():  # pylint: disable=invalid-
 
 
 def test_list_http_height_validates_full_population_before_page():  # pylint: disable=invalid-name
-	# Arrange: the missing current row is beyond the requested page.
+	# Arrange: the invalid snapshot height is beyond the requested page.
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 		_seed_height_http_fixture(writer)
 		with writer.connection.cursor() as cursor:
-			cursor.execute('DELETE FROM symbol_account_mosaics WHERE address = %s', (account_address(4),))
-			cursor.execute('DELETE FROM symbol_accounts WHERE address = %s', (account_address(4),))
+			cursor.execute('UPDATE symbol_account_refresh_accounts SET address_height = -1 WHERE address = %s', (account_address(4),))
 		writer.connection.commit()
 		with _account_list_http_client(config) as (client, _):
 			# Act:
@@ -2890,10 +2894,11 @@ def test_list_http_height_validates_full_population_before_page():  # pylint: di
 	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (response.status_code, response.json)
 
 
-def test_list_http_height_missing_current_row_before_filter_and_page():  # pylint: disable=invalid-name
+def test_list_http_height_ignores_missing_current_row_outside_filter():  # pylint: disable=invalid-name
 	# Arrange:
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
 		writer.upsert_blocks([create_symbol_block(1, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(1))])
 		with writer.connection.cursor() as cursor:
 			cursor.execute('DELETE FROM symbol_account_mosaics WHERE address = %s', (account_address(4),))
@@ -2904,7 +2909,9 @@ def test_list_http_height_missing_current_row_before_filter_and_page():  # pylin
 			response = client.get('/api/symbol/accounts?sort_field=HEIGHT&is_harvesting=true&limit=1')
 
 	# Assert:
-	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (response.status_code, response.json)
+	expected = _expected_account_list()[2]
+	expected['isHarvestingActive'] = True
+	assert (200, [expected]) == (response.status_code, response.json)
 
 
 def test_list_http_expires_harvesting_with_one_clock_read_per_request():  # pylint: disable=invalid-name
@@ -2945,7 +2952,7 @@ def test_list_http_reads_run_height_harvesting_and_multisig_in_one_snapshot():  
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 		seed_refresh_run(writer, 'old-run', create_account_list_entries('old-run'))
 		seed_refresh_run(writer, 'new-run', create_account_list_entries('new-run', is_new=True))
-		writer.upsert_account_refresh_state({'last_successful_run_id': 'old-run'})
+		seed_published_account_snapshot(writer, 'old-run')
 		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
 		writer.upsert_blocks([
 			create_symbol_block(1, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(1)),
@@ -2955,12 +2962,13 @@ def test_list_http_reads_run_height_harvesting_and_multisig_in_one_snapshot():  
 			'cosignatory_addresses': [account_address(2)], 'multisig_addresses': [], 'updated_at_height': 100})
 		with writer.connection.cursor() as cursor:
 			cursor.execute(
-				'UPDATE symbol_accounts SET address_height = CASE WHEN address = %s THEN 10 WHEN address = %s THEN 5 ELSE 1 END',
+				'UPDATE symbol_account_refresh_accounts SET address_height = CASE WHEN address = %s THEN 10 '
+				'WHEN address = %s THEN 5 ELSE 1 END WHERE refresh_run_id = \'old-run\'',
 				(account_address(1), account_address(3)))
 		writer.connection.commit()
 
 		def update():
-			writer.upsert_account_refresh_state({'last_successful_run_id': 'new-run'})
+			seed_published_account_snapshot(writer, 'new-run')
 			writer.upsert_blocks([create_symbol_block(1, timestamp=REFRESH_COMPLETED_AT, beneficiary_address=account_address(4))])
 			writer.upsert_multisig(account_address(1), None)
 			writer.upsert_multisig(account_address(3), {
@@ -2968,7 +2976,8 @@ def test_list_http_reads_run_height_harvesting_and_multisig_in_one_snapshot():  
 				'cosignatory_addresses': [account_address(2)], 'multisig_addresses': [], 'updated_at_height': 100})
 			with writer.connection.cursor() as cursor:
 				cursor.execute(
-					'UPDATE symbol_accounts SET address_height = CASE WHEN address = %s THEN 20 WHEN address = %s THEN 10 ELSE 1 END',
+					'UPDATE symbol_account_refresh_accounts SET address_height = CASE WHEN address = %s THEN 20 '
+					'WHEN address = %s THEN 10 ELSE 1 END WHERE refresh_run_id = \'new-run\'',
 					(account_address(3), account_address(4)))
 			writer.connection.commit()
 
@@ -2998,11 +3007,15 @@ def test_list_http_reads_run_height_harvesting_and_multisig_in_one_snapshot():  
 @pytest.mark.parametrize('query', ['', '?sort_field=HEIGHT&is_harvesting=true'])
 @pytest.mark.parametrize('state_sql', [
 	'DELETE FROM symbol_account_refresh_state',
-	'UPDATE symbol_account_refresh_state SET status = \'refreshing\'',
 	'UPDATE symbol_account_refresh_state SET status = \'unhealthy\'',
 	'UPDATE symbol_account_refresh_state SET status = \'stale\'',
-	'UPDATE symbol_account_refresh_state SET last_successful_run_id = NULL',
-	'UPDATE symbol_account_refresh_state SET last_successful_run_id = \'\'',
+	'UPDATE symbol_account_refresh_state SET last_successful_run_id = NULL, valid_run_id = NULL, height_ready_run_id = NULL',
+	'UPDATE symbol_account_refresh_state SET last_successful_run_id = \'\', valid_run_id = \'\', height_ready_run_id = \'\'',
+	'UPDATE symbol_account_refresh_state SET valid_run_id = NULL',
+	'UPDATE symbol_account_refresh_state SET height_ready_run_id = NULL',
+	'UPDATE symbol_account_refresh_state SET valid_run_id = \'other-run\'',
+	'UPDATE symbol_account_refresh_state SET height_ready_run_id = \'other-run\'',
+	'UPDATE symbol_account_refresh_state SET status = \'refreshing\', valid_run_id = NULL',
 	'UPDATE symbol_account_refresh_state SET last_completed_at = NULL',
 	'DELETE FROM symbol_sync_state',
 	'UPDATE symbol_sync_state SET status = \'unhealthy\'',
@@ -3016,6 +3029,7 @@ def test_list_http_state_unavailable(state_sql, query):
 		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
 		with writer.connection.cursor() as cursor:
 			cursor.execute(state_sql)
+
 		writer.connection.commit()
 		with _account_list_http_client(config) as (client, _):
 			# Act:
@@ -3052,8 +3066,12 @@ def _assert_selected_run_http_query(query, expected):
 	with symbol_test_database(create_symbol_sync_state(100, 100, chain_height=200, finalized_epoch=None)) as (config, writer):
 		seed_refresh_run(writer, 'old-run', create_account_list_entries('old-run', is_new=True))
 		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
-		writer.upsert_account_refresh_page(create_account_list_entries('failed-run', is_new=True), last_scanned_page=1)
-		writer.upsert_account_refresh_state({'status': 'healthy'})
+		with writer.workflow_lock():
+			writer.begin_account_refresh('failed-run', REFRESH_COMPLETED_AT)
+			writer.upsert_account_refresh_page(create_account_list_entries('failed-run', is_new=True), last_scanned_page=1)
+			writer.mark_account_refresh_failed('failed-run', 'fixture failure')
+
+		seed_account_refresh_state(writer, {'status': 'healthy'})
 		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
 		with _account_list_http_client(config) as (client, _):
 			# Act:
@@ -3361,3 +3379,155 @@ def test_list_window_date_boundary(extra_days):
 						'balance': 0, 'namespaces': [], 'mosaics': [], 'description': None,
 						'isHarvestingActive': True, 'isMultisig': False
 					}]) == (response.status_code, response.json)
+
+
+def _snapshot_http_expected_responses():
+	# These values describe the two explicit create_account_list_entries fixture variants.
+	old_statistics = {
+		'total': 4, 'harvesting': 0, 'eligibleForHarvesting': 4,
+		'top10AccountsImportance': 100.0, 'harvestingAccountsPercentage': 0.0,
+		'importanceBreakdown': [
+			[40.0, str(Address(account_address(1)))], [30.0, str(Address(account_address(3)))],
+			[20.0, str(Address(account_address(4)))], [10.0, str(Address(account_address(2)))]],
+		'harvestingAccountsChart': [[0.0, 'Harvesting'], [100.0, 'Not harvesting']],
+		'pendingVerification': []
+	}
+	new_statistics = {
+		'total': 4, 'harvesting': 0, 'eligibleForHarvesting': 4,
+		'top10AccountsImportance': 100.0, 'harvestingAccountsPercentage': 0.0,
+		'importanceBreakdown': [
+			[40.0, str(Address(account_address(2)))], [30.0, str(Address(account_address(4)))],
+			[20.0, str(Address(account_address(3)))], [10.0, str(Address(account_address(1)))]],
+		'harvestingAccountsChart': [[0.0, 'Harvesting'], [100.0, 'Not harvesting']],
+		'pendingVerification': []
+	}
+	new_accounts = [
+		_expected_list_item(4, '0E' * 32, 'main', .3, 0, 3, 0),
+		_expected_list_item(3, '0D' * 32, 'main', .2, .000025, .25, .000025),
+		_expected_list_item(2, '0C' * 32, 'remote', .4, .00002, .1, .00002),
+		_expected_list_item(1, '0B' * 32, 'main', .1, .00001, 2, .00001)
+	]
+	return {
+		'/api/symbol/accounts': (_expected_account_list(), new_accounts),
+		'/api/symbol/account/statistics': (old_statistics, new_statistics)
+	}
+
+
+@pytest.mark.parametrize('path', ['/api/symbol/accounts', '/api/symbol/account/statistics'])
+@pytest.mark.parametrize('state_sql', [
+	'DELETE FROM symbol_account_refresh_state',
+	'UPDATE symbol_account_refresh_state SET last_successful_run_id = \'\', valid_run_id = \'\', height_ready_run_id = \'\'',
+	'UPDATE symbol_account_refresh_state SET valid_run_id = NULL',
+	'UPDATE symbol_account_refresh_state SET height_ready_run_id = NULL',
+	'UPDATE symbol_account_refresh_state SET valid_run_id = \'other-run\'',
+	'UPDATE symbol_account_refresh_state SET height_ready_run_id = \'other-run\'',
+	'UPDATE symbol_account_refresh_state SET status = \'refreshing\', valid_run_id = NULL',
+	'UPDATE symbol_account_refresh_state SET status = \'unhealthy\'',
+	'UPDATE symbol_account_refresh_state SET status = \'stale\'',
+	'UPDATE symbol_account_refresh_state SET last_successful_run_id = NULL, valid_run_id = NULL, height_ready_run_id = NULL',
+	'UPDATE symbol_account_refresh_state SET last_completed_at = NULL',
+	'UPDATE symbol_sync_state SET dirty_state_from_height = 100',
+	'UPDATE symbol_sync_state SET status = \'unhealthy\''
+])
+def test_account_snapshot_http_rejects_unavailable_state(path, state_sql):  # pylint: disable=invalid-name
+	# Arrange:
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		with writer.connection.cursor() as cursor:
+			cursor.execute(state_sql)
+
+		writer.connection.commit()
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			response = client.get(path)
+
+	# Assert:
+	assert (503, {'status': 503, 'message': 'Symbol backend data is unavailable'}) == (response.status_code, response.json)
+
+
+@pytest.mark.parametrize('path', ['/api/symbol/accounts', '/api/symbol/account/statistics'])
+def test_account_snapshot_http_refreshing_preserves_publication_until_expiry(path):  # pylint: disable=invalid-name
+	# Arrange: use one continuous refresh to test the old generation through expiry and publication.
+	moment = [REFRESH_COMPLETED_AT + timedelta(seconds=7199)]
+	old_expected, new_expected = _snapshot_http_expected_responses()[path]
+	unavailable = (503, {'status': 503, 'message': 'Symbol backend data is unavailable'})
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'selected-run', create_account_list_entries())
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		with _account_list_http_client(config, clock=lambda: moment[0]) as (client, _):
+			# Act: read the old publication before starting the next generation.
+			before = client.get(path)
+			# Assert:
+			assert (200, old_expected) == (before.status_code, before.json)
+
+			# Arrange: write distinguishable, unfinished new-generation values.
+			with writer.workflow_lock():
+				writer.begin_account_refresh('running-run', moment[0])
+				writer.upsert_account_refresh_page(create_account_list_entries('running-run', is_new=True), 1)
+
+			# Act:
+			refreshing = client.get(path)
+			# Assert:
+			assert (200, old_expected) == (refreshing.status_code, refreshing.json)
+
+			# Act: cross the freshness boundary while the refresh remains in progress.
+			moment[0] += timedelta(seconds=1)
+			boundary = client.get(path)
+			# Assert:
+			assert (200, old_expected) == (boundary.status_code, boundary.json)
+
+			# Act:
+			moment[0] += timedelta(seconds=1)
+			expired = client.get(path)
+			# Assert:
+			assert unavailable == (expired.status_code, expired.json)
+
+			# Arrange: publish the completed new generation.
+			with writer.workflow_lock():
+				writer.finalize_account_refresh('running-run', NATIVE_MOSAIC_ID, 100, moment[0])
+
+			# Act:
+			published = client.get(path)
+			# Assert:
+			assert (200, new_expected) == (published.status_code, published.json)
+
+
+@pytest.mark.parametrize('path', ['/api/symbol/accounts', '/api/symbol/account/statistics'])
+def test_account_snapshot_http_recovers_after_rollback_and_publication(path):  # pylint: disable=invalid-name
+	# Arrange: follow the same publication from rollback through a completed replacement.
+	old_expected, new_expected = _snapshot_http_expected_responses()[path]
+	unavailable = (503, {'status': 503, 'message': 'Symbol backend data is unavailable'})
+	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+		seed_refresh_run(writer, 'old-run', create_account_list_entries('old-run'))
+		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2)
+		with _account_list_http_client(config) as (client, _):
+			# Act:
+			before = client.get(path)
+			# Assert:
+			assert (200, old_expected) == (before.status_code, before.json)
+
+			# Arrange: invalidate the published generation through Puller's rollback operation.
+			writer.delete_blocks_from_height(100)
+			# Act:
+			invalidated = client.get(path)
+			# Assert:
+			assert unavailable == (invalidated.status_code, invalidated.json)
+
+			# Arrange: begin a new generation without restoring the old proof.
+			with writer.workflow_lock():
+				writer.begin_account_refresh('new-run', REFRESH_COMPLETED_AT)
+				writer.upsert_account_refresh_page(create_account_list_entries('new-run', is_new=True), 1)
+
+			# Act:
+			refreshing = client.get(path)
+			# Assert:
+			assert unavailable == (refreshing.status_code, refreshing.json)
+
+			# Arrange: publish the completed replacement.
+			with writer.workflow_lock():
+				writer.finalize_account_refresh('new-run', NATIVE_MOSAIC_ID, 100, REFRESH_COMPLETED_AT)
+
+			# Act:
+			published = client.get(path)
+			# Assert:
+			assert (200, new_expected) == (published.status_code, published.json)

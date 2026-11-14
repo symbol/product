@@ -1,11 +1,16 @@
 # pylint: disable=too-many-lines
+import threading
 import time
 from collections import namedtuple
 from contextlib import contextmanager
 
 from common.symbol.ReceiptTypes import RECEIPT_TYPE_LABELS
 from common.symbol.Transaction import MESSAGE_TYPE_LABELS
+from psycopg2 import Error as PsycopgError
+from psycopg2 import errorcodes, sql
 from psycopg2.extras import Json
+from symbolchain.sc import ReceiptType, TransactionType
+from zenlog import log
 
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
@@ -27,13 +32,23 @@ from puller.model.symbol.MosaicRestriction import (
 from puller.model.symbol.Namespace import NAMESPACE_ALIAS_TYPE_LABELS, NAMESPACE_REGISTRATION_TYPE_LABELS
 from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
 
+from .AccountRetentionConfiguration import (
+	ACCOUNT_RETENTION_TIME_BUDGET_SECONDS,
+	DEFAULT_ACCOUNT_RETENTION_CONFIGURATION,
+	AccountRetentionConfiguration
+)
 from .DatabaseConnection import DatabaseConnection
 
 RollbackRefreshEntries = namedtuple(
 	'RollbackRefreshEntries',
 	['namespace_entries', 'mosaic_entries', 'metadata_entries', 'hash_lock_entries', 'secret_lock_entries',
-		'mosaic_restriction_entries'],
-	defaults=((), (), (), (), (), ()))
+		'mosaic_restriction_entries', 'account_entries'],
+	defaults=((), (), (), (), (), (), ()))
+
+
+class AccountRetentionTimeLimit(Exception):
+	"""Indicates that the current bounded retention pass reached its deadline."""
+
 
 SYNC_STATE_COLUMNS = [
 	'status',
@@ -70,8 +85,17 @@ SYMBOL_MOSAIC_RESTRICTION_ENTRY_TYPE_VALUES = tuple(entry_type.value for entry_t
 SYMBOL_LOCK_STATUS_VALUES = tuple(LOCK_STATUS_LABELS.values())
 SYMBOL_LOCK_HASH_ALGORITHM_VALUES = tuple(LOCK_HASH_ALGORITHM_LABELS.values())
 ACCOUNT_REFRESH_STATE_STATUS_VALUES = ('healthy', 'refreshing', 'stale', 'unhealthy')
+ACCOUNT_RETENTION_BATCH_SIZE = 5000
+ACCOUNT_RETENTION_MIN_BATCH_SIZE = 500
+ACCOUNT_RETENTION_MAX_BATCHES = 20
+SYMBOL_WORKFLOW_LOCK_KEY = (0x53594D42, 0x41434354)
 ACCOUNT_REFRESH_STATE_COLUMNS = [
 	'last_successful_run_id',
+	'previous_successful_run_id',
+	'running_run_id',
+	'is_retention_ready',
+	'valid_run_id',
+	'height_ready_run_id',
 	'last_started_at',
 	'last_completed_at',
 	'last_completed_height',
@@ -137,6 +161,11 @@ SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS = [
 	"status symbol_account_refresh_state_status NOT NULL DEFAULT 'healthy'",
 	'last_error text',
 	'updated_at timestamp DEFAULT CURRENT_TIMESTAMP',
+	'previous_successful_run_id varchar',
+	'running_run_id varchar',
+	'is_retention_ready boolean NOT NULL DEFAULT false',
+	'valid_run_id varchar',
+	'height_ready_run_id varchar',
 	'CONSTRAINT symbol_account_refresh_state_singleton CHECK (id = 1)'
 ]
 ACCOUNT_REFRESH_STATE_INDEXES = [
@@ -193,6 +222,7 @@ SYMBOL_ACCOUNT_REFRESH_ACCOUNT_DEFINITIONS = [
 	'importance_percentage numeric NOT NULL DEFAULT 0',
 	'snapshot_height bigint NOT NULL',
 	'snapshot_at timestamp NOT NULL',
+	'address_height bigint',
 	'PRIMARY KEY (refresh_run_id, address)'
 ]
 SYMBOL_ACCOUNT_REFRESH_MOSAIC_FOREIGN_KEY_NAME = 'symbol_account_refresh_mosaics_account_fk'
@@ -228,8 +258,6 @@ ACCOUNT_REFRESH_INDEXES = [
 	'ON symbol_account_refresh_mosaics(refresh_run_id, mosaic_id, amount DESC, address)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_mosaics_address '
 	'ON symbol_account_refresh_mosaics(refresh_run_id, address)',
-	'CREATE INDEX IF NOT EXISTS idx_symbol_account_list_ranks_page '
-	'ON symbol_account_list_ranks(refresh_run_id, rank_scope, rank)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_list_ranks_address '
 	'ON symbol_account_list_ranks(refresh_run_id, rank_scope, address)'
 ]
@@ -502,15 +530,39 @@ def _create_table(cursor, name, definitions):
 	cursor.execute(f'CREATE TABLE IF NOT EXISTS {name} ({", ".join(definitions)})')
 
 
+def _add_missing_columns(cursor, name, definitions):
+	cursor.execute('''
+		SELECT column_name FROM information_schema.columns
+		WHERE table_schema = current_schema() AND table_name = %s AND column_name = ANY(%s)
+	''', (name, [column_name for column_name, _ in definitions]))
+	if len(cursor.fetchall()) == len(definitions):
+		return
+
+	additions = [
+		sql.SQL('ADD COLUMN IF NOT EXISTS {} {}').format(sql.Identifier(column_name), sql.SQL(column_type))
+		for column_name, column_type in definitions
+	]
+	cursor.execute(sql.SQL('ALTER TABLE {} {}').format(sql.Identifier(name), sql.SQL(', ').join(additions)))
+
+
 class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-methods
 	"""Database containing Symbol blockchain data."""
 
-	def __init__(self, db_config, commit_observer=None, time_source=time.monotonic):
+	def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+		self, db_config, commit_observer=None, time_source=time.monotonic, retention_config=None,
+		retention_time_source=None, retention_time_budget_seconds=ACCOUNT_RETENTION_TIME_BUDGET_SECONDS, retention_logger=log
+	):
 		"""Creates a Symbol database wrapper with an optional commit observation hook."""
 
 		super().__init__(db_config)
 		self._commit_observer = commit_observer
 		self._time_source = time_source
+		self.retention_config = (
+			DEFAULT_ACCOUNT_RETENTION_CONFIGURATION if retention_config is None else AccountRetentionConfiguration(*retention_config))
+		self._retention_time_source = time.monotonic if retention_time_source is None else retention_time_source
+		self._retention_time_budget_seconds = retention_time_budget_seconds
+		self._retention_logger = retention_logger
+		self._workflow_guard = threading.Lock()
 
 	def _commit(self):
 		started_at = self._read_commit_time()
@@ -561,15 +613,26 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_enum_type(cursor, 'symbol_mosaic_restriction_entry_type', SYMBOL_MOSAIC_RESTRICTION_ENTRY_TYPE_VALUES)
 		_create_enum_type(cursor, 'symbol_lock_status', SYMBOL_LOCK_STATUS_VALUES)
 		_create_enum_type(cursor, 'symbol_lock_hash_algorithm', SYMBOL_LOCK_HASH_ALGORITHM_VALUES)
-		# The Symbol schema is greenfield in this phase. Existing databases are recreated
-		# by the deployment lifecycle; CREATE TABLE is not a migration mechanism here.
+		# Account retention and published snapshot columns are migrated below; other schema changes retain
+		# the existing greenfield deployment lifecycle.
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_refresh_state', SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS)
+		_add_missing_columns(cursor, 'symbol_account_refresh_state', (
+			('previous_successful_run_id', 'varchar'),
+			('running_run_id', 'varchar'),
+			('is_retention_ready', 'boolean NOT NULL DEFAULT false')
+		))
+		_add_missing_columns(cursor, 'symbol_account_refresh_state', (
+			('valid_run_id', 'varchar'),
+			('height_ready_run_id', 'varchar')
+		))
+
 		_create_table(cursor, 'symbol_accounts', SYMBOL_ACCOUNT_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_mosaics', SYMBOL_ACCOUNT_MOSAIC_DEFINITIONS)
 		_create_table(cursor, 'symbol_multisig', SYMBOL_MULTISIG_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_refresh_accounts', SYMBOL_ACCOUNT_REFRESH_ACCOUNT_DEFINITIONS)
+		_add_missing_columns(cursor, 'symbol_account_refresh_accounts', (('address_height', 'bigint'),))
 		_create_table(cursor, 'symbol_account_refresh_mosaics', SYMBOL_ACCOUNT_REFRESH_MOSAIC_DEFINITIONS)
 		_create_table(cursor, 'symbol_account_list_ranks', SYMBOL_ACCOUNT_LIST_RANK_DEFINITIONS)
 		for index_sql in ACCOUNT_REFRESH_STATE_INDEXES:
@@ -667,9 +730,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def upsert_sync_state(self, sync_state):
 		"""Upserts the singleton Symbol sync state."""
 
-		cursor = self.connection.cursor()
-		self._execute_upsert_sync_state(cursor, sync_state)
-		self._commit()
+		with self._database_transaction() as cursor:
+			self._execute_upsert_sync_state(cursor, sync_state)
 
 	def checkpoint_sync_state(self, sync_state):
 		"""Publishes one fully written Symbol batch and clears its dirty marker atomically."""
@@ -767,20 +829,237 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			self.connection.rollback()
 			raise
 
-	def upsert_account_refresh_state(self, refresh_state):
-		"""Upserts supplied fields on the singleton Symbol account refresh state."""
+	@contextmanager
+	def workflow_lock(self):
+		"""Excludes Symbol refresh and synchronization across database sessions."""
 
-		with self._database_transaction() as cursor:
-			self._execute_upsert_account_refresh_state(cursor, refresh_state)
+		if not self._workflow_guard.acquire(blocking=False):
+			raise RuntimeError('Symbol workflow is already running on this connection')
 
-	def mark_account_refresh_failed(self, last_error):
-		"""Records a failed account refresh."""
+		is_lock_acquired = False
+		has_primary_error = False
+		try:
+			with self._database_transaction() as cursor:
+				cursor.execute('SELECT pg_try_advisory_lock(%s, %s)', SYMBOL_WORKFLOW_LOCK_KEY)
+				is_lock_acquired = cursor.fetchone()[0]
+
+			if not is_lock_acquired:
+				raise RuntimeError('Another Symbol workflow is running')
+
+			yield
+		except BaseException:  # pylint: disable=broad-exception-caught
+			has_primary_error = True
+			raise
+		finally:
+			try:
+				if is_lock_acquired:
+					# A caller error may leave its transaction aborted; release the session lock afterward.
+					try:
+						self.connection.rollback()
+						with self._database_transaction() as cursor:
+							cursor.execute('SELECT pg_advisory_unlock(%s, %s)', SYMBOL_WORKFLOW_LOCK_KEY)
+							if not cursor.fetchone()[0]:
+								raise RuntimeError('Symbol workflow lock was not held')
+					except BaseException as error:  # pylint: disable=broad-exception-caught
+						if not has_primary_error:
+							raise
+
+						sqlstate = error.pgcode if isinstance(error, PsycopgError) else None  # pylint: disable=no-member
+						try:
+							self._retention_logger.error(
+								f'Failed to release Symbol workflow lock: error_type={type(error).__name__} sqlstate={sqlstate}')
+						except BaseException:  # pylint: disable=broad-exception-caught
+							# A logging failure must not replace the primary workflow exception.
+							pass
+			finally:
+				self._workflow_guard.release()
+
+	def begin_account_refresh(self, refresh_run_id, started_at):
+		"""Records the new owner after workflow exclusion has been acquired."""
 
 		with self._database_transaction() as cursor:
 			self._execute_upsert_account_refresh_state(cursor, {
-				'status': 'unhealthy',
-				'last_error': last_error
+				'running_run_id': refresh_run_id,
+				'status': 'refreshing',
+				'last_started_at': started_at,
+				'last_scanned_page': None,
+				'last_error': None
 			})
+
+	def recover_abandoned_account_refresh(self):
+		"""Clears a former refresh owner after acquiring the shared workflow lock."""
+
+		with self._database_transaction() as cursor:
+			cursor.execute('''
+				UPDATE symbol_account_refresh_state
+				SET running_run_id = NULL, status = 'unhealthy', last_error = 'Account refresh was interrupted',
+					updated_at = CURRENT_TIMESTAMP
+				WHERE id = 1 AND running_run_id IS NOT NULL
+			''')
+
+	def mark_account_refresh_failed(self, refresh_run_id, last_error):
+		"""Records a failed account refresh."""
+
+		with self._database_transaction() as cursor:
+			cursor.execute('''
+				UPDATE symbol_account_refresh_state
+				SET status = 'unhealthy', last_error = %s, running_run_id = NULL, updated_at = CURRENT_TIMESTAMP
+				WHERE id = 1 AND running_run_id = %s
+			''', (last_error, refresh_run_id))
+
+	def prune_account_refresh_generations(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+		self, batch_size=ACCOUNT_RETENTION_BATCH_SIZE, max_batches=ACCOUNT_RETENTION_MAX_BATCHES
+	):
+		"""Deletes bounded committed batches while the caller owns the workflow lock."""
+
+		order_by_table = {
+			'symbol_account_list_ranks': 'rank_scope, rank',
+			'symbol_account_refresh_mosaics': 'address, mosaic_id',
+			'symbol_account_refresh_accounts': 'address'
+		}
+		tables = tuple(order_by_table)
+		deadline = self._retention_time_source() + self._retention_time_budget_seconds
+		minimum_batch_size = ACCOUNT_RETENTION_MIN_BATCH_SIZE
+		delete_timeout_count = 0
+		for attempt in range(1, max_batches + 1):
+			run_id = None
+			table = None
+			is_delete = False
+			try:
+				with self._database_transaction() as cursor:
+					self._execute_retention_statement(cursor, deadline, '''
+						SELECT last_successful_run_id, previous_successful_run_id, running_run_id, is_retention_ready
+						FROM symbol_account_refresh_state WHERE id = 1 FOR UPDATE
+					''')
+					state = cursor.fetchone()
+					if not state or not state[3]:
+						self._retention_logger.info(
+							f'Symbol account snapshot retention stopped reason=migration_pending attempt={attempt} batch_size={batch_size}')
+						return
+
+					protected = [run_id for run_id in state[:3] if run_id is not None]
+					run_id = self._find_unprotected_account_generation(cursor, tables, protected, deadline)
+					if run_id is None:
+						self._retention_logger.info(
+							f'Symbol account snapshot retention stopped reason=complete attempt={attempt} batch_size={batch_size}')
+						return
+
+					self._retention_logger.info(f'Symbol account snapshot retention candidate run_id={run_id}')
+					counts = dict.fromkeys(tables, 0)
+					for table in tables:
+						# Table names and primary-key ordering are fixed in the mapping above.
+						self._retention_logger.info(
+							f'Symbol account snapshot retention attempt={attempt} run_id={run_id} table={table} batch_size={batch_size}')
+						self._set_retention_delete_timeouts(cursor, deadline, batch_size)
+						is_delete = True
+						cursor.execute(f'''
+							DELETE FROM {table} WHERE ctid IN (
+								SELECT ctid FROM {table} WHERE refresh_run_id = %s ORDER BY {order_by_table[table]} LIMIT %s
+							)
+						''', (run_id, batch_size))
+						is_delete = False
+						counts[table] = cursor.rowcount
+						if cursor.rowcount:
+							break
+
+					if self._retention_time_source() >= deadline:
+						raise AccountRetentionTimeLimit()
+
+				self._retention_logger.info(
+					f'Symbol account snapshot retention attempt={attempt} run_id={run_id} batch_size={batch_size} deleted={counts}')
+			except AccountRetentionTimeLimit:
+				self._retention_logger.info(
+					f'Symbol account snapshot retention stopped reason=deadline attempt={attempt} '
+					f'run_id={run_id} table={table} batch_size={batch_size}')
+				return
+			except PsycopgError as error:
+				if error.pgcode == errorcodes.LOCK_NOT_AVAILABLE and error.diag.message_primary == 'canceling statement due to lock timeout':
+					self._retention_logger.info(
+						f'Symbol account snapshot retention stopped reason=lock_timeout attempt={attempt} '
+						f'run_id={run_id} table={table} batch_size={batch_size}')
+					return
+
+				# SQLSTATE 57014 also covers external cancellation. Unknown or translated diagnostics fail closed.
+				if error.pgcode != errorcodes.QUERY_CANCELED or error.diag.message_primary != 'canceling statement due to statement timeout':
+					self._retention_logger.info(
+						f'Symbol account snapshot retention reason=database_error '
+						f'error_type={type(error).__name__} sqlstate={error.pgcode}')
+					raise
+
+				if not is_delete or batch_size <= minimum_batch_size:
+					stop_reason = 'non_delete' if not is_delete else 'minimum_batch'
+					self._retention_logger.info(
+						f'Symbol account snapshot retention stopped reason=statement_timeout attempt={attempt} '
+						f'run_id={run_id} table={table} batch_size={batch_size} stop_reason={stop_reason}')
+					return
+
+				delete_timeout_count += 1
+
+				if attempt == max_batches or int((deadline - self._retention_time_source()) * 1000) <= self.retention_config.lock_timeout_ms:
+					stop_reason = 'attempt_limit' if attempt == max_batches else 'deadline'
+					self._retention_logger.info(
+						f'Symbol account snapshot retention reason=statement_timeout attempt={attempt} '
+						f'run_id={run_id} table={table} batch_size={batch_size} stop_reason={stop_reason}')
+					return
+
+				next_batch_size = (
+					max(minimum_batch_size, batch_size // 2) if delete_timeout_count == 1 else minimum_batch_size)
+				self._retention_logger.info(
+					f'Symbol account snapshot retention reason=statement_timeout attempt={attempt} '
+					f'run_id={run_id} table={table} batch_size={batch_size} next_batch_size={next_batch_size}')
+				batch_size = next_batch_size
+
+		self._retention_logger.info(
+			f'Symbol account snapshot retention stopped reason=attempt_limit attempts={max_batches} batch_size={batch_size}')
+
+	def _execute_retention_statement(self, cursor, deadline, statement, parameters=()):
+		self._set_retention_timeouts(cursor, deadline)
+		cursor.execute(statement, parameters)
+
+	def _set_retention_timeouts(self, cursor, deadline):
+		remaining_ms = int((deadline - self._retention_time_source()) * 1000)
+		if remaining_ms <= self.retention_config.lock_timeout_ms:
+			raise AccountRetentionTimeLimit()
+
+		timeout_ms = min(remaining_ms, self.retention_config.statement_timeout_ms)
+		cursor.execute(
+			"SELECT set_config('statement_timeout', %s, true), set_config('lock_timeout', %s, true)",
+			(f'{timeout_ms}ms', f'{self.retention_config.lock_timeout_ms}ms'))
+
+	def _set_retention_delete_timeouts(self, cursor, deadline, batch_size):
+		remaining_ms = int((deadline - self._retention_time_source()) * 1000)
+		if remaining_ms <= self.retention_config.lock_timeout_ms:
+			raise AccountRetentionTimeLimit()
+
+		timeout_ms = min(self.retention_config.statement_timeout_ms, remaining_ms)
+		if batch_size > ACCOUNT_RETENTION_MIN_BATCH_SIZE:
+			timeout_ms = min(
+				self.retention_config.statement_timeout_ms,
+				max(self.retention_config.lock_timeout_ms + 1, remaining_ms // 3))
+
+		cursor.execute(
+			"SELECT set_config('statement_timeout', %s, true), set_config('lock_timeout', %s, true)",
+			(f'{timeout_ms}ms', f'{self.retention_config.lock_timeout_ms}ms'))
+
+	def _find_unprotected_account_generation(self, cursor, tables, protected, deadline):
+		for table in tables:
+			# Each table's primary key begins with refresh_run_id. Skip entire protected
+			# runs with index seeks instead of scanning every row in those runs.
+			self._execute_retention_statement(
+				cursor, deadline,
+				f'SELECT refresh_run_id FROM {table} ORDER BY refresh_run_id LIMIT 1')
+			row = cursor.fetchone()
+			while row and row[0] in protected:
+				self._execute_retention_statement(
+					cursor, deadline,
+					f'SELECT refresh_run_id FROM {table} WHERE refresh_run_id > %s ORDER BY refresh_run_id LIMIT 1',
+					(row[0],))
+				row = cursor.fetchone()
+
+			if row:
+				return row[0]
+
+		return None
 
 	@staticmethod
 	def _execute_upsert_account_refresh_state(cursor, refresh_state):
@@ -1550,9 +1829,13 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		"""Upserts or deletes one Symbol multisig current-state row."""
 
 		cursor = self.connection.cursor()
+		self._execute_upsert_multisig(cursor, address, multisig_row_or_none)
+		self._commit()
+
+	@staticmethod
+	def _execute_upsert_multisig(cursor, address, multisig_row_or_none):
 		if multisig_row_or_none is None:
 			cursor.execute('DELETE FROM symbol_multisig WHERE address = %s', (address,))
-			self._commit()
 			return
 
 		cursor.execute(
@@ -1581,7 +1864,6 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				updated_at_height = EXCLUDED.updated_at_height
 			''',
 			multisig_row_or_none)
-		self._commit()
 
 	@staticmethod
 	def _execute_insert_account_refresh_snapshot_rows(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -1605,7 +1887,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				importance,
 				importance_percentage,
 				snapshot_height,
-				snapshot_at
+				snapshot_at,
+				address_height
 			)
 			VALUES (
 				%(refresh_run_id)s,
@@ -1617,7 +1900,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				%(importance)s,
 				%(importance_percentage)s,
 				%(snapshot_height)s,
-				%(snapshot_at)s
+				%(snapshot_at)s,
+				%(address_height)s
 			)
 			ON CONFLICT (refresh_run_id, address) DO UPDATE SET
 				address_text = EXCLUDED.address_text,
@@ -1627,7 +1911,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				importance = EXCLUDED.importance,
 				importance_percentage = EXCLUDED.importance_percentage,
 				snapshot_height = EXCLUDED.snapshot_height,
-				snapshot_at = EXCLUDED.snapshot_at
+				snapshot_at = EXCLUDED.snapshot_at,
+				address_height = EXCLUDED.address_height
 			''',
 			{
 				**account_row,
@@ -1693,14 +1978,23 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		"""Publishes one refresh run: importance rates, list ranks, current-state importance, success marker."""
 
 		with self._database_transaction() as cursor:
+			cursor.execute('SELECT running_run_id FROM symbol_account_refresh_state WHERE id = 1 FOR UPDATE')
+			owner = cursor.fetchone()
+			if not owner or owner[0] != refresh_run_id:
+				raise RuntimeError('Symbol account refresh does not own the running ID')
+
 			cursor.execute(
 				'''
-				SELECT COALESCE(SUM(importance), 0)
+				SELECT COALESCE(SUM(importance), 0), COUNT(*) FILTER (WHERE address_height IS NULL)
 				FROM symbol_account_refresh_accounts
 				WHERE refresh_run_id = %s
 				''',
 				(refresh_run_id,))
-			total_importance = cursor.fetchone()[0]
+			total_importance, missing_height_count = cursor.fetchone()
+			# Legacy rows may have NULL heights; a newly published generation must be complete.
+			if missing_height_count:
+				raise RuntimeError('Symbol account refresh has missing address heights')
+
 			cursor.execute(
 				'''
 				UPDATE symbol_account_refresh_accounts
@@ -1786,13 +2080,15 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 					AND snapshot.refresh_run_id = %s
 				''',
 				(refresh_run_id,))
-			self._execute_upsert_account_refresh_state(cursor, {
-				'status': 'healthy',
-				'last_successful_run_id': refresh_run_id,
-				'last_completed_at': completed_at,
-				'last_completed_height': completed_height,
-				'last_error': None
-			})
+			cursor.execute('''
+				UPDATE symbol_account_refresh_state
+				SET previous_successful_run_id = last_successful_run_id,
+					last_successful_run_id = %s, running_run_id = NULL, is_retention_ready = true,
+					valid_run_id = %s, height_ready_run_id = %s,
+					last_completed_at = %s, last_completed_height = %s, status = 'healthy',
+					last_error = NULL, updated_at = CURRENT_TIMESTAMP
+				WHERE id = 1 AND running_run_id = %s
+			''', (refresh_run_id, refresh_run_id, refresh_run_id, completed_at, completed_height, refresh_run_id))
 
 	def get_block_hash(self, height):
 		"""Gets a block hash by height."""
@@ -1806,17 +2102,199 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def get_block_hashes(self, start_height, end_height):
 		"""Gets block hashes for an inclusive height range."""
 
-		cursor = self.connection.cursor()
-		cursor.execute(
-			'''
-			SELECT height, hash
-			FROM symbol_blocks
-			WHERE height BETWEEN %s AND %s
-			ORDER BY height ASC
-			''',
-			(start_height, end_height))
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				SELECT height, hash
+				FROM symbol_blocks
+				WHERE height BETWEEN %s AND %s
+				ORDER BY height ASC
+				''',
+				(start_height, end_height))
+			block_hashes = cursor.fetchall()
 
-		return cursor.fetchall()
+		return block_hashes
+
+	def get_max_block_height(self):
+		"""Gets the highest persisted block height, including an incomplete dirty batch."""
+
+		with self._database_transaction() as cursor:
+			cursor.execute('SELECT MAX(height) FROM symbol_blocks')
+			result = cursor.fetchone()
+
+		return result[0] if result else None
+
+	def get_rollback_account_addresses(self, height):
+		"""Gets account keys touched by orphaned block beneficiaries, transaction roles, or receipt addresses."""
+
+		restriction_types = (
+			TransactionType.ACCOUNT_ADDRESS_RESTRICTION.value,
+			TransactionType.MOSAIC_ADDRESS_RESTRICTION.value)
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				SELECT address FROM (
+					SELECT beneficiary_address AS address FROM symbol_blocks WHERE height >= %s
+					UNION
+					SELECT transaction_address.address
+					FROM symbol_transaction_addresses AS transaction_address
+					JOIN symbol_transactions AS t ON t.id = transaction_address.transaction_id
+					WHERE transaction_address.height >= %s
+					AND NOT (t.type = ANY(%s) AND transaction_address.role = 'target')
+					UNION
+					SELECT target_address AS address FROM symbol_receipts WHERE height >= %s AND target_address IS NOT NULL
+					UNION
+					SELECT sender_address AS address FROM symbol_receipts WHERE height >= %s AND sender_address IS NOT NULL
+					UNION
+					SELECT recipient_address AS address FROM symbol_receipts WHERE height >= %s AND recipient_address IS NOT NULL
+				) AS rollback_addresses
+				WHERE address IS NOT NULL
+				ORDER BY address
+				''',
+				(height, height, list(restriction_types), height, height, height))
+			rows = cursor.fetchall()
+
+		return [bytes(row[0]) for row in rows]
+
+	def get_rollback_inflation_mosaic_ids(self, height):
+		"""Gets mosaic ids paid by orphaned inflation receipts before those receipts are deleted."""
+
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				SELECT DISTINCT mosaic_id
+				FROM symbol_receipts
+				WHERE height >= %s AND receipt_group = 'inflation' AND mosaic_id IS NOT NULL
+				ORDER BY mosaic_id
+				''',
+				(height,))
+			rows = cursor.fetchall()
+
+		return [row[0] for row in rows]
+
+	def get_rollback_beneficiary_timestamps(self, height, addresses):
+		"""Gets the latest surviving beneficiary block timestamp for each supplied account key."""
+
+		if not addresses:
+			return {}
+
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				SELECT beneficiary_address, MAX(timestamp)
+				FROM symbol_blocks
+				WHERE height < %s AND beneficiary_address = ANY(%s)
+				GROUP BY beneficiary_address
+				''',
+				(height, addresses))
+			rows = cursor.fetchall()
+
+		return {bytes(address): timestamp for address, timestamp in rows}
+
+	def has_rollback_lock_events(self, height):
+		"""Checks whether orphaned history contains lock events whose finalized key may have been pruned."""
+
+		lock_transaction_types = (
+			TRANSACTION_TYPE_LABELS[TransactionType.AGGREGATE_BONDED.value],
+			TRANSACTION_TYPE_LABELS[TransactionType.HASH_LOCK.value],
+			TRANSACTION_TYPE_LABELS[TransactionType.SECRET_LOCK.value],
+			TRANSACTION_TYPE_LABELS[TransactionType.SECRET_PROOF.value])
+		lock_receipt_types = tuple(
+			RECEIPT_TYPE_LABELS[receipt_type.value]
+			for receipt_type in (
+				ReceiptType.LOCK_HASH_CREATED,
+				ReceiptType.LOCK_HASH_COMPLETED,
+				ReceiptType.LOCK_HASH_EXPIRED,
+				ReceiptType.LOCK_SECRET_CREATED,
+				ReceiptType.LOCK_SECRET_COMPLETED,
+				ReceiptType.LOCK_SECRET_EXPIRED))
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				SELECT EXISTS (
+					SELECT 1 FROM symbol_transactions WHERE height >= %s AND type_name::text = ANY(%s)
+					UNION ALL
+					SELECT 1 FROM symbol_receipts WHERE height >= %s AND receipt_type::text = ANY(%s)
+				)
+				''',
+				(height, list(lock_transaction_types), height, list(lock_receipt_types)))
+			result = cursor.fetchone()[0]
+
+		return result
+
+	def has_artifact_state_gaps(self, height):
+		"""Checks whether orphaned artifact events lack current-state keys needed for refresh."""
+
+		namespace_transaction_types = tuple(
+			TRANSACTION_TYPE_LABELS[transaction_type.value]
+			for transaction_type in (
+				TransactionType.NAMESPACE_REGISTRATION,
+				TransactionType.ADDRESS_ALIAS,
+				TransactionType.MOSAIC_ALIAS))
+		mosaic_transaction_types = tuple(
+			TRANSACTION_TYPE_LABELS[transaction_type.value]
+			for transaction_type in (
+				TransactionType.MOSAIC_DEFINITION,
+				TransactionType.MOSAIC_SUPPLY_CHANGE))
+		namespace_receipt_types = tuple(
+			RECEIPT_TYPE_LABELS[receipt_type.value]
+			for receipt_type in (ReceiptType.NAMESPACE_EXPIRED, ReceiptType.NAMESPACE_DELETED))
+		mosaic_receipt_types = (RECEIPT_TYPE_LABELS[ReceiptType.MOSAIC_EXPIRED.value],)
+		with self._database_transaction() as cursor:
+			cursor.execute(
+				'''
+				SELECT EXISTS (
+					SELECT 1
+					FROM symbol_transactions AS tx
+					WHERE tx.height >= %s
+						AND tx.type_name::text = ANY(%s)
+						AND (
+							CASE WHEN tx.type = %s THEN tx.body->>'id' ELSE tx.body->>'namespaceId' END IS NULL
+							OR NOT EXISTS (
+								SELECT 1 FROM symbol_namespaces AS current_namespace
+								WHERE current_namespace.namespace_id = CASE WHEN tx.type = %s
+									THEN tx.body->>'id' ELSE tx.body->>'namespaceId' END
+									AND current_namespace.updated_at_height >= %s))
+					UNION ALL
+					SELECT 1
+					FROM symbol_transactions AS tx
+					LEFT JOIN symbol_transaction_mosaics AS tx_mosaic
+						ON tx_mosaic.transaction_id = tx.id AND tx_mosaic.role::text = 'definition'
+					WHERE tx.height >= %s
+						AND tx.type_name::text = ANY(%s)
+						AND (
+							tx_mosaic.mosaic_id IS NULL
+							OR NOT EXISTS (
+								SELECT 1 FROM symbol_mosaics AS current_mosaic
+								WHERE current_mosaic.mosaic_id = tx_mosaic.mosaic_id
+									AND current_mosaic.updated_at_height >= %s))
+					UNION ALL
+					SELECT 1
+					FROM symbol_receipts AS receipt
+					WHERE receipt.height >= %s
+						AND receipt.receipt_type::text = ANY(%s)
+					UNION ALL
+					SELECT 1
+					FROM symbol_receipts AS receipt
+					WHERE receipt.height >= %s
+						AND receipt.receipt_type::text = ANY(%s)
+						AND (
+							receipt.artifact_id IS NULL
+							OR NOT EXISTS (
+								SELECT 1 FROM symbol_mosaics AS current_mosaic
+								WHERE current_mosaic.mosaic_id = receipt.artifact_id
+									AND current_mosaic.updated_at_height >= %s))
+				)
+				''',
+				(
+					height, list(namespace_transaction_types), TransactionType.NAMESPACE_REGISTRATION.value,
+					TransactionType.NAMESPACE_REGISTRATION.value, height,
+					height, list(mosaic_transaction_types), height,
+					height, list(namespace_receipt_types),
+					height, list(mosaic_receipt_types), height))
+			result = cursor.fetchone()[0]
+
+		return result
 
 	def delete_blocks_from_height(self, height):
 		"""Deletes blocks from the supplied height for rollback repair."""
@@ -1837,6 +2315,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			self._execute_hash_lock_entries(cursor, refresh_entries.hash_lock_entries)
 			self._execute_secret_lock_entries(cursor, refresh_entries.secret_lock_entries)
 			self._execute_mosaic_restriction_entries(cursor, refresh_entries.mosaic_restriction_entries)
+			self._execute_rollback_account_entries(cursor, refresh_entries.account_entries)
 			self._execute_upsert_sync_state(cursor, sync_state)
 
 	@staticmethod
@@ -1846,12 +2325,25 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('DELETE FROM symbol_transactions WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_receipts WHERE height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_blocks WHERE height >= %s', (height,))
-		cursor.execute('DELETE FROM symbol_multisig WHERE updated_at_height >= %s', (height,))
-		cursor.execute('DELETE FROM symbol_account_mosaics WHERE updated_at_height >= %s', (height,))
-		cursor.execute('DELETE FROM symbol_accounts WHERE last_seen_height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_hash_locks WHERE updated_at_height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_secret_locks WHERE updated_at_height >= %s', (height,))
 		cursor.execute('DELETE FROM symbol_mosaic_restrictions WHERE updated_at_height >= %s', (height,))
+
+	@staticmethod
+	def _execute_rollback_account_entries(cursor, entries):
+		for entry in entries:
+			if entry['account_row'] is None:
+				cursor.execute('DELETE FROM symbol_multisig WHERE address = %s', (entry['address'],))
+				cursor.execute('DELETE FROM symbol_account_mosaics WHERE address = %s', (entry['address'],))
+				cursor.execute('DELETE FROM symbol_accounts WHERE address = %s', (entry['address'],))
+				continue
+
+			SymbolDatabase._execute_upsert_account_current_state(
+				cursor,
+				entry['account_row'],
+				entry['mosaic_rows'],
+				entry['overwrite_is_harvesting_active'])
+			SymbolDatabase._execute_upsert_multisig(cursor, entry['address'], entry['multisig_row'])
 
 	def upsert_transactions_for_height(self, height, transaction_entries):
 		"""Replaces persisted Symbol transactions and child index rows for one height atomically."""
@@ -2016,9 +2508,9 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute(
 			'''
 			UPDATE symbol_account_refresh_state
-			SET status = 'stale',
+			SET status = 'stale', valid_run_id = NULL,
 				updated_at = CURRENT_TIMESTAMP
-			WHERE id = 1 AND last_completed_height >= %s AND status != 'stale'
+			WHERE id = 1 AND last_completed_height >= %s AND (status != 'stale' OR valid_run_id IS NOT NULL)
 			''',
 			(fork_height,))
 
