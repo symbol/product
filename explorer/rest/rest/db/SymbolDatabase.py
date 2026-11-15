@@ -1157,24 +1157,29 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 		records = [create_unconfirmed_record(item_map, network) for item_map in transactions]
 
 		embedded_by_hash_map = {}
+		aggregate_hashes = set()
+		mosaic_ids_map = {}
 		for record in records:
 			if record.aggregate_hash is not None:
 				embedded_by_hash_map.setdefault(record.aggregate_hash, []).append(record)
 
-		aggregate_hashes = {
-			record.transaction_hash for record in records if record.transaction_type in AGGREGATE_TYPES
-		}
+			if record.transaction_type in AGGREGATE_TYPES:
+				aggregate_hashes.add(record.transaction_hash)
 
-		mosaic_ids = list(dict.fromkeys(mosaic_id for record in records for mosaic_id, _ in record.mosaics))
-		mosaic_divisibility_map = self.get_mosaic_divisibility(mosaic_ids, self.native_mosaic_info)
+			for mosaic_id, _ in record.mosaics:
+				mosaic_ids_map[mosaic_id] = None
+
+		mosaic_divisibility_map = self.get_mosaic_divisibility(list(mosaic_ids_map), self.native_mosaic_info)
 
 		views = []
 		for record in records:
 			if record.aggregate_hash in aggregate_hashes:
 				continue
+
 			embedded_records = ()
 			if record.transaction_type in AGGREGATE_TYPES:
 				embedded_records = sorted(embedded_by_hash_map.get(record.transaction_hash, []), key=lambda child: child.embedded_index)
+
 			views.append(SymbolTransactionView(record, mosaic_divisibility_map, embedded_records))
 
 		return views
@@ -1183,8 +1188,14 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 		"""Maps requested IDs to resolved IDs and divisibilities, querying only mosaics without configured metadata."""
 
 		divisibility_map = {native_mosaic_info.id: native_mosaic_info.divisibility} if native_mosaic_info is not None else {}
-		resolved_ids_map = {mosaic_id: mosaic_id.upper() for mosaic_id in mosaic_ids if mosaic_id.upper() in divisibility_map}
-		mosaic_ids_to_resolve = [mosaic_id for mosaic_id in mosaic_ids if mosaic_id not in resolved_ids_map]
+		resolved_ids_map = {}
+		mosaic_ids_to_resolve = []
+		for mosaic_id in mosaic_ids:
+			upper_id = mosaic_id.upper()
+			if upper_id in divisibility_map:
+				resolved_ids_map[mosaic_id] = upper_id
+			else:
+				mosaic_ids_to_resolve.append(mosaic_id)
 
 		if mosaic_ids_to_resolve:
 			with self.connection() as connection:

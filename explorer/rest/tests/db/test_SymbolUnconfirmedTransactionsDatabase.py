@@ -90,7 +90,7 @@ def test_can_get_transfer_without_message(database):  # pylint: disable=invalid-
 	database.get_mosaic_divisibility.assert_called_once_with([mosaic_id], NATIVE_MOSAIC_INFO)
 
 
-def test_can_get_transfer_by_alias(database):
+def test_can_get_transfer_with_mosaic_alias(database):  # pylint: disable=invalid-name
 	# Arrange:
 	alias_id = '887E5DB6BB0B21F5'
 	unconfirmed_transaction = get_unconfirmed_transaction(TransactionType.TRANSFER)
