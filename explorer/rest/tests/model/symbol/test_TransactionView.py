@@ -7,10 +7,12 @@ from symbolchain.symbol.Network import Address, Network
 
 from rest.model.symbol.TransactionView import (
 	SymbolTransactionView,
+	TransactionMosaicRecord,
 	TransactionViewRecord,
 	create_confirmed_record,
 	create_transaction_payload,
-	create_unconfirmed_record
+	create_unconfirmed_record,
+	resolve_transaction_mosaics
 )
 from rest.model.symbol.validation import SymbolDataInvalid
 
@@ -30,7 +32,7 @@ def _create_record(**overrides):
 		from_address='TDPO5E6N2BZZNRNDLHHQ2FC3D6RBVUEOXEO26YY',
 		to_address='TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
 		payload=[{'message': {'type': 0, 'payload': '4869'}}],
-		mosaics=(('1234567890ABCDEF', 12345),),
+		mosaics=(TransactionMosaicRecord('1234567890ABCDEF', 12345, 2),),
 		deadline=datetime(2026, 10, 28, 10, 0, tzinfo=timezone.utc),
 		signature='CD' * 64,
 		size=176,
@@ -297,7 +299,7 @@ def test_can_format_transaction_fields(amount, expected_amount):
 
 	# Assert:
 	assert [{'message': {'type': 0, 'payload': '4869'}}] == payload
-	assert (('1234567890ABCDEF', expected_amount),) == mosaics
+	assert (('1234567890ABCDEF', expected_amount, None),) == mosaics
 
 
 def test_can_create_unconfirmed_record():
@@ -316,7 +318,7 @@ def test_can_create_unconfirmed_record():
 		from_address='TDPO5E6N2BZZNRNDLHHQ2FC3D6RBVUEOXEO26YY',
 		to_address='TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
 		payload=[],
-		mosaics=(('72C0212E67A08BCE', 123000000),),
+		mosaics=(TransactionMosaicRecord('72C0212E67A08BCE', 123000000),),
 		deadline=datetime(2022, 11, 2, 7, 25, 23, 789000, tzinfo=timezone.utc),
 		signature='AB' * 64,
 		size=176,
@@ -343,7 +345,7 @@ def test_can_create_embedded_record(index):
 	assert TransactionType.TRANSFER == record.transaction_type
 	assert 'TDPO5E6N2BZZNRNDLHHQ2FC3D6RBVUEOXEO26YY' == record.from_address
 	assert 'TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY' == record.to_address
-	assert (('72C0212E67A08BCE', 5000000),) == record.mosaics
+	assert (('72C0212E67A08BCE', 5000000, None),) == record.mosaics
 	assert [] == record.payload
 	assert 1 == record.version
 	assert 0 == record.height
@@ -423,7 +425,7 @@ def test_rejects_invalid_common_fields(overrides_map):
 def test_returns_shared_output(confirmation_map, expected_timestamp):
 	# Arrange:
 	record = _create_record(**confirmation_map)
-	view = SymbolTransactionView(record, {'1234567890ABCDEF': ('1234567890ABCDEF', 2)})
+	view = SymbolTransactionView(record)
 
 	# Act:
 	result = view.to_dict()
@@ -457,8 +459,8 @@ def test_returns_shared_output(confirmation_map, expected_timestamp):
 def test_formats_transfer_mosaic(divisibility, expected_amount):
 	# Arrange:
 	mosaic_id = '1234567890ABCDEF'
-	record = _create_record(payload=[], mosaics=((mosaic_id, 1234567),))
-	view = SymbolTransactionView(record, {mosaic_id: (mosaic_id, divisibility)})
+	record = _create_record(payload=[], mosaics=(TransactionMosaicRecord(mosaic_id, 1234567, divisibility),))
+	view = SymbolTransactionView(record)
 
 	# Act:
 	result = view.to_dict()
@@ -469,8 +471,8 @@ def test_formats_transfer_mosaic(divisibility, expected_amount):
 
 def test_preserves_mosaic_amount():
 	# Arrange:
-	record = _create_record(payload=[], mosaics=(('1234567890ABCDEF', 18446744073709551615),))
-	view = SymbolTransactionView(record, {})
+	record = _create_record(payload=[], mosaics=(TransactionMosaicRecord('1234567890ABCDEF', 18446744073709551615),))
+	view = SymbolTransactionView(record)
 
 	# Act:
 	result = view.to_dict()
@@ -486,8 +488,8 @@ def test_preserves_mosaic_amount():
 def test_preserves_unresolved_aliases():
 	# Arrange:
 	alias_id = '887E5DB6BB0B21F5'
-	record = _create_record(payload=[], mosaics=((alias_id, 1234567),))
-	view = SymbolTransactionView(record, {})
+	record = _create_record(payload=[], mosaics=(TransactionMosaicRecord(alias_id, 1234567),))
+	view = SymbolTransactionView(record)
 
 	# Act:
 	result = view.to_dict()
@@ -503,8 +505,9 @@ def test_preserves_unresolved_aliases():
 def test_formats_resolved_alias(resolved_id, divisibility, expected_amount):
 	# Arrange:
 	alias_id = '887E5DB6BB0B21F5'
-	record = _create_record(payload=[], mosaics=((alias_id, 1234567),))
-	view = SymbolTransactionView(record, {alias_id: (resolved_id, divisibility)})
+	record = _create_record(payload=[], mosaics=(TransactionMosaicRecord(alias_id, 1234567),))
+	view = SymbolTransactionView(record._replace(
+		mosaics=resolve_transaction_mosaics(record.mosaics, {alias_id: (resolved_id, divisibility)})))
 
 	# Act:
 	result = view.to_dict()
@@ -534,7 +537,7 @@ def test_returns_confirmed_child():
 		height=parent.height,
 		timestamp=timestamp,
 	)
-	view = SymbolTransactionView(parent, {'1234567890ABCDEF': ('1234567890ABCDEF', 2)}, (child,))
+	view = SymbolTransactionView(parent._replace(embedded_transactions=(child,)))
 
 	# Act:
 	result = view.to_dict()
@@ -561,7 +564,7 @@ def test_returns_confirmed_child():
 		'addressAdditions': [],
 		'addressDeletions': ['TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY'],
 	}]),
-	(TransactionType.AGGREGATE_BONDED, TransactionType.TRANSFER, [], (('72C0212E67A08BCE', 5000000),), [{
+	(TransactionType.AGGREGATE_BONDED, TransactionType.TRANSFER, [], (TransactionMosaicRecord('72C0212E67A08BCE', 5000000, 6),), [{
 		'id': '72C0212E67A08BCE',
 		'name': '72C0212E67A08BCE',
 		'amount': 5,
@@ -581,7 +584,7 @@ def test_returns_embedded_transactions(parent_type, child_type, payload, mosaics
 		signature=None,
 		size=None,
 	)
-	view = SymbolTransactionView(parent, {NATIVE_MOSAIC_INFO.id: (NATIVE_MOSAIC_INFO.id, 6)}, (child,))
+	view = SymbolTransactionView(parent._replace(embedded_transactions=(child,)))
 
 	# Act:
 	result = view.to_dict()
@@ -602,7 +605,8 @@ def test_can_format_unconfirmed_transfer():
 
 	# Act:
 	record = create_unconfirmed_record(unconfirmed_transaction, Network.TESTNET)
-	result = SymbolTransactionView(record, mosaic_divisibility_map).to_dict()
+	result = SymbolTransactionView(record._replace(
+		mosaics=resolve_transaction_mosaics(record.mosaics, mosaic_divisibility_map))).to_dict()
 
 	# Assert:
 	assert {
@@ -656,7 +660,7 @@ def test_can_normalize_saved_transaction():
 		'message': '01424F4459',
 		'mosaics': [{'id': 'FEDCBA9876543210', 'amount': '999'}],
 	})
-	mosaics = ((NATIVE_MOSAIC_INFO.id, 1234567), ('1234567890ABCDEF', 12345))
+	mosaics = (TransactionMosaicRecord(NATIVE_MOSAIC_INFO.id, 1234567, 6), TransactionMosaicRecord('1234567890ABCDEF', 12345, 2))
 
 	# Act:
 	record = create_confirmed_record(transaction, mosaics, NATIVE_MOSAIC_INFO)
