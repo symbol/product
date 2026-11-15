@@ -32,7 +32,7 @@ from ..test.SymbolTransactionTestUtils import (
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 
 
-class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-public-methods
+class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-public-methods, too-many-lines
 	def test_returns_selected_views_with_complete_embedded_transactions(self):
 		# Arrange:
 		mosaic_id = '1234567890ABCDEF'
