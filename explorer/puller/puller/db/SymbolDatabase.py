@@ -327,7 +327,11 @@ SYMBOL_MOSAIC_INDEXES = [
 ]
 SYMBOL_METADATA_INDEXES = [
 	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_target_address_height '
-	'ON symbol_metadata(target_address, updated_at_height DESC)',
+	'ON symbol_metadata(target_address, updated_at_height DESC, composite_hash ASC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_target_address_type_height_hash '
+	'ON symbol_metadata(target_address, metadata_type, updated_at_height DESC, composite_hash ASC)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_type_target_id_height_hash '
+	'ON symbol_metadata(metadata_type, target_id, updated_at_height DESC, composite_hash ASC)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_type ON symbol_metadata(metadata_type)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_scoped_key ON symbol_metadata(scoped_metadata_key)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_metadata_source ON symbol_metadata(source_address)',
