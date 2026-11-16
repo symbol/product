@@ -295,7 +295,7 @@ def _setup_symbol_account_routes(app, symbol_api_facade, run_symbol_query):
 	def api_get_symbol_accounts():
 		try:
 			_validate_allowed_query_parameters(ACCOUNT_LIST_QUERY_PARAMETERS)
-			query = _parse_account_list_query()
+			query = _parse_account_list_query(symbol_api_facade.native_mosaic_info.id)
 		except ValueError as error:
 			abort(400, error)
 
@@ -552,10 +552,10 @@ def _parse_receipt_query(height=None):
 		sender_address=_parse_address('senderAddress'))
 
 
-def _parse_account_list_query():
+def _parse_account_list_query(native_mosaic_id):
 	limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
 	offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, ACCOUNT_LIST_MAX_OFFSET)
-	sort_field_value = _get_scalar_parameter('sort_field', 'ID').upper()
+	sort_field_value = _get_scalar_parameter('sort_field', 'BALANCE').upper()
 	try:
 		sort_field = AccountSortField(sort_field_value)
 	except ValueError as error:
@@ -573,7 +573,7 @@ def _parse_account_list_query():
 		mosaic_id = mosaic_id.upper()
 
 	if sort_field == AccountSortField.BALANCE and mosaic_id is None:
-		raise ValueError('mosaic_id is required for BALANCE')
+		mosaic_id = native_mosaic_id
 
 	if sort_field != AccountSortField.BALANCE and mosaic_id is not None:
 		raise ValueError('mosaic_id can only be used with BALANCE')
