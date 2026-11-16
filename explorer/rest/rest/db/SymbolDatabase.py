@@ -156,7 +156,6 @@ AccountListEnrichment = namedtuple(
 AccountStatisticsRecord = namedtuple(
 	'AccountStatisticsRecord',
 	['total', 'harvesting', 'eligible_for_harvesting', 'harvesting_eligible', 'total_importance', 'top_accounts'])
-INT64_MAX = 9223372036854775807
 
 
 def _address(value):
@@ -599,19 +598,22 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 	@staticmethod
 	def _fetch_account_refresh_state(cursor):
 		cursor.execute(
-			'''SELECT status, last_successful_run_id, last_completed_at
+			'''SELECT status, last_successful_run_id, last_completed_at, valid_run_id, height_ready_run_id
 			FROM symbol_account_refresh_state WHERE id = 1''')
 		row = cursor.fetchone()
-		return dict(zip(('status', 'last_successful_run_id', 'last_completed_at'), row)) if row else None
+		return dict(zip(('status', 'last_successful_run_id', 'last_completed_at', 'valid_run_id', 'height_ready_run_id'), row)) if row else None
 
 	@staticmethod
 	def _assert_account_refresh_readable(refresh_state, max_age_seconds, now):
-		if not refresh_state or refresh_state['status'] != 'healthy':
+		if not refresh_state or refresh_state['status'] not in ('healthy', 'refreshing'):
 			raise SymbolDataUnavailable('Symbol account refresh data is unavailable')
 
 		run_id = refresh_state['last_successful_run_id']
 		completed_at = refresh_state['last_completed_at']
 		if not isinstance(run_id, str) or not run_id or completed_at is None:
+			raise SymbolDataUnavailable('Symbol account refresh data is unavailable')
+
+		if refresh_state['valid_run_id'] != run_id or refresh_state['height_ready_run_id'] != run_id:
 			raise SymbolDataUnavailable('Symbol account refresh data is unavailable')
 
 		completed_at = completed_at.replace(tzinfo=timezone.utc) if completed_at.tzinfo is None else completed_at
@@ -633,16 +635,10 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 	@staticmethod
 	def _assert_account_list_height_population(cursor, run_id):
 		cursor.execute(
-			'''SELECT accounts.address, current_accounts.address, current_accounts.address_height
-			FROM symbol_account_refresh_accounts AS accounts
-			LEFT JOIN symbol_accounts AS current_accounts ON current_accounts.address = accounts.address
-			WHERE accounts.refresh_run_id = %s''',
+			'''SELECT EXISTS (SELECT 1 FROM symbol_account_refresh_accounts
+			WHERE refresh_run_id = %s AND address_height < 0)''',
 			(run_id,))
-		rows = cursor.fetchall()
-		if any(row[1] is None for row in rows) or any(
-			row[2] is not None and (
-				isinstance(row[2], bool) or not isinstance(row[2], int) or row[2] < 0 or row[2] > INT64_MAX)
-			for row in rows):
+		if cursor.fetchone()[0]:
 			raise SymbolDataUnavailable('Symbol account height data is unavailable')
 
 	@staticmethod
@@ -701,9 +697,8 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 		elif query.sort_field == AccountSortField.HEIGHT:
 			query_text = f'''SELECT accounts.address, {harvesting_expression} AS is_harvesting_active
 				FROM symbol_account_refresh_accounts AS accounts
-				JOIN symbol_accounts AS current_accounts ON current_accounts.address = accounts.address
 				WHERE accounts.refresh_run_id = %s{harvesting_filter}
-				ORDER BY current_accounts.address_height DESC NULLS LAST, accounts.address ASC
+				ORDER BY accounts.address_height DESC NULLS LAST, accounts.address ASC
 				LIMIT %s OFFSET %s'''
 			parameters = (*harvesting_parameters, run_id, *filter_parameters, query.limit, query.offset)
 		else:

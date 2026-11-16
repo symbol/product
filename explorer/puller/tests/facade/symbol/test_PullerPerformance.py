@@ -389,7 +389,7 @@ class SymbolPullerPerformanceTest(SymbolPullerTestBase):
 		# Arrange:
 		self._seed_blocks(self.puller.symbol_db, [1])
 		self.puller.symbol_db.upsert_sync_state(create_sync_state(chain_height=1, last_synced_height=1))
-		connector = FakeConnector(1, {})
+		connector = FakeConnector(1, {}, block_by_height={1: create_node_block(1)})
 
 		# Act:
 		events = self._run_sync(connector)
@@ -399,8 +399,8 @@ class SymbolPullerPerformanceTest(SymbolPullerTestBase):
 		self.assertEqual('symbol_sync_completed', events[0]['event'])
 		self.assertEqual(0, events[0]['batch_count'])
 		self.assertEqual(1, events[0]['last_completed_height'])
-		self.assertEqual(3, events[0]['http_attempt_count'])
-		self.assertEqual(2, events[0]['db_commit_count'])
+		self.assertEqual(4, events[0]['http_attempt_count'])
+		self.assertEqual(3, events[0]['db_commit_count'])
 		self.assertIsNone(events[0]['failed_phase'])
 
 	def test_sync_block_headers_counts_embedded_transactions_and_receipt_rows(self):
@@ -872,7 +872,7 @@ class SymbolPullerPerformanceTest(SymbolPullerTestBase):
 	def test_sync_block_headers_reports_sync_state_read_failure_without_batch(self):
 		# Arrange:
 		expected_exception = RuntimeError('sync state read failed')
-		connector = FakeConnector(1, {})
+		connector = FakeConnector(1, {}, block_by_height={1: create_node_block(1)})
 		logger = RecordingLogger()
 		self.puller.symbol_db = FailingSyncStateReadDatabase(self.puller.symbol_db, expected_exception)
 
@@ -930,11 +930,15 @@ class SymbolPullerPerformanceTest(SymbolPullerTestBase):
 		self.puller.symbol_db.upsert_sync_state(create_sync_state())
 
 		# Act:
-		with self.assertRaisesRegex(SymbolRollbackError, 'Finalized block is missing from local database') as exception_context:
+		with self.assertRaisesRegex(
+			SymbolRollbackError,
+			'Recorded finalized anchor is missing or inconsistent in local database') as exception_context:
 			self._run_sync(connector, logger)
 
 		# Assert:
-		self.assertEqual('Finalized block is missing from local database', str(exception_context.exception))
+		self.assertEqual(
+			'Recorded finalized anchor is missing or inconsistent in local database',
+			str(exception_context.exception))
 		event = logger.events[0]
 		self.assertEqual('symbol_sync_failed', event['event'])
 		self.assertEqual(0, event['batch_count'])
@@ -945,7 +949,7 @@ class SymbolPullerPerformanceTest(SymbolPullerTestBase):
 	def test_sync_block_headers_reports_finalization_cleanup_failure_phase_without_batch(self):
 		# Arrange:
 		expected_exception = ValueError('finalization cleanup failed')
-		connector = FakeConnector(1, {})
+		connector = FakeConnector(1, {}, block_by_height={1: create_node_block(1)})
 		logger = RecordingLogger()
 		self._seed_blocks(self.puller.symbol_db, [1])
 		self.puller.symbol_db.upsert_sync_state(create_sync_state(chain_height=1, last_synced_height=1))
@@ -960,8 +964,8 @@ class SymbolPullerPerformanceTest(SymbolPullerTestBase):
 		event = logger.events[0]
 		self.assertEqual('symbol_sync_failed', event['event'])
 		self.assertEqual(0, event['batch_count'])
-		self.assertEqual(3, event['http_attempt_count'])
-		self.assertEqual(0, event['db_commit_count'])
+		self.assertEqual(4, event['http_attempt_count'])
+		self.assertEqual(1, event['db_commit_count'])
 		self.assertEqual('finalization_lock_cleanup', event['failed_phase'])
 
 	def test_sync_block_headers_reports_sync_state_write_failure_phase_after_batch(self):
