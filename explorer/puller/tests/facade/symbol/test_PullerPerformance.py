@@ -12,12 +12,12 @@ from tests.test.SymbolMosaicTestUtils import MOSAIC_ID, create_mosaic_item
 from tests.test.SymbolNamespaceTestUtils import NAMESPACE_ROOT_ID, create_namespace_item
 from tests.test.SymbolTestConstants import RECIPIENT_ADDRESS, SIGNER_ADDRESS
 
+from .adaptive_batch_test_utils import create_adaptive_batch_fixture
 from .puller_test_utils import (
 	DelegatingSymbolDatabase,
 	FakeConnector,
 	NoOpRateLimiter,
 	SymbolPullerTestBase,
-	create_adaptive_batch_fixture,
 	create_amount_statement_item,
 	create_complete_aggregate_pair,
 	create_multi_batch_block_pages,

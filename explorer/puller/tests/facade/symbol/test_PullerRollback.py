@@ -1,6 +1,7 @@
 # pylint: disable=duplicate-code,too-many-lines
 import asyncio
 
+from common.tests.AccountRefreshTestUtils import seed_account_refresh_state
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address
@@ -121,7 +122,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		account_row, mosaic_rows = create_account_row(
 			create_account_item(BENEFICIARY_ADDRESS), self.puller.symbol_facade.network, 2, NATIVE_MOSAIC_ID, 6)
 		database.upsert_account_current_state(account_row, mosaic_rows)
-		database.upsert_account_refresh_state({
+		seed_account_refresh_state(database, {
 			'status': 'healthy', 'last_successful_run_id': 'range-read-failure', 'last_completed_height': 3
 		})
 		database.upsert_sync_state(create_sync_state())

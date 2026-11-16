@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from unittest.mock import AsyncMock, patch
 
+from common.tests.AccountRefreshTestUtils import seed_account_refresh_state
 from common.tests.PostgresTestUtils import drop_symbol_block_tables_if_present
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import MosaicSupplyChangeAction, ReceiptType, TransactionType
@@ -48,6 +49,7 @@ from tests.test.SymbolNamespaceTestUtils import (
 from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS, SIGNER_ADDRESS
 from tests.test.SymbolTransactionTestUtils import create_transaction_entry
 
+from .adaptive_batch_test_utils import create_adaptive_batch_fixture
 from .puller_test_utils import (
 	COMPLETE_BATCH_STATE_DURABLE_TABLES,
 	COMPLETE_BATCH_STATE_SUPPLEMENTAL_TABLES,
@@ -61,7 +63,6 @@ from .puller_test_utils import (
 	ResponseConnector,
 	SymbolPullerTestBase,
 	create_account_item,
-	create_adaptive_batch_fixture,
 	create_amount_statement_item,
 	create_artifact_expiry_statement,
 	create_complete_aggregate_pair,
@@ -117,7 +118,7 @@ def create_uncheckpointed_sync_state(dirty_state_from_height, **overrides):
 
 def seed_healthy_refresh_state(database, run_id, last_completed_height):
 	"""Seeds one published healthy account refresh generation."""
-	database.upsert_account_refresh_state({
+	seed_account_refresh_state(database, {
 		'status': 'healthy', 'last_successful_run_id': run_id, 'last_completed_height': last_completed_height
 	})
 
