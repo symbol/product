@@ -141,3 +141,31 @@ def test_account_metadata_wrong_network(metadata_route):
 	assert 400 == response.status_code
 	assert {'status': 400, 'message': 'Invalid address'} == response.json
 	facade.try_get_related_metadata.assert_not_called()
+
+
+@pytest.mark.parametrize('path,query,message', [
+	('/api/symbol/account/invalid/metadata', 'unknown=1&limit=bad&offset=bad&metadataType=bad', 'Unsupported query parameter: unknown'),
+	('/api/symbol/account/invalid/metadata', 'limit=bad&offset=bad&metadataType=bad', 'limit must be an integer'),
+	('/api/symbol/account/invalid/metadata', 'offset=bad&metadataType=bad', 'offset must be an integer'),
+	('/api/symbol/account/invalid/metadata', 'metadataType=bad', 'Invalid address'),
+	(f'/api/symbol/account/{ADDRESS}/metadata', 'metadataType=bad', 'metadataType must be an integer'),
+	('/api/symbol/mosaic/invalid/metadata', 'unknown=1&limit=bad&offset=bad', 'Unsupported query parameter: unknown'),
+	('/api/symbol/mosaic/invalid/metadata', 'limit=bad&offset=bad', 'limit must be an integer'),
+	('/api/symbol/mosaic/invalid/metadata', 'offset=bad', 'offset must be an integer'),
+	('/api/symbol/mosaic/invalid/metadata', '', 'Invalid mosaic'),
+	('/api/symbol/namespace/INVALID/metadata', 'unknown=1&limit=bad&offset=bad', 'Unsupported query parameter: unknown'),
+	('/api/symbol/namespace/INVALID/metadata', 'limit=bad&offset=bad', 'limit must be an integer'),
+	('/api/symbol/namespace/INVALID/metadata', 'offset=bad', 'offset must be an integer'),
+	('/api/symbol/namespace/INVALID/metadata', '', 'Invalid namespace')
+])
+def test_metadata_validation_priority(metadata_route, path, query, message):
+	# Arrange:
+	client, facade = metadata_route
+
+	# Act:
+	response = client.get(f'{path}?{query}')
+
+	# Assert:
+	assert 400 == response.status_code
+	assert {'status': 400, 'message': message} == response.json
+	facade.try_get_related_metadata.assert_not_called()

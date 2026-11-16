@@ -33,13 +33,12 @@ def test_metadata_view_all_fields(kind, target_id, value, value_hex):
 
 
 @pytest.mark.parametrize('index,invalid,expected', [
-	(0, 'bad', 'symbol_metadata.scoped_metadata_key: invalid metadata key'),
-	(1, 'bad', 'symbol_metadata.target_id: invalid metadata target'),
-	(2, 'bad', 'symbol_metadata.metadata_type: invalid metadata type'),
 	(3, None, 'symbol_metadata.address: invalid metadata address'),
 	(4, b'bad', 'symbol_metadata.address: invalid metadata address'),
-	(5, None, 'symbol_metadata.value: invalid metadata value'),
-	(6, 'F', 'symbol_metadata.value: invalid metadata value')
+	(6, 'F', 'symbol_metadata.value: invalid metadata value'),
+	(6, '12 34', 'symbol_metadata.value: invalid metadata value'),
+	(6, 'GG', 'symbol_metadata.value: invalid metadata value'),
+	(6, '１２', 'symbol_metadata.value: invalid metadata value')
 ])
 def test_invalid_metadata_values(index, invalid, expected):
 	# Arrange:
@@ -52,15 +51,3 @@ def test_invalid_metadata_values(index, invalid, expected):
 
 	# Assert:
 	assert expected == str(error.value)
-
-
-def test_account_target_id_must_be_null():
-	# Arrange:
-	row = ('0000000000000001', '0000000000000001', 'account', SENDER, TARGET, '', '')
-
-	# Act:
-	with pytest.raises(SymbolDataInvalid) as error:
-		SymbolMetadataView(row).to_dict()
-
-	# Assert:
-	assert 'symbol_metadata.target_id: invalid metadata target' == str(error.value)

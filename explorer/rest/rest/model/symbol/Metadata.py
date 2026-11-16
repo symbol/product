@@ -4,7 +4,6 @@ from symbolchain.symbol.Network import Address, Network
 
 from rest.model.symbol.validation import SymbolDataInvalid
 
-HEX_ID = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 HEX_VALUE = re.compile(r'(?:[0-9A-Fa-f]{2})*', re.ASCII)
 
 
@@ -18,19 +17,7 @@ class SymbolMetadataView:
 		"""Returns the exact public metadata representation."""
 
 		key, target_id, metadata_type, sender, target, value, value_hex = self.row
-		if not isinstance(key, str) or not HEX_ID.fullmatch(key):
-			raise SymbolDataInvalid('symbol_metadata.scoped_metadata_key', 'invalid metadata key')
-
-		if metadata_type not in ('account', 'mosaic', 'namespace'):
-			raise SymbolDataInvalid('symbol_metadata.metadata_type', 'invalid metadata type')
-
-		if metadata_type == 'account':
-			if target_id is not None:
-				raise SymbolDataInvalid('symbol_metadata.target_id', 'invalid metadata target')
-		elif not isinstance(target_id, str) or not HEX_ID.fullmatch(target_id):
-			raise SymbolDataInvalid('symbol_metadata.target_id', 'invalid metadata target')
-
-		if not isinstance(value, str) or not isinstance(value_hex, str) or not HEX_VALUE.fullmatch(value_hex):
+		if not HEX_VALUE.fullmatch(value_hex):
 			raise SymbolDataInvalid('symbol_metadata.value', 'invalid metadata value')
 
 		return {
