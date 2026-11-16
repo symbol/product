@@ -94,7 +94,7 @@ def create_db_config(config_dir, db_config=None, include_symbol_db=True):
 	return db_config_path
 
 
-def create_symbol_puller(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+def create_symbol_puller(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
 	db_config_path,
 	network_type='mainnet',
 	request_timeout_seconds=10,
@@ -103,7 +103,11 @@ def create_symbol_puller(  # pylint: disable=too-many-arguments,too-many-positio
 	rate_limiter=None,
 	time_source=None,
 	performance_logger=None,
-	max_transactions_per_batch=DEFAULT_MAX_TRANSACTIONS_PER_BATCH
+	max_transactions_per_batch=DEFAULT_MAX_TRANSACTIONS_PER_BATCH,
+	retention_time_source=None,
+	retention_time_budget_seconds=None,
+	cleanup_logger=None,
+	retention_logger=None
 ):
 	node_config = SymbolNodeConfiguration.from_url(
 		node_url,
@@ -116,6 +120,14 @@ def create_symbol_puller(  # pylint: disable=too-many-arguments,too-many-positio
 		puller_kwargs['time_source'] = time_source
 	if performance_logger is not None:
 		puller_kwargs['performance_logger'] = performance_logger
+	if retention_time_source is not None:
+		puller_kwargs['retention_time_source'] = retention_time_source
+	if retention_time_budget_seconds is not None:
+		puller_kwargs['retention_time_budget_seconds'] = retention_time_budget_seconds
+	if cleanup_logger is not None:
+		puller_kwargs['cleanup_logger'] = cleanup_logger
+	if retention_logger is not None:
+		puller_kwargs['retention_logger'] = retention_logger
 	if connector is not None:
 		puller_kwargs['connector_factory'] = lambda _endpoint, _timeout_seconds, _connection_limit: connector
 
@@ -766,6 +778,10 @@ class BoundedNamespaceDetailConnector(BoundedDetailConnector):
 @pytest.mark.usefixtures('database_config')
 class SymbolPullerTestBase(TestCase):
 	db_config = None  # pylint: disable=invalid-name
+	retention_time_source = None  # pylint: disable=invalid-name
+	retention_time_budget_seconds = None  # pylint: disable=invalid-name
+	cleanup_logger = None  # pylint: disable=invalid-name
+	retention_logger = None  # pylint: disable=invalid-name
 
 	def setUp(self):
 		self.exit_stack = ExitStack()
@@ -774,10 +790,30 @@ class SymbolPullerTestBase(TestCase):
 			tempfile.TemporaryDirectory()
 		)
 		self.config_ini = create_db_config(self.config_dir, self.db_config)
-		self.puller = create_symbol_puller(self.config_ini, 'testnet')
+		self.puller = create_symbol_puller(
+			self.config_ini,
+			'testnet',
+			retention_time_source=self.retention_time_source,
+			retention_time_budget_seconds=self.retention_time_budget_seconds,
+			cleanup_logger=self.cleanup_logger,
+			retention_logger=self.retention_logger
+		)
 		self.exit_stack.enter_context(self.puller.symbol_db)
 		drop_symbol_block_tables_if_present(self.puller.symbol_db)
 		self.puller.symbol_db.create_tables()
+
+	def _set_retention_time_budget(self, seconds):
+		"""Construct a separate test Puller with an explicitly injected retention budget."""
+
+		self.puller = create_symbol_puller(
+			self.config_ini,
+			'testnet',
+			retention_time_source=self.retention_time_source,
+			retention_time_budget_seconds=seconds,
+			cleanup_logger=self.cleanup_logger,
+			retention_logger=self.retention_logger
+		)
+		self.exit_stack.enter_context(self.puller.symbol_db)
 
 	@staticmethod
 	def _fetch_block_heights(database):

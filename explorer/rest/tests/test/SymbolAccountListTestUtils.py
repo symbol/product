@@ -62,8 +62,10 @@ def seed_refresh_run(  # pylint: disable=too-many-arguments,too-many-positional-
 	puller_database, refresh_run_id, entries, native_mosaic_id=NATIVE_MOSAIC_ID,
 	completed_at=REFRESH_COMPLETED_AT, completed_height=100):
 	"""Writes and finalizes one complete account-refresh run."""
-	puller_database.upsert_account_refresh_page(entries, last_scanned_page=1)
-	puller_database.finalize_account_refresh(refresh_run_id, native_mosaic_id, completed_height, completed_at)
+	with puller_database.workflow_lock():
+		puller_database.begin_account_refresh(refresh_run_id, completed_at)
+		puller_database.upsert_account_refresh_page(entries, last_scanned_page=1)
+		puller_database.finalize_account_refresh(refresh_run_id, native_mosaic_id, completed_height, completed_at)
 
 
 def seed_current_mosaic(puller_database, mosaic_id, divisibility=0, owner_address=None):
