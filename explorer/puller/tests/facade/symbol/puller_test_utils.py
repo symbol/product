@@ -1,6 +1,7 @@
 import asyncio
 import re
 import tempfile
+from collections import namedtuple
 from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from unittest import TestCase
@@ -13,8 +14,10 @@ from symbolchain.symbol.Network import Address, Network
 
 from puller.facade.SymbolPuller import DEFAULT_MAX_TRANSACTIONS_PER_BATCH, MAX_PAGE_SIZE, DatabaseConfiguration, SymbolPuller
 from puller.model.symbol.Block import create_block_row
+from tests.test.SymbolDatabaseTestUtils import fetch_normalized_sync_state
 from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS, RECIPIENT_ADDRESS, SIGNER_PUBLIC_KEY
 
+PreservedState = namedtuple('PreservedState', ['tables', 'sync_state', 'refresh_state'])
 NODE_URL = 'http://127.0.0.1:3000'
 NATIVE_MOSAIC_ID = '72C0212E67A08BCE'
 NATIVE_MOSAIC_DIVISIBILITY = 6
@@ -338,56 +341,6 @@ def create_transaction_page(items, page_number=1, page_size=MAX_PAGE_SIZE):
 	}
 
 
-def create_adaptive_batch_fixture(
-	total_transaction_counts,
-	transaction_ranges,
-	top_level_counts=None,
-	transactions_by_height=None,
-	failing_transaction_range=None
-):
-	"""Creates deterministic block and response pages for adaptive batch tests."""
-	top_level_counts = top_level_counts or total_transaction_counts
-	transactions_by_height = transactions_by_height or {}
-	blocks = [
-		create_node_block(
-			height,
-			transactions_count=top_level_counts[height - 1],
-			total_transactions_count=total_transaction_counts[height - 1])
-		for height in range(1, len(total_transaction_counts) + 1)
-	]
-	transactions_by_height = {
-		height: list(transactions_by_height.get(height, []))
-		for height in range(1, len(blocks) + 1)
-	}
-	for height, transaction_count in enumerate(top_level_counts, 1):
-		if transactions_by_height[height]:
-			continue
-
-		transactions_by_height[height] = [
-			create_node_transaction(
-				height,
-				transaction_hash=f'{height:060X}{index:04X}',
-				transaction_id=f'transaction-{height}-{index}',
-				block_index=index)
-			for index in range(transaction_count)
-		]
-
-	transaction_pages = {}
-	statement_pages = {}
-	for start_height, end_height in transaction_ranges:
-		transaction_pages[transaction_path(start_height, end_height)] = create_transaction_page([
-			transaction
-			for height in range(start_height, end_height + 1)
-			for transaction in transactions_by_height[height]
-		])
-		statement_pages[statement_path(start_height, end_height)] = {'data': []}
-
-	if failing_transaction_range is not None:
-		transaction_pages[transaction_path(*failing_transaction_range)] = RuntimeError('adaptive transaction fetch failed')
-
-	return blocks, transaction_pages, statement_pages
-
-
 def statement_path(start_height, end_height, page_number=1):
 	return (
 		f'statements/transaction?fromHeight={start_height}&toHeight={end_height}'
@@ -581,9 +534,31 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 			return self.network_properties
 		if f'mosaics/{NATIVE_MOSAIC_ID}' == url_path:
 			return create_mosaic_definition()
+		if url_path.startswith('mosaics/'):
+			return self._get_mosaic_response(url_path.removeprefix('mosaics/'))
 		if url_path.startswith('blocks/'):
 			height = int(url_path.removeprefix('blocks/'))
-			return self.block_by_height[height]
+			response = self.block_by_height.get(height)
+			if response is None:
+				response = next((
+					block
+					for page in self.pages.values()
+					for block in page
+					if int(block['block']['height']) == height
+				), None)
+			if response is None:
+				raise KeyError(height)
+			if isinstance(response, Exception):
+				raise response
+
+			return response
+		if url_path.startswith('accounts/'):
+			address_text = url_path.removeprefix('accounts/')
+			response = self.account_by_address.get(address_text)
+			return response if response is not None else {
+				'code': 'ResourceNotFound',
+				'message': f'no resource exists with id {address_text}'
+			}
 		if url_path.startswith('blocks?pageSize=100&offset='):
 			offset = int(url_path.split('offset=')[1].split('&')[0])
 			return {
@@ -653,12 +628,17 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		self.post_payloads_list.append(request_payload)
 		self.post_requests.append((url_path, request_payload))
 		if 'accounts' == url_path:
-			return [
-				self.account_by_address.get(
+			items = []
+			for address_text in request_payload['addresses']:
+				item = self.account_by_address.get(
 					address_text,
 					create_account_item(address_hex=Network.TESTNET.address_class(address_text).bytes.hex().upper()))
-				for address_text in request_payload['addresses']
-			]
+				if isinstance(item, Exception):
+					raise item
+				if item is not None:
+					items.append(item)
+
+			return items
 		if 'namespaces/names' == url_path:
 			return [
 				{'id': namespace_id, 'name': self.namespace_names[namespace_id]}
@@ -675,11 +655,48 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 				item = self.mosaics_by_id[mosaic_id]
 				if isinstance(item, Exception):
 					raise item
-				items.append(item)
+				if item is not None:
+					items.append(item)
 
 			return items
 
 		raise KeyError(url_path)
+
+	def _get_mosaic_response(self, mosaic_id):
+		response = self.mosaics_by_id[mosaic_id]
+		if isinstance(response, Exception):
+			raise response
+
+		return response if response is not None else {
+			'code': 'ResourceNotFound',
+			'message': f'no resource exists with id {mosaic_id}'
+		}
+
+
+class ChainInfoOverrideConnector(FakeConnector):
+	"""Overrides or omits chain-info fields after the default response is built."""
+
+	def __init__(
+		self, *args, chain_fields=None, omitted_chain_fields=(), finalized_fields=None, omitted_finalized_fields=(), **kwargs
+	):
+		super().__init__(*args, **kwargs)
+		self.chain_fields, self.omitted_chain_fields = chain_fields or {}, omitted_chain_fields
+		self.finalized_fields, self.omitted_finalized_fields = finalized_fields or {}, omitted_finalized_fields
+
+	async def get(self, url_path, *args):
+		response = await super().get(url_path, *args)
+		if 'chain/info' == url_path:
+			for field_name in self.omitted_chain_fields:
+				response.pop(field_name)
+
+			response.update(self.chain_fields)
+			finalized_block = response['latestFinalizedBlock']
+			for field_name in self.omitted_finalized_fields:
+				finalized_block.pop(field_name)
+
+			finalized_block.update(self.finalized_fields)
+
+		return response
 
 
 class BoundedDetailConnector(FakeConnector):
@@ -836,6 +853,19 @@ class SymbolPullerTestBase(TestCase):
 	def _fetch_complete_batch_state(self):
 		table_names = tuple(table_name for group in COMPLETE_BATCH_STATE_TABLE_GROUPS for table_name in group)
 		return self._fetch_table_state(table_names)
+
+	def _capture_preserved_state(self):
+		"""Captures complete batch tables without the sync row, plus sync and refresh state."""
+		tables = self._fetch_complete_batch_state()
+		tables.pop('symbol_sync_state')
+		return PreservedState(tables, fetch_normalized_sync_state(self.puller.symbol_db), self.puller.symbol_db.get_account_refresh_state())
+
+	def _assert_preserved_state(self, before, expected_sync_state):
+		"""Asserts tables and refresh state are unchanged and the sync state equals the explicit expectation."""
+		after = self._capture_preserved_state()
+		self.assertEqual(before.tables, after.tables)
+		self.assertEqual(before.refresh_state, after.refresh_state)
+		self.assertEqual(expected_sync_state, after.sync_state)
 
 	@staticmethod
 	def _fetch_block_hash(database, height):
