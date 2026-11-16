@@ -38,8 +38,12 @@ const deadlineFromDTO = (timestamp, deadline) => {
 };
 
 const transferTokensFromDTO = (transaction, networkCurrency, tokenInfos) => {
-	if (transaction.mosaics?.length)
-		return tokenListFromDTO(transaction.mosaics, tokenInfos);
+	if (transaction.mosaics?.length) {
+		// The native currency (XEM) is not included in the mosaics info list. Add it manually here for resolution.
+		const tokenInfosWithNative = { ...tokenInfos, [networkCurrency.id]: networkCurrency };
+
+		return tokenListFromDTO(transaction.mosaics, tokenInfosWithNative, transaction.amount || 0);
+	}
 
 	const { id, name, divisibility } = networkCurrency;
 
@@ -64,7 +68,7 @@ const resolveTransferAmount = (transactionBody, nativeTokenAmount, currentAccoun
 	if (isIncoming)
 		return `${nativeTokenAmount}`;
 
-	return `${-nativeTokenAmount}`;
+	return `-${nativeTokenAmount}`;
 };
 
 const mapMosaicProperties = properties => ({

@@ -79,19 +79,24 @@ export const tokenInfoFromDTO = mosaicDefinitionDTO => {
 };
 
 /**
- * Converts a list of raw mosaic DTOs to normalized Token objects using a tokenInfos map.
+ * Converts a list of raw mosaic DTOs to normalized Token objects using a tokenInfos map. With an amount multiplier,
+ * every amount is multiplied.
  * @param {Array} mosaicsDTO - The raw mosaic DTOs (each with `mosaicId`/`id` and `quantity`/`amount`).
  * @param {Record<string, TokenInfo>} tokenInfos - The map of TokenInfo keyed by token id string (from fetchTokenInfos).
+ * @param {bigint|number|string} [amountMultiplier] - The transfer amount multiplier in absolute units.
  * @returns {Array.<Token | RawToken>} The normalized token list.
  */
-export const tokenListFromDTO = (mosaicsDTO, tokenInfos) => {
+export const tokenListFromDTO = (mosaicsDTO, tokenInfos, amountMultiplier) => {
 	if (!mosaicsDTO || !tokenInfos)
 		throw new ApiError('Failed to format tokens. Missing required parameters.');
 
 	return mosaicsDTO.map(mosaicDTO => {
 		const tokenId = tokenIdFromRaw(mosaicDTO.mosaicId || mosaicDTO.id);
 		const tokenInfo = tokenInfos[tokenId];
-		const rawAmount = mosaicDTO.quantity ?? mosaicDTO.amount;
+		const quantity = mosaicDTO.quantity ?? mosaicDTO.amount;
+		const rawAmount = amountMultiplier === undefined
+			? quantity
+			: (BigInt(amountMultiplier) * BigInt(quantity) / 1_000_000n).toString();
 
 		// Without resolved token info the relative amount and metadata are unavailable.
 		if (!tokenInfo) {

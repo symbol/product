@@ -51,7 +51,7 @@ const resolveTransferAmount = (transactionBody, nativeTokenAmount, currentAccoun
 	if (isIncoming)
 		return `${nativeTokenAmount}`;
 
-	return `${-nativeTokenAmount}`;
+	return `-${nativeTokenAmount}`;
 };
 
 const mapTransferTokens = (transaction, networkCurrency, tokenInfos) => {
@@ -60,8 +60,10 @@ const mapTransferTokens = (transaction, networkCurrency, tokenInfos) => {
 			mosaicId: mapTokenId(mosaic.mosaicId),
 			quantity: Number(mosaic.amount.value)
 		}));
+		// The native currency (XEM) is not included in the mosaics info list. Add it manually here for resolution.
+		const tokenInfosWithNative = { ...tokenInfos, [networkCurrency.id]: networkCurrency };
 
-		return tokenListFromDTO(mosaicsDTO, tokenInfos);
+		return tokenListFromDTO(mosaicsDTO, tokenInfosWithNative, transaction.amount.value);
 	}
 
 	const { id, name, divisibility } = networkCurrency;
