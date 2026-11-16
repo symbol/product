@@ -781,13 +781,20 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 	def test_can_get_unconfirmed_transactions(self):
 		# Arrange:
 		transactions = [get_unconfirmed_transaction(TransactionType.TRANSFER)]
-
-		view = create_autospec(SymbolTransactionView, instance=True, spec_set=True)
-		view.to_dict.return_value = {'transactionType': 'TRANSFER', 'value': []}
-
 		symbol_db = create_autospec(SymbolDatabase, instance=True, spec_set=True)
-		symbol_db.get_unconfirmed_transactions.return_value = [view]
-
+		symbol_db.get_unconfirmed_transactions.return_value = [TransactionViewRecord(
+			transaction_hash='01' * 32,
+			aggregate_hash=None,
+			embedded_index=None,
+			transaction_type=TransactionType.TRANSFER,
+			from_address='TDPO5E6N2BZZNRNDLHHQ2FC3D6RBVUEOXEO26YY',
+			to_address='TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
+			payload=[],
+			mosaics=(TransactionMosaicRecord(NATIVE_MOSAIC_INFO.id, 123000000, 6),),
+			deadline=datetime(2022, 11, 2, 7, 25, 23),
+			signature='AB' * 64,
+			size=176,
+			version=1)]
 		facade = _create_facade_with_database(symbol_db)
 		facade.symbol_connector.get_unconfirmed_transactions = create_autospec(
 			facade.symbol_connector.get_unconfirmed_transactions, return_value=transactions)
@@ -796,7 +803,20 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		result = asyncio.run(facade.get_unconfirmed_transactions())
 
 		# Assert:
-		self.assertEqual([{'transactionType': 'TRANSFER', 'value': []}], result)
+		self.assertEqual([{
+			'transactionHash': '01' * 32,
+			'transactionType': 'TRANSFER',
+			'fromAddress': 'TDPO5E6N2BZZNRNDLHHQ2FC3D6RBVUEOXEO26YY',
+			'toAddress': 'TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
+			'value': [{'id': NATIVE_MOSAIC_INFO.id, 'name': NATIVE_MOSAIC_INFO.id, 'amount': 123}],
+			'embeddedTransactions': None,
+			'fee': None,
+			'height': 0,
+			'timestamp': None,
+			'deadline': '2022-11-02 07:25:23',
+			'signature': 'AB' * 64,
+			'size': 176,
+			'version': 1,
+		}], result)
 		facade.symbol_connector.get_unconfirmed_transactions.assert_awaited_once_with()
 		symbol_db.get_unconfirmed_transactions.assert_called_once_with(transactions, Network.TESTNET)
-		view.to_dict.assert_called_once_with()
