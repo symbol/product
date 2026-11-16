@@ -21,7 +21,7 @@ class SymbolNamespaceView:  # pylint: disable=too-many-instance-attributes
 	def to_dict(self):
 		"""Formats the namespace using the common NEM field names.
 
-		Registration fields still describe the node's lifetime start, not its last renewal.
+		Registration fields still describe the namespace's lifetime start, not its last renewal.
 		"""
 
 		return {
