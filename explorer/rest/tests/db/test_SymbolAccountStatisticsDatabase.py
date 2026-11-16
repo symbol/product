@@ -5,8 +5,8 @@ from pathlib import Path
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
-from common.tests.AccountRefreshTestUtils import seed_account_refresh_state
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
+from common.tests.AccountRefreshTestUtils import seed_account_refresh_state
 from flask import Flask
 from psycopg2 import Error as PsycopgError
 from symbolchain.symbol.Network import Address, Network
