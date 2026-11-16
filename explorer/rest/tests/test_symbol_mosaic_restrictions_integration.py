@@ -1,4 +1,5 @@
 import configparser
+import logging
 import tempfile
 from pathlib import Path
 
@@ -233,24 +234,58 @@ def test_http_target_address_filter():
 	] == response.json
 
 
-def test_http_invalid_rules():
+@pytest.mark.parametrize('rules,path,reason', [
+	([{'key': 'bad', 'value': '1'}], 'restrictions[0].key', 'expected uint64 decimal string'),
+	([{'key': '1'}], 'restrictions[0].value', 'field is required'),
+	([1], 'restrictions[0]', 'expected object'),
+	({}, 'restrictions', 'expected array')
+])
+def test_http_invalid_rules(caplog, rules, path, reason):
 	# Arrange:
 	with symbol_test_database(SYNC) as (config, puller):
-		insert_restriction(puller, 1, MOSAIC_ID, 'address', ADDRESS, [{'key': 'bad', 'value': '1'}])
+		insert_restriction(puller, 1, MOSAIC_ID, 'address', ADDRESS, rules)
 		client = _create_client(config)
 		try:
+			caplog.set_level(logging.ERROR, logger='pythonConfig')
+			caplog.clear()
 			# Act:
 			response = client.get('/api/symbol/mosaic-restrictions')
+			error_messages = [record.getMessage() for record in caplog.records if record.levelno >= logging.ERROR]
 		finally:
 			client.application.extensions['symbol_database'].close()
 
 	# Assert:
 	assert 503 == response.status_code
 	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+	assert [f'Invalid Symbol backend data at mosaic_restrictions[{"01" * 32}].{path}: {reason}'] == error_messages
+
+
+def test_http_invalid_hash_log(caplog):
+	# Arrange:
+	with symbol_test_database(SYNC) as (config, puller):
+		insert_restriction(puller, 1, MOSAIC_ID, 'address', ADDRESS, [])
+		with puller.connection.cursor() as cursor:
+			cursor.execute('UPDATE symbol_mosaic_restrictions SET composite_hash = %s', (b'bad',))
+		puller.connection.commit()
+		client = _create_client(config)
+		try:
+			caplog.set_level(logging.ERROR, logger='pythonConfig')
+			caplog.clear()
+			# Act:
+			response = client.get('/api/symbol/mosaic-restrictions')
+			error_messages = [record.getMessage() for record in caplog.records if record.levelno >= logging.ERROR]
+		finally:
+			client.application.extensions['symbol_database'].close()
+
+	# Assert:
+	assert 503 == response.status_code
+	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == response.json
+	assert ['Invalid Symbol backend data at mosaic_restrictions.composite_hash: invalid byte length'] == error_messages
 
 
 def test_http_preserves_long_u64_strings():
 	# Arrange:
+	# Puller accepts arbitrary leading zeroes; REST must preserve them in the response.
 	key = '0' * 5000 + '18446744073709551615'
 	value = '0' * 5000 + '18446744073709551614'
 	with symbol_test_database(SYNC) as (config, puller):

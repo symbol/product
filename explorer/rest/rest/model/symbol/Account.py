@@ -5,14 +5,13 @@ from symbolchain.CryptoTypes import PublicKey
 from symbolchain.symbol.Network import Address
 
 from rest.model.symbol.format import format_amount
-from rest.model.symbol.validation import SymbolDataInvalid
+from rest.model.symbol.validation import UINT64_MAX, SymbolDataInvalid
 
 ACCOUNT_TYPE_VALUES = frozenset(['unlinked', 'main', 'remote', 'remoteUnlinked'])
 HEX_64_PATTERN = re.compile(r'[0-9A-Fa-f]{64}', re.ASCII)
 MOSAIC_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 DECIMAL_INTEGER_PATTERN = re.compile(r'[0-9]+', re.ASCII)
 UINT32_MAX = 4294967295
-UINT64_MAX = 18446744073709551615
 INT64_MAX = 9223372036854775807
 INT32_MAX = 2147483647
 
