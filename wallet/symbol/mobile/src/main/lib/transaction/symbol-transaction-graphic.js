@@ -53,7 +53,7 @@ export const createSymbolTransactionGraphicContent = (transaction, options) => {
 		return {
 			target: { type: TransactionGraphicAvatarType.ACCOUNT, value: transaction.sourceAddress },
 			arrowCaptions: [
-				{ type: TransactionGraphicCaptionType.ICON, value: 'tokens' },
+				{ type: TransactionGraphicCaptionType.ICON, value: 'token-custom' },
 				{ type: TransactionGraphicCaptionType.TEXT, value: transaction.tokenId }
 			]
 		};
