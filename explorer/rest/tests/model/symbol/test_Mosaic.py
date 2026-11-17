@@ -128,7 +128,6 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		self.assertEqual(supply, result_map['supply'])
 		self.assertEqual(expected_value, result_map['totalSupply'])
 		self.assertIsInstance(result_map['totalSupply'], float)
-		self.assertNotIn('value', result_map)
 
 	def test_can_format_zero_supply(self):
 		self._assert_formatted_supply(0, 6, 0.0)

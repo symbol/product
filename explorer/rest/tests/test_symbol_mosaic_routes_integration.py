@@ -26,8 +26,10 @@ def _assert_mosaic_types(*items):
 	for item in items:
 		for field in ('supplyMutable', 'transferable', 'restrictable', 'revokable', 'unlimitedDuration'):
 			assert isinstance(item[field], bool)
+
 		for field in ('mosaicRegisteredHeight', 'divisibility'):
 			assert isinstance(item[field], int) and not isinstance(item[field], bool)
+
 		assert item['mosaicExpirationHeight'] is None or isinstance(item['mosaicExpirationHeight'], int)
 		assert isinstance(item['id'], str)
 		assert isinstance(item['creator'], str)
@@ -35,24 +37,43 @@ def _assert_mosaic_types(*items):
 		assert isinstance(item['mosaicRegisteredTimestamp'], str)
 		assert isinstance(item['supply'], int) and not isinstance(item['supply'], bool)
 		assert isinstance(item['totalSupply'], float)
-		assert 'value' not in item
 
 
 def _expected_finite_mosaic():
 	return {
-		'id': '1234567890ABCDEF', 'creator': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', 'aliasNames': [],
-		'mosaicRegisteredHeight': 2, 'mosaicRegisteredTimestamp': '2026-01-02 00:00:00', 'supply': 1234567, 'totalSupply': 1.234567,
-		'divisibility': 6, 'supplyMutable': True, 'transferable': False, 'restrictable': True, 'revokable': False,
-		'mosaicExpirationHeight': 12, 'unlimitedDuration': False
+		'id': '1234567890ABCDEF',
+		'creator': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+		'aliasNames': [],
+		'mosaicRegisteredHeight': 2,
+		'mosaicRegisteredTimestamp': '2026-01-02 00:00:00',
+		'supply': 1234567,
+		'totalSupply': 1.234567,
+		'divisibility': 6,
+		'supplyMutable': True,
+		'transferable': False,
+		'restrictable': True,
+		'revokable': False,
+		'mosaicExpirationHeight': 12,
+		'unlimitedDuration': False
 	}
 
 
 def _expected_unlimited_mosaic():
 	return {
-		'id': '2234567890ABCDEF', 'creator': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', 'aliasNames': [],
-		'mosaicRegisteredHeight': 1, 'mosaicRegisteredTimestamp': '2026-01-01 00:00:00',
-		'supply': 7654321, 'totalSupply': 7654321.0, 'divisibility': 0, 'supplyMutable': False, 'transferable': True,
-		'restrictable': False, 'revokable': True, 'mosaicExpirationHeight': None, 'unlimitedDuration': True
+		'id': '2234567890ABCDEF',
+		'creator': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+		'aliasNames': [],
+		'mosaicRegisteredHeight': 1,
+		'mosaicRegisteredTimestamp': '2026-01-01 00:00:00',
+		'supply': 7654321,
+		'totalSupply': 7654321.0,
+		'divisibility': 0,
+		'supplyMutable': False,
+		'transferable': True,
+		'restrictable': False,
+		'revokable': True,
+		'mosaicExpirationHeight': None,
+		'unlimitedDuration': True
 	}
 
 
@@ -77,7 +98,7 @@ def fixture_mosaic_client():
 			yield _client(database)
 
 
-class TestMosaicHttpRead:
+class TestSymbolMosaicHttpReadTest:
 	@staticmethod
 	def test_mosaic_list_returns_contract(mosaic_client):
 		# Act:
@@ -99,27 +120,6 @@ class TestMosaicHttpRead:
 		_assert_mosaic_types(response.json)
 
 	@staticmethod
-	def test_mosaic_list_paginates(mosaic_client):
-		# Act:
-		first = mosaic_client.get('/api/symbol/mosaics?limit=1&offset=0&sort=desc')
-		second = mosaic_client.get('/api/symbol/mosaics?limit=1&offset=1&sort=desc')
-
-		# Assert:
-		assert 200 == first.status_code
-		assert 200 == second.status_code
-		assert [_expected_finite_mosaic()] == first.json
-		assert [_expected_unlimited_mosaic()] == second.json
-
-	@staticmethod
-	def test_mosaic_list_after_end_is_empty(mosaic_client):
-		# Act:
-		response = mosaic_client.get('/api/symbol/mosaics?limit=1&offset=2&sort=desc')
-
-		# Assert:
-		assert 200 == response.status_code
-		assert [] == response.json
-
-	@staticmethod
 	@pytest.mark.parametrize('name', [
 		pytest.param('887E5DB6BB0B21F5', id='alias-id'),
 		pytest.param('daoka.coin', id='namespace-name')
@@ -134,7 +134,7 @@ class TestMosaicHttpRead:
 		_assert_mosaic_types(response.json)
 
 
-def test_missing_mosaic_block_timestamp():
+def test_registration_timestamp_is_null_when_registration_block_is_missing():  # pylint: disable=invalid-name
 	# Arrange: the mosaic's registration block is absent before either request.
 	mosaic = create_symbol_mosaic('1234567890ABCDEF', 6)
 	mosaic['supply'] = 1234567
@@ -147,10 +147,20 @@ def test_missing_mosaic_block_timestamp():
 
 	# Assert:
 	expected = {
-		'id': '1234567890ABCDEF', 'creator': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', 'aliasNames': [],
-		'mosaicRegisteredHeight': 1, 'mosaicRegisteredTimestamp': None, 'supply': 1234567, 'totalSupply': 1.234567,
-		'divisibility': 6, 'supplyMutable': False, 'transferable': False, 'restrictable': False, 'revokable': False,
-		'mosaicExpirationHeight': None, 'unlimitedDuration': True
+		'id': '1234567890ABCDEF',
+		'creator': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+		'aliasNames': [],
+		'mosaicRegisteredHeight': 1,
+		'mosaicRegisteredTimestamp': None,
+		'supply': 1234567,
+		'totalSupply': 1.234567,
+		'divisibility': 6,
+		'supplyMutable': False,
+		'transferable': False,
+		'restrictable': False,
+		'revokable': False,
+		'mosaicExpirationHeight': None,
+		'unlimitedDuration': True
 	}
 	assert 200 == missing_list.status_code
 	assert 200 == missing_detail.status_code

@@ -462,9 +462,19 @@ def _detail_alias_names():
 
 def _expected_detail_mosaic():
 	return {
-		'id': MOSAIC_ID, 'creator': str(Address(MOSAIC_OWNER)), 'aliasNames': ['leaf.alias', 'saved.alias', 'unrelated.name'],
-		'supply': 123456789, 'divisibility': 3, 'mosaicRegisteredHeight': 4, 'mosaicExpirationHeight': 9, 'totalSupply': 123456.789,
-		'unlimitedDuration': False, 'supplyMutable': True, 'transferable': True, 'restrictable': True, 'revokable': True,
+		'id': MOSAIC_ID,
+		'creator': str(Address(MOSAIC_OWNER)),
+		'aliasNames': ['leaf.alias', 'saved.alias', 'unrelated.name'],
+		'supply': 123456789,
+		'divisibility': 3,
+		'mosaicRegisteredHeight': 4,
+		'mosaicExpirationHeight': 9,
+		'totalSupply': 123456.789,
+		'unlimitedDuration': False,
+		'supplyMutable': True,
+		'transferable': True,
+		'restrictable': True,
+		'revokable': True,
 		'mosaicRegisteredTimestamp': '2026-01-04 00:00:00'
 	}
 
@@ -1054,27 +1064,69 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 	# Assert:
 	assert 200 == old_response.status_code
 	assert {
-		'id': ROOT_ID, 'namespaceName': 'old', 'startTimestamp': '2026-01-01 00:00:00', 'aliasMosaicId': MOSAIC_ID,
+		'id': ROOT_ID,
+		'namespaceName': 'old',
+		'startTimestamp': '2026-01-01 00:00:00',
+		'aliasMosaicId': MOSAIC_ID,
 		'subNamespaceCount': 1,
-		'subNamespaces': [{'namespaceId': CHILD_ID, 'namespaceName': 'old.child', 'parentId': ROOT_ID}],
-		'namespaceMosaics': [{'namespaceId': ROOT_ID, 'namespaceName': 'old', 'data': [{
-			'id': MOSAIC_ID, 'creator': str(Address(MOSAIC_OWNER)), 'aliasNames': ['old'],
-			'supply': 111, 'divisibility': 1, 'mosaicRegisteredHeight': 2, 'mosaicExpirationHeight': None, 'totalSupply': 11.1,
-			'unlimitedDuration': True, 'supplyMutable': False, 'transferable': False,
-			'restrictable': False, 'revokable': False,
-			'mosaicRegisteredTimestamp': '2026-01-02 00:00:00'}]}]
+		'subNamespaces': [{
+			'namespaceId': CHILD_ID,
+			'namespaceName': 'old.child',
+			'parentId': ROOT_ID
+		}],
+		'namespaceMosaics': [{
+			'namespaceId': ROOT_ID,
+			'namespaceName': 'old',
+			'data': [{
+				'id': MOSAIC_ID,
+				'creator': str(Address(MOSAIC_OWNER)),
+				'aliasNames': ['old'],
+				'supply': 111,
+				'divisibility': 1,
+				'mosaicRegisteredHeight': 2,
+				'mosaicExpirationHeight': None,
+				'totalSupply': 11.1,
+				'unlimitedDuration': True,
+				'supplyMutable': False,
+				'transferable': False,
+				'restrictable': False,
+				'revokable': False,
+				'mosaicRegisteredTimestamp': '2026-01-02 00:00:00'
+			}]
+		}]
 	} == {key: old_response.json[key] for key in (
 		'id', 'namespaceName', 'startTimestamp', 'aliasMosaicId', 'subNamespaceCount', 'subNamespaces', 'namespaceMosaics')}
 	assert 200 == new_response.status_code
 	assert {
-		'id': ROOT_ID, 'namespaceName': 'new', 'startTimestamp': '2027-02-03 00:00:00', 'aliasMosaicId': UNRELATED_MOSAIC_ID,
+		'id': ROOT_ID,
+		'namespaceName': 'new',
+		'startTimestamp': '2027-02-03 00:00:00',
+		'aliasMosaicId': UNRELATED_MOSAIC_ID,
 		'subNamespaceCount': 1,
-		'subNamespaces': [{'namespaceId': SIBLING_ID, 'namespaceName': 'new.fresh', 'parentId': ROOT_ID}],
-		'namespaceMosaics': [{'namespaceId': ROOT_ID, 'namespaceName': 'new', 'data': [{
-			'id': UNRELATED_MOSAIC_ID, 'creator': str(Address(MOSAIC_OWNER)), 'aliasNames': ['new'],
-			'supply': 9876, 'divisibility': 2, 'mosaicRegisteredHeight': 3, 'mosaicExpirationHeight': None, 'totalSupply': 98.76,
-			'unlimitedDuration': True, 'supplyMutable': False, 'transferable': False,
-			'restrictable': False, 'revokable': False,
-			'mosaicRegisteredTimestamp': '2026-01-03 00:00:00'}]}]
+		'subNamespaces': [{
+			'namespaceId': SIBLING_ID,
+			'namespaceName': 'new.fresh',
+			'parentId': ROOT_ID
+		}],
+		'namespaceMosaics': [{
+			'namespaceId': ROOT_ID,
+			'namespaceName': 'new',
+			'data': [{
+				'id': UNRELATED_MOSAIC_ID,
+				'creator': str(Address(MOSAIC_OWNER)),
+				'aliasNames': ['new'],
+				'supply': 9876,
+				'divisibility': 2,
+				'mosaicRegisteredHeight': 3,
+				'mosaicExpirationHeight': None,
+				'totalSupply': 98.76,
+				'unlimitedDuration': True,
+				'supplyMutable': False,
+				'transferable': False,
+				'restrictable': False,
+				'revokable': False,
+				'mosaicRegisteredTimestamp': '2026-01-03 00:00:00'
+			}]
+		}]
 	} == {key: new_response.json[key] for key in (
 		'id', 'namespaceName', 'startTimestamp', 'aliasMosaicId', 'subNamespaceCount', 'subNamespaces', 'namespaceMosaics')}
