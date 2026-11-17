@@ -138,14 +138,18 @@ def test_parent_without_rules_is_empty():
 	_assert_http_status(f'/api/symbol/mosaic/{EMPTY_ID}/restrictions', SYNC, 200, [])
 
 
-def test_offset_past_matches_is_empty():
+@pytest.mark.parametrize('path', [
+	'/api/symbol/mosaic-restrictions?offset=100000',
+	f'/api/symbol/mosaic/{MOSAIC_ID}/restrictions?offset=100000'
+])
+def test_offset_past_matches_is_empty(path):
 	# Arrange: a published match makes an ignored offset observable.
-	with symbol_test_database(SYNC) as (config, puller):
+	with symbol_test_database(SYNC, mosaics=[create_symbol_mosaic(MOSAIC_ID, 0)]) as (config, puller):
 		insert_restriction(puller, 1, MOSAIC_ID, 'address', ADDRESS, [], 10)
 		client = _create_client(config)
 		try:
 			# Act:
-			response = client.get('/api/symbol/mosaic-restrictions?offset=10000')
+			response = client.get(path)
 		finally:
 			client.application.extensions['symbol_database'].close()
 

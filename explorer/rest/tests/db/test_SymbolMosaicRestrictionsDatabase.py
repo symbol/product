@@ -59,7 +59,7 @@ def test_fixed_order_and_watermark():
 	] == actual
 
 
-@pytest.mark.parametrize('limit,offset,expected', [(2, 2, [10, 20]), (10, 10000, [])])
+@pytest.mark.parametrize('limit,offset,expected', [(2, 2, [10, 20]), (10, 100000, [])])
 def test_paging_filters_before_offset(limit, offset, expected):
 	# Arrange:
 	with symbol_test_database(SYNC) as (config, puller):

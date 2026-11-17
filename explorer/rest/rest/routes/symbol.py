@@ -404,7 +404,7 @@ def _setup_symbol_mosaic_restriction_routes(app, symbol_api_facade, run_symbol_q
 
 def _parse_mosaic_restriction_query(path_mosaic_id, network):
 	limit = _parse_bounded_integer('limit', _get_scalar_parameter('limit', '10'), 1, 100)
-	offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, 10000)
+	offset = _parse_bounded_integer('offset', _get_scalar_parameter('offset', '0'), 0, MOSAIC_MAX_OFFSET)
 	query_id = _get_scalar_parameter('mosaicId')
 	mosaic_id = path_mosaic_id if path_mosaic_id is not None else query_id
 	if mosaic_id is not None:
