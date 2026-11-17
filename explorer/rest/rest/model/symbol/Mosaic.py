@@ -63,7 +63,7 @@ class SymbolMosaicView:  # pylint: disable=too-many-instance-attributes
 			'mosaicRegisteredHeight': self.start_height,
 			'mosaicRegisteredTimestamp': format_timestamp(self.registration_timestamp),
 			'supply': self.supply,
-			'value': format_amount(self.supply, self.divisibility),
+			'totalSupply': format_amount(self.supply, self.divisibility),
 			'divisibility': self.divisibility,
 			'supplyMutable': self.supply_mutable,
 			'transferable': self.transferable,

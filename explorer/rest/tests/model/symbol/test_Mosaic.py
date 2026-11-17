@@ -46,7 +46,7 @@ class SymbolMosaicViewTest(unittest.TestCase):
 			'creator': 'TATNE7Q5BITMUTRRN6IB4I7FLSDRDWZA34I2PMQ',
 			'aliasNames': ['example', 'example.token'],
 			'supply': 1234567,
-			'value': 1.234567,
+			'totalSupply': 1.234567,
 			'divisibility': 6,
 			'mosaicRegisteredHeight': 123,
 			'mosaicRegisteredTimestamp': '2026-01-01 00:00:00',
@@ -126,10 +126,18 @@ class SymbolMosaicViewTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual(divisibility, result_map['divisibility'])
 		self.assertEqual(supply, result_map['supply'])
-		self.assertEqual(expected_value, result_map['value'])
+		self.assertEqual(expected_value, result_map['totalSupply'])
+		self.assertIsInstance(result_map['totalSupply'], float)
+		self.assertNotIn('value', result_map)
 
 	def test_can_format_zero_supply(self):
 		self._assert_formatted_supply(0, 6, 0.0)
+
+	def test_can_format_zero_supply_with_zero_divisibility(self):
+		self._assert_formatted_supply(0, 0, 0.0)
+
+	def test_can_format_whole_supply_with_nonzero_divisibility(self):
+		self._assert_formatted_supply(1900, 2, 19.0)
 
 	def test_can_format_supply_with_zero_divisibility(self):
 		self._assert_formatted_supply(1234567, 0, 1234567.0)

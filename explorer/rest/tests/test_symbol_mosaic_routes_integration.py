@@ -34,13 +34,14 @@ def _assert_mosaic_types(*items):
 		assert isinstance(item['aliasNames'], list)
 		assert isinstance(item['mosaicRegisteredTimestamp'], str)
 		assert isinstance(item['supply'], int) and not isinstance(item['supply'], bool)
-		assert isinstance(item['value'], float)
+		assert isinstance(item['totalSupply'], float)
+		assert 'value' not in item
 
 
 def _expected_finite_mosaic():
 	return {
 		'id': '1234567890ABCDEF', 'creator': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', 'aliasNames': [],
-		'mosaicRegisteredHeight': 2, 'mosaicRegisteredTimestamp': '2026-01-02 00:00:00', 'supply': 1234567, 'value': 1.234567,
+		'mosaicRegisteredHeight': 2, 'mosaicRegisteredTimestamp': '2026-01-02 00:00:00', 'supply': 1234567, 'totalSupply': 1.234567,
 		'divisibility': 6, 'supplyMutable': True, 'transferable': False, 'restrictable': True, 'revokable': False,
 		'mosaicExpirationHeight': 12, 'unlimitedDuration': False
 	}
@@ -50,7 +51,7 @@ def _expected_unlimited_mosaic():
 	return {
 		'id': '2234567890ABCDEF', 'creator': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', 'aliasNames': [],
 		'mosaicRegisteredHeight': 1, 'mosaicRegisteredTimestamp': '2026-01-01 00:00:00',
-		'supply': 7654321, 'value': 7654321.0, 'divisibility': 0, 'supplyMutable': False, 'transferable': True,
+		'supply': 7654321, 'totalSupply': 7654321.0, 'divisibility': 0, 'supplyMutable': False, 'transferable': True,
 		'restrictable': False, 'revokable': True, 'mosaicExpirationHeight': None, 'unlimitedDuration': True
 	}
 
@@ -147,7 +148,7 @@ def test_missing_mosaic_block_timestamp():
 	# Assert:
 	expected = {
 		'id': '1234567890ABCDEF', 'creator': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', 'aliasNames': [],
-		'mosaicRegisteredHeight': 1, 'mosaicRegisteredTimestamp': None, 'supply': 1234567, 'value': 1.234567,
+		'mosaicRegisteredHeight': 1, 'mosaicRegisteredTimestamp': None, 'supply': 1234567, 'totalSupply': 1.234567,
 		'divisibility': 6, 'supplyMutable': False, 'transferable': False, 'restrictable': False, 'revokable': False,
 		'mosaicExpirationHeight': None, 'unlimitedDuration': True
 	}
