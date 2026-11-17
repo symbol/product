@@ -247,12 +247,12 @@ def _expected_block_list_item(height, is_finalized, block_reward=None):
 		'networkTimestamp': height * 1000,
 		'harvester': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
 		'beneficiaryAddress': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-		'totalFee': float(height),
-		'transactionCount': height,
+		'totalFees': float(height),
+		'totalTransactions': height,
 		'statementCount': height,
 		'blockReward': block_reward,
 		'isFinalized': is_finalized,
-		'difficulty': str(1000000 + height)
+		'difficulty': 1000000 + height
 	}
 
 
@@ -1599,7 +1599,7 @@ def test_uses_xym_divisibility(symbol_database_config):
 
 	# Assert:
 	assert 200 == response.status_code
-	assert 1.234567 == response.json[0]['totalFee']
+	assert 1.234567 == response.json[0]['totalFees']
 	assert 2.345678 == response.json[0]['blockReward']
 
 

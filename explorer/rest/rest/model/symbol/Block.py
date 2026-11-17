@@ -110,12 +110,12 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 			'networkTimestamp': self.network_timestamp,
 			'harvester': self.harvester,
 			'beneficiaryAddress': self.beneficiary_address,
-			'totalFee': format_amount(self.total_fee, native_mosaic_info.divisibility),
-			'transactionCount': self.transaction_count,
+			'totalFees': format_amount(self.total_fee, native_mosaic_info.divisibility),
+			'totalTransactions': self.transaction_count,
 			'statementCount': self.statement_count,
 			'blockReward': block_reward,
 			'isFinalized': self.is_finalized,
-			'difficulty': str(self.difficulty)
+			'difficulty': int(self.difficulty)
 		}
 
 	def to_detail_dict(self, native_mosaic_info):

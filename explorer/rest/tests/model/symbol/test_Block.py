@@ -17,12 +17,12 @@ def _expected_list_dict():
 		'networkTimestamp': 1234,
 		'harvester': 'TATNE7Q5BITMUTRRN6IB4I7FLSDRDWZA34I2PMQ',
 		'beneficiaryAddress': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-		'totalFee': 1.234567,
-		'transactionCount': 7,
+		'totalFees': 1.234567,
+		'totalTransactions': 7,
 		'statementCount': 3,
 		'blockReward': None,
 		'isFinalized': True,
-		'difficulty': '100000000000000'
+		'difficulty': 100000000000000
 	}
 
 
@@ -71,6 +71,39 @@ class SymbolBlockViewTest(TestCase):
 
 		# Assert:
 		self.assertEqual(_expected_list_dict(), result)
+
+	def test_zero_common_values(self):
+		# Arrange:
+		block_view = self._create_block_view()
+		block_view.total_fee = 0
+		block_view.transaction_count = 0
+		block_view.difficulty = Decimal('0')
+
+		# Act:
+		result = block_view.to_dict(NativeMosaicInfo('72C0212E67A08BCE', 3))
+
+		# Assert:
+		self.assertEqual(0.0, result['totalFees'])
+		self.assertEqual(0, result['totalTransactions'])
+		self.assertEqual(0, result['difficulty'])
+		self.assertIs(type(result['difficulty']), int)
+		self.assertIsNone(result['blockReward'])
+
+	def test_difficulty_is_an_exact_integer_above_javascript_safe_range(self):
+		# Arrange:
+		block_view = self._create_block_view()
+		block_view.difficulty = Decimal('9007199254740993')
+
+		# Act:
+		result = block_view.to_dict(self.NATIVE_MOSAIC_INFO)
+
+		# Assert:
+		self.assertEqual(9007199254740993, result['difficulty'])
+		self.assertIs(type(result['difficulty']), int)
+
+	def test_total_fees_uses_configured_native_divisibility(self):
+		block_view = self._create_block_view()
+		self.assertEqual(1234.567, block_view.to_dict(NativeMosaicInfo('72C0212E67A08BCE', 3))['totalFees'])
 
 	def test_can_convert_to_detail_dict(self):
 		# Arrange:
