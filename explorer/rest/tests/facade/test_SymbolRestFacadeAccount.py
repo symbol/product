@@ -2,6 +2,7 @@ from decimal import Decimal
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from flask import Flask
 from symbolchain.symbol.Network import Network
 
@@ -64,7 +65,7 @@ class SymbolRestFacadeAccountTest(TestCase):
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
 			database,
-			object(),
+			SymbolNodeConfiguration.from_url('http://node.test:3000'),
 			NativeMosaicInfo('72C0212E67A08BCE', 6),
 			Network.TESTNET,
 			7200,
@@ -84,7 +85,7 @@ class SymbolRestFacadeAccountTest(TestCase):
 		# Arrange:
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
-			database, object(), NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, 7200, 7,
+			database, SymbolNodeConfiguration.from_url('http://node.test:3000'), NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, 7200, 7,
 			harvesting_balance_range=HarvestingBalanceRange(100, 200))
 		app = Flask(__name__)
 		setup_symbol_routes(app, facade)
@@ -102,7 +103,7 @@ class SymbolRestFacadeAccountTest(TestCase):
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
 			database,
-			object(),
+			SymbolNodeConfiguration.from_url('http://node.test:3000'),
 			NativeMosaicInfo('72C0212E67A08BCE', 6),
 			Network.TESTNET,
 			7200,
@@ -131,7 +132,7 @@ class SymbolRestFacadeAccountTest(TestCase):
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
 			database,
-			object(),
+			SymbolNodeConfiguration.from_url('http://node.test:3000'),
 			NativeMosaicInfo('72C0212E67A08BCE', 6),
 			Network.TESTNET)
 
@@ -152,7 +153,7 @@ class SymbolRestFacadeAccountTest(TestCase):
 			bytes.fromhex('00' * 32))
 		facade = SymbolRestFacade(
 			database,
-			object(),
+			SymbolNodeConfiguration.from_url('http://node.test:3000'),
 			NativeMosaicInfo('72C0212E67A08BCE', 6),
 			Network.MAINNET)
 
@@ -174,7 +175,7 @@ class SymbolRestFacadeAccountListConfigurationTest(TestCase):
 		# Arrange:
 		facade = SymbolRestFacade(
 			RecordingAccountDatabase(),
-			object(),
+			SymbolNodeConfiguration.from_url('http://node.test:3000'),
 			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET)
 
 		# Act:
@@ -188,7 +189,7 @@ class SymbolRestFacadeAccountListConfigurationTest(TestCase):
 		# Arrange:
 		facade = SymbolRestFacade(
 			RecordingAccountDatabase(),
-			object(),
+			SymbolNodeConfiguration.from_url('http://node.test:3000'),
 			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, 7200)
 
 		# Act:
@@ -205,7 +206,7 @@ class SymbolRestFacadeAccountStatisticsConfigurationTest(TestCase):
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
 			database,
-			object(),
+			SymbolNodeConfiguration.from_url('http://node.test:3000'),
 			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET,
 			harvesting_active_window_days=7)
 
@@ -222,7 +223,7 @@ class SymbolRestFacadeAccountStatisticsConfigurationTest(TestCase):
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
 			database,
-			object(),
+			SymbolNodeConfiguration.from_url('http://node.test:3000'),
 			NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, account_refresh_max_age_seconds=7200)
 
 		# Act:
@@ -237,7 +238,7 @@ class SymbolRestFacadeAccountStatisticsConfigurationTest(TestCase):
 		# Arrange:
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
-			database, object(), NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, 7200, 7)
+			database, SymbolNodeConfiguration.from_url('http://node.test:3000'), NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET, 7200, 7)
 
 		# Act:
 		with self.assertRaises(ValueError) as context:
