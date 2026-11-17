@@ -21,6 +21,7 @@ from ..test.SymbolAccountListTestUtils import (
 	create_account_list_entries,
 	create_refresh_entry,
 	seed_current_mosaic,
+	seed_published_account_snapshot,
 	seed_refresh_run
 )
 from ..test.SymbolAccountTestUtils import seed_alias
@@ -180,35 +181,55 @@ class SymbolAccountListDatabaseTest(TestCase):
 					database.get_account_list(list_query(AccountSortField.ID, is_harvesting=True), 7200, 7)
 				self.assertEqual('Symbol account list ranks are unavailable', str(context.exception))
 
-	def test_get_account_list_orders_height_from_current_accounts_and_rejects_missing_rows(self):
-		# Arrange:
+	def test_get_account_list_orders_height_from_snapshot_when_current_rows_change(self):
+		# Arrange: set snapshot heights, including a tie, while current rows still exist.
 		with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 			seed_accounts(writer)
 			with writer.connection.cursor() as cursor:
 				cursor.execute(
-					'UPDATE symbol_accounts SET address_height = CASE WHEN address = %s THEN 10 WHEN address = %s THEN 10 '
-					'WHEN address = %s THEN NULL ELSE 5 END',
-					(account_address(1), account_address(2), account_address(3)))
+					'UPDATE symbol_account_refresh_accounts SET address_height = 10 WHERE address IN (%s, %s)',
+					(account_address(1), account_address(2)))
+
 			writer.connection.commit()
+
+			# Act: read the full snapshot before changing current state.
 			with self._create_database(config) as database:
-				# Act:
-				result = database.get_account_list(list_query(AccountSortField.HEIGHT), 7200, 7)
+				before = database.get_account_list(list_query(AccountSortField.HEIGHT), 7200, 7)
 
-			# Assert:
-			self.assertEqual(
-				[account_address(1), account_address(2), account_address(4), account_address(3)],
-				[row.address for row in result])
-
-			# Arrange: a missing current row invalidates the complete HEIGHT population.
+			# Arrange: alter current heights and remove one current account.
 			with writer.connection.cursor() as cursor:
+				cursor.execute('UPDATE symbol_accounts SET address_height = 999')
 				cursor.execute('DELETE FROM symbol_account_mosaics WHERE address = %s', (account_address(4),))
 				cursor.execute('DELETE FROM symbol_accounts WHERE address = %s', (account_address(4),))
+
 			writer.connection.commit()
+
+			# Act: read the same snapshot as two pages.
 			with self._create_database(config) as database:
-				# Act + Assert:
-				with self.assertRaises(SymbolDataUnavailable) as context:
+				first = database.get_account_list(list_query(AccountSortField.HEIGHT, limit=2), 7200, 7)
+				second = database.get_account_list(list_query(AccountSortField.HEIGHT, limit=2, offset=2), 7200, 7)
+
+			# Assert: page content and ordering remain stable, including the tied addresses.
+			self.assertEqual(before, first + second)
+			self.assertEqual(sorted([account_address(1), account_address(2)]), [row.address for row in first])
+			self.assertEqual([account_address(4), account_address(3)], [row.address for row in second])
+
+	def test_get_account_list_rejects_negative_snapshot_height(self):
+		# Arrange: a published snapshot contains a negative height.
+		with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
+			seed_accounts(writer)
+			with writer.connection.cursor() as cursor:
+				cursor.execute('UPDATE symbol_account_refresh_accounts SET address_height = -1 WHERE address = %s', (account_address(1),))
+
+			writer.connection.commit()
+
+			# Act:
+			with self.assertRaises(SymbolDataUnavailable) as context:
+				with self._create_database(config) as database:
 					database.get_account_list(list_query(AccountSortField.HEIGHT), 7200, 7)
-				self.assertEqual('Symbol account height data is unavailable', str(context.exception))
+
+			# Assert:
+			self.assertEqual('Symbol account height data is unavailable', str(context.exception))
 
 	def test_get_account_list_bulk_multisig_uses_cosignatories_only(self):
 		# Arrange:
@@ -290,8 +311,8 @@ class SymbolAccountListDatabaseTest(TestCase):
 		# Assert:
 		self.assertEqual([], result)
 
-	def test_get_account_list_rejects_refreshing_or_unhealthy_refresh(self):
-		for status in ('refreshing', 'unhealthy'):
+	def test_get_account_list_rejects_unhealthy_or_stale_refresh(self):
+		for status in ('stale', 'unhealthy'):
 			with self.subTest(refresh_status=status):
 				# Arrange: every status owns a fresh healthy sync state and successful refresh run.
 				with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
@@ -452,7 +473,7 @@ def test_list_db_repeatable_read(change):
 	with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 		seed_accounts(writer, 'old-run')
 		seed_accounts(writer, 'new-run', variant='new')
-		seed_account_refresh_state(writer, {'last_successful_run_id': 'old-run'})
+		seed_published_account_snapshot(writer, 'old-run')
 		seed_current_mosaic(writer, CUSTOM_MOSAIC_ID, 2, account_address(1))
 		seed_alias(writer, 'account', str(Address(account_address(1))), 'before.account')
 		seed_alias(writer, 'mosaic', CUSTOM_MOSAIC_ID, 'before.mosaic')
@@ -461,7 +482,7 @@ def test_list_db_repeatable_read(change):
 
 		def update():
 			if change == 'run':
-				seed_account_refresh_state(writer, {'last_successful_run_id': 'new-run'})
+				seed_published_account_snapshot(writer, 'new-run')
 			else:
 				with writer.connection.cursor() as cursor:
 					cursor.execute('UPDATE symbol_alias_names SET name = \'after.account\' WHERE artifact_type = \'account\'')
