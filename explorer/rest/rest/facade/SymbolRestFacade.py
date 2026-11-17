@@ -11,6 +11,7 @@ from rest.model.format import format_timestamp
 from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountStatisticsView, SymbolAccountView
 from rest.model.symbol.Block import SymbolBlockStatisticsView
 from rest.model.symbol.HarvestingBalanceRange import HarvestingBalanceRange
+from rest.model.symbol.Metadata import SymbolMetadataView
 from rest.model.symbol.Receipt import SymbolReceiptView
 from rest.model.symbol.Transaction import SymbolTransactionDetailView, SymbolTransactionView
 from rest.model.symbol.validation import SymbolDataInvalid
@@ -124,6 +125,12 @@ class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 
 		blocks = self.symbol_db.get_block_statistics()
 		return SymbolBlockStatisticsView(blocks).to_dict(self.native_mosaic_info)
+
+	def try_get_related_metadata(self, query):
+		"""Returns a metadata page, or None when its parent is absent."""
+
+		rows = self.symbol_db.try_get_related_metadata(query)
+		return [SymbolMetadataView(row).to_dict() for row in rows] if rows is not None else None
 
 	def get_mosaics(self, limit, offset, sort):
 		"""Gets a current mosaic page."""
