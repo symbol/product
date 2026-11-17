@@ -55,7 +55,7 @@ export const createExplorerAccountUrl = (chainName, networkIdentifier, address) 
  * @returns {string} The URL to view the token on the explorer.
  */
 export const createTokenExplorerUrl = (chainName, networkIdentifier, tokenId) => {
-	const baseUrl = config.chains[chainName].explorerURL[networkIdentifier];
+	const baseUrl = config.chains[chainName]?.explorerURL[networkIdentifier];
 
 	if (chainName === 'symbol')
 		return `${baseUrl}/mosaics/${tokenId}`;
@@ -65,6 +65,8 @@ export const createTokenExplorerUrl = (chainName, networkIdentifier, tokenId) =>
 
 	if (chainName === 'ethereum')
 		return `${baseUrl}/address/${tokenId}`;
+
+	throw new Error(`Cannot create explorer URL for token on chain "${chainName}"`);
 };
 
 /**
@@ -75,7 +77,7 @@ export const createTokenExplorerUrl = (chainName, networkIdentifier, tokenId) =>
  * @returns {string} The URL to view the namespace on the explorer.
  */
 export const createExplorerNamespaceUrl = (chainName, networkIdentifier, namespaceId) => {
-	const baseUrl = config.chains[chainName].explorerURL[networkIdentifier];
+	const baseUrl = config.chains[chainName]?.explorerURL[networkIdentifier];
 
 	if (chainName === 'symbol')
 		return `${baseUrl}/namespaces/${namespaceId}`;

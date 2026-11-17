@@ -260,6 +260,12 @@ describe('utils/explorer', () => {
 		tests.forEach(test => {
 			runCreateTokenExplorerUrlTest(test.description, test.config, test.expected);
 		});
+
+		it('throws error for unsupported chain', () => {
+			// Act & Assert:
+			expect(() => createTokenExplorerUrl('unsupported', 'mainnet', 'token123'))
+				.toThrow('Cannot create explorer URL for token on chain "unsupported"');
+		});
 	});
 
 	describe('createExplorerNamespaceUrl', () => {
