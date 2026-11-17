@@ -4,6 +4,7 @@ from psycopg2 import sql
 
 from puller.db.SymbolDatabase import SymbolDatabase
 from puller.workflows import migrate_account_refresh
+from tests.test.SymbolDatabaseTestUtils import assert_database_connections_closed
 
 from .puller_test_utils import create_db_config
 
@@ -102,9 +103,7 @@ def test_search_path_complete_no_ddl(schema_database, database_config, tmp_path)
 
 	# Assert: data and markers remain intact, and both tool connections were released.
 	assert _snapshot(schema_database, 'public') == _expected_snapshot('public', 'published', 17)
-	with schema_database.connection.cursor() as cursor:
-		cursor.execute("SELECT count(*) FROM pg_stat_activity WHERE application_name = 'search_path_migration_test'")
-		assert cursor.fetchone() == (0,)
+	assert_database_connections_closed(schema_database.connection, 'search_path_migration_test')
 
 
 def test_search_path_partial_upgrade(schema_database, database_config, tmp_path):

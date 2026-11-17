@@ -16,6 +16,7 @@ from puller.db.SymbolDatabase import SymbolDatabase
 from puller.facade.SymbolPuller import SymbolPuller
 from puller.workflows import migrate_account_refresh
 from puller.workflows.symbol import main
+from tests.test.SymbolDatabaseTestUtils import assert_database_connections_closed
 
 from .puller_test_utils import FakeConnector, create_db_config, create_node_block, set_symbol_connector
 
@@ -268,8 +269,7 @@ def test_migration_rolls_back_ddl(database_config, tmp_path):
 			assert cursor.fetchone() == ('published', 'healthy')
 			cursor.execute("SELECT count(*) FROM symbol_account_list_ranks WHERE refresh_run_id = 'published'")
 			assert cursor.fetchone() == (1,)
-			cursor.execute("SELECT count(*) FROM pg_stat_activity WHERE application_name = 'account_migration_failure_test'")
-			assert cursor.fetchone() == (0,)
+			assert_database_connections_closed(database.connection, 'account_migration_failure_test')
 			cursor.execute('DROP EVENT TRIGGER fail_second_account_alter')
 		database.connection.commit()
 
@@ -341,9 +341,7 @@ def test_repeat_upgrade_avoids_ddl(database_config, tmp_path):
 		migrate_account_refresh.main(['--db-config', str(config_path)])
 
 		# Assert: the tool closed its connections, leaving the reader intact.
-		with reader.connection.cursor() as cursor:
-			cursor.execute("SELECT count(*) FROM pg_stat_activity WHERE application_name = 'account_migration_test'")
-			assert cursor.fetchone() == (0,)
+		assert_database_connections_closed(reader.connection, 'account_migration_test')
 
 
 def test_upgrade_cli_help(capsys):
