@@ -1,10 +1,10 @@
 # pylint: disable=too-many-lines  # Namespace list and detail share one HTTP/PostgreSQL integration fixture.
 import tempfile
 from datetime import datetime, timezone
-from pathlib import Path
 
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from puller.db.SymbolDatabase import SymbolDatabase as PullerSymbolDatabase
 from symbolchain.symbol.Network import Address, Network
 
@@ -26,6 +26,7 @@ from .test.SymbolNamespaceTestUtils import (
 	create_symbol_namespace,
 	expected_symbol_namespace_child_dto
 )
+from .test.SymbolRestConfigTestUtils import write_symbol_rest_config
 
 _namespace = create_symbol_namespace
 
@@ -39,34 +40,6 @@ THIRD_ROOT_ID = 'B95F1F8A96159516'
 MOSAIC_ID = '1234567890ABCDEF'
 UNRELATED_MOSAIC_ID = '2234567890ABCDEF'
 MOSAIC_OWNER = bytes.fromhex('9889432DE263BB8FE88444A4DA28D3609BD8BB8FAE18AE95')
-
-
-def _write_config(directory, database_config):
-	db_path = Path(directory) / 'db.ini'
-	db_path.write_text(
-		'[symbol_db]\n'
-		f'database = {database_config.database}\n'
-		f'user = {database_config.user}\n'
-		'password = \n'
-		f'host = {database_config.host}\n'
-		f'port = {database_config.port}\n',
-		encoding='utf8')
-	app_path = Path(directory) / 'app.config'
-	app_path.write_text(
-		'REST_CHAIN="symbol"\n'
-		'NETWORK_NAME="testnet"\n'
-		f'DATABASE_CONFIG_FILEPATH="{db_path}"\n'
-		f'SYMBOL_NATIVE_MOSAIC_ID={NATIVE_MOSAIC_INFO.id!r}\n'
-		'SYMBOL_ACCOUNT_REFRESH_MAX_AGE_SECONDS=7200\n'
-		'SYMBOL_HARVESTING_ACTIVE_WINDOW_DAYS=7\n'
-		'SYMBOL_HARVESTING_MIN_BALANCE=0\n'
-		'SYMBOL_HARVESTING_MAX_BALANCE=18446744073709551615\n'
-		'SYMBOL_NODE_URL="http://127.0.0.1:1"\n'
-		'SYMBOL_NODE_ALLOWED_HOSTS="127.0.0.1:1"\n'
-		'SYMBOL_NODE_ALLOW_LOOPBACK="true"\n'
-		'SYMBOL_NODE_ALLOW_PRIVATE="false"\n',
-		encoding='utf8')
-	return app_path
 
 
 def _create_symbol_client(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -83,9 +56,10 @@ def _create_symbol_client(  # pylint: disable=too-many-arguments,too-many-positi
 			database.upsert_namespace(row, alias_name_rows)
 
 	with tempfile.TemporaryDirectory() as temp_directory:
-		config_path = _write_config(temp_directory, database_config)
+		config_path = write_symbol_rest_config(temp_directory, database_config, NATIVE_MOSAIC_INFO.id)
 		with rest_settings_env(config_path):
 			app = create_app()
+
 	return app.test_client()
 
 
@@ -122,9 +96,9 @@ def test_http_items_and_empty_filters():
 			'aliasType': 'none',
 			'aliasMosaicId': None,
 			'aliasAddress': None,
-			'creator': str(Address(OWNER)),
-			'registrationHeight': 1,
-			'startTimestamp': '2026-01-01 00:00:00',
+			'owner': str(Address(OWNER)),
+			'registeredHeight': 1,
+			'registeredTimestamp': '2026-01-01 00:00:00',
 			'registrationType': 'root',
 			'expirationHeight': None,
 			'isUnlimitedDuration': True,
@@ -521,8 +495,8 @@ def test_namespace_detail_returns_root_and_child_fields():
 		'id': ROOT_ID, 'name': ROOT_ID, 'namespaceName': 'root',
 		'namespaceLevels': [{'name': 'root', 'namespaceId': ROOT_ID, 'parentId': None}],
 		'aliasType': 'none', 'aliasMosaicId': None, 'aliasAddress': None,
-		'creator': str(Address(OWNER)),
-		'registrationHeight': 1, 'startTimestamp': '2026-01-01 00:00:00', 'registrationType': 'root',
+		'owner': str(Address(OWNER)),
+		'registeredHeight': 1, 'registeredTimestamp': '2026-01-01 00:00:00', 'registrationType': 'root',
 		'expirationHeight': 2, 'isUnlimitedDuration': False, 'subNamespaceCount': 3,
 		'subNamespaces': [
 			{'namespaceId': CHILD_ID, 'namespaceName': 'root.aaa', 'parentId': ROOT_ID},
@@ -542,8 +516,8 @@ def test_namespace_detail_returns_root_and_child_fields():
 			{'name': 'aaa', 'namespaceId': CHILD_ID, 'parentId': ROOT_ID}
 		],
 		'aliasType': 'mosaic', 'aliasMosaicId': MOSAIC_ID, 'aliasAddress': None,
-		'creator': str(Address(OWNER)),
-		'registrationHeight': 2, 'startTimestamp': '2026-01-02 00:00:00', 'registrationType': 'child',
+		'owner': str(Address(OWNER)),
+		'registeredHeight': 2, 'registeredTimestamp': '2026-01-02 00:00:00', 'registrationType': 'child',
 		'expirationHeight': 2, 'isUnlimitedDuration': False, 'subNamespaceCount': 1,
 		'subNamespaces': [{'namespaceId': LEAF_ID, 'namespaceName': 'root.aaa.leaf', 'parentId': CHILD_ID}],
 		'namespaceMosaics': [
@@ -561,8 +535,8 @@ def test_namespace_detail_name_and_lowercase_id_return_same_json():
 		'id': ROOT_ID, 'name': ROOT_ID, 'namespaceName': 'symbol',
 		'namespaceLevels': [{'name': 'symbol', 'namespaceId': ROOT_ID, 'parentId': None}],
 		'aliasType': 'none', 'aliasMosaicId': None, 'aliasAddress': None,
-		'creator': str(Address(OWNER)),
-		'registrationHeight': 1, 'startTimestamp': '2026-01-01 00:00:00', 'registrationType': 'root',
+		'owner': str(Address(OWNER)),
+		'registeredHeight': 1, 'registeredTimestamp': '2026-01-01 00:00:00', 'registrationType': 'root',
 		'expirationHeight': None, 'isUnlimitedDuration': True, 'subNamespaceCount': 0,
 		'subNamespaces': [], 'namespaceMosaics': []
 	}
@@ -600,8 +574,8 @@ def test_namespace_detail_uses_id_when_leaf_name_is_missing():
 			{'name': LEAF_ID, 'namespaceId': LEAF_ID, 'parentId': CHILD_ID}
 		],
 		'aliasType': 'mosaic', 'aliasMosaicId': MOSAIC_ID, 'aliasAddress': None,
-		'creator': str(Address(OWNER)),
-		'registrationHeight': 3, 'startTimestamp': '2026-01-03 00:00:00', 'registrationType': 'child',
+		'owner': str(Address(OWNER)),
+		'registeredHeight': 3, 'registeredTimestamp': '2026-01-03 00:00:00', 'registrationType': 'child',
 		'expirationHeight': None, 'isUnlimitedDuration': True, 'subNamespaceCount': 0, 'subNamespaces': [],
 		'namespaceMosaics': [
 			{'namespaceId': LEAF_ID, 'namespaceName': LEAF_ID, 'data': [_expected_detail_mosaic()]}
@@ -662,11 +636,11 @@ def test_namespace_detail_returns_null_for_missing_start_blocks():
 
 	# Assert:
 	assert 200 == root_response.status_code
-	assert '2026-01-02 00:00:00' == root_response.json['startTimestamp']
+	assert '2026-01-02 00:00:00' == root_response.json['registeredTimestamp']
 	assert ['2026-01-04 00:00:00', None] == [
 		group['data'][0]['mosaicRegisteredTimestamp'] for group in root_response.json['namespaceMosaics']]
 	assert 200 == child_response.status_code
-	assert None is child_response.json['startTimestamp']
+	assert None is child_response.json['registeredTimestamp']
 	assert '2026-01-04 00:00:00' == child_response.json['namespaceMosaics'][0]['data'][0]['mosaicRegisteredTimestamp']
 	assert None is child_response.json['namespaceMosaics'][1]['data'][0]['mosaicRegisteredTimestamp']
 
@@ -734,7 +708,7 @@ def test_namespace_detail_returns_404_when_target_is_deleted():
 		puller_database.upsert_blocks([create_symbol_block(1), create_symbol_block(10)])
 		puller_database.upsert_namespace(rows[0], [])
 		with tempfile.TemporaryDirectory() as temp_directory:
-			config_path = _write_config(temp_directory, database_config)
+			config_path = write_symbol_rest_config(temp_directory, database_config, NATIVE_MOSAIC_INFO.id)
 			with rest_settings_env(config_path):
 				app = create_app()
 			client = app.test_client()
@@ -772,7 +746,7 @@ def test_namespace_detail_excludes_deleted_descendant():
 		for row in rows:
 			puller_database.upsert_namespace(row, [])
 		with tempfile.TemporaryDirectory() as temp_directory:
-			config_path = _write_config(temp_directory, database_config)
+			config_path = write_symbol_rest_config(temp_directory, database_config, NATIVE_MOSAIC_INFO.id)
 			with rest_settings_env(config_path):
 				client = create_app().test_client()
 			puller_database.delete_namespace(LEAF_ID)
@@ -1031,7 +1005,7 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 		try:
 			def setup_facade(app):
 				app.extensions['symbol_database'] = database
-				return SymbolRestFacade(database, object(), NATIVE_MOSAIC_INFO, Network.TESTNET)
+				return SymbolRestFacade(database, SymbolNodeConfiguration.from_url('http://node.test:3000'), NATIVE_MOSAIC_INFO, Network.TESTNET)
 
 			def update_related_data():
 				# pylint: disable=protected-access
@@ -1047,7 +1021,7 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 				# pylint: enable=protected-access
 
 			with tempfile.TemporaryDirectory() as temp_directory:
-				config_path = _write_config(temp_directory, database_config)
+				config_path = write_symbol_rest_config(temp_directory, database_config, NATIVE_MOSAIC_INFO.id)
 				with rest_settings_env(config_path):
 					app = create_app({'symbol': (setup_facade, setup_symbol_routes)})
 					client = app.test_client()
@@ -1066,7 +1040,7 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 	assert {
 		'id': ROOT_ID,
 		'namespaceName': 'old',
-		'startTimestamp': '2026-01-01 00:00:00',
+		'registeredTimestamp': '2026-01-01 00:00:00',
 		'aliasMosaicId': MOSAIC_ID,
 		'subNamespaceCount': 1,
 		'subNamespaces': [{
@@ -1095,12 +1069,12 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 			}]
 		}]
 	} == {key: old_response.json[key] for key in (
-		'id', 'namespaceName', 'startTimestamp', 'aliasMosaicId', 'subNamespaceCount', 'subNamespaces', 'namespaceMosaics')}
+		'id', 'namespaceName', 'registeredTimestamp', 'aliasMosaicId', 'subNamespaceCount', 'subNamespaces', 'namespaceMosaics')}
 	assert 200 == new_response.status_code
 	assert {
 		'id': ROOT_ID,
 		'namespaceName': 'new',
-		'startTimestamp': '2027-02-03 00:00:00',
+		'registeredTimestamp': '2027-02-03 00:00:00',
 		'aliasMosaicId': UNRELATED_MOSAIC_ID,
 		'subNamespaceCount': 1,
 		'subNamespaces': [{
@@ -1129,4 +1103,4 @@ def test_namespace_detail_keeps_related_data_in_one_repeatable_read_snapshot():
 			}]
 		}]
 	} == {key: new_response.json[key] for key in (
-		'id', 'namespaceName', 'startTimestamp', 'aliasMosaicId', 'subNamespaceCount', 'subNamespaces', 'namespaceMosaics')}
+		'id', 'namespaceName', 'registeredTimestamp', 'aliasMosaicId', 'subNamespaceCount', 'subNamespaces', 'namespaceMosaics')}

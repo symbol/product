@@ -1,5 +1,6 @@
 import pytest
 from common.symbol.NativeMosaic import NativeMosaicInfo
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from flask import Flask
 from symbolchain.symbol.Network import Network
 
@@ -16,7 +17,8 @@ from .test.SymbolTransactionTestUtils import create_symbol_namespace
 
 def _client(database):
 	app = Flask(__name__)
-	facade = SymbolRestFacade(database, object(), NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET)
+	facade = SymbolRestFacade(
+		database, SymbolNodeConfiguration.from_url('http://node.test:3000'), NativeMosaicInfo('72C0212E67A08BCE', 6), Network.TESTNET)
 	setup_error_handlers(app)
 	setup_symbol_routes(app, facade)
 	return app.test_client()

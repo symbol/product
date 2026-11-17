@@ -3,6 +3,7 @@
 from datetime import date
 
 import pytest
+from common.symbol.NativeMosaic import NativeMosaicInfo
 from flask import Flask
 from psycopg2 import OperationalError
 from symbolchain.CryptoTypes import PublicKey
@@ -129,11 +130,12 @@ def _create_account_statistics_result():
 	}
 
 
-class SymbolAccountFacade:
+class SymbolAccountFacade:  # pylint: disable=too-many-instance-attributes
 	"""Recording facade for Account route validation tests."""
 
 	def __init__(self):
 		self.network = Network.TESTNET
+		self.native_mosaic_info = NativeMosaicInfo('ABCDEF0123456789', 6)
 		self.account_query = None
 		self.account_result = {'address': 'TDUMMY'}
 		self.account_error = None
@@ -1308,7 +1310,30 @@ def test_accounts_defaults():
 	# Assert:
 	assert 200 == response.status_code
 	assert [{'address': 'TDUMMY'}] == response.json
-	assert AccountListQuery(AccountSortField.ID, None, 10, 0) == facade.accounts_query
+	assert AccountListQuery(AccountSortField.BALANCE, 'ABCDEF0123456789', 10, 0) == facade.accounts_query
+
+
+@pytest.mark.parametrize('query,sort_field,mosaic_id', [
+	pytest.param('sort_field=BALANCE', AccountSortField.BALANCE, 'ABCDEF0123456789', id='balance-native'),
+	pytest.param(
+		'sort_field=BALANCE&sort_order=DESC&mosaic_id=ABCDEF0123456789',
+		AccountSortField.BALANCE, 'ABCDEF0123456789', id='balance-explicit'),
+	pytest.param('mosaic_id=1234567890abcdef', AccountSortField.BALANCE, '1234567890ABCDEF', id='custom-mosaic'),
+	pytest.param('sort_field=ID', AccountSortField.ID, None, id='id'),
+	pytest.param('sort_field=IMPORTANCE', AccountSortField.IMPORTANCE, None, id='importance'),
+	pytest.param('sort_field=HEIGHT', AccountSortField.HEIGHT, None, id='height')
+])
+def test_accounts_sort_query(query, sort_field, mosaic_id):
+	# Arrange:
+	facade = SymbolAccountFacade()
+	client = _create_symbol_test_client(facade)
+
+	# Act:
+	response = client.get('/api/symbol/accounts?' + query)
+
+	# Assert:
+	assert (200, [{'address': 'TDUMMY'}]) == (response.status_code, response.json)
+	assert AccountListQuery(sort_field, mosaic_id, 10, 0) == facade.accounts_query
 
 
 def test_accounts_normalizes_query_case():
@@ -1360,7 +1385,11 @@ def test_accounts_height_sort():
 	pytest.param('is_harvesting=', id='empty-harvesting'),
 	pytest.param('is_harvesting=maybe', id='invalid-harvesting'),
 	pytest.param('sort_order=asc', id='ascending-sort'),
-	pytest.param('sort_field=BALANCE', id='balance-missing-mosaic'),
+	pytest.param('mosaic_id=', id='empty-mosaic'),
+	pytest.param('mosaic_id=invalid', id='invalid-mosaic'),
+	pytest.param('sort_field=', id='empty-sort-field'),
+	pytest.param('sort_order=', id='empty-sort-order'),
+	pytest.param('sort_field=IMPORTANCE&mosaic_id=1234567890ABCDEF', id='importance-with-mosaic'),
 	pytest.param('sort_field=ID&mosaic_id=1234567890ABCDEF', id='id-with-mosaic'),
 	pytest.param('sort_field=HEIGHT&mosaic_id=1234567890ABCDEF', id='height-with-mosaic'),
 	pytest.param('sort_field=BALANCE&mosaic_id=0x1234567890ABCDEF', id='mosaic-hex-prefix')
@@ -1422,7 +1451,7 @@ def test_accounts_accepts_page_limits():
 
 	# Assert:
 	assert 200 == response.status_code
-	assert AccountListQuery(AccountSortField.ID, None, 100, 100000) == facade.accounts_query
+	assert AccountListQuery(AccountSortField.BALANCE, 'ABCDEF0123456789', 100, 100000) == facade.accounts_query
 
 
 def test_tx_stats_response_fields():

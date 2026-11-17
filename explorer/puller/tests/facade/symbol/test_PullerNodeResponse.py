@@ -1,5 +1,7 @@
 from symbollightapi.model.Exceptions import NodeException
 
+from puller.facade.SymbolPuller import SymbolRollbackError
+
 from .puller_test_utils import (
 	FakeConnector,
 	ResponseConnector,
@@ -22,7 +24,7 @@ class SymbolPullerNodeResponseTest(SymbolPullerTestBase):
 		})
 
 		# Act / Assert:
-		self._assert_sync_rejects_node_response(connector, KeyError, 'height')
+		self._assert_sync_rejects_node_response(connector, SymbolRollbackError, 'Malformed Symbol finalized block in chain info')
 
 	def test_rejects_missing_epoch_adjustment(self):
 		# Arrange:
