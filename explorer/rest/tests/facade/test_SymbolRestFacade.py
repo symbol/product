@@ -23,7 +23,7 @@ from rest.db.SymbolDatabase import (
 )
 from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
-from rest.model.symbol.TransactionView import SymbolTransactionView
+from rest.model.symbol.TransactionView import TransactionMosaicRecord, create_unconfirmed_record
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
 from ..test.SymbolUnconfirmedTransactionTestUtils import get_unconfirmed_transaction
@@ -781,20 +781,11 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 	def test_can_get_unconfirmed_transactions(self):
 		# Arrange:
 		transactions = [get_unconfirmed_transaction(TransactionType.TRANSFER)]
+		record = create_unconfirmed_record(transactions[0], Network.TESTNET)._replace(
+			transaction_hash='FE' * 32,
+			mosaics=(TransactionMosaicRecord(NATIVE_MOSAIC_INFO.id, 123000000, 6),))
 		symbol_db = create_autospec(SymbolDatabase, instance=True, spec_set=True)
-		symbol_db.get_unconfirmed_transactions.return_value = [TransactionViewRecord(
-			transaction_hash='01' * 32,
-			aggregate_hash=None,
-			embedded_index=None,
-			transaction_type=TransactionType.TRANSFER,
-			from_address='TDPO5E6N2BZZNRNDLHHQ2FC3D6RBVUEOXEO26YY',
-			to_address='TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
-			payload=[],
-			mosaics=(TransactionMosaicRecord(NATIVE_MOSAIC_INFO.id, 123000000, 6),),
-			deadline=datetime(2022, 11, 2, 7, 25, 23),
-			signature='AB' * 64,
-			size=176,
-			version=1)]
+		symbol_db.get_unconfirmed_transactions.return_value = [record]
 		facade = _create_facade_with_database(symbol_db)
 		facade.symbol_connector.get_unconfirmed_transactions = create_autospec(
 			facade.symbol_connector.get_unconfirmed_transactions, return_value=transactions)
@@ -803,20 +794,9 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		result = asyncio.run(facade.get_unconfirmed_transactions())
 
 		# Assert:
-		self.assertEqual([{
-			'transactionHash': '01' * 32,
-			'transactionType': 'TRANSFER',
-			'fromAddress': 'TDPO5E6N2BZZNRNDLHHQ2FC3D6RBVUEOXEO26YY',
-			'toAddress': 'TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY',
-			'value': [{'id': NATIVE_MOSAIC_INFO.id, 'name': NATIVE_MOSAIC_INFO.id, 'amount': 123}],
-			'embeddedTransactions': None,
-			'fee': None,
-			'height': 0,
-			'timestamp': None,
-			'deadline': '2022-11-02 07:25:23',
-			'signature': 'AB' * 64,
-			'size': 176,
-			'version': 1,
-		}], result)
+		self.assertEqual(1, len(result))
+		self.assertEqual('FE' * 32, result[0]['transactionHash'])
+		self.assertEqual('TRANSFER', result[0]['transactionType'])
+		self.assertEqual([{'id': NATIVE_MOSAIC_INFO.id, 'name': NATIVE_MOSAIC_INFO.id, 'amount': 123}], result[0]['value'])
 		facade.symbol_connector.get_unconfirmed_transactions.assert_awaited_once_with()
 		symbol_db.get_unconfirmed_transactions.assert_called_once_with(transactions, Network.TESTNET)

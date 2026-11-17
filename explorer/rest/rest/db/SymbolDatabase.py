@@ -13,7 +13,9 @@ from zenlog import log
 from rest.model.symbol.Block import BLOCK_STATISTICS_WINDOW, SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
 from rest.model.symbol.Namespace import SymbolNamespaceView
-from rest.model.symbol.TransactionView import AGGREGATE_TYPES, TransactionMosaicRecord, create_confirmed_record, create_unconfirmed_record, resolve_transaction_mosaics
+from rest.model.symbol.TransactionView import AGGREGATE_TYPES, SymbolTransactionView
+from rest.model.symbol.TransactionView import TransactionMosaicRecord as TransactionViewMosaicRecord
+from rest.model.symbol.TransactionView import create_confirmed_record, create_unconfirmed_record, resolve_transaction_mosaics
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -1048,7 +1050,9 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 			cursor, list(all_rows_by_id_map), sync_state)
 
 		records_by_id_map = {
-			row[0]: create_confirmed_record(row, tuple(mosaics_by_transaction_map[row[0]]), self.native_mosaic_info)
+			row[0]: create_confirmed_record(row, resolve_transaction_mosaics(
+				tuple(TransactionViewMosaicRecord(*mosaic) for mosaic in mosaics_by_transaction_map[row[0]]),
+				mosaic_divisibility_map), self.native_mosaic_info)
 			for row in all_rows_by_id_map.values()
 		}
 		embedded_transactions_by_hash_map = {}
@@ -1056,10 +1060,8 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 			record = records_by_id_map[row[0]]
 			embedded_transactions_by_hash_map.setdefault(record.aggregate_hash, []).append(record)
 
-		return [SymbolTransactionView(
-			records_by_id_map[row[0]],
-			mosaic_divisibility_map,
-			embedded_transactions_by_hash_map.get(records_by_id_map[row[0]].transaction_hash, ()))
+		return [SymbolTransactionView(records_by_id_map[row[0]]._replace(
+			embedded_transactions=tuple(embedded_transactions_by_hash_map.get(records_by_id_map[row[0]].transaction_hash, ()))))
 			for row in transaction_rows]
 
 	def _fetch_transaction_mosaics(self, cursor, transaction_ids, sync_state):
