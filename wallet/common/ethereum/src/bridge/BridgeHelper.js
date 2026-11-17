@@ -6,7 +6,7 @@
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../types/Transaction').TransactionFee} TransactionFee */
 
-import { TransactionType } from '../constants';
+import { MessageKind, TransactionType } from '../constants';
 import { base32ToHex } from 'wallet-common-core';
 
 export class BridgeHelper {
@@ -50,7 +50,8 @@ export class BridgeHelper {
 			message: {
 				text: recipientAddress,
 				payload: base32ToHex(recipientAddress),
-				type: 1
+				type: null,
+				kind: MessageKind.RAW
 			},
 			fee,
 			nonce

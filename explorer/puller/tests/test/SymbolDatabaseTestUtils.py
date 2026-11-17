@@ -1,3 +1,25 @@
+import time
+
+
+def assert_database_connections_closed(connection, application_name):
+	"""Wait for named backends to exit without ending the observer's transaction."""
+	# Client close does not wait for backend exit; refresh statistics without releasing the reader's locks.
+	deadline = time.monotonic() + 5
+	with connection.cursor() as cursor:
+		while True:
+			cursor.execute('SELECT pg_stat_clear_snapshot()')
+			cursor.execute(
+				'SELECT pid, state FROM pg_stat_activity WHERE datname = current_database() AND application_name = %s',
+				(application_name,))
+			connections = cursor.fetchall()
+			if not connections or time.monotonic() >= deadline:
+				break
+
+			time.sleep(0.01)
+
+	assert [] == connections, f'Migration connections remain for {application_name}: {connections}'
+
+
 def fetch_full_block_state(database):
 	cursor = database.connection.cursor()
 	cursor.execute('SELECT * FROM symbol_blocks ORDER BY height')

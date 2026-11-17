@@ -2,7 +2,7 @@ import { normalizeAddress } from './account';
 import { createFee } from './fee';
 import { to0x } from './format';
 import { normalizeTransactionHash } from './transaction';
-import { TransactionType } from '../constants';
+import { MessageKind, TransactionType } from '../constants';
 import { absoluteToRelativeAmount, hexToBase32 } from 'wallet-common-core';
 
 const ERC_20_TRANSFER_SIGNATURE = '0xa9059cbb';
@@ -115,6 +115,8 @@ const erc20LikeTransactionFromDTO = (transactionDTO, config) => {
 	if (additionalData && additionalData !== '0'.repeat(additionalData.length)) {
 		erc20Transaction.type = TransactionType.ERC_20_BRIDGE_TRANSFER;
 		erc20Transaction.message = {
+			type: null,
+			kind: MessageKind.RAW,
 			payload: additionalData,
 			text: hexToBase32(additionalData)
 		};

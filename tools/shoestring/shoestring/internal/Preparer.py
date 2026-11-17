@@ -289,16 +289,21 @@ class Preparer:
 			self._copy_tree_readonly(self.directories.temp / 'mongo', self.directories.mongo)
 			self._make_files_readonly(self.directories.mongo)
 
-		if rest_overrides_filename:
+		if self.config.node.api_https or rest_overrides_filename:
 			rest_json_filepath = self.directories.userconfig / 'rest.json'
 
 			# load the rest config
 			with open(rest_json_filepath, 'rt', encoding='utf8') as rest_config_infile:
 				rest_config = json.load(rest_config_infile)
 
+			# rest is behind https proxy, so it needs to trust the proxy headers
+			if self.config.node.api_https:
+				rest_config['trustProxy'] = True
+
 			# customize user rest config
-			with open(rest_overrides_filename, 'rt', encoding='utf8') as rest_overrides_infile:
-				merge_json_configuration(rest_config, json.load(rest_overrides_infile))
+			if rest_overrides_filename:
+				with open(rest_overrides_filename, 'rt', encoding='utf8') as rest_overrides_infile:
+					merge_json_configuration(rest_config, json.load(rest_overrides_infile))
 
 			# rewrite the rest config
 			with open(rest_json_filepath, 'wt', encoding='utf8') as rest_config_outfile:

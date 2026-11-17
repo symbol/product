@@ -12,6 +12,7 @@ import {
 	createTransactionFee,
 	createTransactionFeeTiers,
 	encodePlainMessage,
+	getMessageKind,
 	isIncomingTransaction,
 	isOutgoingTransaction,
 	isSymbolAddress,
@@ -98,10 +99,13 @@ export class TransferModule {
 		};
 
 		if (messagePayloadHex) {
+			const messageType = isMessageEncrypted ? MessageType.EncryptedText : MessageType.PlainText;
+
 			transferTransaction.message = {
 				text: messageText,
 				payload: messagePayloadHex,
-				type: isMessageEncrypted ? MessageType.EncryptedText : MessageType.PlainText
+				type: messageType,
+				kind: getMessageKind(messageType)
 			};
 		}
 

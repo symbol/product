@@ -54,22 +54,12 @@ export const TransactionAnnounceGroup = {
 	COSIGNATURE: 'cosignature'
 };
 
-/** Re-export of the common wallet-common-core message kinds for NEM consumers (the UI-facing type). */
-export const { MessageType } = constants;
+export const { MessageKind } = constants;
 
-/**
- * NEM native (on-chain protocol) message-type codes. Stored on message.native.type and mapped to the
- * common MessageType (for message.type) via nativeToCommonMessageType.
- */
-export const NativeMessageType = {
+/** NEM protocol transaction message type codes. */
+export const MessageType = {
 	PlainText: 1,
 	EncryptedText: 2
-};
-
-/** Maps a NEM native message-type code to the common wallet-common-core MessageType. */
-export const nativeToCommonMessageType = {
-	[NativeMessageType.PlainText]: MessageType.PLAIN,
-	[NativeMessageType.EncryptedText]: MessageType.ENCRYPTED
 };
 
 /**
@@ -106,10 +96,20 @@ export const LinkAction = {
 	Unlink: 2
 };
 
+export const LinkActionMessage = {
+	[LinkAction.Link]: 'Link',
+	[LinkAction.Unlink]: 'Unlink'
+};
+
 /** NEM mosaic supply change action codes. */
 export const MosaicSupplyChangeAction = {
 	INCREASE: 1,
 	DECREASE: 2
+};
+
+export const MosaicSupplyChangeActionMessage = {
+	[MosaicSupplyChangeAction.INCREASE]: 'Increase',
+	[MosaicSupplyChangeAction.DECREASE]: 'Decrease'
 };
 
 /** NEM multisig account modification type codes. */
@@ -122,6 +122,11 @@ export const MultisigAccountModificationType = {
 export const MosaicTransferFeeType = {
 	ABSOLUTE: 1,
 	PERCENTILE: 2
+};
+
+export const MosaicTransferFeeTypeMessage = {
+	[MosaicTransferFeeType.ABSOLUTE]: 'Absolute',
+	[MosaicTransferFeeType.PERCENTILE]: 'Percentile'
 };
 
 /** Property names used in NEM mosaic definition property arrays. */

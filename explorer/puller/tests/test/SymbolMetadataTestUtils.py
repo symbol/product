@@ -107,3 +107,11 @@ def find_metadata_row(database, composite_hash):
 	return next(
 		(row for row in fetch_metadata_rows(database) if row['composite_hash'] == composite_hash),
 		None)
+
+
+def fetch_symbol_metadata_indexes(cursor):
+	"""Return the public Symbol Metadata index definitions in name order."""
+	cursor.execute(
+		"SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' "
+		"AND tablename = 'symbol_metadata' ORDER BY indexname")
+	return cursor.fetchall()

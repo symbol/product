@@ -11,6 +11,7 @@ import {
 import {
 	createTransactionFee,
 	decodePlainMessage,
+	getMessageKind,
 	getUnresolvedIdsFromTransactions,
 	isIncomingTransaction,
 	isOutgoingTransaction
@@ -217,6 +218,7 @@ const transferTransactionFromSymbol = (transaction, config) => {
 
 		transactionBody.message = {
 			type: messageType,
+			kind: getMessageKind(messageType),
 			text: messageText,
 			payload: messagePayload
 		};

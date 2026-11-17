@@ -5,6 +5,7 @@ import datetime
 from collections import namedtuple
 from contextlib import ExitStack
 from decimal import Decimal
+from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import Mock
 
@@ -21,7 +22,8 @@ from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Lock import create_hash_lock_key, create_secret_lock_search_key
 from puller.model.symbol.MosaicRestriction import MosaicRestrictionEntryType, MosaicRestrictionKey
 from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
-from tests.facade.symbol.puller_test_utils import NATIVE_MOSAIC_ID, create_account_item
+from puller.workflows import migrate_account_refresh
+from tests.facade.symbol.puller_test_utils import NATIVE_MOSAIC_ID, create_account_item, create_db_config
 from tests.test.PerformanceTestUtils import FailingClock, ScriptedClock
 from tests.test.SymbolDatabaseTestUtils import fetch_full_block_state, fetch_normalized_sync_state
 from tests.test.SymbolMetadataTestUtils import (
@@ -31,6 +33,7 @@ from tests.test.SymbolMetadataTestUtils import (
 	create_expected_metadata_row,
 	create_metadata_item,
 	fetch_metadata_rows,
+	fetch_symbol_metadata_indexes,
 	find_metadata_row
 )
 from tests.test.SymbolMosaicTestUtils import (
@@ -86,6 +89,12 @@ def _expected_account_refresh_state(**overrides):
 		'last_error': None,
 		**overrides
 	}
+
+
+def _migrate_account_refresh(config):
+	with TemporaryDirectory() as temp_directory:
+		config_path = create_db_config(temp_directory, config)
+		migrate_account_refresh.main(['--db-config', str(config_path)])
 
 
 class FailingCommitConnection:
@@ -810,13 +819,6 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.create_tables()
 
 		# Assert:
-		cursor.execute(
-			'''
-			SELECT indexname, indexdef
-			FROM pg_indexes
-			WHERE schemaname = 'public' AND tablename = 'symbol_metadata'
-			ORDER BY indexname
-			''')
 		self.assertEqual([
 			(
 				'idx_symbol_metadata_scoped_key',
@@ -829,7 +831,12 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			(
 				'idx_symbol_metadata_target_address_height',
 				'CREATE INDEX idx_symbol_metadata_target_address_height ON public.symbol_metadata '
-				'USING btree (target_address, updated_at_height DESC)'
+				'USING btree (target_address, updated_at_height DESC, composite_hash)'
+			),
+			(
+				'idx_symbol_metadata_target_address_type_height_hash',
+				'CREATE INDEX idx_symbol_metadata_target_address_type_height_hash ON public.symbol_metadata '
+				'USING btree (target_address, metadata_type, updated_at_height DESC, composite_hash)'
 			),
 			(
 				'idx_symbol_metadata_target_id',
@@ -840,11 +847,43 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				'CREATE INDEX idx_symbol_metadata_type ON public.symbol_metadata USING btree (metadata_type)'
 			),
 			(
+				'idx_symbol_metadata_type_target_id_height_hash',
+				'CREATE INDEX idx_symbol_metadata_type_target_id_height_hash ON public.symbol_metadata '
+				'USING btree (metadata_type, target_id, updated_at_height DESC, composite_hash)'
+			),
+			(
 				'idx_symbol_metadata_updated_height',
 				'CREATE INDEX idx_symbol_metadata_updated_height ON public.symbol_metadata USING btree (updated_at_height)'
 			),
 			('symbol_metadata_pkey', 'CREATE UNIQUE INDEX symbol_metadata_pkey ON public.symbol_metadata USING btree (composite_hash)')
-		], cursor.fetchall())
+		], fetch_symbol_metadata_indexes(cursor))
+
+	def test_create_tables_preserves_symbol_metadata_rows_when_run_again(self):
+		# Arrange:
+		database = self._create_database()
+		item = create_metadata_item(metadata_type=1, target_id='72C0212E67A08BCE')
+		row = create_expected_metadata_row(
+			item, 123, composite_hash=bytes.fromhex('11' * 32), metadata_type='mosaic',
+			target_id='72C0212E67A08BCE', value_utf8='hello')
+		database.upsert_metadata(row)
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual(row, find_metadata_row(database, row['composite_hash']))
+
+	def test_create_tables_preserves_symbol_metadata_indexes_when_run_again(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		expected_indexes = fetch_symbol_metadata_indexes(cursor)
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual(expected_indexes, fetch_symbol_metadata_indexes(cursor))
 
 	def test_upsert_namespace_persists_fresh_namespace_and_full_alias_row_set(self):
 		# Arrange:
@@ -2760,7 +2799,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('SELECT refresh_run_id FROM symbol_account_list_ranks')
 		self.assertEqual([], cursor.fetchall())
 
-	def test_create_tables_repeats_account_state_migration_and_preserves_publication(self):
+	def test_migration_tool_repeats_account_state_migration_and_preserves_publication(self):
 		# Arrange: reconstruct the pre-migration state table with an existing public ID.
 		database = self._create_database()
 		seed_account_refresh_state(database, {'last_successful_run_id': 'published'})
@@ -2771,16 +2810,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		''')
 		database.connection.commit()
 
-		# Act: initialization may run repeatedly after migration or restart.
-		database.create_tables()
-		database.create_tables()
+		# Act: the explicit upgrade may run repeatedly.
+		_migrate_account_refresh(self.db_config)
+		_migrate_account_refresh(self.db_config)
 
 		# Assert:
 		state = database.get_account_refresh_state()
 		self.assertEqual(('published', None, None, False), (
 			state['last_successful_run_id'], state['previous_successful_run_id'], state['running_run_id'], state['is_retention_ready']))
 
-	def test_create_tables_migrates_snapshot_validity_without_promoting_existing_generations(self):
+	def test_migration_tool_migrates_snapshot_validity_without_promoting_existing_generations(self):
 		# Arrange: reconstruct the previous schema with a published snapshot and running owner.
 		database = self._create_database()
 		completed_at = datetime.datetime(2026, 1, 1)
@@ -2815,14 +2854,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			is_retention_ready=True, status='refreshing')
 
 		# Act: apply the additive migration.
-		database.create_tables()
+		_migrate_account_refresh(self.db_config)
 
 		# Assert: the publication is preserved and remains unverified.
 		state = database.get_account_refresh_state()
 		self.assertEqual(expected, state)
 
-		# Act: rerun initialization.
-		database.create_tables()
+		# Act: rerun the explicit upgrade.
+		_migrate_account_refresh(self.db_config)
 
 		# Assert: publication and generation data remain unchanged after the second migration.
 		state = database.get_account_refresh_state()
@@ -2834,7 +2873,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('SELECT refresh_run_id, rank_scope, rank FROM symbol_account_list_ranks')
 		self.assertEqual([('published', 'ID', 0)], cursor.fetchall())
 
-	def test_create_tables_adds_missing_account_columns_without_changing_existing_values(self):
+	def test_migration_tool_adds_missing_account_columns_without_changing_existing_values(self):
 		# Arrange: some retention and validity columns already contain values.
 		database = self._create_database()
 		completed_at = datetime.datetime(2026, 1, 1)
@@ -2852,7 +2891,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		database.connection.commit()
 
 		# Act: migrate a partially upgraded schema.
-		database.create_tables()
+		_migrate_account_refresh(self.db_config)
 
 		# Assert: existing values remain and the missing proof is not invented.
 		state = database.get_account_refresh_state()
@@ -4177,13 +4216,18 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			last_synced_block_hash=b'new-checkpoint',
 			dirty_state_from_height=None), result)
 
-	def test_rejects_invalid_sync_state_status(self):
+	def test_upsert_sync_state_rolls_back_invalid_status_and_keeps_connection_usable(self):
 		# Arrange:
 		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state())
+		before_sync_state = database.get_sync_state()
 
-		# Act + Assert:
+		# Act:
 		with self.assertRaises(PsycopgError):
 			database.upsert_sync_state(_create_sync_state(status='invalid'))
+
+		# Assert: the same connection can read the committed row without a manual rollback.
+		self.assertEqual(before_sync_state, database.get_sync_state())
 
 	def test_rejects_non_singleton_sync_state_row(self):
 		# Arrange:
@@ -4984,7 +5028,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual(original_namespace_state, fetch_namespace_state(database.connection))
 		self.assertEqual(original_mosaic_state, fetch_mosaic_state(database))
 
-	def test_repair_rollback_deletes_current_state_but_preserves_account_refresh_rows(self):
+	def test_repair_rollback_preserves_current_state_and_account_refresh_rows_without_refresh_entries(self):
 		# Arrange:
 		database = self._create_database()
 		account_row, mosaic_rows = _create_account_row()
@@ -5024,11 +5068,14 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('SELECT refresh_run_id, address, mosaic_id, amount FROM symbol_account_refresh_mosaics')
 		refresh_mosaic_results = cursor.fetchall()
 
-		# current-state rows are deleted on rollback (last_seen_height/updated_at_height >= fork_height); they get
-		# repopulated by the next dirty-key touch or account refresh snapshot run, not by rollback repair itself.
-		self.assertEqual([], account_results)
-		self.assertEqual([], mosaic_results)
-		self.assertEqual([], multisig_results)
+		# Rollback preserves account-family rows until node-backed refresh entries replace affected addresses.
+		self.assertEqual([(expected_address,)], [(bytes(address),) for address, in account_results])
+		self.assertEqual([
+			(expected_address, expected_mosaic_row['mosaic_id'], expected_mosaic_row['amount'])
+		], [(bytes(address), mosaic_id, amount) for address, mosaic_id, amount in mosaic_results])
+		self.assertEqual([(expected_address, 1, 1)], [
+			(bytes(address), min_approval, min_removal)
+			for address, min_approval, min_removal in multisig_results])
 		self.assertEqual(
 			[('run-1', expected_address, 0)],
 			[(run_id, bytes(address), account_search_order)
@@ -5652,9 +5699,17 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		cursor.execute('SELECT encode(address, \'hex\'), updated_at_height FROM symbol_multisig ORDER BY address')
 		multisig_results = cursor.fetchall()
 
-		self.assertEqual([(ADDRESS1.lower(), 1)], account_results)
-		self.assertEqual([(ADDRESS1.lower(), NATIVE_MOSAIC_ID, 1)], mosaic_results)
-		self.assertEqual([(ADDRESS1.lower(), 1)], multisig_results)
+		self.assertEqual(sorted([
+			(ADDRESS1.lower(), 1), (RECIPIENT_ADDRESS.lower(), 2), (ADDRESS4.lower(), 3)
+		]), account_results)
+		self.assertEqual(sorted([
+			(ADDRESS1.lower(), NATIVE_MOSAIC_ID, 1),
+			(RECIPIENT_ADDRESS.lower(), NATIVE_MOSAIC_ID, 2),
+			(ADDRESS4.lower(), NATIVE_MOSAIC_ID, 3)
+		]), mosaic_results)
+		self.assertEqual(sorted([
+			(ADDRESS1.lower(), 1), (RECIPIENT_ADDRESS.lower(), 2), (ADDRESS4.lower(), 3)
+		]), multisig_results)
 
 	def test_can_repair_rollback_from_height_in_one_transaction(self):
 		# Arrange:
@@ -5720,9 +5775,16 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertEqual([(1, 'kept address', 'signer')], address_results)
 		self.assertEqual([(1,)], receipt_results)
 		self.assertEqual([(1, 100)], block_reward_results)
-		self.assertEqual([(ADDRESS1.lower(), 1)], account_results)
-		self.assertEqual([(ADDRESS1.lower(), NATIVE_MOSAIC_ID, 1)], account_mosaic_results)
-		self.assertEqual([(ADDRESS1.lower(), 1)], multisig_results)
+		self.assertEqual(sorted([
+			(ADDRESS1.lower(), 1), (RECIPIENT_ADDRESS.lower(), 2)
+		]), account_results)
+		self.assertEqual(sorted([
+			(ADDRESS1.lower(), NATIVE_MOSAIC_ID, 1),
+			(RECIPIENT_ADDRESS.lower(), NATIVE_MOSAIC_ID, 2)
+		]), account_mosaic_results)
+		self.assertEqual(sorted([
+			(ADDRESS1.lower(), 1), (RECIPIENT_ADDRESS.lower(), 2)
+		]), multisig_results)
 		self.assertEqual('repairing', sync_state['status'])
 		self.assertEqual(1, sync_state['last_synced_height'])
 		self.assertEqual(
@@ -7095,6 +7157,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'metadata_entries',
 			'hash_lock_entries',
 			'secret_lock_entries',
-			'mosaic_restriction_entries'), entries._fields)
-		self.assertEqual(((), (), (), (), (), ()), entries)
+			'mosaic_restriction_entries',
+			'account_entries'), entries._fields)
+		self.assertEqual(((), (), (), (), (), (), ()), entries)
 		self.assertEqual((), entries.mosaic_restriction_entries)

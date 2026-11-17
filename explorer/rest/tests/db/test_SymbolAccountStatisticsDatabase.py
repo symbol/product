@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest import TestCase
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
+from common.symbol.NodeConfiguration import SymbolNodeConfiguration
 from common.tests.AccountRefreshTestUtils import seed_account_refresh_state
 from flask import Flask
 from psycopg2 import Error as PsycopgError
@@ -163,7 +164,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 			writer.upsert_blocks([create_symbol_block(1, timestamp=NOW, beneficiary_address=account_address(1))])
 			with self._create_database(config) as database:
 				facade = SymbolRestFacade(
-					database, object(), NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
+					database, SymbolNodeConfiguration.from_url('http://node.test:3000'), NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
 					harvesting_balance_range=HarvestingBalanceRange(100, 200))
 				app = Flask(__name__)
 				setup_symbol_routes(app, facade)
@@ -200,7 +201,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 			seed_refresh_run(writer, 'selected-run', create_statistics_entries(), completed_at=NOW)
 			with self._create_database(config, clock=lambda: clock[0]) as database:
 				facade = SymbolRestFacade(
-					database, object(), NATIVE_MOSAIC_INFO, Network.TESTNET, 10, 7,
+					database, SymbolNodeConfiguration.from_url('http://node.test:3000'), NATIVE_MOSAIC_INFO, Network.TESTNET, 10, 7,
 					harvesting_balance_range=HarvestingBalanceRange(0, 200))
 				app = Flask(__name__)
 				setup_symbol_routes(app, facade)
@@ -222,7 +223,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 			seed_refresh_run(writer, 'selected-run', create_statistics_entries())
 			with self._create_database(config) as database:
 				facade = SymbolRestFacade(
-					database, object(), NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
+					database, SymbolNodeConfiguration.from_url('http://node.test:3000'), NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
 					harvesting_balance_range=HarvestingBalanceRange(0, 200))
 				app = Flask(__name__)
 				setup_symbol_routes(app, facade)
@@ -264,6 +265,28 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 			(Decimal('0.2'), str(Address(account_address(3)))),
 			(Decimal('0.1'), str(Address(account_address(4))))
 		), result.top_accounts)
+
+	def test_get_account_statistics_includes_readable_height_and_excludes_next_height(self):
+		# Arrange: distinct beneficiaries isolate the inclusive height boundary.
+		with symbol_test_database(create_symbol_sync_state(29, 29)) as (config, writer):
+			entries = [create_refresh_entry('selected-run', identity, identity, 1) for identity in (1, 2)]
+			for entry in entries:
+				entry['snapshot_height'] = 29
+
+			seed_refresh_run(writer, 'selected-run', entries, completed_height=29)
+			writer.upsert_blocks([
+				create_symbol_block(29, timestamp=NOW, beneficiary_address=account_address(1)),
+				create_symbol_block(30, timestamp=NOW, beneficiary_address=account_address(2))
+			])
+			with self._create_database(config) as database:
+				# Act:
+				result = database.get_account_statistics(7200, 7, HARVESTING_BALANCE_RANGE)
+
+		# Assert:
+		self.assertEqual(AccountStatisticsRecord(2, 1, 0, 0, Decimal('1'), (
+			(Decimal('0.5'), str(Address(account_address(1)))),
+			(Decimal('0.5'), str(Address(account_address(2))))
+		)), result)
 
 	def test_get_account_statistics_uses_configured_native_mosaic_id_for_eligibility(self):
 		# Arrange:

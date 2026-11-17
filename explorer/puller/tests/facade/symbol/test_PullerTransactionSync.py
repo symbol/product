@@ -1008,6 +1008,7 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 		restart_connector = FakeConnector(
 			2,
 			{1: [blocks[1]]},
+			block_by_height={1: create_node_block(1), 2: blocks[1]},
 			finalized_height=2,
 			transactions_by_path={
 				transaction_path(2, 2, 1): create_transaction_page(later_transactions[:MAX_PAGE_SIZE], page_number=1),

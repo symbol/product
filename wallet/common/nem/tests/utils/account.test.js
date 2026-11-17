@@ -362,6 +362,16 @@ describe('utils/account', () => {
 				expected: { result: false }
 			},
 			{
+				description: 'returns true for an address of any network when the network identifier is not provided',
+				config: { inputs: [testnetAccount.address, mainnetAccount.address], networkIdentifier: undefined },
+				expected: { result: true }
+			},
+			{
+				description: 'returns false for a non-address string when the network identifier is not provided',
+				config: { input: 'invalid', networkIdentifier: undefined },
+				expected: { result: false }
+			},
+			{
 				description: 'returns false for a non-address string',
 				config: { input: 'invalid', networkIdentifier: NetworkIdentifier.TEST_NET },
 				expected: { result: false }

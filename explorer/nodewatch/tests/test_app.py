@@ -87,6 +87,23 @@ def test_get_symbol_nodes(client):  # pylint: disable=redefined-outer-name
 def test_get_symbol_voters(client):  # pylint: disable=redefined-outer-name
 	_assert_nodes_table(client.get('/symbol/voters'), 'Symbol Voters', ['59026DB', 'Allnodes34'])
 
+
+def test_get_symbol_nodes_links_ssl_api_endpoints(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response_html = str(client.get('/symbol/nodes').data)
+
+	# Assert: https (3001) api endpoints are linked, but peer endpoints are not
+	assert '<a href="https://symbol.shizuilab.com:3001/node/info" target="_blank">' in response_html
+	assert ':7900/node/info' not in response_html
+
+
+def test_get_symbol_harvesters_links_api_endpoints(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response_html = str(client.get('/symbol/harvesters').data)
+
+	# Assert: http (3000) api endpoints are linked
+	assert '<a href="http://sn1.msus-symbol.com:3000/node/info" target="_blank">' in response_html
+
 # endregion
 
 

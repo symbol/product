@@ -6,6 +6,7 @@ import {
 	LinkAction,
 	LinkActionMessage,
 	MULTISIG_TRANSACTION_DEADLINE_HOURS,
+	MessageKind,
 	MessageType,
 	SINGLE_TRANSACTION_DEADLINE_HOURS,
 	TransactionBundleType,
@@ -140,6 +141,7 @@ const buildHarvestingRequestTransfer = (signerPublicKey, payload) => ({
 	tokens: [],
 	message: {
 		type: MessageType.DelegatedHarvesting,
+		kind: MessageKind.RAW,
 		payload,
 		text: ''
 	},

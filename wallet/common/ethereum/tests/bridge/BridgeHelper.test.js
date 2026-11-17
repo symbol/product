@@ -1,5 +1,5 @@
 import { BridgeHelper } from '../../src/bridge/BridgeHelper';
-import { TransactionType } from '../../src/constants';
+import { MessageKind, TransactionType } from '../../src/constants';
 import { jest } from '@jest/globals';
 import { base32ToHex } from 'wallet-common-core';
 
@@ -51,7 +51,8 @@ describe('bridge/BridgeHelper', () => {
 				message: {
 					text: recipientAddress,
 					payload: expectedPayload,
-					type: 1
+					type: null,
+					kind: MessageKind.RAW
 				},
 				fee,
 				nonce: expectedNonce

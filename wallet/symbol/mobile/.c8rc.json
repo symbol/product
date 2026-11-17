@@ -2,7 +2,8 @@
 	"all": false,
 	"include": ["src/**"],
 	"exclude": [
-		"src/types/**",
-		"src/components/layout/Grid.jsx"
+		"src/main/types/**",
+		"src/contract/types/**",
+		"src/main/components/layout/Grid.jsx"
 	]
 }
