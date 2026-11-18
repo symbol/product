@@ -4,7 +4,7 @@ process.env.NEXT_PUBLIC_EXPLORER_VARIANT = process.env.JEST_EXPLORER_VARIANT || 
 // Pin the timezone so date formatting tests are deterministic across machines.
 process.env.TZ = 'UTC';
 
-const { VARIANT_IDS } = require('./variants/ids');
+const VARIANTS = require('./contract/variants.json');
 const nextJest = require('next/jest.js'); // eslint-disable-line import/extensions
 const fs = require('fs');
 const path = require('path');
@@ -27,11 +27,11 @@ const mapPathsToModuleNameMapper = () => {
 
 const moduleNameMapper = mapPathsToModuleNameMapper();
 
-// Mirror next.config.js so tests load the same active-variant modules as the build.
-moduleNameMapper['^@/app/active-variant/(.*)$'] = `<rootDir>/variants/${process.env.NEXT_PUBLIC_EXPLORER_VARIANT}/$1`;
+// Mirror next.config.js so tests load the same variant modules as the build.
+moduleNameMapper['^@/variant/(.*)$'] =`<rootDir>/variants/${process.env.NEXT_PUBLIC_EXPLORER_VARIANT}/$1`;
 
 // Variant-owned tests (__tests__/variants/<id>/) run only in their own variant's pass.
-const inactiveVariants = VARIANT_IDS.filter(variant => variant !== process.env.NEXT_PUBLIC_EXPLORER_VARIANT);
+const inactiveVariants = VARIANTS.filter(variant => variant !== process.env.NEXT_PUBLIC_EXPLORER_VARIANT);
 
 const createJestConfig = nextJest({
 	// Provide the path to your Next.js app to load next.config.js and .env files in your test environment
@@ -41,7 +41,8 @@ const createJestConfig = nextJest({
 // Add any custom config to be passed to Jest
 const customJestConfig = {
 	workerThreads: true,
-	testPathIgnorePatterns: ['/test-utils/', ...inactiveVariants.map(variant => `/__tests__/variants/${variant}/`)],
+	testMatch: ['<rootDir>/__tests__/**/*.test.js'],
+	testPathIgnorePatterns: inactiveVariants.map(variant => `/__tests__/variants/${variant}/`),
 	coveragePathIgnorePatterns: ['/test-utils/', '/__fixtures__/'],
 	clearMocks: true,
 	coverageProvider: 'babel',
@@ -59,9 +60,9 @@ const customJestConfig = {
 const createConfig = createJestConfig(customJestConfig);
 
 // next/jest hands the jsconfig "paths" to its SWC transformer, which rewrites aliased imports at
-// compile time. That would pin @/app/active-variant/* to the jsconfig default (nem) in every pass,
+// compile time. That would pin @/variant/* to the jsconfig default (nem) in every pass,
 // bypassing the per-variant moduleNameMapper above — so strip the alias from the transformer
-// options and leave active-variant resolution to the mapper.
+// options and leave variant resolution to the mapper.
 module.exports = async () => {
 	const config = await createConfig();
 
@@ -69,7 +70,7 @@ module.exports = async () => {
 		const transformerPaths = Array.isArray(entry) ? entry[1]?.jsConfig?.compilerOptions?.paths : undefined;
 		
 		if (transformerPaths) 
-			delete transformerPaths['@/app/active-variant/*'];
+			delete transformerPaths['@/variant/*'];
 	});
 
 	return config;
