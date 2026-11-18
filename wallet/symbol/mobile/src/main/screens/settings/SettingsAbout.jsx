@@ -1,6 +1,8 @@
 import { SocialBadges } from './components/SocialBadges';
 import packageJSON from '../../../../package.json';
 import { Card, Screen, Spacer, Stack, StyledText, TableView } from '@/app/components';
+import { config } from '@/app/config';
+import { useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 
 /**
@@ -8,6 +10,8 @@ import { $t } from '@/app/localization';
  * versions, and details about the protocol along with social media links.
  */
 export const SettingsAbout = () => {
+	const { chainName } = useWalletController();
+	const { displayName: chainDisplayName, socialURLs } = config.chains[chainName];
 	const aboutTable = [
 		{
 			title: 'appVersion',
@@ -36,9 +40,9 @@ export const SettingsAbout = () => {
 							<TableView data={aboutTable} isTitleTranslatable />
 						</Spacer>
 					</Card>
-					<StyledText type="title">{$t('screen_settings_title_aboutSymbol')}</StyledText>
-					<StyledText type="body">{$t('screen_settings_description_aboutSymbol')}</StyledText>
-					<SocialBadges />
+					<StyledText type="title">{$t('screen_settings_title_aboutChain', { chainDisplayName })}</StyledText>
+					<StyledText type="body">{$t('screen_settings_description_aboutChain', { chainDisplayName })}</StyledText>
+					<SocialBadges urls={socialURLs} />
 				</Stack>
 			</Spacer>
 		</Screen>
