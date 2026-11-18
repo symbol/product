@@ -15,9 +15,8 @@ from symbolchain.symbol.Network import Address
 
 from rest.model.format import format_timestamp
 from rest.model.symbol.format import format_amount, to_hex_or_none
-from rest.model.symbol.validation import SymbolDataInvalid
+from rest.model.symbol.validation import UINT64_MAX, SymbolDataInvalid
 
-UINT64_MAX = (1 << 64) - 1
 # Symbol source client/catapult/plugins/txes/mosaic/src/model/MosaicFlags.h at
 # dbff03b4096622d1bc1fce611358e05cfa7b0296 defines these four bits.
 MOSAIC_DEFINITION_FLAGS = sum(flag.value for flag in (

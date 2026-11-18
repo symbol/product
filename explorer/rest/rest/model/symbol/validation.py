@@ -1,3 +1,6 @@
+UINT64_MAX = (1 << 64) - 1
+
+
 class SymbolDataInvalid(RuntimeError):
 	"""Raised when a persisted Symbol value cannot be represented safely."""
 
