@@ -13,7 +13,9 @@ from zenlog import log
 from rest.model.symbol.Block import BLOCK_STATISTICS_WINDOW, SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
 from rest.model.symbol.Namespace import SymbolNamespaceView
-from rest.model.symbol.TransactionView import AGGREGATE_TYPES, SymbolTransactionView, create_confirmed_record, create_unconfirmed_record
+from rest.model.symbol.TransactionView import AGGREGATE_TYPES, SymbolTransactionView
+from rest.model.symbol.TransactionView import TransactionMosaicRecord as TransactionViewMosaicRecord
+from rest.model.symbol.TransactionView import create_confirmed_record, create_unconfirmed_record, resolve_transaction_mosaics
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -1048,7 +1050,9 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 			cursor, list(all_rows_by_id_map), sync_state)
 
 		records_by_id_map = {
-			row[0]: create_confirmed_record(row, tuple(mosaics_by_transaction_map[row[0]]), self.native_mosaic_info)
+			row[0]: create_confirmed_record(row, resolve_transaction_mosaics(
+				tuple(TransactionViewMosaicRecord(*mosaic) for mosaic in mosaics_by_transaction_map[row[0]]),
+				mosaic_divisibility_map), self.native_mosaic_info)
 			for row in all_rows_by_id_map.values()
 		}
 		embedded_transactions_by_hash_map = {}
@@ -1056,10 +1060,8 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 			record = records_by_id_map[row[0]]
 			embedded_transactions_by_hash_map.setdefault(record.aggregate_hash, []).append(record)
 
-		return [SymbolTransactionView(
-			records_by_id_map[row[0]],
-			mosaic_divisibility_map,
-			embedded_transactions_by_hash_map.get(records_by_id_map[row[0]].transaction_hash, ()))
+		return [SymbolTransactionView(records_by_id_map[row[0]]._replace(
+			embedded_transactions=tuple(embedded_transactions_by_hash_map.get(records_by_id_map[row[0]].transaction_hash, ()))))
 			for row in transaction_rows]
 
 	def _fetch_transaction_mosaics(self, cursor, transaction_ids, sync_state):
@@ -1245,7 +1247,6 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 		"""Builds pending transaction views and enriches transfer mosaics in one batch."""
 
 		records = [create_unconfirmed_record(item_map, network) for item_map in transactions]
-
 		embedded_by_hash_map = {}
 		aggregate_hashes = set()
 		mosaic_ids_map = {}
@@ -1256,23 +1257,27 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 			if record.transaction_type in AGGREGATE_TYPES:
 				aggregate_hashes.add(record.transaction_hash)
 
-			for mosaic_id, _ in record.mosaics:
-				mosaic_ids_map[mosaic_id] = None
+			for mosaic in record.mosaics:
+				mosaic_ids_map[mosaic.mosaic_id] = None
 
 		mosaic_divisibility_map = self.get_mosaic_divisibility(list(mosaic_ids_map), self.native_mosaic_info)
 
-		views = []
+		transactions = []
 		for record in records:
 			if record.aggregate_hash in aggregate_hashes:
 				continue
 
+			record = record._replace(mosaics=resolve_transaction_mosaics(record.mosaics, mosaic_divisibility_map))
 			embedded_records = ()
 			if record.transaction_type in AGGREGATE_TYPES:
-				embedded_records = sorted(embedded_by_hash_map.get(record.transaction_hash, []), key=lambda child: child.embedded_index)
+				embedded_records = tuple(
+					embedded._replace(mosaics=resolve_transaction_mosaics(embedded.mosaics, mosaic_divisibility_map))
+					for embedded in sorted(
+						embedded_by_hash_map.get(record.transaction_hash, ()), key=lambda embedded: embedded.embedded_index))
 
-			views.append(SymbolTransactionView(record, mosaic_divisibility_map, embedded_records))
+			transactions.append(record._replace(embedded_transactions=embedded_records))
 
-		return views
+		return transactions
 
 	def get_mosaic_divisibility(self, mosaic_ids, native_mosaic_info=None):
 		"""Maps requested IDs to resolved IDs and divisibilities, querying only mosaics without configured metadata."""
@@ -1280,6 +1285,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 		divisibility_map = {native_mosaic_info.id: native_mosaic_info.divisibility} if native_mosaic_info is not None else {}
 		resolved_ids_map = {}
 		mosaic_ids_to_resolve = []
+
 		for mosaic_id in mosaic_ids:
 			upper_id = mosaic_id.upper()
 			if upper_id in divisibility_map:

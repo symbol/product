@@ -61,11 +61,10 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 		view = views[0]
 		self.assertIsInstance(view, SymbolTransactionView)
 		self.assertEqual(aggregate_hash.hex().upper(), view.transaction.transaction_hash)
-		self.assertEqual([0, 1], [transaction.embedded_index for transaction in view.embedded_transactions])
+		self.assertEqual([0, 1], [transaction.embedded_index for transaction in view.transaction.embedded_transactions])
 		self.assertEqual(
-			[((mosaic_id, 200),), ((mosaic_id, 100),)],
-			[transaction.mosaics for transaction in view.embedded_transactions])
-		self.assertEqual({mosaic_id: (mosaic_id, 2)}, view.mosaic_divisibility_map)
+			[((mosaic_id, 200, 2),), ((mosaic_id, 100, 2),)],
+			[transaction.mosaics for transaction in view.transaction.embedded_transactions])
 
 	def test_raises_when_embedded_view_depends_on_unsafe_mosaic_metadata(self):
 		# Arrange:
