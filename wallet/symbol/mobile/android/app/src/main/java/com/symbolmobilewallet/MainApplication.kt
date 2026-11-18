@@ -25,8 +25,10 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
-    // Set the night mode to always be on, so the system buttons match the app's dark theme.
-    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+    // Match the night mode to the brand theme, so the system bar buttons match the app.
+    val isLightTheme = resources.getBoolean(R.bool.is_light_theme)
+    val nightMode = if (isLightTheme) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
+    AppCompatDelegate.setDefaultNightMode(nightMode)
     loadReactNative(this)
     // Add the app brand to Metro bundle URLs.
     reactHost.devSupportManager?.setAdditionalOptionForPackager("resolver.brand", BuildConfig.FLAVOR)

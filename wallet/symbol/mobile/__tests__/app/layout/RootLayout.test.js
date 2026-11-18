@@ -11,8 +11,7 @@ jest.mock('@/app/app/components', () => {
 		NetworkConnectionStatusBar: ({ networkStatus }) => (
 			<Text>network-status-bar-{networkStatus}</Text>
 		),
-		PopupMessage: () => <Text>popup-message</Text>,
-		SystemStatusBar: () => <Text>system-status-bar</Text>
+		PopupMessage: () => <Text>popup-message</Text>
 	};
 });
 
@@ -29,7 +28,6 @@ describe('app/layout/RootLayout', () => {
 	runRenderTextTest(RootLayout, {
 		props: createDefaultProps(),
 		textToRender: [
-			{ type: 'text', value: 'system-status-bar' },
 			{ type: 'text', value: 'popup-message' }
 		]
 	});

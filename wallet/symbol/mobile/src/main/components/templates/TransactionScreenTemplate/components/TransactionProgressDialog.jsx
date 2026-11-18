@@ -45,9 +45,11 @@ export const TransactionProgressDialog = props => {
 					variant={statusInfo.variant}
 					icon={statusInfo.icon}
 				>
-					<StyledText inverse>
-						{statusInfo.description}
-					</StyledText>
+					{({ inverse }) => (
+						<StyledText inverse={inverse}>
+							{statusInfo.description}
+						</StyledText>
+					)}
 				</StatusCard>
 				<ActivityLogView data={activityLogData} />
 				{explorerLinks?.map((link, index) => (

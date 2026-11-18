@@ -1,4 +1,4 @@
-import { useCurrentRoute, useSyncNetworkType, useWalletWorkflow } from './hooks';
+import { useCacheInvalidation, useCurrentRoute, useSyncNetworkType, useWalletWorkflow } from './hooks';
 import { RootLayout } from './layout/RootLayout';
 import { PasscodeView } from '@/app/components';
 import { useTransactionListener, useWalletController, useWalletListener } from '@/app/hooks';
@@ -80,6 +80,12 @@ export const App = () => {
 		if (mainWalletController.isWalletReady && mainWalletController.hasAccounts)
 			mainWalletController.fetchAccountInfo();
 	};
+
+	// Invalidate network request cache depending on blockchain state changes
+	// Must be used before listeners
+	useCacheInvalidation({
+		walletControllers: [mainWalletController, ...walletControllers.additional]
+	});
 
 	// Transaction listeners
 	const showTransactionMessage = () => {

@@ -1,4 +1,4 @@
-import { MessageType, SymbolTransactionType } from '@/app/constants';
+import { MessageKind, SymbolTransactionType } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { objectToTableData } from '@/app/utils';
 
@@ -20,7 +20,6 @@ import { objectToTableData } from '@/app/utils';
  * React hook for creating transfer transactions and generating preview data.
  * @param {object} params - Hook parameters.
  * @param {WalletController} params.walletController - The wallet controller instance.
- * @param {string} params.senderAddress - The sender account address.
  * @param {string} params.senderPublicKey - The sender public key.
  * @param {string} params.recipientAddress - The recipient account address.
  * @param {Token[]} params.tokens - Array of tokens to transfer.
@@ -30,7 +29,6 @@ import { objectToTableData } from '@/app/utils';
  */
 export const useSendTransaction = ({
 	walletController,
-	senderAddress,
 	senderPublicKey,
 	recipientAddress,
 	tokens,
@@ -43,7 +41,6 @@ export const useSendTransaction = ({
 	 */
 	const createTransaction = async () => {
 		const transactionBundle = await walletController.modules.transfer.createTransaction({
-			senderAddress,
 			senderPublicKey,
 			recipientAddress,
 			tokens,
@@ -86,7 +83,7 @@ export const useSendTransaction = ({
 
 			if (transfer.message) {
 				data.messageText = transfer.message.text;
-				data.isMessageEncrypted = transfer.message.type === MessageType.ENCRYPTED_TEXT;
+				data.isMessageEncrypted = transfer.message.kind === MessageKind.ENCRYPTED;
 			}
 
 			data.tokens = transfer.tokens;

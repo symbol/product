@@ -79,15 +79,6 @@ jest.mock('@/app/screens', () => {
 		BridgeAccountDetails: createMockScreen('BridgeAccountDetails'),
 		BridgeSwap: createMockScreen('BridgeSwap'),
 		BridgeSwapDetails: createMockScreen('BridgeSwapDetails'),
-		MultisigAccountList: createMockScreen('MultisigAccountList'),
-		MultisigAccountDetails: createMockScreen('MultisigAccountDetails'),
-		CreateMultisigAccount: createMockScreen('CreateMultisigAccount'),
-		ModifyMultisigAccount: createMockScreen('ModifyMultisigAccount'),
-		Harvesting: createMockScreen('Harvesting'),
-		CreateMosaic: createMockScreen('CreateMosaic'),
-		ModifyMosaic: createMockScreen('ModifyMosaic'),
-		RevokeMosaic: createMockScreen('RevokeMosaic'),
-		CreatedMosaicList: createMockScreen('CreatedMosaicList'),
 		Scan: createMockScreen('Scan'),
 		TransportRequest: createMockScreen('TransportRequest'),
 		Send: createMockScreen('Send'),
@@ -97,6 +88,8 @@ jest.mock('@/app/screens', () => {
 		SettingsSecurity: createMockScreen('SettingsSecurity')
 	};
 });
+
+jest.mock('@/brand/router/routes', () => ({ routes: [] }));
 
 const renderRouterView = props => render(<RouterView {...props} />);
 
@@ -195,51 +188,6 @@ const NAVIGATION_SCREENS_CONFIG = [
 	},
 	{
 		screenName: 'SettingsSecurity',
-		shouldReset: false,
-		hasParams: true
-	},
-	{
-		screenName: 'MultisigAccountList',
-		shouldReset: false,
-		hasParams: true
-	},
-	{
-		screenName: 'MultisigAccountDetails',
-		shouldReset: false,
-		hasParams: true
-	},
-	{
-		screenName: 'CreateMultisigAccount',
-		shouldReset: false,
-		hasParams: true
-	},
-	{
-		screenName: 'ModifyMultisigAccount',
-		shouldReset: false,
-		hasParams: true
-	},
-	{
-		screenName: 'Harvesting',
-		shouldReset: false,
-		hasParams: true
-	},
-	{
-		screenName: 'CreateMosaic',
-		shouldReset: false,
-		hasParams: true
-	},
-	{
-		screenName: 'ModifyMosaic',
-		shouldReset: false,
-		hasParams: true
-	},
-	{
-		screenName: 'RevokeMosaic',
-		shouldReset: false,
-		hasParams: true
-	},
-	{
-		screenName: 'CreatedMosaicList',
 		shouldReset: false,
 		hasParams: true
 	}

@@ -3,7 +3,8 @@
 
 import { useToggle } from '@/app/hooks';
 import { $t } from '@/app/localization';
-import { Colors, Sizes, Typography } from '@/app/styles';
+import { Colors, Shadows, Sizes, Typography } from '@/app/styles';
+import { feeSelectorConfig } from '@/brand/config/fee-selector-config';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -93,6 +94,7 @@ export const FeeSelector = ({ style, title, feeTiers, value, ticker, onChange })
 	}, [feeTiers]);
 
 	// Derived values
+	const { isSpeedIconVisible } = feeSelectorConfig;
 	const sliderValue = FEE_TIER_LEVELS.indexOf(value);
 	const imageSrc = IMAGES[sliderValue];
 	const selectedFeeValue = options[sliderValue].value;
@@ -122,7 +124,9 @@ export const FeeSelector = ({ style, title, feeTiers, value, ticker, onChange })
 	return (
 		<View style={[styles.root, style]}>
 			<View style={styles.inputContainer}>
-				<Animated.Image source={imageSrc} style={[styles.image, animatedImageStyle]} />
+				{isSpeedIconVisible && (
+					<Animated.Image source={imageSrc} style={[styles.image, animatedImageStyle]} />
+				)}
 				<Text style={styles.label}>{title}</Text>
 				<Text style={styles.value}>{valueField}</Text>
 			</View>
@@ -146,16 +150,18 @@ export const FeeSelector = ({ style, title, feeTiers, value, ticker, onChange })
 };
 
 // Styles
-const CONTAINER_BORDER_WIDTH = Sizes.Semantic.borderWidth.m;
+const CONTAINER_BORDER_WIDTH = Sizes.Components.control.borderWidth;
 const EXTRA_PIXEL_OFFSET = 0.75;
 
 const styles = StyleSheet.create({
 	root: {
 		height: Sizes.Semantic.controlHeight.m,
-		borderRadius: Sizes.Semantic.borderRadius.s,
+		borderRadius: Sizes.Components.control.borderRadius,
 		borderWidth: CONTAINER_BORDER_WIDTH,
+		borderColor: Colors.Components.control.default.default.background,
 		borderBottomColor: Colors.Components.control.default.default.border,
-		backgroundColor: Colors.Components.control.default.default.background
+		backgroundColor: Colors.Components.control.default.default.background,
+		boxShadow: Shadows.Components.control
 	},
 	inputContainer: {
 		width: '100%',
@@ -181,9 +187,10 @@ const styles = StyleSheet.create({
 		height: CONTAINER_BORDER_WIDTH
 	},
 	thumb: {
-		backgroundColor: Colors.Semantic.content.primary.default,
+		backgroundColor: '#fff',
 		borderWidth: Sizes.Semantic.borderWidth.m,
-		borderColor: Colors.Components.control.default.default.border
+		borderColor: Colors.Components.control.default.default.border,
+		boxShadow: Shadows.Components.control
 	},
 	image: {
 		width: IMAGE_WIDTH,

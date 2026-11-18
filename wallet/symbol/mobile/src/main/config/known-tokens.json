@@ -17,6 +17,24 @@
             }
         ]
     },
+    "nem": {
+        "testnet": [
+            {
+                "tokenId": "nem.xem",
+                "imageId": "xem",
+                "name": "NEM",
+                "ticker": "XEM"
+            }
+        ],
+        "mainnet": [
+            {
+                "tokenId": "nem.xem",
+                "imageId": "xem",
+                "name": "NEM",
+                "ticker": "XEM"
+            }
+        ]
+    },
     "ethereum": {
         "testnet": [
             {

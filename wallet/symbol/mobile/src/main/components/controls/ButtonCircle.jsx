@@ -1,5 +1,5 @@
 import { Icon, TouchableNative } from '@/app/components';
-import { Colors, Sizes } from '@/app/styles';
+import { Colors, Shadows, Sizes } from '@/app/styles';
 import { ButtonColorVariant } from '@/app/types/ColorVariants';
 import React from 'react';
 import { StyleSheet } from 'react-native';
@@ -10,7 +10,6 @@ const DEFAULT_SIZE = 'l';
 const BUTTON_SIZE_S = Sizes.Semantic.circleControlSize.s;
 const BUTTON_SIZE_M = Sizes.Semantic.circleControlSize.m;
 const BUTTON_SIZE_L = Sizes.Semantic.circleControlSize.l;
-const ELEVATION = 2;
 
 
 /**
@@ -82,7 +81,7 @@ export const ButtonCircle = ({
 const styles = StyleSheet.create({
 	root: {
 		overflow: 'hidden',
-		elevation: ELEVATION
+		boxShadow: Shadows.Components.buttonCircle
 	},
 	root_small: {
 		width: BUTTON_SIZE_S,
