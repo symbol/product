@@ -86,9 +86,9 @@ export const BACKEND_HEALTH_ERROR = {
 	SYNCHRONIZATION: 'synchronization'
 };
 
-export const PAGINATION_MODE = {
+export const PAGINATION_MODE = /** @type {const} */ ({
 	PAGE: 'page',
 	CURSOR: 'cursor'
-};
+});
 
 export const DATA_REFRESH_INTERVAL = 60000;
