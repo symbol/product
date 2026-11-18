@@ -39,7 +39,7 @@ class SymbolBlockViewTest(TestCase):
 			network_timestamp=1234,
 			total_fee=Decimal('1234567'),
 			block_reward=None,
-			transaction_count=7,
+			total_transactions_count=7,
 			statement_count=3,
 			difficulty=Decimal('100000000000000'),
 			fee_multiplier=100,
@@ -76,7 +76,7 @@ class SymbolBlockViewTest(TestCase):
 		# Arrange:
 		block_view = self._create_block_view()
 		block_view.total_fee = 0
-		block_view.transaction_count = 0
+		block_view.total_transactions_count = 0
 		block_view.difficulty = Decimal('0')
 
 		# Act:

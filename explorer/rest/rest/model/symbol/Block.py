@@ -76,7 +76,7 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 		self.network_timestamp = kwargs['network_timestamp']
 		self.total_fee = kwargs['total_fee']
 		self.block_reward = kwargs['block_reward']
-		self.transaction_count = kwargs['transaction_count']
+		self.total_transactions_count = kwargs['total_transactions_count']
 		self.statement_count = kwargs['statement_count']
 		self.difficulty = kwargs['difficulty']
 		self.fee_multiplier = kwargs['fee_multiplier']
@@ -111,7 +111,7 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 			'harvester': self.harvester,
 			'beneficiaryAddress': self.beneficiary_address,
 			'totalFees': format_amount(self.total_fee, native_mosaic_info.divisibility),
-			'totalTransactions': self.transaction_count,
+			'totalTransactions': self.total_transactions_count,
 			'statementCount': self.statement_count,
 			'blockReward': block_reward,
 			'isFinalized': self.is_finalized,
