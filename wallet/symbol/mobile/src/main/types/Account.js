@@ -12,6 +12,21 @@
 
 /** @typedef {SymbolAccountInfo | EthereumAccountInfo} AccountInfo */
 
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
+
+/** @typedef {import('@/app/types/Network').NetworkIdentifier} NetworkIdentifier */
+
+/** @typedef {import('@/app/types/Wallet').AddressBookModule} AddressBookModule */
+
+/**
+ * Options for resolving account display information.
+ * @typedef {object} AccountResolveOptions
+ * @property {WalletAccount[]} walletAccounts - Wallet accounts associated with the current network.
+ * @property {AddressBookModule} [addressBook] - Address book module (if available).
+ * @property {ChainName} chainName - Blockchain name (e.g. 'symbol', 'ethereum').
+ * @property {NetworkIdentifier} networkIdentifier - Network identifier (e.g., 'mainnet', 'testnet').
+ */
+
 /**
  * Resolved display data for an account, consumed by the account display components.
  * @typedef {object} AccountDisplayData

@@ -128,19 +128,22 @@ export const mockPasscode = () => {
 
 /**
  * Mocks methods of the Router module.
- * 
+ *
  * @param {object} overrides - An object to override specific methods of the Router mock.
- * 
+ * @param {Function} [RouterClass] - Router class to mock. Defaults to the shared Router.
+ *
  * @return {object} The mocked router navigation methods.
  */
-export const mockRouter = (overrides = {}) => {
+export const mockRouter = (overrides = {}, RouterClass) => {
 	const { Router} = require('@/app/router/Router');
+	const routerClass = RouterClass ?? Router;
+	const defaultMocks = routerClass === Router ? { goBack: jest.fn() } : {};
 	const routerNavigationMock = {
-		goBack: jest.fn(),
+		...defaultMocks,
 		...overrides
 	};
 	Object.keys(routerNavigationMock).forEach(method => {
-		jest.spyOn(Router, method).mockImplementation(routerNavigationMock[method]);
+		jest.spyOn(routerClass, method).mockImplementation(routerNavigationMock[method]);
 	});
 
 	return routerNavigationMock;

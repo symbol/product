@@ -1,5 +1,5 @@
 import { TouchableNative } from '@/app/components';
-import { Sizes } from '@/app/styles';
+import { Shadows, Sizes } from '@/app/styles';
 import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
@@ -68,7 +68,8 @@ const styles = StyleSheet.create({
 		gap: Sizes.Semantic.layoutSpacing.s
 	},
 	itemContainer: {
-		borderRadius: Sizes.Semantic.borderRadius.m,
-		overflow: 'hidden'
+		borderRadius: Sizes.Components.accountCard.borderRadius,
+		overflow: 'hidden',
+		boxShadow: Shadows.Components.accountCard
 	}
 });

@@ -24,10 +24,11 @@ const splitValue = stringValue => {
  * @param {string} props.ticker - The ticker symbol (e.g., currency code).
  * @param {boolean} [props.isColored=false] - Whether to apply color based on value sign.
  * @param {SizeVariant} [props.size='m'] - Size variant.
+ * @param {boolean} [props.inverse=false] - Whether to use inverse color scheme when no sign color is applied.
  * @param {object} [props.style] - Additional styles to apply to the root container.
  * @returns {React.ReactNode} Amount component.
  */
-export const Amount = ({ value, ticker, isColored = false, size = 'm', style }) => {
+export const Amount = ({ value, ticker, isColored = false, size = 'm', inverse = false, style }) => {
 	const isValueProvided = typeof value === 'string' && value !== '';
 	let splittedValue;
 
@@ -58,9 +59,9 @@ export const Amount = ({ value, ticker, isColored = false, size = 'm', style }) 
 
 	// Color
 	const colorMap = {
-		positive: Colors.Semantic.role.success.default,
-		negative: Colors.Semantic.role.danger.default,
-		neutral: Colors.Components.main.text
+		positive: Colors.Components.amount.positive.text,
+		negative: Colors.Components.amount.negative.text,
+		neutral: inverse ? Colors.Components.amount.inverted.text : Colors.Components.amount.neutral.text
 	};
 
 	let textColor;

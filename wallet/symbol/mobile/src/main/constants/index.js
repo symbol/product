@@ -5,12 +5,6 @@ export const NetworkIdentifier = {
 	TEST_NET: 'testnet'
 };
 
-export const MessageType = {
-	PLAIN_TEXT: 0,
-	ENCRYPTED_TEXT: 1,
-	DELEGATED_HARVESTING: 254
-};
-
 export const ActivityStatus = {
 	PENDING: 'pending',
 	COMPLETE: 'complete',
@@ -33,6 +27,24 @@ export const TransactionDirection = {
 	OUTGOING: 'outgoing'
 };
 
+export const TransactionKind = {
+	TRANSFER: 'transfer',
+	AGGREGATE: 'aggregate',
+	OTHER: 'other'
+};
+
+export const TransactionGraphicAvatarType = {
+	ACCOUNT: 'account',
+	TOKEN: 'token',
+	NAMESPACE: 'namespace',
+	LOCK: 'lock'
+};
+
+export const TransactionGraphicCaptionType = {
+	TEXT: 'text',
+	ICON: 'icon'
+};
+
 export const PASSCODE_PIN_LENGTH = 4;
 export const PASSCODE_MAX_FAILED_ATTEMPTS = 10;
 export const PASSCODE_LOCKOUT_DURATION = 60000;
@@ -41,7 +53,7 @@ export { TransactionType as SymbolTransactionType } from 'wallet-common-symbol/s
 
 export { TransactionType as EthereumTransactionType } from 'wallet-common-ethereum/src/constants';
 
-export { TransactionGroup } from 'wallet-common-core/src/constants';
+export { MessageKind, TransactionGroup } from 'wallet-common-core/src/constants';
 export {
 	TransactionAnnounceGroup,
 	AliasAction,

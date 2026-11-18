@@ -1,6 +1,6 @@
 import { Card } from './Card';
 import { Icon, StyledText, TouchableNative } from '@/app/components';
-import { Colors, Sizes } from '@/app/styles';
+import { Colors, Shadows, Sizes } from '@/app/styles';
 import { StyleSheet } from 'react-native';
 
 /** @typedef {import('react')} React */
@@ -35,7 +35,9 @@ export const WidgetContainer = ({ title, onHeaderPress, backgroundColor, childre
 
 const styles = StyleSheet.create({
 	root: {
-		overflow: 'hidden'
+		borderRadius: Sizes.Components.widget.borderRadius,
+		overflow: 'hidden',
+		boxShadow: Shadows.Components.widget
 	},
 	header: {
 		paddingHorizontal: Sizes.Semantic.layoutSpacing.m,

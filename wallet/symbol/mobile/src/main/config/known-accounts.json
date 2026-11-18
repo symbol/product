@@ -345,6 +345,10 @@
             }
         ]
     },
+    "nem": {
+        "testnet": [],
+        "mainnet": []
+    },
     "ethereum": {
         "testnet": [],
         "mainnet": []
