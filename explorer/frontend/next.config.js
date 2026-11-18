@@ -1,3 +1,4 @@
+const VARIANTS = require('./contract/variants.json');
 const i18nConfig = require('./next-i18next.config.js'); // eslint-disable-line import/extensions
 const { loadEnvConfig } = require('@next/env');
 const path = require('path');
@@ -9,8 +10,23 @@ loadEnvConfig(__dirname);
 const commonStylesPath = path.join(__dirname, 'styles');
 const commonVariablesPath = path.join(commonStylesPath, 'variables.scss').split(path.sep).join('/');
 
+/**
+ * Reads the variant for this build from NEXT_PUBLIC_EXPLORER_VARIANT.
+ * Throws on a missing or unknown variant, so a build never silently falls back to another variant.
+ * @returns {string} Variant id.
+ */
+const getVariant = () => {
+	const variant = process.env.NEXT_PUBLIC_EXPLORER_VARIANT;
+
+	if (!VARIANTS.includes(variant))
+		throw new Error(`Unknown variant "${variant}" in NEXT_PUBLIC_EXPLORER_VARIANT. Available options: ${VARIANTS.join(', ')}.`);
+
+	return variant;
+};
+
 // The active variant is selected at build time because aliases and SCSS tokens are compiled per variant.
-const VARIANT = process.env.NEXT_PUBLIC_EXPLORER_VARIANT;
+const VARIANT = getVariant();
+
 const variantStylesPath = path.join(__dirname, 'variants', VARIANT, 'styles');
 const variantVariablesPath = path.join(variantStylesPath, 'variables.scss').split(path.sep).join('/');
 
@@ -28,16 +44,10 @@ module.exports = {
 	},
 	i18n: i18nConfig.i18n,
 	turbopack: {
-		// Resolve @/app/active-variant/* to the selected variant's modules at build time so inactive
+		// Resolve @/variant/* to the selected variant's modules at build time so inactive
 		// variants stay out of the bundle. Mirrored in jest.config.js for tests.
 		resolveAlias: {
-			'@/app/active-variant/styles/variables.json': `${variantAlias}/styles/variables.json`,
-			'@/app/active-variant/config/pages': `${variantAlias}/config/pages`,
-			'@/app/active-variant/config': `${variantAlias}/config`,
-			'@/app/active-variant/api': `${variantAlias}/api`,
-			'@/app/active-variant/utils': `${variantAlias}/utils`,
-			'@/app/active-variant/DocumentHead': `${variantAlias}/DocumentHead`,
-			'@/app/active-variant/components': `${variantAlias}/components`
+			'@/variant/*': `${variantAlias}/*`
 		}
 	},
 	sassOptions: {
