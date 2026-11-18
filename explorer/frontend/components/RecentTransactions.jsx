@@ -6,7 +6,7 @@ import ValueTransactionHash from './ValueTransactionHash';
 import { TRANSACTION_GROUP } from '@/app/constants';
 import styles from '@/app/styles/components/RecentTransactions.module.scss';
 import { createAssetURL } from '@/app/utils';
-import { utils } from '@/app/variants/utils';
+import { isTransactionAwaitingSignatures } from '@/variant/utils/transactions';
 import { useTranslation } from 'next-i18next';
 
 const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, blockTime }) => {
@@ -14,7 +14,7 @@ const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, bloc
 	const typeText = t(`transactionType_${type}`);
 	const labelSenderText = t('table_field_sender');
 	const isUnconfirmed = group !== TRANSACTION_GROUP.CONFIRMED;
-	const isAwaitingSignatures = utils.transactions.isTransactionAwaitingSignatures({ type, group });
+	const isAwaitingSignatures = isTransactionAwaitingSignatures({ type, group });
 	const title = `${typeText}\n${labelSenderText}: ${signer}`;
 
 	return (

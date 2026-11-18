@@ -1,3 +1,1 @@
-import { api } from '@/app/variants/api';
-
-export const { fetchTransactionPage, fetchTransactionInfo } = api.transactions;
+export { fetchTransactionPage, fetchTransactionInfo } from '@/variant/api/transactions';

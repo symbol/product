@@ -1,3 +1,1 @@
-import { api } from '@/app/variants/api';
-
-export const { fetchBlockPage, fetchChainHight, fetchChainStatus, fetchBlockInfo } = api.blocks;
+export { fetchBlockPage, fetchChainHight, fetchChainStatus, fetchBlockInfo } from '@/variant/api/blocks';

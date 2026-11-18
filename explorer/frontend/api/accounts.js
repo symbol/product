@@ -1,3 +1,1 @@
-import { api } from '@/app/variants/api';
-
-export const { fetchAccountPage, fetchAccountInfo, fetchAccountInfoByPublicKey, fetchAccountHarvestedBlockPage } = api.accounts;
+export { fetchAccountPage, fetchAccountInfo, fetchAccountInfoByPublicKey, fetchAccountHarvestedBlockPage } from '@/variant/api/accounts';
