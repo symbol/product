@@ -14,7 +14,6 @@ import {
 } from './utils';
 import { SymbolRouter } from '../../router/SymbolRouter';
 import {
-	Button,
 	Checkbox,
 	Divider,
 	FeeSelector,
