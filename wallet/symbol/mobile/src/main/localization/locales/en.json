@@ -9,7 +9,7 @@
     "button_clear": "Clear",
     "button_confirm": "Confirm",
     "button_edit": "Edit",
-    "button_faucet": "Claim test XYM",
+    "button_faucet": "Claim test %{ticker}",
     "button_importAccount": "Import existing private key",
     "button_modifyAccount": "Modify Account",
     "button_modifyMosaic": "Modify Mosaic",

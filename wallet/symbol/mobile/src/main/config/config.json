@@ -1,5 +1,4 @@
 {
-    "faucetURL": "https://testnet.symbol.tools",
     "marketDataURL": "https://api.coingecko.com/api/v3/simple/price",
     "marketCurrencies": [
         "USD",
@@ -28,6 +27,9 @@
             "explorerURL": {
                 "testnet": "https://testnet.symbol.fyi",
                 "mainnet": "https://symbol.fyi"
+            },
+            "faucetURL": {
+                "testnet": "https://testnet.symbol.tools"
             },
             "socialURLs": {
                 "discord": "https://discord.gg/NMA9YQ55td",
@@ -112,6 +114,9 @@
             "explorerURL": {
                 "testnet": "https://testnet.nem.fyi",
                 "mainnet": "https://nem.fyi"
+            },
+            "faucetURL": {
+                "testnet": "https://testnet.nem.tools"
             },
             "socialURLs": {
                 "discord": "https://discord.gg/NMA9YQ55td",

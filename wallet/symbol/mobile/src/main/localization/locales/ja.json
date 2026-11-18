@@ -30,7 +30,7 @@
     "button_walletRemove": "ウォレット削除",
     "button_openTransactionInExplorer": "ブロックエクスプローラーを開く",
     "button_openAccountInExplorer": "ブロックエクスプローラーを開く",
-    "button_faucet": "テストXYMを入手",
+    "button_faucet": "テスト%{ticker}を入手",
     "button_revealPrivateKey": "秘密鍵の開示",
     "button_scan": "スキャン",
     "button_scanQR": "QRコードスキャン",

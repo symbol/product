@@ -30,7 +30,7 @@
     "button_walletRemove": "刪除錢包",
     "button_openTransactionInExplorer": "在區塊資源管理器中開啟",
     "button_openAccountInExplorer": "在區塊資源管理器中開啟",
-    "button_faucet": "申請測試XYM",
+    "button_faucet": "申請測試%{ticker}",
     "button_revealPrivateKey": "顯示私鑰",
     "button_scan": "掃描",
     "button_scanQR": "掃描二維條碼",
