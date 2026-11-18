@@ -1,5 +1,5 @@
 import styles from '@/app/styles/components/Chart.module.scss';
-import { styleVariables } from '@/app/variants/styles';
+import styleVariables from '@/variant/styles/variables.json';
 import dynamic from 'next/dynamic';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });

@@ -1,4 +1,4 @@
-import { DocumentHead } from '@/app/variants/document';
+import { DocumentHead } from '@/variant/DocumentHead';
 import { Head, Html, Main, NextScript } from 'next/document';
 
 export default function Document() {

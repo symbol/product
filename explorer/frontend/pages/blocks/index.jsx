@@ -13,7 +13,7 @@ import ValueMosaic from '@/app/components/ValueMosaic';
 import ValueTimestamp from '@/app/components/ValueTimestamp';
 import styles from '@/app/styles/pages/Home.module.scss';
 import { useAsyncCall, usePagination } from '@/app/utils';
-import { pageConfig } from '@/app/variants/page-config';
+import { blockListPageConfig } from '@/variant/config/block-list-page-config';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -35,7 +35,7 @@ export const getServerSideProps = async ({ locale }) => {
 const Blocks = ({ blocks, nextPageParams, stats }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, isError, isLastPage } = usePagination(fetchBlockPage, blocks, {}, {
-		mode: pageConfig.blocks.paginationMode,
+		mode: blockListPageConfig.paginationMode,
 		initialNextPageParams: nextPageParams
 	});
 	const chainStatus = useAsyncCall(fetchChainStatus, null);
@@ -55,7 +55,7 @@ const Blocks = ({ blocks, nextPageParams, stats }) => {
 			key: 'transactionCount',
 			size: '6.67rem'
 		},
-		pageConfig.blocks.showStatementCountColumn && {
+		blockListPageConfig.isStatementCountColumnVisible && {
 			key: 'statementCount',
 			size: '6.67rem'
 		},
@@ -64,7 +64,7 @@ const Blocks = ({ blocks, nextPageParams, stats }) => {
 			size: '7rem',
 			renderValue: value => <ValueMosaic amount={value} isNative />
 		},
-		pageConfig.blocks.showBlockRewardColumn && {
+		blockListPageConfig.isBlockRewardColumnVisible && {
 			key: 'blockReward',
 			size: '7rem',
 			renderValue: value => <ValueMosaic amount={value} isNative />

@@ -1,7 +1,6 @@
 import { fetchBlockPage, fetchChainStatus } from '@/app/api/blocks';
 import { fetchBlockStats, fetchMarketData, fetchNodeStats, fetchTransactionChart, fetchTransactionStats } from '@/app/api/stats';
 import { fetchTransactionPage } from '@/app/api/transactions';
-import { AdditionalSections } from '@/app/components/AdditionalSections';
 import ChartLine from '@/app/components/ChartLine';
 import Field from '@/app/components/Field';
 import RecentBlocks from '@/app/components/RecentBlocks';
@@ -15,7 +14,7 @@ import { DATA_REFRESH_INTERVAL, TRANSACTION_CHART_TYPE, TRANSACTION_GROUP } from
 import styles from '@/app/styles/pages/Home.module.scss';
 import { numberToShortString, truncateDecimals, useAsyncCall } from '@/app/utils';
 import { formatTransactionChart, numberToString } from '@/app/utils/common';
-import { pageConfig } from '@/app/variants/page-config';
+import { homePageConfig } from '@/variant/config/home-page-config';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -86,7 +85,11 @@ const Home = ({
 				<title>Home</title>
 			</Head>
 			<RecentBlocks data={blocks.data} chainStatus={chainStatus} onTransactionListRequest={fetchBlockTransactions} />
-			<AdditionalSections sections={pageConfig.home.additionalSections} />
+			{homePageConfig.sections.map(({ id, Component }) => (
+				<Section key={id}>
+					<Component />
+				</Section>
+			))}
 			<Section>
 				<div className="layout-flex-row-mobile-col">
 					<div className="layout-grid-row layout-flex-fill">
@@ -124,7 +127,7 @@ const Home = ({
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_totalNodes')}>{nodeStats.total}</Field>
-							{pageConfig.home.showSupernodeCount && nodeStats.supernodes !== null && (
+							{homePageConfig.isSupernodeCountVisible &&nodeStats.supernodes !== null && (
 								<Field title={t('field_supernodes')}>{nodeStats.supernodes}</Field>
 							)}
 						</div>
