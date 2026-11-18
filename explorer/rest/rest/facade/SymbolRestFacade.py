@@ -1,6 +1,7 @@
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import TransactionType
+from symbollightapi.connector.SymbolConnector import SymbolConnector
 from zenlog import log
 
 from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
@@ -11,6 +12,7 @@ from rest.model.format import format_timestamp
 from rest.model.symbol.Account import SymbolAccountListView, SymbolAccountStatisticsView, SymbolAccountView
 from rest.model.symbol.Block import SymbolBlockStatisticsView
 from rest.model.symbol.HarvestingBalanceRange import HarvestingBalanceRange
+from rest.model.symbol.Metadata import SymbolMetadataView
 from rest.model.symbol.MosaicRestriction import create_mosaic_restriction_dto
 from rest.model.symbol.Receipt import SymbolReceiptView
 from rest.model.symbol.Transaction import SymbolTransactionDetailView, SymbolTransactionView
@@ -48,6 +50,8 @@ class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 		self.harvesting_balance_range = harvesting_balance_range
 		self.statistics_cache = TtlCache(STATISTICS_CACHE_TTL_SECONDS, STATISTICS_CACHE_MAX_ENTRIES)
 		self.node_backing = node_backing
+		self.symbol_connector = SymbolConnector(node_config.base_url)
+		self.symbol_connector.timeout_seconds = node_config.timeout_seconds
 
 	def get_health(self):
 		"""Gets health of the Symbol backend core foundation."""
@@ -125,6 +129,12 @@ class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 
 		blocks = self.symbol_db.get_block_statistics()
 		return SymbolBlockStatisticsView(blocks).to_dict(self.native_mosaic_info)
+
+	def try_get_related_metadata(self, query):
+		"""Returns a metadata page, or None when its parent is absent."""
+
+		rows = self.symbol_db.try_get_related_metadata(query)
+		return [SymbolMetadataView(row).to_dict() for row in rows] if rows is not None else None
 
 	def get_mosaics(self, limit, offset, sort):
 		"""Gets a current mosaic page."""
@@ -284,3 +294,11 @@ class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 		statistics = self.symbol_db.get_account_statistics(
 			self.account_refresh_max_age_seconds, self.harvesting_active_window_days, self.harvesting_balance_range)
 		return SymbolAccountStatisticsView(statistics).to_dict()
+
+	async def get_unconfirmed_transactions(self):
+		"""Gets pending Symbol transactions."""
+
+		unconfirmed_transactions = await self.symbol_connector.get_unconfirmed_transactions()
+
+		views = self.symbol_db.get_unconfirmed_transactions(unconfirmed_transactions, self.network)
+		return [view.to_dict() for view in views]

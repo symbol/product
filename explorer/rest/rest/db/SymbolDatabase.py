@@ -14,6 +14,7 @@ from rest.model.symbol.Block import BLOCK_STATISTICS_WINDOW, SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
 from rest.model.symbol.MosaicRestriction import MosaicRestrictionEntryType
 from rest.model.symbol.Namespace import SymbolNamespaceView
+from rest.model.symbol.TransactionView import AGGREGATE_TYPES, SymbolTransactionView, create_unconfirmed_record
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -86,6 +87,12 @@ SYNC_STATE_COLUMNS = [
 ]
 TRANSACTION_STATISTICS_WINDOW = 240
 TransactionStatisticsHead = namedtuple('TransactionStatisticsHead', ['height', 'timestamp', 'block_hash', 'published_hash', 'updated_at'])
+MetadataQuery = namedtuple('MetadataQuery', ['kind', 'target', 'metadata_type', 'limit', 'offset'])
+METADATA_PARENT_QUERIES = {
+	'account': ('symbol_accounts', 'address', 'last_seen_height'),
+	'mosaic': ('symbol_mosaics', 'mosaic_id', 'updated_at_height, start_height'),
+	'namespace': ('symbol_namespaces', 'namespace_id', 'updated_at_height, start_height')
+}
 ReceiptQuery = namedtuple(
 	'ReceiptQuery',
 	['limit', 'offset', 'height', 'receipt_group', 'receipt_type', 'included_receipt_types', 'target_address', 'sender_address'],
@@ -162,7 +169,6 @@ AccountListEnrichment = namedtuple(
 AccountStatisticsRecord = namedtuple(
 	'AccountStatisticsRecord',
 	['total', 'harvesting', 'eligible_for_harvesting', 'harvesting_eligible', 'total_importance', 'top_accounts'])
-INT64_MAX = 9223372036854775807
 
 
 def _address(value):
@@ -186,7 +192,8 @@ def _create_sync_state(columns, result):
 	return dict(zip(columns, result))
 
 
-class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
+# Symbol REST queries share this pool and its snapshot helpers.
+class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # pylint: disable=too-many-public-methods
 	"""Database access for Symbol Explorer data."""
 
 	def __init__(self, db_config, native_mosaic_info=None, clock=None):
@@ -604,18 +611,19 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 						SELECT address, address_text, importance_percentage
 						FROM symbol_account_refresh_accounts
 						WHERE refresh_run_id = %s
+					), active_beneficiaries AS MATERIALIZED (
+						SELECT DISTINCT beneficiary_address
+						FROM symbol_blocks
+						WHERE timestamp >= %s
+							AND height <= %s
 					), classified AS (
 						SELECT snapshot.address, snapshot.importance_percentage,
-							EXISTS (
-								SELECT 1
-								FROM symbol_blocks AS blocks
-								WHERE blocks.beneficiary_address = snapshot.address
-									AND blocks.timestamp >= %s
-									AND blocks.height <= %s
-							) AS is_active,
+							active.beneficiary_address IS NOT NULL AS is_active,
 							COALESCE(harvesting_mosaics.amount, 0) >= %s
 								AND COALESCE(harvesting_mosaics.amount, 0) <= %s AS is_eligible
 						FROM snapshot
+						LEFT JOIN active_beneficiaries AS active
+							ON active.beneficiary_address = snapshot.address
 						LEFT JOIN symbol_account_refresh_mosaics AS harvesting_mosaics
 							ON harvesting_mosaics.refresh_run_id = %s
 							AND harvesting_mosaics.address = snapshot.address
@@ -646,19 +654,22 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 	@staticmethod
 	def _fetch_account_refresh_state(cursor):
 		cursor.execute(
-			'''SELECT status, last_successful_run_id, last_completed_at
+			'''SELECT status, last_successful_run_id, last_completed_at, valid_run_id, height_ready_run_id
 			FROM symbol_account_refresh_state WHERE id = 1''')
 		row = cursor.fetchone()
-		return dict(zip(('status', 'last_successful_run_id', 'last_completed_at'), row)) if row else None
+		return dict(zip(('status', 'last_successful_run_id', 'last_completed_at', 'valid_run_id', 'height_ready_run_id'), row)) if row else None
 
 	@staticmethod
 	def _assert_account_refresh_readable(refresh_state, max_age_seconds, now):
-		if not refresh_state or refresh_state['status'] != 'healthy':
+		if not refresh_state or refresh_state['status'] not in ('healthy', 'refreshing'):
 			raise SymbolDataUnavailable('Symbol account refresh data is unavailable')
 
 		run_id = refresh_state['last_successful_run_id']
 		completed_at = refresh_state['last_completed_at']
 		if not isinstance(run_id, str) or not run_id or completed_at is None:
+			raise SymbolDataUnavailable('Symbol account refresh data is unavailable')
+
+		if refresh_state['valid_run_id'] != run_id or refresh_state['height_ready_run_id'] != run_id:
 			raise SymbolDataUnavailable('Symbol account refresh data is unavailable')
 
 		completed_at = completed_at.replace(tzinfo=timezone.utc) if completed_at.tzinfo is None else completed_at
@@ -680,16 +691,10 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 	@staticmethod
 	def _assert_account_list_height_population(cursor, run_id):
 		cursor.execute(
-			'''SELECT accounts.address, current_accounts.address, current_accounts.address_height
-			FROM symbol_account_refresh_accounts AS accounts
-			LEFT JOIN symbol_accounts AS current_accounts ON current_accounts.address = accounts.address
-			WHERE accounts.refresh_run_id = %s''',
+			'''SELECT EXISTS (SELECT 1 FROM symbol_account_refresh_accounts
+			WHERE refresh_run_id = %s AND address_height < 0)''',
 			(run_id,))
-		rows = cursor.fetchall()
-		if any(row[1] is None for row in rows) or any(
-			row[2] is not None and (
-				isinstance(row[2], bool) or not isinstance(row[2], int) or row[2] < 0 or row[2] > INT64_MAX)
-			for row in rows):
+		if cursor.fetchone()[0]:
 			raise SymbolDataUnavailable('Symbol account height data is unavailable')
 
 	@staticmethod
@@ -748,9 +753,8 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 		elif query.sort_field == AccountSortField.HEIGHT:
 			query_text = f'''SELECT accounts.address, {harvesting_expression} AS is_harvesting_active
 				FROM symbol_account_refresh_accounts AS accounts
-				JOIN symbol_accounts AS current_accounts ON current_accounts.address = accounts.address
 				WHERE accounts.refresh_run_id = %s{harvesting_filter}
-				ORDER BY current_accounts.address_height DESC NULLS LAST, accounts.address ASC
+				ORDER BY accounts.address_height DESC NULLS LAST, accounts.address ASC
 				LIMIT %s OFFSET %s'''
 			parameters = (*harvesting_parameters, run_id, *filter_parameters, query.limit, query.offset)
 		else:
@@ -1087,6 +1091,37 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 
 		return mosaics_by_transaction
 
+	def try_get_related_metadata(self, query):
+		"""Reads sync state, exact parent and metadata from one snapshot."""
+
+		table, column, heights = METADATA_PARENT_QUERIES[query.kind]
+		with self._read_snapshot() as cursor:
+			sync_state = self._fetch_sync_state(cursor)
+			readable_height = self._validate_namespace_sync_state(cursor, sync_state)
+			# Identifiers are selected solely from the fixed table above.
+			cursor.execute(f'SELECT {heights} FROM {table} WHERE {column} = %s', (query.target,))
+			parent = cursor.fetchone()
+			if parent is None:
+				return None
+
+			if any(not isinstance(height, int) or height < 0 or height > readable_height for height in parent):
+				raise SymbolDataUnavailable('Symbol metadata data is unavailable')
+
+			where = ['updated_at_height <= %s']
+			params = [readable_height]
+			where.append('target_address = %s' if query.kind == 'account' else 'target_id = %s')
+			params.append(query.target)
+			if query.metadata_type is not None:
+				where.append('metadata_type = %s::symbol_metadata_type')
+				params.append(query.metadata_type)
+
+			params.extend((query.limit, query.offset))
+			cursor.execute(
+				' SELECT scoped_metadata_key, target_id, metadata_type, source_address, target_address, value_utf8, value_hex'
+				f' FROM symbol_metadata WHERE {" AND ".join(where)}'
+				' ORDER BY updated_at_height DESC, composite_hash ASC LIMIT %s OFFSET %s', params)
+			return cursor.fetchall()
+
 	def get_mosaics(self, limit, offset, sort):
 		"""Gets current mosaics ordered by registration height, then mosaic ID, in the requested direction."""
 
@@ -1158,6 +1193,80 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 					block_timestamps.get(row['start_height']),
 					descendant_counts[row['namespace_id']])
 					for row in page_rows]
+
+	def get_unconfirmed_transactions(self, transactions, network):
+		"""Builds pending transaction views and enriches transfer mosaics in one batch."""
+
+		records = [create_unconfirmed_record(item_map, network) for item_map in transactions]
+
+		embedded_by_hash_map = {}
+		aggregate_hashes = set()
+		mosaic_ids_map = {}
+		for record in records:
+			if record.aggregate_hash is not None:
+				embedded_by_hash_map.setdefault(record.aggregate_hash, []).append(record)
+
+			if record.transaction_type in AGGREGATE_TYPES:
+				aggregate_hashes.add(record.transaction_hash)
+
+			for mosaic_id, _ in record.mosaics:
+				mosaic_ids_map[mosaic_id] = None
+
+		mosaic_divisibility_map = self.get_mosaic_divisibility(list(mosaic_ids_map), self.native_mosaic_info)
+
+		views = []
+		for record in records:
+			if record.aggregate_hash in aggregate_hashes:
+				continue
+
+			embedded_records = ()
+			if record.transaction_type in AGGREGATE_TYPES:
+				embedded_records = sorted(embedded_by_hash_map.get(record.transaction_hash, []), key=lambda child: child.embedded_index)
+
+			views.append(SymbolTransactionView(record, mosaic_divisibility_map, embedded_records))
+
+		return views
+
+	def get_mosaic_divisibility(self, mosaic_ids, native_mosaic_info=None):
+		"""Maps requested IDs to resolved IDs and divisibilities, querying only mosaics without configured metadata."""
+
+		divisibility_map = {native_mosaic_info.id: native_mosaic_info.divisibility} if native_mosaic_info is not None else {}
+		resolved_ids_map = {}
+		mosaic_ids_to_resolve = []
+		for mosaic_id in mosaic_ids:
+			upper_id = mosaic_id.upper()
+			if upper_id in divisibility_map:
+				resolved_ids_map[mosaic_id] = upper_id
+			else:
+				mosaic_ids_to_resolve.append(mosaic_id)
+
+		if mosaic_ids_to_resolve:
+			with self.connection() as connection:
+				with connection.cursor() as cursor:
+					self._start_read_transaction(cursor)
+					sync_state = self._fetch_sync_state(cursor)
+					if try_get_readable_height(sync_state) is None or is_non_public_state(sync_state):
+						raise SymbolDataUnavailable('Symbol mosaic data is unavailable')
+
+					for mosaic_id in mosaic_ids_to_resolve:
+						try:
+							resolved_ids_map[mosaic_id] = self._resolve_mosaic_id(cursor, mosaic_id, sync_state)
+						except SymbolMosaicAliasNotFound:
+							continue
+
+					resolved_ids = tuple(dict.fromkeys(
+						resolved_id for resolved_id in resolved_ids_map.values() if resolved_id not in divisibility_map))
+					if resolved_ids:
+						cursor.execute(
+							'SELECT mosaic_id, divisibility FROM symbol_mosaics WHERE mosaic_id IN %s',
+							(resolved_ids,))
+						divisibility_map.update(cursor.fetchall())
+
+		return {
+			requested_id: (resolved_id, divisibility_map[resolved_id])
+			for requested_id, resolved_id in resolved_ids_map.items()
+			if resolved_id in divisibility_map
+		}
 
 	def try_get_namespace(self, namespace_id):  # pylint: disable=too-many-locals
 		"""Gets one persisted namespace and its saved descendants and Mosaic aliases."""

@@ -8,14 +8,14 @@ from puller.workflows.log_utils import configure_logging
 COMMANDS = (
 	(
 		'sync-block',
-		'Synchronize Symbol block headers; do not overlap sync-block runs or run concurrently with refresh-accounts, including manual runs. '
-		'External scheduler owns single-writer exclusion; the Puller provides no mechanical lock.',
+		'Synchronize Symbol block headers. A database lock rejects overlapping sync-block and refresh-accounts runs, including manual runs. '
+		'Once connected to the database, overlaps fail immediately with a nonzero exit; scheduling and retries are external.',
 		sync_symbol_block
 	),
 	(
 		'refresh-accounts',
-		'Refresh Symbol accounts; do not run concurrently with sync-block runs or overlap refresh-accounts runs, including manual runs. '
-		'External scheduler owns single-writer exclusion; the Puller provides no mechanical lock.',
+		'Refresh Symbol accounts. A database lock rejects overlapping sync-block and refresh-accounts runs, including manual runs. '
+		'Once connected to the database, overlaps fail immediately with a nonzero exit; scheduling and retries are external.',
 		refresh_symbol_accounts
 	)
 )

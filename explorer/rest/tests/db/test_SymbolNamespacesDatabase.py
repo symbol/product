@@ -96,9 +96,9 @@ class SymbolNamespacesDatabaseTest(TestCase):
 			'aliasType': 'address',
 			'aliasMosaicId': None,
 			'aliasAddress': str(Address(OTHER_OWNER)),
-			'creator': str(Address(OWNER)),
-			'registrationHeight': 3,
-			'startTimestamp': '2026-01-03 00:00:00',
+			'owner': str(Address(OWNER)),
+			'registeredHeight': 3,
+			'registeredTimestamp': '2026-01-03 00:00:00',
 			'registrationType': 'child',
 			'expirationHeight': 4,
 			'isUnlimitedDuration': False,
@@ -543,7 +543,7 @@ def test_missing_block_timestamp_null():
 	result = views[0].to_dict()
 
 	# Assert:
-	assert result['startTimestamp'] is None
+	assert result['registeredTimestamp'] is None
 
 
 def test_rejects_root_depth_mismatch():
@@ -636,7 +636,7 @@ def test_snapshot_keeps_count_and_time():
 			# Assert: the first request reads the pre-update page, count, and timestamp together.
 			assert [ROOT_ID] == [view.namespace_id for view in result]
 			assert 1 == result[0].sub_namespace_count
-			assert '2026-01-01 00:00:00' == result[0].to_dict()['startTimestamp']
+			assert '2026-01-01 00:00:00' == result[0].to_dict()['registeredTimestamp']
 			assert not database.get_namespaces(NamespaceQuery(registration_type='root'))
 		finally:
 			database.close()

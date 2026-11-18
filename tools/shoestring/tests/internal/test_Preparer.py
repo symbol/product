@@ -489,6 +489,44 @@ class PreparerTest(unittest.TestCase):
 	def test_can_configure_rest_light_node(self):
 		self._assert_can_configure_rest(NodeFeatures.API | NodeFeatures.HARVESTER, ['rest.json'], None, True)
 
+	def _assert_trust_proxy(self, node_features, api_https, light_api, rest_overrides, expected_trust_proxy):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as output_directory:
+			with Preparer(output_directory, self._create_configuration(node_features, api_https, light_api)) as preparer:
+				self._initialize_temp_directory_with_package_files(preparer)
+
+				rest_overrides_filepath = None
+				if rest_overrides:
+					rest_overrides_filepath = preparer.directories.temp / 'rest_overrides.json'
+					with open(rest_overrides_filepath, 'wt', encoding='utf8') as outfile:
+						outfile.write(json.dumps(rest_overrides))
+
+				# Act:
+				preparer.configure_rest(rest_overrides_filepath)
+
+				# Assert: check rest config
+				with open(preparer.directories.userconfig / 'rest.json', 'rt', encoding='utf8') as rest_config_infile:
+					rest_config = json.load(rest_config_infile)
+
+				self.assertEqual(expected_trust_proxy, rest_config.get('trustProxy'))
+
+				# - check userconfig files permissions
+				self._assert_readonly(preparer.directories.userconfig, ['rest.json'])
+
+	def test_configure_rest_enables_trust_proxy_when_https_enabled_api_node(self):
+		self._assert_trust_proxy(NodeFeatures.API, True, False, None, True)
+
+	def test_configure_rest_enables_trust_proxy_when_https_enabled_light_node(self):
+		self._assert_trust_proxy(NodeFeatures.API, True, True, None, True)
+
+	def test_configure_rest_does_not_set_trust_proxy_when_https_disabled(self):
+		self._assert_trust_proxy(NodeFeatures.API, False, False, None, None)
+		self._assert_trust_proxy(NodeFeatures.API, False, True, None, None)
+
+	def test_configure_rest_trust_proxy_can_be_customized_by_rest_overrides(self):
+		self._assert_trust_proxy(NodeFeatures.API, True, False, {'trustProxy': False}, False)
+		self._assert_trust_proxy(NodeFeatures.API, False, False, {'trustProxy': True}, True)
+
 	# endregion
 
 	# region configure_https

@@ -238,8 +238,9 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 		"""Creates a facade."""
 
 		super().__init__(network, explorer_endpoint, 'symbol', 'Symbol', self._version_to_css_class, {
-			'1.0.3.9': (COMPATIBLE_VERSION_COLORS[0], 12),
-			'delegating / updating': (AMBIGUOUS_COLORS[0], 11),
+			'1.0.3.10': (COMPATIBLE_VERSION_COLORS[0], 13),
+			'delegating / updating': (AMBIGUOUS_COLORS[0], 12),
+			'1.0.3.9': (INCOMPATIBLE_VERSION_COLORS[1], 11),
 			'1.0.3.8': (INCOMPATIBLE_VERSION_COLORS[1], 10),
 			'1.0.3.7': (INCOMPATIBLE_VERSION_COLORS[1], 9),
 			'1.0.3.6': (INCOMPATIBLE_VERSION_COLORS[1], 8),
@@ -299,7 +300,7 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 		tag = 'danger'
 		if not version:
 			tag = 'warning'
-		if version.startswith('1.0.3.') and not any(version.endswith(f'.{build}') for build in range(9)):
+		if version.startswith('1.0.3.') and not any(version.endswith(f'.{build}') for build in range(10)):
 			tag = 'success'
 
 		return tag
