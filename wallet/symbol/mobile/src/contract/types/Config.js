@@ -114,6 +114,12 @@
  */
 
 /**
+ * Settings network screen config.
+ * @typedef {object} SettingsNetworkScreenConfig
+ * @property {Array<'network'|'nodeUrl'|'chainHeight'|'minFeeMultiplier'>} nodeInfoFields - Fields to display in the node info card.
+ */
+
+/**
  * StatusCard config.
  * @typedef {object} StatusCardConfig
  * @property {InverseColorVariants} contentColorVariant - Color variant of the status icon and the card content.

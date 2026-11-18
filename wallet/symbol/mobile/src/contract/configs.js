@@ -64,7 +64,12 @@ export const requiredConfigs = [
 	{ 
 		path: 'config/send-receive-buttons-config', 
 		exportName: 'sendReceiveButtonsConfig', 
-		typeName: 'SendReceiveButtonsConfig' 
+		typeName: 'SendReceiveButtonsConfig'
+	},
+	{
+		path: 'config/settings-network-screen-config',
+		exportName: 'settingsNetworkScreenConfig',
+		typeName: 'SettingsNetworkScreenConfig'
 	},
 	{ 
 		path: 'config/status-card-config', 
