@@ -1,9 +1,7 @@
 import {
 	Alert,
 	Amount,
-	ButtonPlain,
 	Card,
-	Divider,
 	EmptyListMessage,
 	ExpirationProgress,
 	Field,
@@ -20,10 +18,12 @@ import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
 import { getExpirationData } from '@/app/screens/assets/utils';
 import { createTokenDisplayData, createTransactionQr } from '@/app/utils';
+import { tokenDetailsScreenConfig } from '@/brand/config/token-details-screen-config';
 import React from 'react';
-import { isMosaicRevokable, isMosaicSupplyModifiable } from 'wallet-common-symbol';
 
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
+
+const EMPTY_ACTIONS = [];
 
 /**
  * TokenDetails screen component. Displays detailed information about a specific token including
@@ -147,15 +147,8 @@ export const TokenDetails = ({ route }) => {
 
 	const isSendReceiveButtonsDisabled = isTokenExpired;
 
-	// Mosaic creator actions
-	const isCurrentAccountCreator = accountAddress === currentAccount.address;
-	const canRevokeMosaic = isCurrentAccountCreator
-		&& isMosaicRevokable(token, networkProperties?.chainHeight, accountAddress);
-	const canModifyMosaic = isCurrentAccountCreator
-		&& isMosaicSupplyModifiable(token, networkProperties?.chainHeight, accountAddress);
-	const isCreatorActionsVisible = canRevokeMosaic || canModifyMosaic;
-	const openRevokeScreen = () => Router.goToRevokeMosaic({ params: { chainName, mosaicId: tokenId } });
-	const openModifyScreen = () => Router.goToModifyMosaic({ params: { chainName, mosaicId: tokenId } });
+	// App actions for the token chain
+	const actions = tokenDetailsScreenConfig.actionsByChain[chainName] ?? EMPTY_ACTIONS;
 
 	return (
 		<Screen refresh={{ onRefresh: dataManager.call, isRefreshing: dataManager.isLoading }}>
@@ -218,25 +211,16 @@ export const TokenDetails = ({ route }) => {
 								</Spacer>
 							</Card>
 						)}
-						{isCreatorActionsVisible && (
-							<Stack>
-								<Divider />
-								{canRevokeMosaic && (
-									<ButtonPlain
-										icon="revoke"
-										text={$t('button_revokeMosaic')}
-										onPress={openRevokeScreen}
-									/>
-								)}
-								{canModifyMosaic && (
-									<ButtonPlain
-										icon="edit"
-										text={$t('button_modifyMosaic')}
-										onPress={openModifyScreen}
-									/>
-								)}
-							</Stack>
-						)}
+						{actions.map(({ id, Component }) => (
+							<Component
+								key={id}
+								token={token}
+								chainName={chainName}
+								tokenOwnerAccountAddress={accountAddress}
+								currentAccount={currentAccount}
+								networkProperties={networkProperties}
+							/>
+						))}
 					</Stack>
 				</Spacer>
 			</Screen.Upper>

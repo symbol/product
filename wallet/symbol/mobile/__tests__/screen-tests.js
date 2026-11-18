@@ -7,25 +7,20 @@ import React from 'react';
  * 
  * @param {React.Component} Screen - The screen component to test.
  * @param {object} config - Configuration object for the test.
- * @param {Array<{buttonText: string, actionName: string}>} config.navigationActions - Navigation actions to test.
+ * @param {Array<{buttonText: string, actionName: string, routerClass?: Function}>} config.navigationActions - Navigation actions.
  * @param {object} [config.props] - Optional props to pass to the screen component.
  */
 export const runScreenNavigationTest = (Screen, config) => {
 	const { navigationActions, props = {} } = config;
 
 	describe('navigation actions', () => {
-		navigationActions.forEach(({ buttonText, buttonLabel, actionName }) => {
+		navigationActions.forEach(({ buttonText, buttonLabel, actionName, routerClass }) => {
 			const text = buttonText || buttonLabel;
 			const selectorType = buttonText ? 'text' : 'label';
 
 			it(`calls ${actionName} when "${text}" is pressed`, () => {
 				// Arrange:
-				const mocks = mockRouter({
-					...navigationActions.reduce((acc, { actionName }) => {
-						acc[actionName] = jest.fn();
-						return acc;
-					}, {})
-				});
+				const mocks = mockRouter({ [actionName]: jest.fn() }, routerClass);
 
 				// Act:
 				const { getByText, getByLabelText } = render(<Screen {...props} />);

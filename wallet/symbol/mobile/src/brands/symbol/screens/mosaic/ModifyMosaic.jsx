@@ -1,0 +1,193 @@
+import { SupplyDeltaView } from './components';
+import { useModifyMosaicFormState, useModifyMosaicTransaction, useMosaicInfo } from './hooks';
+import { calculateSupplyDelta, validateMosaicSupply, validateSupplyChanged } from './utils';
+import { SymbolRouter } from '../../router/SymbolRouter';
+import {
+	Divider,
+	FeeSelector,
+	Field,
+	Spacer,
+	Stack,
+	StyledText,
+	TextBox,
+	TokenInfoCard,
+	TransactionScreenTemplate
+} from '@/app/components';
+import { useStandardTransactionWorkflow } from '@/app/components/templates/TransactionScreenTemplate/hooks';
+import {
+	useDebounce,
+	useInit,
+	useTransactionFees,
+	useValidation,
+	useWalletController,
+	useWalletRefreshLifecycle
+} from '@/app/hooks';
+import { $t } from '@/app/localization';
+import { createTokenDisplayData, validateRequired } from '@/app/utils';
+import React, { useEffect, useMemo } from 'react';
+import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
+
+/** @typedef {import('./types/Mosaic').ModifyMosaicRouteParams} ModifyMosaicRouteParams */
+
+/**
+ * ModifyMosaic screen component. Provides the interface for changing the total supply of an existing
+ * supply-mutable mosaic on the Symbol network, on behalf of its creator account.
+ * @param {object} props - Component props.
+ * @param {object} props.route - React Navigation route object.
+ * @param {ModifyMosaicRouteParams} props.route.params - Route parameters.
+ * @returns {React.ReactNode} ModifyMosaic component.
+ */
+export const ModifyMosaic = props => {
+	const { route } = props;
+	const walletController = useWalletController(route.params?.chainName);
+	const {
+		isWalletReady,
+		isNetworkConnectionReady,
+		chainName,
+		networkIdentifier,
+		ticker
+	} = walletController;
+	const currentAccountInfo = walletController.currentAccountInfo || {};
+	const { mosaicId } = route.params;
+
+	// Mosaic info
+	const {
+		mosaic,
+		isLoading: isMosaicLoading,
+		load: loadMosaic,
+		reset: resetMosaic
+	} = useMosaicInfo({ walletController, mosaicId });
+	const { nameText: mosaicNameText, imageId: mosaicImageId } =
+		createTokenDisplayData(mosaic ?? { id: mosaicId }, chainName, networkIdentifier);
+
+	// Form state
+	const {
+		newSupply,
+		transactionSpeed,
+		changeNewSupply,
+		changeTransactionSpeed
+	} = useModifyMosaicFormState({ currentSupply: mosaic?.supply });
+
+	// Supply change delta calculation
+	const supplyDelta = useMemo(
+		() => (mosaic ? calculateSupplyDelta(mosaic.supply, newSupply, mosaic.divisibility) : null),
+		[mosaic, newSupply]
+	);
+
+	// Validation
+	const supplyErrorMessage = useValidation(
+		newSupply,
+		[
+			validateRequired(),
+			validateMosaicSupply(mosaic?.divisibility),
+			validateSupplyChanged(mosaic?.supply, mosaic?.divisibility)
+		],
+		$t
+	);
+	const isFormValid = !!mosaic && !supplyErrorMessage;
+
+	// Transaction creation and preview
+	const { createModifyMosaicTransaction, getConfirmationPreview } = useModifyMosaicTransaction({
+		walletController,
+		mosaicId,
+		divisibility: mosaic?.divisibility,
+		delta: supplyDelta?.delta,
+		action: supplyDelta?.action
+	});
+
+	// Transaction fees
+	const {
+		data: transactionFees,
+		isLoading: isFeesLoading,
+		call: fetchFees
+	} = useTransactionFees(createModifyMosaicTransaction, walletController);
+	const calculateFeesSafely = useDebounce(fetchFees, 1000);
+	useEffect(() => {
+		if (isWalletReady && isFormValid)
+			calculateFeesSafely();
+	}, [isWalletReady, isFormValid, newSupply]);
+
+	// Transaction workflow
+	const workflow = useStandardTransactionWorkflow({
+		createTransaction: createModifyMosaicTransaction,
+		walletController,
+		transactionFeeTiers: transactionFees,
+		transactionFeeTierLevel: transactionSpeed
+	});
+
+	useWalletRefreshLifecycle({
+		walletController,
+		onRefresh: loadMosaic,
+		onClear: resetMosaic
+	});
+	useInit(loadMosaic, isWalletReady);
+
+	// Derived state
+	const isLoading = !isWalletReady || isMosaicLoading;
+	const isButtonDisabled = !isNetworkConnectionReady
+		|| !isFormValid
+		|| !transactionFees
+		|| isFeesLoading;
+
+	return (
+		<TransactionScreenTemplate
+			isLoading={isLoading}
+			isSendButtonDisabled={isButtonDisabled}
+			isMultisigAccount={currentAccountInfo.isMultisig}
+			accountCosignatories={currentAccountInfo.cosignatories}
+			getConfirmationPreview={getConfirmationPreview}
+			onComplete={SymbolRouter.goBack}
+			walletController={walletController}
+			workflow={workflow}
+			confirmDialogTitle={$t('screen_mosaic_modify_dialog_confirm_title')}
+			confirmDialogText={$t('screen_mosaic_modify_dialog_confirm_description', { supply: newSupply })}
+		>
+			<Spacer>
+				<Stack gap="l">
+					<Stack gap="none">
+						<StyledText type="title">{$t('screenTitle_ModifyMosaic')}</StyledText>
+						<StyledText type="body">{$t('screen_mosaic_modify_description_intro')}</StyledText>
+					</Stack>
+					{!!mosaic && (
+						<TokenInfoCard name={mosaicNameText} imageId={mosaicImageId}>
+							<Field title={$t('fieldTitle_tokenId')}>
+								<StyledText>{mosaic.id}</StyledText>
+							</Field>
+							<Field title={$t('fieldTitle_divisibility')}>
+								<StyledText>{mosaic.divisibility}</StyledText>
+							</Field>
+						</TokenInfoCard>
+					)}
+					<Divider />
+					{!!mosaic && (
+						<SupplyDeltaView
+							divisibility={mosaic.divisibility}
+							currentSupply={mosaic.supply}
+							newSupply={newSupply}
+							delta={supplyDelta.delta}
+							action={supplyDelta.action}
+						/>
+					)}
+					<TextBox
+						label={$t('screen_mosaic_label_newSupply')}
+						keyboardType="decimal-pad"
+						errorMessage={supplyErrorMessage}
+						value={newSupply}
+						onChange={changeNewSupply}
+					/>
+					{!!transactionFees && (
+						<Animated.View entering={FadeInDown} exiting={FadeOut}>
+							<FeeSelector
+								title={$t('inputLabel_feeSpeed')}
+								value={transactionSpeed}
+								feeTiers={transactionFees}
+								ticker={ticker}
+								onChange={changeTransactionSpeed}
+							/>
+						</Animated.View>
+					)}
+				</Stack>
+			</Spacer>
+		</TransactionScreenTemplate>
+	);
+};

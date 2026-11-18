@@ -1,6 +1,6 @@
 # Localization
 
-All UI text lives in `src/localization/locales/en.json` — the source locale, other languages are translated from it.
+All UI text lives in `src/main/localization/locales/en.json` — the source locale, other languages are translated from it.
 Keys are flat: segments joined with `_`, camelCase inside a segment.
 
 ```
@@ -17,13 +17,13 @@ Pick the widest scope that fits. Never duplicate a text under a narrower key whe
 |---|---|---|
 | Global | `<element>_<name>…` | Texts reusable on any screen: common buttons (`button_ok`), input labels (`inputLabel_address`), dialogs, error and validation messages, data families (`transactionType_*`, `month_*`). |
 | Screen | `screen_<folder>[_<section>]_<element>_<name>…` | Texts owned by one screen. Components inside a screen folder also use this scope. |
-| Component | `component_<componentName>[_<section>]_<element>_<name>…` | Reusable components under `src/components/` that carry their own text (`component_navigationMenu_tab_home`). Rare — most of reusable components receive text via props. |
+| Component | `component_<componentName>[_<section>]_<element>_<name>…` | Reusable components under `src/main/components/` that carry their own text (`component_navigationMenu_tab_home`). Rare — most of reusable components receive text via props. |
 
 Global keys may be used anywhere. Screen and component keys only inside their owner.
 
 ## Folder and section
 
-- `folder` — the screen's directory name under `src/screens/`, written in camelCase: `address-book` → `screen_addressBook_…`.
+- `folder` — the screen's directory name under `src/main/screens/`, written in camelCase: `address-book` → `screen_addressBook_…`.
 - `section` — optional free word after the folder or component name. It groups the keys of one screen or one logical block: a short screen name (`swap` in `screen_bridge_swap_…`) or a logical group (`mnemonic` in `screen_onboarding_mnemonic_description_safety`). At most one, and never an element word.
 
 ## Elements

@@ -16,6 +16,9 @@ export const createExplorerTransactionUrl = (chainName, networkIdentifier, trans
 	if (chainName === 'symbol')
 		return `${baseUrl}/transactions/${transactionHash}`;
 
+	if (chainName === 'nem')
+		return `${baseUrl}/transactions/${transactionHash}`;
+
 	if (chainName === 'ethereum')
 		return `${baseUrl}/tx/${transactionHash}`;
 
@@ -35,6 +38,9 @@ export const createExplorerAccountUrl = (chainName, networkIdentifier, address) 
 	if (chainName === 'symbol')
 		return `${baseUrl}/accounts/${address}`;
 
+	if (chainName === 'nem')
+		return `${baseUrl}/accounts/${address}`;
+
 	if (chainName === 'ethereum')
 		return `${baseUrl}/address/${address}`;
 
@@ -49,13 +55,18 @@ export const createExplorerAccountUrl = (chainName, networkIdentifier, address) 
  * @returns {string} The URL to view the token on the explorer.
  */
 export const createTokenExplorerUrl = (chainName, networkIdentifier, tokenId) => {
-	const baseUrl = config.chains[chainName].explorerURL[networkIdentifier];
+	const baseUrl = config.chains[chainName]?.explorerURL[networkIdentifier];
 
 	if (chainName === 'symbol')
 		return `${baseUrl}/mosaics/${tokenId}`;
 
+	if (chainName === 'nem')
+		return `${baseUrl}/mosaics/${tokenId}`;
+
 	if (chainName === 'ethereum')
 		return `${baseUrl}/address/${tokenId}`;
+
+	throw new Error(`Cannot create explorer URL for token on chain "${chainName}"`);
 };
 
 /**
@@ -66,9 +77,12 @@ export const createTokenExplorerUrl = (chainName, networkIdentifier, tokenId) =>
  * @returns {string} The URL to view the namespace on the explorer.
  */
 export const createExplorerNamespaceUrl = (chainName, networkIdentifier, namespaceId) => {
-	const baseUrl = config.chains[chainName].explorerURL[networkIdentifier];
+	const baseUrl = config.chains[chainName]?.explorerURL[networkIdentifier];
 
 	if (chainName === 'symbol')
+		return `${baseUrl}/namespaces/${namespaceId}`;
+
+	if (chainName === 'nem')
 		return `${baseUrl}/namespaces/${namespaceId}`;
 
 	throw new Error(`Cannot create explorer URL for namespace on chain "${chainName}"`);

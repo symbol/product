@@ -8,7 +8,6 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 
 /** @typedef {import('react')} React */
 
-const DEFAULT_BORDER_RADIUS = 'm';
 const ANIMATION_DURATION_MS = 300;
 
 const iconMap = {
@@ -23,7 +22,6 @@ const iconMap = {
  * @param {React.ReactNode} props.children - Always visible content rendered at the top of the card.
  * @param {React.ReactNode} props.collapsibleChildren - Content that expands/collapses at the bottom.
  * @param {boolean} [props.isExpanded=false] - External control for expanded state.
- * @param {'s'|'m'|'l'} [props.borderRadius='m'] - Border radius size passed to Card.
  * @param {string} [props.color] - Background color passed to Card.
  * @param {object} [props.style] - Additional styles passed to Card.
  * @returns {React.ReactNode} ExpandableCard component.
@@ -32,7 +30,6 @@ export const ExpandableCard = ({
 	children,
 	collapsibleChildren,
 	isExpanded: isExpandedProp = false,
-	borderRadius = DEFAULT_BORDER_RADIUS,
 	color,
 	style
 }) => {
@@ -77,7 +74,7 @@ export const ExpandableCard = ({
 	const iconName = isExpanded ? iconMap.expanded : iconMap.collapsed;
 
 	return (
-		<Card borderRadius={borderRadius} color={color} style={style}>
+		<Card color={color} style={[styles.root, style]}>
 			<TouchableNative onPress={handlePress}>
 				<View>
 					{children}
@@ -96,6 +93,9 @@ export const ExpandableCard = ({
 };
 
 const styles = StyleSheet.create({
+	root: {
+		overflow: 'hidden'
+	},
 	iconContainer: {
 		position: 'absolute',
 		bottom: Sizes.Primitives.spacing100,

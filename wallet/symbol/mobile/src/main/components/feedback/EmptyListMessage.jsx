@@ -1,6 +1,6 @@
 import { StyledText } from '@/app/components';
 import { $t } from '@/app/localization';
-import { Sizes } from '@/app/styles';
+import { Colors, Sizes } from '@/app/styles';
 import { View } from 'react-native';
 
 /** @typedef {import('react')} React */
@@ -27,6 +27,6 @@ const styles = {
 	},
 	text: {
 		textAlign: 'center',
-		opacity: 0.3
+		color: Colors.Components.emptyList.text
 	}
 };

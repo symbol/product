@@ -1,0 +1,47 @@
+import { CopyButtonContainer, Field, Stack, StatusCard, StyledText } from '@/app/components';
+import { $t } from '@/app/localization';
+import React from 'react';
+
+/** @typedef {import('../utils/harvesting-status').HarvestingStatusViewModel} HarvestingStatusViewModel */
+
+/**
+ * HarvestingStatus component. Displays the current harvesting status with optional warnings
+ * and node URL information.
+ * @param {object} props - Component props.
+ * @param {HarvestingStatusViewModel} props.statusViewModel - Status view model.
+ * @param {boolean} [props.isLoading=false] - Whether data is loading.
+ * @returns {React.ReactNode} HarvestingStatus component.
+ */
+export const HarvestingStatus = ({ statusViewModel, isLoading = false }) => {
+	const { statusDisplay, warning, nodeUrl } = statusViewModel;
+
+	return (
+		<Stack gap="s">
+			<StatusCard
+				variant={statusDisplay.variant}
+				statusText={statusDisplay.statusText}
+				icon={statusDisplay.icon}
+				isLoading={isLoading}
+			>
+				{({ inverse }) => (
+					<>
+						{nodeUrl && (
+							<Field title={$t('fieldTitle_nodeUrl')} inverse={inverse}>
+								<CopyButtonContainer value={nodeUrl} inverse={inverse}>
+									<StyledText inverse={inverse}>
+										{nodeUrl}
+									</StyledText>
+								</CopyButtonContainer>
+							</Field>
+						)}
+						{warning.isVisible && (
+							<StyledText inverse={inverse}>
+								{warning.text}
+							</StyledText>
+						)}
+					</>
+				)}
+			</StatusCard>
+		</Stack>
+	);
+};

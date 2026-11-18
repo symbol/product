@@ -6,20 +6,15 @@ import { Image, StyleSheet, View } from 'react-native';
 const CONTAINER_HEIGHT = Sizes.Semantic.spacing.m * 20;
 const IMAGE_HEIGHT = CONTAINER_HEIGHT * 1;
 
-const sourceMap = {
-	'multisig-account': require('@/app/assets/images/art/multisig-chest.png')
-};
-
 
 /**
  * ScreenIllustration component. Displays a full-width decorative illustration image for screen headers.
  * @param {object} props - Component props.
  * @param {string} props.name - Name of the illustration to display.
+ * @param {number} props.source - Image source of the illustration (require result).
  * @returns {React.ReactNode} ScreenIllustration component.
  */
-export const ScreenIllustration = ({ name }) => {
-	const source = sourceMap[name];
-
+export const ScreenIllustration = ({ name, source }) => {
 	if (!source && __DEV__)
 		throw new Error(`ScreenIllustration: image source not found for name "${name}".`);
 

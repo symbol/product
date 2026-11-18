@@ -1,7 +1,9 @@
+import { TransactionKind } from '@/app/constants';
+import { getTransactionTypeInfo } from '@/app/lib/transaction';
 import { $t } from '@/app/localization';
-import { AggregateTypes, LoseAccessWarningTypes } from '@/app/screens/history/constants';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
 
 /**
@@ -15,16 +17,19 @@ import { AggregateTypes, LoseAccessWarningTypes } from '@/app/screens/history/co
 /**
  * Checks if a transaction is potentially dangerous (could result in loss of access).
  * @param {Transaction} transaction - Transaction to check.
+ * @param {ChainName} chainName - Chain the transaction belongs to.
  * @returns {boolean} True if transaction could be dangerous.
  */
-export const isTransactionDangerous = transaction => {
-	if (LoseAccessWarningTypes.includes(transaction.type))
+export const isTransactionDangerous = (transaction, chainName) => {
+	const hasLoseAccessRisk = type => Boolean(getTransactionTypeInfo(type, chainName).hasLoseAccessRisk);
+
+	if (hasLoseAccessRisk(transaction.type))
 		return true;
 
-	if (!AggregateTypes.includes(transaction.type))
+	if (getTransactionTypeInfo(transaction.type, chainName).kind !== TransactionKind.AGGREGATE)
 		return false;
 
-	return transaction.innerTransactions.some(innerTx => LoseAccessWarningTypes.includes(innerTx.type));
+	return transaction.innerTransactions.some(innerTransaction => hasLoseAccessRisk(innerTransaction.type));
 };
 
 /**
