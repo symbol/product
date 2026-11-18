@@ -12,7 +12,7 @@ import {
 	NETWORK_CURRENCY_ID,
 	TransactionType
 } from '../constants';
-import { absoluteToRelativeAmount } from 'wallet-common-core';
+import { SdkError, absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
@@ -38,11 +38,14 @@ const deadlineFromDTO = (timestamp, deadline) => {
 };
 
 const transferTokensFromDTO = (transaction, networkCurrency, tokenInfos) => {
+	if (transaction.amount === undefined || transaction.amount === null)
+		throw new SdkError('Failed to format transfer tokens. Missing amount.');
+
 	if (transaction.mosaics?.length) {
 		// The native currency (XEM) is not included in the mosaics info list. Add it manually here for resolution.
 		const tokenInfosWithNative = { ...tokenInfos, [networkCurrency.id]: networkCurrency };
 
-		return tokenListFromDTO(transaction.mosaics, tokenInfosWithNative, transaction.amount || 0);
+		return tokenListFromDTO(transaction.mosaics, tokenInfosWithNative, transaction.amount);
 	}
 
 	const { id, name, divisibility } = networkCurrency;
@@ -50,7 +53,7 @@ const transferTokensFromDTO = (transaction, networkCurrency, tokenInfos) => {
 	return [{
 		id,
 		name,
-		amount: absoluteToRelativeAmount(transaction.amount || 0, divisibility),
+		amount: absoluteToRelativeAmount(transaction.amount, divisibility),
 		divisibility
 	}];
 };

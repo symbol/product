@@ -186,7 +186,7 @@ describe('utils/token', () => {
 		const runTokenListFromDTOTest = (description, config, expected) => {
 			it(description, () => {
 				// Act:
-				const result = tokenListFromDTO(config.mosaicsDTO, tokenInfosWithNative, config.amountMultiplier);
+				const result = tokenListFromDTO(config.mosaicsDTO, tokenInfosWithNative, config.transferAmount);
 
 				// Assert:
 				expect(result).toStrictEqual(expected.tokenList);
@@ -211,7 +211,7 @@ describe('utils/token', () => {
 						{ mosaicId: testMosaicId, quantity: 2 },
 						{ mosaicId: nativeMosaicId, quantity: 250000 }
 					],
-					amountMultiplier: 3000000
+					transferAmount: 3000000
 				},
 				expected: {
 					tokenList: [
@@ -226,7 +226,7 @@ describe('utils/token', () => {
 					mosaicsDTO: [
 						{ mosaicId: nativeMosaicId, quantity: 1000001 }
 					],
-					amountMultiplier: 1500000
+					transferAmount: 1500000
 				},
 				expected: {
 					tokenList: [
@@ -240,7 +240,7 @@ describe('utils/token', () => {
 					mosaicsDTO: [
 						{ mosaicId: testMosaicId, quantity: 8999999999999999 }
 					],
-					amountMultiplier: 3000000
+					transferAmount: 3000000
 				},
 				expected: {
 					tokenList: [
@@ -257,7 +257,7 @@ describe('utils/token', () => {
 							quantity: 5
 						}
 					],
-					amountMultiplier: 2000000
+					transferAmount: 2000000
 				},
 				expected: {
 					tokenList: [

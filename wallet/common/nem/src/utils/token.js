@@ -79,24 +79,26 @@ export const tokenInfoFromDTO = mosaicDefinitionDTO => {
 };
 
 /**
- * Converts a list of raw mosaic DTOs to normalized Token objects using a tokenInfos map. With an amount multiplier,
- * every amount is multiplied.
+ * Converts a list of raw mosaic DTOs to normalized Token objects using a tokenInfos map.
  * @param {Array} mosaicsDTO - The raw mosaic DTOs (each with `mosaicId`/`id` and `quantity`/`amount`).
  * @param {Record<string, TokenInfo>} tokenInfos - The map of TokenInfo keyed by token id string (from fetchTokenInfos).
- * @param {bigint|number|string} [amountMultiplier] - The transfer amount multiplier in absolute units.
+ * @param {bigint|number|string} [transferAmount] - The transfer amount in absolute units. Used as multiplier for each token quantity.
  * @returns {Array.<Token | RawToken>} The normalized token list.
  */
-export const tokenListFromDTO = (mosaicsDTO, tokenInfos, amountMultiplier) => {
+export const tokenListFromDTO = (mosaicsDTO, tokenInfos, transferAmount) => {
 	if (!mosaicsDTO || !tokenInfos)
 		throw new ApiError('Failed to format tokens. Missing required parameters.');
+
+	// Micro XEM in one XEM, as NIS Amount.MICRONEMS_IN_NEM.
+	const microXemInXem = 1_000_000n;
 
 	return mosaicsDTO.map(mosaicDTO => {
 		const tokenId = tokenIdFromRaw(mosaicDTO.mosaicId || mosaicDTO.id);
 		const tokenInfo = tokenInfos[tokenId];
 		const quantity = mosaicDTO.quantity ?? mosaicDTO.amount;
-		const rawAmount = amountMultiplier === undefined
+		const rawAmount = transferAmount === undefined
 			? quantity
-			: (BigInt(amountMultiplier) * BigInt(quantity) / 1_000_000n).toString();
+			: (BigInt(transferAmount) * BigInt(quantity) / microXemInXem).toString();
 
 		// Without resolved token info the relative amount and metadata are unavailable.
 		if (!tokenInfo) {
