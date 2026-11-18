@@ -1,4 +1,3 @@
-import json
 from contextlib import contextmanager
 
 import pytest
@@ -70,42 +69,47 @@ def test_parent_child_full_json(query):
 			}])
 		puller_database.upsert_transactions_for_height(1, [parent, child])
 		puller_database.upsert_mosaic(create_symbol_mosaic('1234567890ABCDEF', 2))
+		puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id='1234567890ABCDEF'), [
+			{'artifact_type': 'mosaic', 'artifact_id': '1234567890ABCDEF', 'name': name, 'updated_at_height': 1}
+			for name in ('alpha', 'beta')
+		])
 		expected = [
 			{
-				'hash': None,
-				'isEmbedded': True,
-				'aggregateHash': 'AA' * 32,
-				'embeddedIndex': 0,
-				'group': 'confirmed',
+				'transactionHash': None,
+				'embeddedTransactions': None,
+				'deadline': None,
+				'signature': None,
+				'size': None,
+				'version': 1,
 				'height': 1,
-				'type': 'TRANSFER',
-				'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-				'signer': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-				'recipient': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
-				'value': [{'id': '1234567890ABCDEF', 'name': '1234567890ABCDEF', 'amount': 123.45}],
-				'amount': 0,
+				'transactionType': 'TRANSFER',
+				'fromAddress': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'toAddress': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
+				'value': [
+					{'message': {'type': 0, 'payload': '48656C6C6F'}},
+					{'id': '1234567890ABCDEF', 'name': 'alpha', 'amount': 123.45}
+				],
 				'fee': None,
 				'timestamp': '2026-01-01 00:00:01',
-				'message': {'type': 'plain', 'text': 'Hello'}
 			},
 			{
-				'hash': 'AA' * 32,
-				'isEmbedded': False,
-				'aggregateHash': None,
-				'embeddedIndex': None,
-				'group': 'confirmed',
+				'transactionHash': 'AA' * 32,
+				'embeddedTransactions': None,
+				'deadline': '2026-01-01 00:00:00',
+				'signature': 'AB' * 64,
+				'size': 1,
+				'version': 1,
 				'height': 1,
-				'type': 'AGGREGATE_COMPLETE',
-				'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-				'signer': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-				'recipient': None,
+				'transactionType': 'AGGREGATE_COMPLETE',
+				'fromAddress': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+				'toAddress': None,
 				'value': [],
-				'amount': 0,
 				'fee': 0.000001,
 				'timestamp': '2026-01-01 00:00:01',
-				'message': None
 			}
 		]
+
+		expected[1]['embeddedTransactions'] = [expected[0]]
 
 		# Act:
 		with _create_transaction_test_client(db_config) as client:
@@ -143,46 +147,42 @@ def test_embedded_has_own_signer_address():
 
 		# Act:
 		with _create_transaction_test_client(db_config) as client:
-			response = client.get('/api/symbol/transactions?embedded=true')
+			response = client.get('/api/symbol/transactions')
 
 	# Assert:
 	assert 200 == response.status_code
-	assert [
+	expected = [
 		{
-			'hash': None,
-			'isEmbedded': True,
-			'aggregateHash': 'AA' * 32,
-			'embeddedIndex': 0,
-			'group': 'confirmed',
+			'transactionHash': 'AA' * 32,
+			'embeddedTransactions': [{
+				'transactionHash': None,
+				'embeddedTransactions': None,
+				'deadline': None,
+				'signature': None,
+				'size': None,
+				'version': 1,
+				'height': 1,
+				'transactionType': 'TRANSFER',
+				'fromAddress': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
+				'toAddress': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
+				'value': [],
+				'fee': None,
+				'timestamp': '2026-01-01 00:00:01',
+			}],
+			'deadline': '2026-01-01 00:00:00',
+			'signature': 'AB' * 64,
+			'size': 1,
+			'version': 1,
 			'height': 1,
-			'type': 'TRANSFER',
-			'sender': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
-			'signer': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
-			'recipient': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
+			'transactionType': 'AGGREGATE_COMPLETE',
+			'fromAddress': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
+			'toAddress': None,
 			'value': [],
-			'amount': 0,
-			'fee': None,
-			'timestamp': '2026-01-01 00:00:01',
-			'message': None
-		},
-		{
-			'hash': 'AA' * 32,
-			'isEmbedded': False,
-			'aggregateHash': None,
-			'embeddedIndex': None,
-			'group': 'confirmed',
-			'height': 1,
-			'type': 'AGGREGATE_COMPLETE',
-			'sender': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
-			'signer': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
-			'recipient': None,
-			'value': [],
-			'amount': 0,
 			'fee': 0.000001,
 			'timestamp': '2026-01-01 00:00:01',
-			'message': None
 		}
-	] == response.json
+	]
+	assert expected == response.json
 
 
 @pytest.mark.parametrize('query', [
@@ -228,7 +228,7 @@ def test_alias_search_uses_current_link_at_requested_historical_height():  # pyl
 		_expected_alias_transaction('00' * 31 + '04', 4, 444.44),
 		_expected_alias_transaction(
 			'00' * 31 + '03', 4, 333.33,
-			sender='TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', recipient='TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ'),
+			fromAddress='TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', toAddress='TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ'),
 		_expected_alias_transaction('00' * 31 + '02', 4, 222.22)
 	] == response.json
 
@@ -289,7 +289,7 @@ def test_type_or_requires_mosaic_match():
 	assert 200 == response.status_code
 	assert [_expected_alias_transaction(
 		'00' * 31 + '03', 4, 333.33,
-		sender='TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', recipient='TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ')] == response.json
+		fromAddress='TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', toAddress='TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ')] == response.json
 
 
 def test_type_or_requires_sender_match():
@@ -325,30 +325,28 @@ def test_type_or_requires_sender_match():
 		signer_address=TESTNET_SENDER,
 		address_rows=[{'address': TESTNET_SENDER, 'role': 'signer'}])
 	common_expected_fields = {
-		'isEmbedded': False,
-		'aggregateHash': None,
-		'embeddedIndex': None,
-		'group': 'confirmed',
+		'embeddedTransactions': None,
+		'deadline': '2026-01-01 00:00:00',
+		'signature': 'AB' * 64,
+		'size': 1,
+		'version': 1,
 		'height': 1,
-		'sender': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-		'signer': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+		'fromAddress': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
 		'value': [],
-		'amount': 0,
 		'fee': 0.000001,
 		'timestamp': '2026-01-01 00:00:01',
-		'message': None
 	}
 	expected = [
 		{
-			'hash': '00' * 31 + '02',
-			'type': 'TRANSFER',
-			'recipient': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
+			'transactionHash': '00' * 31 + '02',
+			'transactionType': 'TRANSFER',
+			'toAddress': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
 			**common_expected_fields
 		},
 		{
-			'hash': '00' * 31 + '01',
-			'type': 'AGGREGATE_COMPLETE',
-			'recipient': None,
+			'transactionHash': '00' * 31 + '01',
+			'transactionType': 'AGGREGATE_COMPLETE',
+			'toAddress': None,
 			**common_expected_fields
 		}
 	]
@@ -378,7 +376,7 @@ def test_alias_embedded_opt_in():
 	# Assert: default exclusion is checked by the preceding historical/address queries.
 	assert 200 == response.status_code
 	assert [
-		_expected_alias_transaction(None, 4, 555.55, isEmbedded=True, aggregateHash='AA' * 32, embeddedIndex=0, fee=None),
+		_expected_alias_transaction(None, 4, 555.55, deadline=None, signature=None, size=None, fee=None),
 		_expected_alias_transaction('00' * 31 + '04', 4, 444.44),
 		_expected_alias_transaction('00' * 31 + '02', 4, 222.22)
 	] == response.json
@@ -517,8 +515,7 @@ def test_direct_mosaic_search_succeeds_without_namespace_table():  # pylint: dis
 	assert 200 == response.status_code
 	assert [_expected_alias_transaction(
 		'00' * 31 + '01', 2, 12.345678,
-		value=[{'id': NATIVE_MOSAIC_INFO.id, 'name': NATIVE_MOSAIC_INFO.id, 'amount': 12.345678}],
-		amount=12.345678)] == response.json
+		value=[{'id': NATIVE_MOSAIC_INFO.id, 'name': NATIVE_MOSAIC_INFO.id, 'amount': 12.345678}])] == response.json
 	assert 503 == alias_response.status_code
 	assert {'status': 503, 'message': 'Symbol backend data is unavailable'} == alias_response.json
 
@@ -530,8 +527,6 @@ def test_native_only_no_mosaic_table_200(state_name):
 	transaction = create_symbol_mosaic_transfer(2, 1, NATIVE_MOSAIC_INFO.id, 12345678)
 	with symbol_test_database(sync_state, [create_symbol_block(2)]) as (db_config, puller_database):
 		puller_database.upsert_transactions_for_height(2, [transaction])
-		puller_database.upsert_mosaic(create_symbol_mosaic(NATIVE_MOSAIC_INFO.id, 3))
-		_save_mosaic_alias_names(puller_database, NATIVE_MOSAIC_INFO.id, ['unsafe-native-name'])
 		with _create_transaction_test_client(db_config) as client:
 			was_renamed = False
 			try:
@@ -551,25 +546,23 @@ def test_native_only_no_mosaic_table_200(state_name):
 	# Assert:
 	assert 200 == response.status_code
 	assert [{
-		'hash': '00' * 31 + '01',
-		'isEmbedded': False,
-		'aggregateHash': None,
-		'embeddedIndex': None,
-		'group': 'confirmed',
+		'transactionHash': '00' * 31 + '01',
+		'embeddedTransactions': None,
+		'deadline': '2026-01-01 00:00:00',
+		'signature': 'AB' * 64,
+		'size': 1,
+		'version': 1,
 		'height': 2,
-		'type': 'TRANSFER',
-		'sender': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
-		'signer': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
-		'recipient': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
+		'transactionType': 'TRANSFER',
+		'fromAddress': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
+		'toAddress': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
 		'value': [{'id': NATIVE_MOSAIC_INFO.id, 'name': NATIVE_MOSAIC_INFO.id, 'amount': 12.345678}],
-		'amount': 12.345678,
 		'fee': 0.000002,
 		'timestamp': '2026-01-01 00:00:02',
-		'message': None
 	}] == response.json
 
 
-def test_clean_saved_native_name_and_div():
+def test_uses_configured_native_scale():
 	# Arrange:
 	transaction = create_symbol_mosaic_transfer(2, 1, NATIVE_MOSAIC_INFO.id, 12345678)
 	with symbol_test_database(
@@ -577,16 +570,14 @@ def test_clean_saved_native_name_and_div():
 		[create_symbol_block(2)]) as (db_config, puller_database):
 		puller_database.upsert_transactions_for_height(2, [transaction])
 		puller_database.upsert_mosaic(create_symbol_mosaic(NATIVE_MOSAIC_INFO.id, 3))
-		_save_mosaic_alias_names(puller_database, NATIVE_MOSAIC_INFO.id, ['saved-native-name'])
 		with _create_transaction_test_client(db_config) as client:
 			# Act:
 			response = client.get('/api/symbol/transactions?height=2')
 
 	# Assert:
 	assert 200 == response.status_code
-	assert 'saved-native-name' == response.json[0]['value'][0]['name']
 	assert 12.345678 == response.json[0]['value'][0]['amount']
-	assert 12.345678 == response.json[0]['amount']
+	assert 0.000002 == response.json[0]['fee']
 
 
 @pytest.mark.parametrize('state_name', ['dirty', 'repairing'])
@@ -650,42 +641,38 @@ def test_repairing_safe_list_200(query):
 	# Assert:
 	assert 200 == response.status_code
 	assert [{
-		'hash': '00' * 31 + '01',
-		'isEmbedded': False,
-		'aggregateHash': None,
-		'embeddedIndex': None,
-		'group': 'confirmed',
+		'transactionHash': '00' * 31 + '01',
+		'embeddedTransactions': None,
+		'deadline': '2026-01-01 00:00:00',
+		'signature': 'AB' * 64,
+		'size': 1,
+		'version': 1,
 		'height': 2,
-		'type': 'TRANSFER',
-		'sender': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
-		'signer': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
-		'recipient': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
+		'transactionType': 'TRANSFER',
+		'fromAddress': 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI',
+		'toAddress': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
 		'value': [],
-		'amount': 0,
 		'fee': 0.000002,
 		'timestamp': '2026-01-01 00:00:02',
-		'message': None
 	}] == response.json
 
 
 def _expected_alias_transaction(hash_value, height, value_amount, **overrides):
-	sender = overrides.get('sender', 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
+	sender = overrides.get('fromAddress', 'NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 	return {
-		'hash': hash_value,
-		'isEmbedded': False,
-		'aggregateHash': None,
-		'embeddedIndex': None,
-		'group': 'confirmed',
+		'transactionHash': hash_value,
+		'embeddedTransactions': None,
+		'deadline': '2026-01-01 00:00:00',
+		'signature': 'AB' * 64,
+		'size': 1,
+		'version': 1,
 		'height': height,
-		'type': 'TRANSFER',
-		'sender': sender,
-		'signer': sender,
-		'recipient': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
+		'transactionType': 'TRANSFER',
+		'fromAddress': sender,
+		'toAddress': 'ND3I6ZLS22YLJIL7AIQHOAN34AOUSRNK6NTDVKQ',
 		'value': [{'id': ALIAS_TARGET_MOSAIC_ID, 'name': ALIAS_TARGET_MOSAIC_ID, 'amount': value_amount}],
-		'amount': 0,
 		'fee': height / 1000000,
 		'timestamp': f'2026-01-01 00:00:{height:02d}',
-		'message': None,
 		**overrides
 	}
 
@@ -728,14 +715,6 @@ def _create_non_public_sync_state(state_name):
 			dirty_state_from_height=3)
 
 	return create_safe_repairing_sync_state()
-
-
-def _save_mosaic_alias_names(puller_database, mosaic_id, alias_names):
-	with puller_database.connection.cursor() as cursor:
-		cursor.execute(
-			'UPDATE symbol_mosaics SET alias_names = %s::jsonb WHERE mosaic_id = %s',
-			(json.dumps(alias_names), mosaic_id))
-	puller_database.connection.commit()
 
 
 @contextmanager

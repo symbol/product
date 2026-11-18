@@ -15,7 +15,6 @@ from rest.model.symbol.HarvestingBalanceRange import HarvestingBalanceRange
 from rest.model.symbol.Metadata import SymbolMetadataView
 from rest.model.symbol.Receipt import SymbolReceiptView
 from rest.model.symbol.Transaction import SymbolTransactionDetailView
-from rest.model.symbol.Transaction import SymbolTransactionView as SymbolConfirmedTransactionView
 from rest.model.symbol.TransactionView import SymbolTransactionView
 from rest.model.symbol.validation import SymbolDataInvalid
 
@@ -201,7 +200,7 @@ class SymbolRestFacade:  # pylint: disable=too-many-instance-attributes
 		"""Gets a confirmed transaction page."""
 
 		transactions = self.symbol_db.get_transactions(query)
-		return [SymbolConfirmedTransactionView(transaction).to_dict(self.native_mosaic_info) for transaction in transactions]
+		return [SymbolTransactionView(transaction).to_dict() for transaction in transactions]
 
 	def get_transaction_statistics(self):
 		"""Gets Symbol transaction statistics."""
