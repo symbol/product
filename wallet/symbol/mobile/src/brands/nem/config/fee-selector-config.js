@@ -2,5 +2,5 @@
 
 /** @type {FeeSelectorConfig} */
 export const feeSelectorConfig = {
-	isSpeedIconVisible: false
+	isSelectable: false
 };

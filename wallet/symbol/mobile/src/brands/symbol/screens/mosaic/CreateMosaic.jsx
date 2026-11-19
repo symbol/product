@@ -297,7 +297,6 @@ export const CreateMosaic = () => {
 					{!!transactionFees && (
 						<Animated.View entering={FadeInDown} exiting={FadeOut}>
 							<FeeSelector
-								title={$t('fieldTitle_transactionFee')}
 								feeTiers={transactionFees}
 								value={transactionSpeed}
 								ticker={ticker}

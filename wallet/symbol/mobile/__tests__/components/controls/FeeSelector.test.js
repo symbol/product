@@ -1,13 +1,18 @@
 import { FeeSelector } from '@/app/components/controls/FeeSelector';
+import { feeSelectorConfig } from '@/brand/config/fee-selector-config';
+import { ScreenTester } from '__tests__/ScreenTester';
 import { runRenderTextTest } from '__tests__/component-tests';
 import { mockLocalization } from '__tests__/mock-helpers';
 import { fireEvent, render } from '@testing-library/react-native';
+import Slider from 'react-native-smooth-slider';
 
 const SCREEN_TEXT = {
-	textTitle: 'Transaction Fee',
+	textTitleFeeSpeed: 'inputLabel_feeSpeed',
+	textTitleFee: 'inputLabel_fee',
 	textFeeSlow: 'feeSpeed_slow',
 	textFeeMedium: 'feeSpeed_medium',
-	textFeeFast: 'feeSpeed_fast'
+	textFeeFast: 'feeSpeed_fast',
+	textFeeAmount: '0.5 XYM'
 };
 
 const FeeTierLevel = {
@@ -42,7 +47,6 @@ const FEE_TIERS_ARRAY = [
 ];
 
 const createDefaultProps = (overrides = {}) => ({
-	title: SCREEN_TEXT.textTitle,
 	feeTiers: FEE_TIERS_DEFAULT,
 	value: FeeTierLevel.MEDIUM,
 	onChange: jest.fn(),
@@ -51,7 +55,6 @@ const createDefaultProps = (overrides = {}) => ({
 });
 
 const changeFeeSelectorValue = (renderer, sliderValue) => {
-	const Slider = require('react-native-smooth-slider').default;
 	const slider = renderer.UNSAFE_getByType(Slider);
 	fireEvent(slider, 'onValueChange', sliderValue);
 };
@@ -64,7 +67,7 @@ describe('components/FeeSelector', () => {
 	runRenderTextTest(FeeSelector, {
 		props: createDefaultProps(),
 		textToRender: [
-			{ type: 'text', value: SCREEN_TEXT.textTitle }
+			{ type: 'text', value: SCREEN_TEXT.textTitleFeeSpeed }
 		]
 	});
 
@@ -171,6 +174,25 @@ describe('components/FeeSelector', () => {
 
 			// Assert:
 			expect(getByText(expectedText)).toBeTruthy();
+		});
+	});
+
+	describe('speed not selectable', () => {
+		afterEach(() => {
+			jest.restoreAllMocks();
+		});
+
+		it('renders fee title and amount without slider', () => {
+			// Arrange:
+			jest.replaceProperty(feeSelectorConfig, 'isSelectable', false);
+			const props = createDefaultProps();
+
+			// Act:
+			const screenTester = new ScreenTester(FeeSelector, props);
+
+			// Assert:
+			screenTester.expectText([SCREEN_TEXT.textTitleFee, SCREEN_TEXT.textFeeAmount]);
+			expect(screenTester.renderer.UNSAFE_queryByType(Slider)).toBeNull();
 		});
 	});
 });

@@ -49,14 +49,13 @@ const createFeeTierOption = (level, value) => ({
  * options using a slider interface, featuring animated visual feedback.
  * @param {object} props - Component props.
  * @param {object} [props.style] - Additional styles for the component container.
- * @param {string} props.title - The title label displayed above the fee selector.
  * @param {TransactionFeeTiers | TransactionFeeTiers[]} props.feeTiers - The fee tiers configuration.
  * @param {TransactionFeeTierLevel} props.value - The currently selected fee tier level.
  * @param {string} props.ticker - The ticker symbol for the fee currency.
  * @param {function(string): void} props.onChange - Function to call when the selected fee tier changes.
  * @returns {React.ReactNode} FeeSelector component.
  */
-export const FeeSelector = ({ style, title, feeTiers, value, ticker, onChange }) => {
+export const FeeSelector = ({ style, feeTiers, value, ticker, onChange }) => {
 	// State
 	const [sliderKey, refreshSlider] = useToggle(true);
 	const imageTranslation = useSharedValue(0);
@@ -94,12 +93,14 @@ export const FeeSelector = ({ style, title, feeTiers, value, ticker, onChange })
 	}, [feeTiers]);
 
 	// Derived values
-	const { isSpeedIconVisible } = feeSelectorConfig;
+	const { isSelectable } = feeSelectorConfig;
 	const sliderValue = FEE_TIER_LEVELS.indexOf(value);
 	const imageSrc = IMAGES[sliderValue];
 	const selectedFeeValue = options[sliderValue].value;
 	const selectedFeeLabel = options[sliderValue].label;
-	const valueField = `${selectedFeeLabel} | ${selectedFeeValue} ${ticker}`;
+	const titleField = isSelectable ? $t('inputLabel_feeSpeed') : $t('inputLabel_fee');
+	const feeAmountText = `${selectedFeeValue} ${ticker}`;
+	const valueField = isSelectable ? `${selectedFeeLabel} | ${feeAmountText}` : feeAmountText;
 
 	// Animations
 	const animatedImageStyle = useAnimatedStyle(() => ({
@@ -122,29 +123,31 @@ export const FeeSelector = ({ style, title, feeTiers, value, ticker, onChange })
 	};
 
 	return (
-		<View style={[styles.root, style]}>
+		<View style={[styles.root, !isSelectable && styles.root_notSelectable, style]}>
 			<View style={styles.inputContainer}>
-				{isSpeedIconVisible && (
+				{isSelectable && (
 					<Animated.Image source={imageSrc} style={[styles.image, animatedImageStyle]} />
 				)}
-				<Text style={styles.label}>{title}</Text>
+				<Text style={styles.label}>{titleField}</Text>
 				<Text style={styles.value}>{valueField}</Text>
 			</View>
-			<Slider
-				key={sliderKey}
-				value={sliderValue}
-				minimumValue={SLIDER_MIN_VALUE}
-				maximumValue={SLIDER_MAX_VALUE}
-				minimumTrackTintColor={Colors.Primitives.transparent}
-				maximumTrackTintColor={Colors.Primitives.transparent}
-				style={styles.slider}
-				trackStyle={styles.track}
-				thumbStyle={styles.thumb}
-				thumbTouchSize={THUMB_TOUCH_SIZE}
-				useNativeDriver={false}
-				onValueChange={handleChange}
-				onSlidingComplete={handleSlidingComplete}
-			/>
+			{isSelectable && (
+				<Slider
+					key={sliderKey}
+					value={sliderValue}
+					minimumValue={SLIDER_MIN_VALUE}
+					maximumValue={SLIDER_MAX_VALUE}
+					minimumTrackTintColor={Colors.Primitives.transparent}
+					maximumTrackTintColor={Colors.Primitives.transparent}
+					style={styles.slider}
+					trackStyle={styles.track}
+					thumbStyle={styles.thumb}
+					thumbTouchSize={THUMB_TOUCH_SIZE}
+					useNativeDriver={false}
+					onValueChange={handleChange}
+					onSlidingComplete={handleSlidingComplete}
+				/>
+			)}
 		</View>
 	);
 };
@@ -162,6 +165,9 @@ const styles = StyleSheet.create({
 		borderBottomColor: Colors.Components.control.default.default.border,
 		backgroundColor: Colors.Components.control.default.default.background,
 		boxShadow: Shadows.Components.control
+	},
+	root_notSelectable: {
+		borderBottomColor: Colors.Components.control.default.default.background
 	},
 	inputContainer: {
 		width: '100%',
