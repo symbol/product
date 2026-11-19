@@ -19,6 +19,7 @@ def _expected_list_dict():
 		'beneficiaryAddress': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
 		'totalFees': 1.234567,
 		'totalTransactions': 7,
+		'topLevelTransactions': 4,
 		'statementCount': 3,
 		'blockReward': None,
 		'isFinalized': True,
@@ -40,6 +41,7 @@ class SymbolBlockViewTest(TestCase):
 			total_fee=Decimal('1234567'),
 			block_reward=None,
 			total_transactions_count=7,
+			transactions_count=4,
 			statement_count=3,
 			difficulty=Decimal('100000000000000'),
 			fee_multiplier=100,
@@ -71,23 +73,30 @@ class SymbolBlockViewTest(TestCase):
 
 		# Assert:
 		self.assertEqual(_expected_list_dict(), result)
+		self.assertIs(type(result['totalTransactions']), int)
+		self.assertIs(type(result['topLevelTransactions']), int)
 
 	def test_zero_common_values(self):
 		# Arrange:
 		block_view = self._create_block_view()
 		block_view.total_fee = 0
 		block_view.total_transactions_count = 0
+		block_view.transactions_count = 0
 		block_view.difficulty = Decimal('0')
 
 		# Act:
 		result = block_view.to_dict(NativeMosaicInfo('72C0212E67A08BCE', 3))
 
 		# Assert:
-		self.assertEqual(0.0, result['totalFees'])
-		self.assertEqual(0, result['totalTransactions'])
-		self.assertEqual(0, result['difficulty'])
+		self.assertEqual({
+			**_expected_list_dict(),
+			'totalFees': 0.0,
+			'totalTransactions': 0,
+			'topLevelTransactions': 0,
+			'difficulty': 0
+		}, result)
+		self.assertIs(type(result['topLevelTransactions']), int)
 		self.assertIs(type(result['difficulty']), int)
-		self.assertIsNone(result['blockReward'])
 
 	def test_difficulty_is_an_exact_integer_above_javascript_safe_range(self):
 		# Arrange:

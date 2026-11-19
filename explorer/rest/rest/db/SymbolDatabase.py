@@ -54,7 +54,8 @@ BLOCK_COLUMNS = '''
 	harvesting_eligible_accounts_count,
 	total_voting_balance,
 	previous_importance_block_hash,
-	block_reward
+	block_reward,
+	transactions_count
 '''
 
 MOSAIC_COLUMNS = '''
@@ -1809,6 +1810,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 			total_voting_balance=result[24],
 			previous_importance_block_hash=bytes_or_none(result[25]),
 			block_reward=result[26],
+			transactions_count=result[27],
 			is_finalized=bool(finalized_height and result[0] <= finalized_height)
 		)
 

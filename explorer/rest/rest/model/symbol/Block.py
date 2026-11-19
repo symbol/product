@@ -77,6 +77,7 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 		self.total_fee = kwargs['total_fee']
 		self.block_reward = kwargs['block_reward']
 		self.total_transactions_count = kwargs['total_transactions_count']
+		self.transactions_count = kwargs['transactions_count']
 		self.statement_count = kwargs['statement_count']
 		self.difficulty = kwargs['difficulty']
 		self.fee_multiplier = kwargs['fee_multiplier']
@@ -112,6 +113,7 @@ class SymbolBlockView:  # pylint: disable=too-many-instance-attributes
 			'beneficiaryAddress': self.beneficiary_address,
 			'totalFees': format_amount(self.total_fee, native_mosaic_info.divisibility),
 			'totalTransactions': self.total_transactions_count,
+			'topLevelTransactions': self.transactions_count,
 			'statementCount': self.statement_count,
 			'blockReward': block_reward,
 			'isFinalized': self.is_finalized,
