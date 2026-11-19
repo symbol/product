@@ -816,7 +816,7 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 
 		# Assert:
 		self.assertEqual(1, len(result))
-		self.assertEqual((('1234567890ABCDEF', 123, None, None),), result[0].mosaics)
+		self.assertEqual((('1234567890ABCDEF', 123, 2, None),), result[0].mosaics)
 
 
 class SymbolDatabaseTransactionAliasTest(TestCase):
@@ -955,7 +955,7 @@ class SymbolDatabaseTransactionAliasTest(TestCase):
 				result = database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
 
 		# Assert:
-		self.assertEqual([(NATIVE_MOSAIC_INFO.id, 10, None, None)], [transaction.mosaics[0] for transaction in result])
+		self.assertEqual([(NATIVE_MOSAIC_INFO.id, 10, 6, None)], [transaction.mosaics[0] for transaction in result])
 
 
 @contextmanager
