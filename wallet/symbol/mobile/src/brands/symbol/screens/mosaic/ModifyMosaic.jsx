@@ -178,7 +178,6 @@ export const ModifyMosaic = props => {
 					{!!transactionFees && (
 						<Animated.View entering={FadeInDown} exiting={FadeOut}>
 							<FeeSelector
-								title={$t('inputLabel_feeSpeed')}
 								value={transactionSpeed}
 								feeTiers={transactionFees}
 								ticker={ticker}

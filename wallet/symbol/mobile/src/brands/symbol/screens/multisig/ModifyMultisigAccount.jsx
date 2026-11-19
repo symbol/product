@@ -252,7 +252,6 @@ export const ModifyMultisigAccount = props => {
 
 						{transactionFees && (
 							<FeeSelector
-								title={$t('fieldTitle_transactionFee')}
 								feeTiers={transactionFees}
 								value={transactionSpeed}
 								ticker={ticker}

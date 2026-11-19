@@ -40,7 +40,6 @@ export const HarvestingForm = ({
 			)}
 			{isFeeSelectorVisible && (
 				<FeeSelector
-					title={$t('fieldTitle_transactionFee')}
 					feeTiers={feeTiers}
 					value={feeLevel}
 					ticker={ticker}

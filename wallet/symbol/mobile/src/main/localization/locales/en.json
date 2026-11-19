@@ -271,6 +271,7 @@
     "inputLabel_address": "Address",
     "inputLabel_amount": "Amount",
     "inputLabel_encrypted": "Encrypted",
+    "inputLabel_fee": "Fee",
     "inputLabel_feeSpeed": "Speed/Fee",
     "inputLabel_message": "Message/Memo",
     "inputLabel_mnemonic": "Mnemonic Phrase",

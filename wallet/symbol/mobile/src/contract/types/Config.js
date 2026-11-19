@@ -50,7 +50,7 @@
 /**
  * FeeSelector config.
  * @typedef {object} FeeSelectorConfig
- * @property {boolean} isSpeedIconVisible - Whether the fee speed icon is shown on the right side of the selector.
+ * @property {boolean} isSelectable - When true the fee can be selected. When false - only display the fee value without selection feature.
  */
 
 /**
