@@ -143,8 +143,8 @@ class SortOrder(str, Enum):
 TransactionQuery = namedtuple(
 	'TransactionQuery',
 	['limit', 'offset', 'height', 'transaction_types', 'address', 'signer_public_key', 'recipient_address',
-		'transfer_mosaic_id', 'include_embedded', 'sender_address'],
-	defaults=(10, 0, None, (), None, None, None, None, False, None))
+		'transfer_mosaic_id', 'sender_address'],
+	defaults=(10, 0, None, (), None, None, None, None, None))
 TransactionStatisticsRecord = namedtuple(
 	'TransactionStatisticsRecord', ['total', 'last30_day', 'last24_hours', 'average_per_block'])
 TransactionRangeRecord = namedtuple('TransactionRangeRecord', ['period', 'total_transactions'])
@@ -989,7 +989,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 
 	@staticmethod
 	def _create_transaction_filter(query):
-		where_clauses = ['transactions.height <= sync_state.last_synced_height']
+		where_clauses = ['transactions.height <= sync_state.last_synced_height', 'transactions.is_embedded = false']
 		parameters = []
 		filters = [
 			(query.height, 'transactions.height = %s'),
@@ -1013,9 +1013,6 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):
 		if query.transaction_types:
 			where_clauses.append('transactions.type = ANY(%s::integer[])')
 			parameters.append(list(query.transaction_types))
-
-		if not query.include_embedded:
-			where_clauses.append('transactions.is_embedded = false')
 
 		return where_clauses, parameters
 

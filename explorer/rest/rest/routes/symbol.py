@@ -43,7 +43,7 @@ RECEIPT_QUERY_PARAMETERS = frozenset([
 BLOCK_RECEIPT_QUERY_PARAMETERS = frozenset(['limit', 'offset'])
 TRANSACTION_QUERY_PARAMETERS = frozenset([
 	'limit', 'offset', 'height', 'transactionTypes', 'address', 'senderAddress', 'signerPublicKey', 'recipientAddress',
-	'mosaic', 'embedded', 'order'
+	'mosaic', 'order'
 ])
 TRANSACTION_STATISTICS_QUERY_PARAMETERS = frozenset()
 NAMESPACE_QUERY_PARAMETERS = frozenset(['limit', 'offset', 'sort', 'aliasType', 'registrationType', 'ownerAddress'])
@@ -711,7 +711,6 @@ def _parse_transaction_query():
 		raise ValueError('address cannot be combined with signerPublicKey or recipientAddress')
 
 	transfer_mosaic_id = _parse_mosaic_id(_get_scalar_parameter('mosaic'))
-	embedded = _parse_boolean('embedded', _get_scalar_parameter('embedded'))
 	order_value = _get_scalar_parameter('order', 'DESC').upper()
 	if order_value != SortOrder.DESC.value:
 		raise ValueError('order must be DESC')
@@ -725,8 +724,7 @@ def _parse_transaction_query():
 		sender_address=sender_address,
 		signer_public_key=signer_public_key,
 		recipient_address=recipient_address,
-		transfer_mosaic_id=transfer_mosaic_id,
-		include_embedded=embedded)
+		transfer_mosaic_id=transfer_mosaic_id)
 
 
 def _parse_transaction_types(value):

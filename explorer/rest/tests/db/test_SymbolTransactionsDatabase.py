@@ -413,7 +413,7 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 		# Assert:
 		self.assertEqual([1], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
 
-	def test_get_transactions_sender_address_embedded_selection_does_not_promote_child_to_parent(self):
+	def test_get_transactions_sender_address_does_not_promote_child_to_parent(self):
 		# Arrange:
 		sender_address = bytes.fromhex('03' * 24)
 		parent_hash = bytes.fromhex('AA' * 32)
@@ -427,22 +427,15 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			aggregate_hash=parent_hash,
 			address_rows=[{'address': sender_address, 'role': 'signer'}])
 		transactions = [parent, child]
-		expected_child_identity = [(None, parent_hash.hex().upper(), 0)]
 
-		# Act + Assert:
-		for query, expected in (
-			(TransactionQuery(sender_address=sender_address), []),
-			(TransactionQuery(sender_address=sender_address, include_embedded=False), []),
-			(TransactionQuery(sender_address=sender_address, include_embedded=True), expected_child_identity)
-		):
-			with self.subTest(query=query):
-				result = _query_symbol_transactions(
-					transactions,
-					create_symbol_sync_state(last_synced_height=4, finalized_height=3),
-					query)
-				self.assertEqual(expected, [
-					(transaction.transaction_hash, transaction.aggregate_hash, transaction.embedded_index)
-					for transaction in result])
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(sender_address=sender_address))
+
+		# Assert:
+		self.assertEqual([], result)
 
 	def test_get_transactions_sender_address_filters_before_pagination_and_hides_above_watermark(self):
 		# Arrange:
@@ -468,7 +461,7 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			[(2, 4), (1, 4), (6, 3)],
 			[(bytes.fromhex(transaction.transaction_hash)[-1], transaction.height) for transaction in result])
 
-	def test_get_transactions_includes_embedded_rows_when_requested(self):
+	def test_get_transactions_returns_embedded_rows_only_inside_their_parent(self):
 		# Arrange:
 		parent_hash = bytes.fromhex('AA' * 32)
 		transactions = [
@@ -485,12 +478,10 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 		result = _query_symbol_transactions(
 			transactions,
 			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
-			TransactionQuery(include_embedded=True))
+			TransactionQuery())
 
 		# Assert:
 		self.assertEqual([
-			(TransactionType.TRANSFER.value, None, parent_hash.hex().upper(), 1),
-			(TransactionType.TRANSFER.value, None, parent_hash.hex().upper(), 0),
 			(TransactionType.AGGREGATE_COMPLETE.value, parent_hash.hex().upper(), None, None)
 		], [
 			(
@@ -500,10 +491,8 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 				transaction.embedded_index)
 			for transaction in result])
 
-		children = result[2].embedded_transactions
+		children = result[0].embedded_transactions
 		self.assertEqual([0, 1], [child.embedded_index for child in children])
-		self.assertIs(result[0], children[1])
-		self.assertIs(result[1], children[0])
 
 	def test_get_transactions_requires_address_and_transfer_mosaic_on_the_same_transaction_row(self):
 		# Arrange:
@@ -542,8 +531,7 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
 			TransactionQuery(
 				address=participant_address,
-				transfer_mosaic_id=transfer_mosaic_id,
-				include_embedded=True),
+				transfer_mosaic_id=transfer_mosaic_id),
 			[create_symbol_mosaic(transfer_mosaic_id, 2), create_symbol_mosaic(other_mosaic_id, 0)])
 
 		# Assert:
@@ -553,15 +541,14 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			for transaction in result])
 		self.assertEqual([[(transfer_mosaic_id, 10, 2, None)]], [list(transaction.mosaics) for transaction in result])
 
-	def test_get_transactions_address_matches_participant_roles_without_parent_promotion_or_duplicates(self):
+	def test_get_transactions_address_matches_participant_roles_without_duplicates_or_embedded_rows(self):
 		# Arrange:
 		participant_address = bytes.fromhex('04' * 24)
 		parent = create_symbol_transaction(4, 10, type=TransactionType.AGGREGATE_COMPLETE.value)
 		parent['hash'] = bytes.fromhex('AA' * 32)
-		child0 = create_symbol_transaction(
+		participant = create_symbol_transaction(
 			4,
-			0,
-			is_embedded=True,
+			2,
 			address_rows=[
 				{'address': participant_address, 'role': 'cosignatory'},
 				{'address': participant_address, 'role': 'target'}
@@ -573,23 +560,13 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			address_rows=[{'address': participant_address, 'role': 'cosignatory'}])
 
 		# Act:
-		embedded_result = _query_symbol_transactions(
-			[parent, child0, child1],
-			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
-			TransactionQuery(address=participant_address, include_embedded=True))
-		top_level_result = _query_symbol_transactions(
-			[parent, child0, child1],
+		result = _query_symbol_transactions(
+			[parent, participant, child1],
 			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
 			TransactionQuery(address=participant_address))
 
 		# Assert:
-		self.assertEqual([
-			(None, TransactionType.TRANSFER.value, 1),
-			(None, TransactionType.TRANSFER.value, 0),
-		], [
-			(transaction.transaction_hash, transaction.transaction_type.value, transaction.embedded_index)
-			for transaction in embedded_result])
-		self.assertEqual([], top_level_result)
+		self.assertEqual([(2).to_bytes(32, 'big').hex().upper()], [transaction.transaction_hash for transaction in result])
 
 	def test_get_transactions_transfer_mosaic_search_excludes_metadata_target_and_uses_saved_resolution(self):
 		# Arrange:

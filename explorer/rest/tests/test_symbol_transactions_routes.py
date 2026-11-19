@@ -34,12 +34,12 @@ ALIAS_TARGET_MOSAIC_ID = '1234567890ABCDEF'
 @pytest.mark.parametrize(
 	'query',
 	[
-		'embedded=true',
-		f'embedded=true&senderAddress={Address(TESTNET_SENDER)}',
-		f'embedded=true&signerPublicKey={SIGNER_PUBLIC_KEY.hex()}',
-		f'embedded=true&senderAddress={Address(TESTNET_SENDER)}&signerPublicKey={SIGNER_PUBLIC_KEY.hex()}'
+		'',
+		f'senderAddress={Address(TESTNET_SENDER)}',
+		f'signerPublicKey={SIGNER_PUBLIC_KEY.hex()}',
+		f'senderAddress={Address(TESTNET_SENDER)}&signerPublicKey={SIGNER_PUBLIC_KEY.hex()}'
 	],
-	ids=['embedded', 'sender_address', 'signer_public_key', 'sender_and_signer'])
+	ids=['default', 'sender_address', 'signer_public_key', 'sender_and_signer'])
 def test_parent_child_full_json(query):
 	# Arrange:
 	with symbol_test_database(
@@ -75,26 +75,25 @@ def test_parent_child_full_json(query):
 		])
 		expected = [
 			{
-				'transactionHash': None,
-				'embeddedTransactions': None,
-				'deadline': None,
-				'signature': None,
-				'size': None,
-				'version': 1,
-				'height': 1,
-				'transactionType': 'TRANSFER',
-				'fromAddress': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
-				'toAddress': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
-				'value': [
-					{'message': {'type': 0, 'payload': '48656C6C6F'}},
-					{'id': '1234567890ABCDEF', 'name': 'alpha', 'amount': 123.45}
-				],
-				'fee': None,
-				'timestamp': '2026-01-01 00:00:01',
-			},
-			{
 				'transactionHash': 'AA' * 32,
-				'embeddedTransactions': None,
+				'embeddedTransactions': [{
+					'transactionHash': None,
+					'embeddedTransactions': None,
+					'deadline': None,
+					'signature': None,
+					'size': None,
+					'version': 1,
+					'height': 1,
+					'transactionType': 'TRANSFER',
+					'fromAddress': 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
+					'toAddress': 'TBJU67Q5BITMUTRRN6IB4I7FLSDQDWZA34I2PMQ',
+					'value': [
+						{'message': {'type': 0, 'payload': '48656C6C6F'}},
+						{'id': '1234567890ABCDEF', 'name': 'alpha', 'amount': 123.45}
+					],
+					'fee': None,
+					'timestamp': '2026-01-01 00:00:01',
+				}],
 				'deadline': '2026-01-01 00:00:00',
 				'signature': 'AB' * 64,
 				'size': 1,
@@ -108,8 +107,6 @@ def test_parent_child_full_json(query):
 				'timestamp': '2026-01-01 00:00:01',
 			}
 		]
-
-		expected[1]['embeddedTransactions'] = [expected[0]]
 
 		# Act:
 		with _create_transaction_test_client(db_config) as client:
@@ -358,28 +355,11 @@ def test_type_or_requires_sender_match():
 			# Act:
 			response = client.get(
 				f'/api/symbol/transactions?transactionTypes=TRANSFER,AGGREGATE_COMPLETE&'
-				f'senderAddress={Address(TESTNET_SENDER)}&height=1&embedded=false')
+				f'senderAddress={Address(TESTNET_SENDER)}&height=1')
 
 	# Assert:
 	assert 200 == response.status_code
 	assert expected == response.json
-
-
-def test_alias_embedded_opt_in():
-	# Arrange:
-	with _alias_search_fixture() as client:
-		# Act:
-		response = client.get(
-			'/api/symbol/transactions?mosaic=daoka.coin&height=4&embedded=true'
-			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
-
-	# Assert: default exclusion is checked by the preceding historical/address queries.
-	assert 200 == response.status_code
-	assert [
-		_expected_alias_transaction(None, 4, 555.55, deadline=None, signature=None, size=None, fee=None),
-		_expected_alias_transaction('00' * 31 + '04', 4, 444.44),
-		_expected_alias_transaction('00' * 31 + '02', 4, 222.22)
-	] == response.json
 
 
 def test_alias_orders_height_before_id():
@@ -403,12 +383,12 @@ def test_alias_pages_after_filters():
 	with _alias_search_fixture() as client:
 		# Act:
 		response = client.get(
-			'/api/symbol/transactions?mosaic=daoka.coin&limit=1&offset=2&embedded=true'
+			'/api/symbol/transactions?mosaic=daoka.coin&limit=1&offset=2'
 			'&address=NCUZDUB4XJ4XV3KSUBQ6NPZPP4RY3CUFZ7HNAPI')
 
 	# Assert:
 	assert 200 == response.status_code
-	assert [_expected_alias_transaction('00' * 31 + '04', 4, 444.44)] == response.json
+	assert [_expected_alias_transaction('00' * 31 + '02', 4, 222.22)] == response.json
 
 
 @pytest.mark.parametrize('end_height, expected_status, expected_body', [
