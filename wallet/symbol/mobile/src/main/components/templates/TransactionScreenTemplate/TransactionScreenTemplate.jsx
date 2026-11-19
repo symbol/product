@@ -142,11 +142,11 @@ export const TransactionScreenTemplate = props => {
 				<Screen.Upper>{renderChildren()}</Screen.Upper>
 			)}
 			{!isCustomSendButtonUsed && (
-				<Screen.Bottom>
+				<Screen.BottomAuto>
 					<Spacer>
 						<Button {...buttonProps} />
 					</Spacer>
-				</Screen.Bottom>
+				</Screen.BottomAuto>
 			)}
 			<Screen.Modals>
 				{modals}
