@@ -15,6 +15,7 @@ export const Settings = () => {
 	const walletController = useWalletController();
 	const userCurrency = walletController.modules.market.price.currency;
 	const userLanguage = walletController.modules.localization.currentLanguage;
+	const chainDisplayName = config.chains[walletController.chainName].displayName;
 	const [isLogoutConfirmVisible, toggleLogoutConfirm] = useToggle(false);
 	const [isLanguageSelectorVisible, toggleLanguageSelector] = useToggle(false);
 	const [isUserCurrencySelectorVisible, toggleUserCurrencySelector] = useToggle(false);
@@ -47,7 +48,7 @@ export const Settings = () => {
 		},
 		{
 			title: $t('screen_settings_item_about_title'),
-			description: $t('screen_settings_item_about_description'),
+			description: $t('screen_settings_item_about_description', { chainDisplayName }),
 			icon: 'about',
 			handler: Router.goToSettingsAbout
 		},

@@ -4,12 +4,14 @@ import {
 	encryptedTransferDTO,
 	importanceTransferDTO,
 	incomingTransferDTO,
+	mixedMosaicTransferDTO,
 	mosaicDefinitionDTO,
 	mosaicDefinitionWithLevyDTO,
 	mosaicSupplyChangeDTO,
 	mosaicTransferDTO,
 	multisigImportanceTransferDTO,
 	multisigModificationDTO,
+	multisigNativeMosaicTransferDTO,
 	multisigTransferDTO,
 	namespaceRegistrationDTO,
 	outgoingTransferDTO,
@@ -23,12 +25,14 @@ import {
 	encryptedTransfer,
 	importanceTransfer,
 	incomingTransfer,
+	mixedMosaicTransfer,
 	mosaicDefinition,
 	mosaicDefinitionWithLevy,
 	mosaicSupplyChange,
 	mosaicTransfer,
 	multisigImportanceTransfer,
 	multisigModification,
+	multisigNativeMosaicTransfer,
 	multisigTransfer,
 	namespaceRegistration,
 	outgoingTransfer,
@@ -55,7 +59,13 @@ const transactionFromDTOCases = [
 	{ name: 'mosaic definition', transactionDTO: mosaicDefinitionDTO, expected: mosaicDefinition },
 	{ name: 'mosaic definition with levy', transactionDTO: mosaicDefinitionWithLevyDTO, expected: mosaicDefinitionWithLevy },
 	{ name: 'mosaic supply change', transactionDTO: mosaicSupplyChangeDTO, expected: mosaicSupplyChange },
-	{ name: 'multisig importance transfer', transactionDTO: multisigImportanceTransferDTO, expected: multisigImportanceTransfer }
+	{ name: 'multisig importance transfer', transactionDTO: multisigImportanceTransferDTO, expected: multisigImportanceTransfer },
+	{ name: 'mixed mosaic transfer with a multiplier', transactionDTO: mixedMosaicTransferDTO, expected: mixedMosaicTransfer },
+	{
+		name: 'multisig transfer of the nem:xem mosaic with a multiplier',
+		transactionDTO: multisigNativeMosaicTransferDTO,
+		expected: multisigNativeMosaicTransfer
+	}
 ];
 
 describe('utils/transaction-from-dto', () => {

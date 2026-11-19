@@ -1,8 +1,4 @@
 {
-    "faucetURL": "https://testnet.symbol.tools",
-    "discordURL": "https://discord.gg/NMA9YQ55td",
-    "githubURL": "https://github.com/symbol",
-    "twitterURL": "https://twitter.com/thesymbolchain",
     "marketDataURL": "https://api.coingecko.com/api/v3/simple/price",
     "marketCurrencies": [
         "USD",
@@ -22,6 +18,7 @@
     "chains": {
         "symbol": {
             "chainName": "symbol",
+            "displayName": "Symbol",
             "ticker": "XYM",
             "nodewatchURL": {
                 "testnet": "https://nodewatch.symbol.tools/testnet",
@@ -30,6 +27,14 @@
             "explorerURL": {
                 "testnet": "https://testnet.symbol.fyi",
                 "mainnet": "https://symbol.fyi"
+            },
+            "faucetURL": {
+                "testnet": "https://testnet.symbol.tools"
+            },
+            "socialURLs": {
+                "discord": "https://discord.gg/NMA9YQ55td",
+                "github": "https://github.com/symbol",
+                "twitter": "https://twitter.com/thesymbolchain"
             },
             "defaultNetworkProperties": {
                 "mainnet": {
@@ -100,6 +105,7 @@
         },
         "nem": {
             "chainName": "nem",
+            "displayName": "NEM",
             "ticker": "XEM",
             "nodewatchURL": {
                 "testnet": "https://nodewatch.symbol.tools/testnet",
@@ -108,6 +114,14 @@
             "explorerURL": {
                 "testnet": "https://testnet.nem.fyi",
                 "mainnet": "https://nem.fyi"
+            },
+            "faucetURL": {
+                "testnet": "https://testnet.nem.tools"
+            },
+            "socialURLs": {
+                "discord": "https://discord.gg/NMA9YQ55td",
+                "github": "https://github.com/NemProject",
+                "twitter": "https://x.com/nemofficial"
             },
             "marketDataURL": "https://min-api.cryptocompare.com/data/price",
             "defaultNetworkProperties": {

@@ -30,7 +30,7 @@
     "button_walletRemove": "지갑 삭제",
     "button_openTransactionInExplorer": "블록 탐색기에서 보기",
     "button_openAccountInExplorer": "블록 탐색기에서 보기",
-    "button_faucet": "테스트용 XYM 요청",
+    "button_faucet": "테스트용 %{ticker} 요청",
     "button_revealPrivateKey": "개인 키 표시하기",
     "button_scan": "스캔",
     "button_scanQR": "QR코드 스캔",

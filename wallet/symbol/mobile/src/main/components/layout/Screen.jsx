@@ -26,6 +26,7 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 	let header = null;
 	let upper = null;
 	let bottom = null;
+	let bottomAuto = null;
 	let modals = null;
 	let background = null;
 	React.Children.forEach(children, child => {
@@ -41,6 +42,9 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 		if (child.type === Screen.Bottom)
 			bottom = child.props.children;
 
+		if (child.type === Screen.BottomAuto)
+			bottomAuto = child.props.children;
+
 		if (child.type === Screen.Modals)
 			modals = child.props.children;
 
@@ -48,7 +52,10 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 			background = child.props.children;
 	});
 
-	const isSectioned = Boolean(header || upper || bottom || modals || background);
+	const isSectioned = Boolean(header || upper || bottom || bottomAuto || modals || background);
+
+	const scrollContentStyle = bottomAuto ? styles.scrollContentFill : null;
+	const keyboardShouldPersistTaps = bottomAuto ? 'handled' : undefined;
 
 	return (
 		<View style={styles.root}>
@@ -64,6 +71,8 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 				{header}
 				<ContentContainer
 					style={styles.contentContainer}
+					contentContainerStyle={scrollContentStyle}
+					keyboardShouldPersistTaps={keyboardShouldPersistTaps}
 					refreshControl={refresh ? (
 						<RefreshControl
 							tintColor={refresh.color ?? defaultRefreshColor}
@@ -73,6 +82,11 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 					) : null}
 				>
 					{isSectioned ? upper : children}
+					{bottomAuto && (
+						<View style={styles.bottomAutoContainer}>
+							{bottomAuto}
+						</View>
+					)}
 				</ContentContainer>
 				{bottom && (
 					<View>
@@ -101,6 +115,7 @@ export const Screen = ({ isScrollDisabled, isLoading, backgroundImageSrc, render
 Screen.Header = props => { return props.children; };
 Screen.Upper = props => { return props.children; };
 Screen.Bottom = props => { return props.children; };
+Screen.BottomAuto = props => { return props.children; };
 Screen.Modals = props => { return props.children; };
 Screen.Background = props => { return props.children; };
 
@@ -118,6 +133,13 @@ const styles = StyleSheet.create({
 	},
 	upperContainer: {
 		flex: 1
+	},
+	scrollContentFill: {
+		flexGrow: 1
+	},
+	bottomAutoContainer: {
+		flexGrow: 1,
+		justifyContent: 'flex-end'
 	},
 	loadingIndicatorContainer: {
 		position: 'absolute',

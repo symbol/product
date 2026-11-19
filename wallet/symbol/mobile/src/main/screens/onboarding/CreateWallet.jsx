@@ -180,7 +180,7 @@ export const CreateWallet = () => {
 					</Stack>
 				</Spacer>
 			</Screen.Upper>
-			<Screen.Bottom>
+			<Screen.BottomAuto>
 				<Spacer>
 					<Button
 						isDisabled={step === 1 ? isStep1ButtonDisabled : isStep2ButtonDisabled}
@@ -189,7 +189,7 @@ export const CreateWallet = () => {
 					/>
 				</Spacer>
 				<PasscodeView {...passcode.props} />
-			</Screen.Bottom>
+			</Screen.BottomAuto>
 		</Screen>
 	);
 };

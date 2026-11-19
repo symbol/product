@@ -30,7 +30,7 @@
     "button_walletRemove": "Видалити гаманець",
     "button_openTransactionInExplorer": "Відкрити в Block Explorer",
     "button_openAccountInExplorer": "Відкрити в Block Explorer",
-    "button_faucet": "Отримати тестові XYM",
+    "button_faucet": "Отримати тестові %{ticker}",
     "button_revealPrivateKey": "Показати приватний ключ",
     "button_scan": "Сканувати",
     "button_scanQR": "Сканувати QR-код",

@@ -50,7 +50,7 @@
 /**
  * FeeSelector config.
  * @typedef {object} FeeSelectorConfig
- * @property {boolean} isSpeedIconVisible - Whether the fee speed icon is shown on the right side of the selector.
+ * @property {boolean} isSelectable - When true the fee can be selected. When false - only display the fee value without selection feature.
  */
 
 /**
@@ -111,6 +111,12 @@
  * SendReceiveButtons config.
  * @typedef {object} SendReceiveButtonsConfig
  * @property {IconColorVariants} iconVariant - Icon variant of the receive and send buttons.
+ */
+
+/**
+ * Settings network screen config.
+ * @typedef {object} SettingsNetworkScreenConfig
+ * @property {Array<'network'|'nodeUrl'|'chainHeight'|'minFeeMultiplier'>} nodeInfoFields - Fields to display in the node info card.
  */
 
 /**

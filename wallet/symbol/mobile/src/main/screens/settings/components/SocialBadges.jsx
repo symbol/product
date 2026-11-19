@@ -1,4 +1,3 @@
-import { config } from '@/app/config';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { Sizes } from '@/app/styles';
 import React from 'react';
@@ -34,22 +33,32 @@ const SocialBadge = ({ image, linkUrl }) => {
 };
 
 /**
+ * Links for each social network.
+ * @typedef {object} SocialURLs
+ * @property {string} discord - Discord URL.
+ * @property {string} github - GitHub URL.
+ * @property {string} twitter - Twitter URL.
+ */
+
+/**
  * Social badges list component.
+ * @param {object} props - Component props.
+ * @param {SocialURLs} props.urls - Links for each social network.
  * @returns {React.ReactNode} Social badges component.
  */
-export const SocialBadges = () => {
+export const SocialBadges = ({ urls }) => {
 	const badges = [
 		{
 			image: 'discord',
-			linkUrl: config.discordURL
+			linkUrl: urls.discord
 		},
 		{
 			image: 'github',
-			linkUrl: config.githubURL
+			linkUrl: urls.github
 		},
 		{
 			image: 'twitter',
-			linkUrl: config.twitterURL
+			linkUrl: urls.twitter
 		}
 	];
 

@@ -1,7 +1,9 @@
-import { createFee } from './network';
+import { createFee, networkProperties } from './network';
+import { tokenInfos } from './token';
 import { accounts } from './wallet';
 
 const { alice, bob, carol } = accounts;
+const { networkCurrency } = networkProperties;
 
 const NAMESPACE_FEE_SINK = 'TAMESPACEWH4MKFMBCVFERDPOOP4FK7MTDJEYP35';
 const MOSAIC_FEE_SINK = 'TBMOSAICOD4F54EE5CDMR23CCBGOAM2XSJBR5OLC';
@@ -394,6 +396,57 @@ export const multisigImportanceTransfer = {
 	message: null
 };
 
+// Outgoing transfer of 0.06 test.token and 0.75 XEM.
+export const mixedMosaicTransfer = {
+	type: 257,
+	timestamp: 1682041285000,
+	deadline: {
+		timestamp: 1682044885000,
+		adjusted: { timestamp: 254453700, deadline: 254457300 }
+	},
+	height: 4369006,
+	hash: 'aa0003',
+	fee: createFee('0.1'),
+	signerAddress: alice.address,
+	signerPublicKey: alice.publicKey,
+	recipientAddress: bob.address,
+	tokens: [
+		{ ...tokenInfos['test.token'], amount: '0.06' },
+		{ ...networkCurrency, amount: '0.75' }
+	],
+	amount: '-0.75'
+};
+
+const multisigNativeMosaicInner = {
+	type: 257,
+	signerAddress: carol.address,
+	signerPublicKey: carol.publicKey,
+	recipientAddress: alice.address,
+	tokens: [{ ...networkCurrency, amount: '2' }],
+	amount: '2'
+};
+
+export const multisigNativeMosaicTransfer = {
+	type: 4100,
+	timestamp: 1682041385000,
+	deadline: {
+		timestamp: 1682044985000,
+		adjusted: { timestamp: 254453800, deadline: 254457400 }
+	},
+	height: 4369007,
+	hash: 'aa0004',
+	fee: createFee('0.15'),
+	signerAddress: bob.address,
+	signerPublicKey: bob.publicKey,
+	innerTransaction: multisigNativeMosaicInner,
+	innerTransactions: [multisigNativeMosaicInner],
+	recipientAddress: alice.address,
+	tokens: [{ ...networkCurrency, amount: '2' }],
+	amount: '2',
+	cosignatures: [],
+	message: null
+};
+
 export const walletTransactions = [
 	outgoingTransfer,
 	incomingTransfer,
@@ -409,5 +462,7 @@ export const walletTransactions = [
 	mosaicDefinition,
 	mosaicDefinitionWithLevy,
 	mosaicSupplyChange,
-	multisigImportanceTransfer
+	multisigImportanceTransfer,
+	mixedMosaicTransfer,
+	multisigNativeMosaicTransfer
 ];

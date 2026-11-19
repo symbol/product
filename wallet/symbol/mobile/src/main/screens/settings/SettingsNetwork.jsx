@@ -3,6 +3,7 @@ import { config } from '@/app/config';
 import { NetworkIdentifier } from '@/app/constants';
 import { useAsyncManager, useProp, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
+import { settingsNetworkScreenConfig } from '@/brand/config/settings-network-screen-config';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -23,28 +24,28 @@ export const SettingsNetwork = () => {
 	const isConnectingToNode = !isNetworkConnectionReady;
 
 	const getTableValueNullable = value => isValueMissing(value) ? '-' : value;
-	const networkInfoTable = [
-		{
-			title: 'network',
+	const nodeInfoRowByField = {
+		network: {
 			value: getTableValueNullable(networkProperties.networkIdentifier),
 			type: 'text'
 		},
-		{
-			title: 'nodeUrl',
+		nodeUrl: {
 			value: getTableValueNullable(networkProperties.nodeUrl),
 			type: 'copy'
 		},
-		{
-			title: 'chainHeight',
+		chainHeight: {
 			value: getTableValueNullable(networkProperties.chainHeight),
 			type: 'text'
 		},
-		{
-			title: 'minFeeMultiplier',
+		minFeeMultiplier: {
 			value: getTableValueNullable(networkProperties.transactionFees?.minFeeMultiplier),
 			type: 'text'
 		}
-	];
+	};
+	const networkInfoTable = settingsNetworkScreenConfig.nodeInfoFields.map(field => ({
+		title: field,
+		...nodeInfoRowByField[field]
+	}));
 	const tableStyle = isConnectingToNode ? { opacity: 0.25 } : null;
 
 	const networkIdentifierOptions = [

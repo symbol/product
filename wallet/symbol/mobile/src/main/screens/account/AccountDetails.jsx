@@ -13,12 +13,11 @@ import {
 	StyledText, 
 	TableView 
 } from '@/app/components';
-import { config } from '@/app/config';
 import { usePasscode, useToggle, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/router/Router';
-import { createAccountAddressQr, createExplorerAccountUrl } from '@/app/utils';
+import { createAccountAddressQr, createExplorerAccountUrl, createFaucetUrl } from '@/app/utils';
 import { useState } from 'react';
 import { constants } from 'wallet-common-core';
 
@@ -29,7 +28,7 @@ import { constants } from 'wallet-common-core';
  */
 export const AccountDetails = () => {
 	const walletController = useWalletController();
-	const { chainName, networkIdentifier, currentAccount, currentAccountInfo } = walletController;
+	const { chainName, networkIdentifier, ticker, currentAccount, currentAccountInfo } = walletController;
 	const isTestnet = networkIdentifier === 'testnet';
 	const isMultisigCosigner = currentAccountInfo?.multisigAddresses.length;
 
@@ -42,8 +41,7 @@ export const AccountDetails = () => {
 	const openBlockExplorer = () => PlatformUtils.openLink(explorerUrl);
 
 	// Faucet
-	const faucetUrl = `${config.faucetURL}/?recipient=${currentAccount.address}`;
-	const openFaucet = () => PlatformUtils.openLink(faucetUrl);
+	const openFaucet = () => PlatformUtils.openLink(createFaucetUrl(chainName, networkIdentifier, currentAccount.address));
 
 	// Send/Receive buttons
 	const receiveQrData = createAccountAddressQr({
@@ -136,7 +134,7 @@ export const AccountDetails = () => {
 							{isTestnet && (
 								<ButtonPlain
 									icon="faucet"
-									text={$t('button_faucet')}
+									text={$t('button_faucet', { ticker })}
 									onPress={openFaucet}
 								/>
 							)}
