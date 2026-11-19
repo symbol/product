@@ -1,4 +1,4 @@
-import { createFee } from './network';
+import { createFee, networkProperties } from './network';
 import { accounts } from './wallet';
 import { nemTimestampToDate } from '../../../src/utils';
 
@@ -8,6 +8,7 @@ import { nemTimestampToDate } from '../../../src/utils';
 // expected serialization side by side keeps each scenario self-documenting.
 
 const { alice, bob, carol } = accounts;
+const { networkCurrency } = networkProperties;
 
 // Public keys are uppercased by the SDK in its JSON output.
 const ALICE_PUBLIC_KEY = alice.publicKey.toUpperCase();
@@ -51,14 +52,12 @@ const multisigDeadline = {
 	adjusted: { timestamp: TIMESTAMP, deadline: MULTISIG_DEADLINE }
 };
 
-const nativeToken = amount => ({ id: 'nem.xem', name: 'XEM', amount, divisibility: 6 });
-
 // Transfer of native XEM only.
 const transferXem = {
 	type: 257,
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
-	tokens: [nativeToken('10')],
+	tokens: [{ ...networkCurrency, amount: '10' }],
 	message: null,
 	fee: createFee('0.1'),
 	deadline: standardDeadline
@@ -83,7 +82,7 @@ const transferWithMessage = {
 	type: 257,
 	signerPublicKey: alice.publicKey,
 	recipientAddress: bob.address,
-	tokens: [nativeToken('10')],
+	tokens: [{ ...networkCurrency, amount: '10' }],
 	message: { type: 1, kind: 'plain', text: 'Good luck!', payload: '476f6f64206c75636b21' },
 	fee: createFee('0.15'),
 	deadline: standardDeadline
@@ -171,6 +170,19 @@ const transferWithSubNamespaceMosaicJson = {
 	}]
 };
 
+const transferWithNativeAndMosaic = {
+	type: 257,
+	signerPublicKey: alice.publicKey,
+	recipientAddress: bob.address,
+	tokens: [
+		{ ...networkCurrency, amount: '1.5' },
+		{ id: 'test.token', name: 'test.token', amount: '5', divisibility: 2 }
+	],
+	message: null,
+	fee: createFee('0.2'),
+	deadline: standardDeadline
+};
+
 // Multisig wrapper around an inner XEM transfer. The wrapper uses the 24h multisig deadline, and the
 // inner transaction is embedded as a non-verifiable transaction (no signature).
 export const multisigTransfer = {
@@ -182,7 +194,7 @@ export const multisigTransfer = {
 		type: 257,
 		signerPublicKey: alice.publicKey,
 		recipientAddress: bob.address,
-		tokens: [nativeToken('10')],
+		tokens: [{ ...networkCurrency, amount: '10' }],
 		message: null,
 		fee: createFee('0.1'),
 		deadline: standardDeadline
@@ -537,7 +549,7 @@ export const transactionToNemCases = [
 ];
 
 // Cases for mapping NEM SDK transactions back to internal Transaction objects (transaction-from-nem).
-// Each `transaction` is the same internal input fed to transaction-to-nem above; the test builds the SDK
+// Each `transaction` is an internal input for transaction-to-nem; the test builds the SDK
 // model with transactionToNem and asserts that transaction-from-nem reconstructs the `expected` object.
 // Read with currentAccount = alice (so alice-signed transfers resolve as outgoing) and a mosaicInfos map
 // that resolves the non-native 'test.token' mosaic.
@@ -555,7 +567,7 @@ const transferXemRead = {
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	recipientAddress: bob.address,
-	tokens: [nativeToken('10')],
+	tokens: [{ ...networkCurrency, amount: '10' }],
 	amount: '-10'
 };
 
@@ -575,6 +587,12 @@ const transferWithMosaicRead = {
 	recipientAddress: bob.address,
 	tokens: [resolvedTestToken],
 	amount: '0'
+};
+
+const transferWithNativeAndMosaicRead = {
+	...transferWithMosaicRead,
+	tokens: [{ ...networkCurrency, amount: '1.5' }, resolvedTestToken],
+	amount: '-1.5'
 };
 
 const importanceTransferRead = {
@@ -713,7 +731,7 @@ const multisigTransferInnerRead = {
 	signerAddress: alice.address,
 	signerPublicKey: ALICE_PUBLIC_KEY,
 	recipientAddress: bob.address,
-	tokens: [nativeToken('10')],
+	tokens: [{ ...networkCurrency, amount: '10' }],
 	amount: '-10'
 };
 
@@ -727,7 +745,7 @@ const multisigTransferRead = {
 	innerTransaction: multisigTransferInnerRead,
 	innerTransactions: [multisigTransferInnerRead],
 	recipientAddress: bob.address,
-	tokens: [nativeToken('10')],
+	tokens: [{ ...networkCurrency, amount: '10' }],
 	amount: '-10',
 	cosignatures: [],
 	message: null
@@ -762,6 +780,7 @@ export const transactionFromNemCases = [
 	{ name: 'transfer (XEM only)', transaction: transferXem, expected: transferXemRead },
 	{ name: 'transfer with plain message', transaction: transferWithMessage, expected: transferWithMessageRead },
 	{ name: 'transfer with mosaic', transaction: transferWithMosaic, expected: transferWithMosaicRead },
+	{ name: 'transfer with XEM and mosaic', transaction: transferWithNativeAndMosaic, expected: transferWithNativeAndMosaicRead },
 	{ name: 'multisig transfer', transaction: multisigTransfer, expected: multisigTransferRead },
 	{ name: 'importance transfer', transaction: importanceTransfer, expected: importanceTransferRead },
 	{ name: 'multisig account modification (default delta)', transaction: multisigModification, expected: multisigModificationRead },

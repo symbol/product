@@ -309,6 +309,50 @@ export const multisigImportanceTransferDTO = {
 	}
 };
 
+// Outgoing transfer of a non-native mosaic and the nem:xem mosaic with a 3.0 multiplier.
+export const mixedMosaicTransferDTO = {
+	meta: { height: 4369006, id: 127, hash: { data: 'aa0003' } },
+	transaction: {
+		timeStamp: 254453700,
+		amount: 3000000,
+		fee: 100000,
+		recipient: bob.address,
+		type: 257,
+		deadline: 254457300,
+		mosaics: [
+			{ mosaicId: { namespaceId: 'test', name: 'token' }, quantity: 2 },
+			{ mosaicId: { namespaceId: 'nem', name: 'xem' }, quantity: 250000 }
+		],
+		version: -1744830462,
+		signer: alice.publicKey
+	}
+};
+
+// Multisig transaction wrapping XEM sent as the nem:xem mosaic with a 2.0 multiplier.
+export const multisigNativeMosaicTransferDTO = {
+	meta: { height: 4369007, id: 128, hash: { data: 'aa0004' } },
+	transaction: {
+		timeStamp: 254453800,
+		fee: 150000,
+		type: 4100,
+		deadline: 254457400,
+		version: -1744830462,
+		signer: bob.publicKey,
+		otherTrans: {
+			timeStamp: 254453800,
+			amount: 2000000,
+			fee: 50000,
+			recipient: alice.address,
+			mosaics: [{ mosaicId: { namespaceId: 'nem', name: 'xem' }, quantity: 1000000 }],
+			type: 257,
+			deadline: 254457400,
+			version: -1744830462,
+			signer: carol.publicKey
+		},
+		signatures: []
+	}
+};
+
 export const transactionDTOs = [
 	outgoingTransferDTO,
 	incomingTransferDTO,
@@ -324,5 +368,7 @@ export const transactionDTOs = [
 	mosaicDefinitionDTO,
 	mosaicDefinitionWithLevyDTO,
 	mosaicSupplyChangeDTO,
-	multisigImportanceTransferDTO
+	multisigImportanceTransferDTO,
+	mixedMosaicTransferDTO,
+	multisigNativeMosaicTransferDTO
 ];

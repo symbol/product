@@ -93,9 +93,9 @@ export class TokenService {
 		const tokenIds = ownedMosaics.map(mosaic => tokenIdFromRaw(mosaic.mosaicId));
 		const tokenInfos = await this.fetchTokenInfos(networkProperties, tokenIds);
 
-		const { id: nativeId, name: nativeName, divisibility: nativeDivisibility } = networkProperties.networkCurrency;
-		if (tokenIds.includes(nativeId) && !tokenInfos[nativeId])
-			tokenInfos[nativeId] = { id: nativeId, name: nativeName, divisibility: nativeDivisibility };
+		const { networkCurrency } = networkProperties;
+		if (tokenIds.includes(networkCurrency.id) && !tokenInfos[networkCurrency.id])
+			tokenInfos[networkCurrency.id] = networkCurrency;
 
 		return tokenListFromDTO(ownedMosaics, tokenInfos);
 	};
