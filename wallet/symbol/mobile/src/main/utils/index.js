@@ -1,5 +1,6 @@
 export * from './account';
 export * from './explorer';
+export * from './faucet';
 export * from './format';
 export * from './localization';
 export * from './network';

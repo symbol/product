@@ -21,23 +21,13 @@ jest.mock('@/app/utils', () => ({
 		`https://explorer.${chainName}.${networkIdentifier}/account/${address}`)
 }));
 
-jest.mock('@/app/config', () => {
-	const original = jest.requireActual('@/app/config');
-	return {
-		...original,
-		config: {
-			...original.config,
-			faucetURL: 'https://faucet.symbol.testnet'
-		}
-	};
-});
-
 // Constants
 
 const CHAIN_NAME = 'symbol';
 const NETWORK_IDENTIFIER_MAINNET = 'mainnet';
 const NETWORK_IDENTIFIER_TESTNET = 'testnet';
-const FAUCET_BASE_URL = 'https://faucet.symbol.testnet';
+const SYMBOL_FAUCET_BASE_URL = 'https://testnet.symbol.tools';
+const NEM_FAUCET_BASE_URL = 'https://testnet.nem.tools';
 const MOCK_PRIVATE_KEY = 'mockPrivateKey123';
 
 // Screen Text
@@ -55,6 +45,8 @@ const SCREEN_TEXT = {
 
 	// Buttons
 	buttonFaucet: 'button_faucet',
+	buttonFaucetXym: 'button_faucet XYM',
+	buttonFaucetXem: 'button_faucet XEM',
 	buttonOpenExplorer: 'button_openTransactionInExplorer',
 	buttonRevealPrivateKey: 'button_revealPrivateKey',
 
@@ -81,6 +73,17 @@ const mainnetPrivateKeyAccount = AccountFixtureBuilder
 
 const testnetSeedAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_TESTNET, 0)
+	.build();
+
+const nemTestnetAccount = AccountFixtureBuilder
+	.createWithData({
+		address: 'TDQIZK6LUOYP7VXPZRLQKPW4Z2BZMSVAVY57C4VD',
+		publicKey: 'F258E050E917F983C806EC3CB24409EC2417CA16D1AFF4E5A35A0813AFEB0820',
+		name: 'Testnet Account 1',
+		networkIdentifier: NETWORK_IDENTIFIER_TESTNET,
+		accountType: 'mnemonic',
+		index: 0
+	})
 	.build();
 
 const multisigAccount1 = AccountFixtureBuilder
@@ -263,21 +266,56 @@ describe('screens/account/AccountDetails', () => {
 		});
 
 		describe('open faucet', () => {
-			it('opens faucet when button is pressed on testnet', () => {
-				// Arrange:
-				const openLinkMock = mockLink();
-				mockWalletControllerConfigured({
-					networkIdentifier: NETWORK_IDENTIFIER_TESTNET,
-					currentAccount: testnetSeedAccount
+			const runOpenFaucetTest = (description, config, expected) => {
+				it(description, () => {
+					// Arrange:
+					mockLocalization((key, params) => (params ? `${key} ${Object.values(params).join(' ')}` : key));
+					const openLinkMock = mockLink();
+					mockWalletControllerConfigured({
+						chainName: config.chainName,
+						ticker: config.ticker,
+						networkIdentifier: NETWORK_IDENTIFIER_TESTNET,
+						currentAccount: config.currentAccount
+					});
+					const screenTester = new ScreenTester(AccountDetails);
+
+					// Act:
+					screenTester.pressButton(expected.buttonText);
+
+					// Assert:
+					expect(openLinkMock).toHaveBeenCalledWith(expected.url);
 				});
-				const screenTester = new ScreenTester(AccountDetails);
-				const expectedUrl = `${FAUCET_BASE_URL}/?recipient=${testnetSeedAccount.address}`;
+			};
 
-				// Act:
-				screenTester.pressButton(SCREEN_TEXT.buttonFaucet);
+			const openFaucetTests = [
+				{
+					description: 'opens Symbol faucet with XYM label when button is pressed on Symbol testnet',
+					config: {
+						chainName: 'symbol',
+						ticker: 'XYM',
+						currentAccount: testnetSeedAccount
+					},
+					expected: {
+						buttonText: SCREEN_TEXT.buttonFaucetXym,
+						url: `${SYMBOL_FAUCET_BASE_URL}/?recipient=${testnetSeedAccount.address}`
+					}
+				},
+				{
+					description: 'opens NEM faucet with XEM label when button is pressed on NEM testnet',
+					config: {
+						chainName: 'nem',
+						ticker: 'XEM',
+						currentAccount: nemTestnetAccount
+					},
+					expected: {
+						buttonText: SCREEN_TEXT.buttonFaucetXem,
+						url: `${NEM_FAUCET_BASE_URL}/?recipient=${nemTestnetAccount.address}`
+					}
+				}
+			];
 
-				// Assert:
-				expect(openLinkMock).toHaveBeenCalledWith(expectedUrl);
+			openFaucetTests.forEach(test => {
+				runOpenFaucetTest(test.description, test.config, test.expected);
 			});
 		});
 

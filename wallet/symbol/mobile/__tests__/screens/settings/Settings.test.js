@@ -6,12 +6,17 @@ import { mockLocalization, mockPasscode, mockRouter, mockWalletController } from
 
 // Mocks
 
-jest.mock('@/app/config', () => ({
-	...jest.requireActual('@/app/config'),
-	config: {
-		marketCurrencies: ['USD', 'EUR', 'JPY']
-	}
-}));
+jest.mock('@/app/config', () => {
+	const original = jest.requireActual('@/app/config');
+
+	return {
+		...original,
+		config: {
+			chains: original.config.chains,
+			marketCurrencies: ['USD', 'EUR', 'JPY']
+		}
+	};
+});
 
 jest.mock('@/app/localization', () => ({
 	...jest.requireActual('@/app/localization'),
