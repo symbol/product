@@ -268,13 +268,12 @@ class SymbolAccountStatisticsView:
 
 		return {
 			'total': statistics.total,
-			'harvesting': statistics.harvesting,
-			'eligibleForHarvesting': statistics.eligible_for_harvesting,
+			'harvestedAccounts': statistics.harvesting,
+			'eligibleHarvestAccounts': statistics.eligible_for_harvesting,
 			'top10AccountsImportance': top10_importance,
 			'harvestingAccountsPercentage': harvesting_accounts_percentage,
 			'importanceBreakdown': importance_breakdown,
-			'harvestingAccountsChart': harvesting_accounts_chart,
-			'pendingVerification': []
+			'harvestingAccountsChart': harvesting_accounts_chart
 		}
 
 

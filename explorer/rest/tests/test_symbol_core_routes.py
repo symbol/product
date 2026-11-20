@@ -3501,22 +3501,26 @@ def test_list_window_date_boundary(extra_days):
 def _snapshot_http_expected_responses():
 	# These values describe the two explicit create_account_list_entries fixture variants.
 	old_statistics = {
-		'total': 4, 'harvesting': 0, 'eligibleForHarvesting': 4,
-		'top10AccountsImportance': 100.0, 'harvestingAccountsPercentage': 0.0,
+		'total': 4,
+		'harvestedAccounts': 0,
+		'eligibleHarvestAccounts': 4,
+		'top10AccountsImportance': 100.0,
+		'harvestingAccountsPercentage': 0.0,
 		'importanceBreakdown': [
 			[40.0, str(Address(account_address(1)))], [30.0, str(Address(account_address(3)))],
 			[20.0, str(Address(account_address(4)))], [10.0, str(Address(account_address(2)))]],
-		'harvestingAccountsChart': [[0.0, 'Harvesting'], [100.0, 'Not harvesting']],
-		'pendingVerification': []
+		'harvestingAccountsChart': [[0.0, 'Harvesting'], [100.0, 'Not harvesting']]
 	}
 	new_statistics = {
-		'total': 4, 'harvesting': 0, 'eligibleForHarvesting': 4,
-		'top10AccountsImportance': 100.0, 'harvestingAccountsPercentage': 0.0,
+		'total': 4,
+		'harvestedAccounts': 0,
+		'eligibleHarvestAccounts': 4,
+		'top10AccountsImportance': 100.0,
+		'harvestingAccountsPercentage': 0.0,
 		'importanceBreakdown': [
 			[40.0, str(Address(account_address(2)))], [30.0, str(Address(account_address(4)))],
 			[20.0, str(Address(account_address(3)))], [10.0, str(Address(account_address(1)))]],
-		'harvestingAccountsChart': [[0.0, 'Harvesting'], [100.0, 'Not harvesting']],
-		'pendingVerification': []
+		'harvestingAccountsChart': [[0.0, 'Harvesting'], [100.0, 'Not harvesting']]
 	}
 	new_accounts = [
 		_expected_list_item(4, '0E' * 32, 'main', .3, 0, 3, 0),
