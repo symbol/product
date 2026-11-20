@@ -51,7 +51,7 @@
     "react-native-vision-camera": "^4.7.3",
     "react-native-worklets": "~0.13.1",
     "symbol-crypto-wasm-web": "^0.1.1",
-    "symbol-sdk": "3.3.2",
+    "symbol-sdk": "3.3.3",
     "wallet-common-core": "file:../../common/core",
     "wallet-common-ethereum": "file:../../common/ethereum",
     "wallet-common-nem": "file:../../common/nem",
