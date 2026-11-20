@@ -1,6 +1,113 @@
-// Symbol variant — transactions API (returns static stub fixtures, no data layer / node calls yet).
 import { stubTransactions } from './fixtures';
-import { stubPage, stubValue } from './stub';
+import { stubValue } from './stub';
+import { SYMBOL_TRANSACTION_GROUP } from '../constants';
+import { TRANSACTION_DIRECTION } from '@/app/constants';
+import { createApiUrl, createPage, createSearchCriteria, createSearchURL, makeRequest } from '@/app/utils/server';
 
-export const fetchTransactionPage = stubPage(stubTransactions);
+const MAX_TRANSACTION_OFFSET = 100000;
+
+const isPresent = value => value !== undefined && value !== null;
+
+const getTransactionFilters = searchParams => {
+	const { address, from, to, group, types, height, mosaic, signerPublicKey, embedded, order } = searchParams;
+	if (isPresent(group) && group !== SYMBOL_TRANSACTION_GROUP.CONFIRMED)
+		throw new Error(`Symbol transaction group is not supported: ${group}`);
+
+	const hasAddress = isPresent(address);
+	const hasFrom = isPresent(from);
+	const hasTo = isPresent(to);
+	if (hasAddress && (hasFrom || hasTo || isPresent(signerPublicKey)))
+		throw new Error('address cannot be combined with from, to, or signerPublicKey');
+
+	if (isPresent(embedded) && !(embedded === false || (typeof embedded === 'string' && embedded.toLowerCase() === 'false')))
+		throw new Error('embedded Symbol transactions are not supported by the shared transaction list');
+
+	const normalizedOrder = isPresent(order) ? `${order}`.toUpperCase() : 'DESC';
+	if (normalizedOrder !== 'DESC')
+		throw new Error('order must be DESC');
+
+	const filters = {};
+	if (isPresent(height))
+		filters.height = height;
+
+	if (isPresent(types) && (!Array.isArray(types) || types.length))
+		filters.transactionTypes = Array.isArray(types) ? types.join(',') : types;
+
+	if (hasAddress)
+		filters.address = address;
+
+	if (hasFrom)
+		filters.senderAddress = from;
+
+	if (hasTo)
+		filters.recipientAddress = to;
+
+	if (isPresent(signerPublicKey))
+		filters.signerPublicKey = signerPublicKey;
+
+	if (isPresent(mosaic))
+		filters.mosaic = mosaic;
+
+	filters.embedded = 'false';
+	filters.order = normalizedOrder;
+
+	return filters;
+};
+
+const transactionFromREST = (transaction, referenceAddress) => {
+	const isOutgoing = isPresent(referenceAddress) && transaction.sender === referenceAddress;
+	const isIncoming = isPresent(referenceAddress) && transaction.recipient === referenceAddress;
+
+	return {
+		...transaction,
+		account: isOutgoing ? transaction.recipient : transaction.sender,
+		direction: isOutgoing
+			? TRANSACTION_DIRECTION.OUTGOING
+			: isIncoming
+				? TRANSACTION_DIRECTION.INCOMING
+				: null
+	};
+};
+
+/**
+ * Fetches a confirmed Symbol transaction page from Explorer REST.
+ * @param {object} [searchParams] - shared page and transaction filter parameters.
+ * @returns {Promise<object>} the transaction page with Symbol account direction fields.
+ */
+export const fetchTransactionPage = async (searchParams = {}) => {
+	const params = searchParams ?? {};
+	const pagination = createSearchCriteria(params);
+	const filters = getTransactionFilters(pagination.filter);
+	const url = createSearchURL(createApiUrl('transactions'), { ...pagination, filter: filters });
+	const transactions = await makeRequest(url);
+
+	if (!Array.isArray(transactions))
+		throw new Error('Symbol transactions response must be an array');
+
+	const formatter = transaction => transactionFromREST(transaction, params.referenceAddress);
+	const isLastPage = !transactions.length || pagination.pageSize * pagination.pageNumber > MAX_TRANSACTION_OFFSET;
+
+	return { ...createPage(transactions, pagination.pageNumber, formatter), isLastPage };
+};
+
+/**
+ * Fetches a confirmed Symbol account-history page, adding the viewed account as the opposite
+ * transaction endpoint when a sender or recipient filter is selected.
+ * @param {object} [searchParams] - account address, page options, and account-history filters.
+ * @returns {Promise<object>} the account transaction page with direction fields.
+ */
+export const fetchAccountTransactionPage = async (searchParams = {}) => {
+	const { address: referenceAddress, from, to, ...filters } = searchParams ?? {};
+	if (isPresent(from) && isPresent(to))
+		throw new Error('Account history cannot combine from and to');
+
+	if (isPresent(from))
+		return fetchTransactionPage({ ...filters, from, to: referenceAddress, referenceAddress });
+
+	if (isPresent(to))
+		return fetchTransactionPage({ ...filters, from: referenceAddress, to, referenceAddress });
+
+	return fetchTransactionPage({ ...filters, address: referenceAddress, referenceAddress });
+};
+
 export const fetchTransactionInfo = stubValue(stubTransactions[0]);
