@@ -2,7 +2,7 @@ import LoadingIndicator from './LoadingIndicator';
 import ValueMosaic from './ValueMosaic';
 import ValueTransaction from './ValueTransaction';
 import styles from '@/app/styles/components/ValueTransactionSquares.module.scss';
-import { styleVariables } from '@/app/variants/styles';
+import styleVariables from '@/variant/styles/variables.json';
 import dynamic from 'next/dynamic';
 import { useTranslation } from 'next-i18next';
 import { useState } from 'react';

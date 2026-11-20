@@ -24,7 +24,7 @@ const initialFinalizationInfo = {
  * with the current epoch progress and its completion ETA. Placeholders are kept until the first data arrives.
  * @returns {JSX.Element} the finalization section content.
  */
-const Finalization = () => {
+export const Finalization = () => {
 	const { t } = useTranslation();
 	const finalizationInfo = useAsyncCall(fetchFinalizationInfo, initialFinalizationInfo, DATA_REFRESH_INTERVAL, true)
 		?? initialFinalizationInfo;
@@ -59,5 +59,3 @@ const Finalization = () => {
 		</div>
 	);
 };
-
-export default Finalization;

@@ -2,7 +2,7 @@ import { fetchChainStatus } from './blocks';
 import config from '@/app/config';
 import { makeRequest } from '@/app/utils/server';
 
-// Not part of API_CONTRACT: consumed only by the variant Finalization component.
+// Not part of requiredApiModules: consumed only by the variant Finalization component.
 
 /**
  * @typedef FinalizationInfo

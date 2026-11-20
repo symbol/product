@@ -10,11 +10,12 @@ frontend/
 ├── components/       # Reusable React components
 ├── config/           # Configuration for the project
 ├── constants/        # Global constants used throughout the application
+├── contract/         # What every variant must provide. Lists of required elements, methods and typedefs
 ├── pages/            # Website pages
 ├── public/           # Static assets, with per-variant subdirectories (public/<variant>/...)
 ├── styles/           # Global SCSS files
 ├── utils/            # Utility functions and helpers
-└── variants/         # Per-variant overrides (api, styles, config, components, DocumentHead)
+└── variants/         # Per-variant code (api, components, config, styles, utils, DocumentHead)
 ```
 
 ## Variants (multi-explorer)
@@ -23,7 +24,8 @@ This project builds a generic, protocol-agnostic explorer that can be compiled f
 blockchain **variants** (currently `nem` and `symbol`) from one codebase. The shared application
 (routing, pages, components, hooks) lives at the top level; everything protocol-specific lives
 under `variants/<variant>/` (API/data layer, theme tokens, page configuration, branding,
-document head, and variant-only sections) and is resolved through `variants/` (the registry).
+document head, and variant-only sections). Common code imports it through the `@/variant/*` alias,
+which points to the active variant.
 
 The active variant is selected at **build time** with the public environment variable
 **`NEXT_PUBLIC_EXPLORER_VARIANT`** (`nem` | `symbol`). It is build-time because the

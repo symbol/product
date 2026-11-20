@@ -1,3 +1,1 @@
-import { api } from '@/app/variants/api';
-
-export const { fetchMosaicPage, fetchMosaicInfo } = api.mosaics;
+export { fetchMosaicPage, fetchMosaicInfo } from '@/variant/api/mosaics';

@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import { finalizationInfo } from '../../../test-utils/finalization';
 import { DATA_REFRESH_INTERVAL } from '@/app/constants';
 import { fetchFinalizationInfo } from '@/app/variants/symbol/api/finalization';
-import Finalization from '@/app/variants/symbol/components/Finalization';
+import { Finalization } from '@/app/variants/symbol/components/Finalization';
 import { act, render, screen } from '@testing-library/react';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en.json';
