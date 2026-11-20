@@ -2,7 +2,7 @@ import { useReceiptHistory } from './useReceiptHistory';
 import { useTransactionHistory } from './useTransactionHistory';
 import { SectionType, buildHistorySections } from '../utils';
 import { TransactionGroup } from '@/app/constants';
-import { useInit, useLoading, useTransactionListener } from '@/app/hooks';
+import { useInit, useRefresh, useTransactionListener } from '@/app/hooks';
 import { buildFilterItems } from '@/app/utils';
 import { historyScreenConfig } from '@/brand/config/history-screen-config';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -26,11 +26,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
  * @property {object} filter - Current filter values.
  * @property {function(object): void} setFilter - Function to update filter.
  * @property {object[]} filterConfig - Filter configuration.
- * @property {boolean} isLoading - Whether initial loading is in progress.
- * @property {boolean} isRefreshing - Whether refresh is in progress.
+ * @property {boolean} isLoading - Whether the first page is loading.
+ * @property {boolean} isRefreshing - Whether a user-triggered refresh is in progress.
  * @property {boolean} isPageLoading - Whether next page is loading.
  * @property {boolean} isLastPage - Whether the last page has been reached.
- * @property {function(): void} refresh - Function to refresh all data.
+ * @property {function(): void} refresh - Function to refresh all data on user request.
  * @property {function(): void} fetchNextPage - Function to fetch the next page.
  * @property {function(string): boolean} shouldShowFooter - Returns whether footer should show for section.
  */
@@ -86,9 +86,10 @@ export const useHistoryData = ({ walletController }) => {
 	]);
 
 	// Determine loading states
+	const {isLoading} = selectedHistory;
 	const {isPageLoading} = selectedHistory;
 	const {isLastPage} = selectedHistory;
-	const [isLoading, isRefreshing] = useLoading(selectedHistory.isLoading);
+	const { refresh, isRefreshing } = useRefresh(selectedHistory.refresh, isLoading);
 
 	// Fetch next page if it was requested while loading
 	const [isNextPageRequested, setIsNextPageRequested] = useState(false);
@@ -127,7 +128,7 @@ export const useHistoryData = ({ walletController }) => {
 		isRefreshing,
 		isPageLoading,
 		isLastPage,
-		refresh: selectedHistory.refresh,
+		refresh,
 		fetchNextPage,
 		shouldShowFooter
 	};
