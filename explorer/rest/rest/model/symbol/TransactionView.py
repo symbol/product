@@ -24,7 +24,8 @@ PAYLOAD_EXCLUDED_FIELDS = frozenset({
 MESSAGE_TYPE_ID_MAP = {label: type_id for type_id, label in MESSAGE_TYPE_LABELS.items()}
 AGGREGATE_TYPES = (TransactionType.AGGREGATE_COMPLETE, TransactionType.AGGREGATE_BONDED)
 
-TransactionMosaicRecord = namedtuple('TransactionMosaicRecord', ['mosaic_id', 'amount', 'divisibility'], defaults=(None,))
+TransactionMosaicRecord = namedtuple(
+	'TransactionMosaicRecord', ['mosaic_id', 'amount', 'divisibility', 'alias_name'], defaults=(None, None))
 
 # Records carry display-ready addresses, hex strings, and relative fees.
 # Source-specific adapters prepare payloads, mosaic metadata, and embedded records.
@@ -225,7 +226,7 @@ class SymbolTransactionView:
 		for mosaic in self.transaction.mosaics:
 			value.append({
 				'id': mosaic.mosaic_id,
-				'name': mosaic.mosaic_id,
+				'name': mosaic.alias_name or mosaic.mosaic_id,
 				'amount': mosaic.amount if mosaic.divisibility is None else format_amount(mosaic.amount, mosaic.divisibility)
 			})
 		return value

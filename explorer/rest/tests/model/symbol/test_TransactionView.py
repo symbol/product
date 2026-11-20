@@ -299,7 +299,7 @@ def test_can_format_transaction_fields(amount, expected_amount):
 
 	# Assert:
 	assert [{'message': {'type': 0, 'payload': '4869'}}] == payload
-	assert (('1234567890ABCDEF', expected_amount, None),) == mosaics
+	assert (('1234567890ABCDEF', expected_amount, None, None),) == mosaics
 
 
 def test_can_create_unconfirmed_record():
@@ -345,7 +345,7 @@ def test_can_create_embedded_record(index):
 	assert TransactionType.TRANSFER == record.transaction_type
 	assert 'TDPO5E6N2BZZNRNDLHHQ2FC3D6RBVUEOXEO26YY' == record.from_address
 	assert 'TCJCFUWF6GIGFDZAR3DFFWJB33HWPHKRZIESUVY' == record.to_address
-	assert (('72C0212E67A08BCE', 5000000, None),) == record.mosaics
+	assert (('72C0212E67A08BCE', 5000000, None, None),) == record.mosaics
 	assert [] == record.payload
 	assert 1 == record.version
 	assert 0 == record.height
@@ -467,6 +467,22 @@ def test_formats_transfer_mosaic(divisibility, expected_amount):
 
 	# Assert:
 	assert [{'id': mosaic_id, 'name': mosaic_id, 'amount': expected_amount}] == result['value']
+
+
+@pytest.mark.parametrize('alias_name,expected_name', [
+	('foo.bar', 'foo.bar'),
+	(None, '1234567890ABCDEF'),
+])
+def test_returns_mosaic_alias_name_or_id(alias_name, expected_name):
+	# Arrange:
+	mosaic_id = '1234567890ABCDEF'
+	record = _create_record(payload=[], mosaics=(TransactionMosaicRecord(mosaic_id, 12345, 2, alias_name),))
+
+	# Act:
+	result = SymbolTransactionView(record).to_dict()
+
+	# Assert:
+	assert [{'id': mosaic_id, 'name': expected_name, 'amount': 123.45}] == result['value']
 
 
 def test_preserves_mosaic_amount():
