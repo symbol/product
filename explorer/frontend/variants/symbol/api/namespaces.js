@@ -66,7 +66,9 @@ const createNamespaceSearchCriteria = (searchParams, pageCriteria) => {
 const namespaceInfoFromDTO = data => ({
 	...data,
 	name: data.namespaceName,
-	registrationTimestamp: data.startTimestamp
+	registrationTimestamp: data.startTimestamp,
+	// The previous REST response used null for unlimited duration.
+	isUnlimitedDuration: data.expirationHeight === 0 || data.expirationHeight === null
 });
 
 /**

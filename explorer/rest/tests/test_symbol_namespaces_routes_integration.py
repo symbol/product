@@ -92,6 +92,7 @@ def test_http_items_and_empty_filters():
 			'id': ROOT_ID,
 			'name': ROOT_ID,
 			'namespaceName': 'foo',
+			'rootNamespace': 'foo',
 			'namespaceLevels': [{'name': 'foo', 'namespaceId': ROOT_ID, 'parentId': None}],
 			'aliasType': 'none',
 			'aliasMosaicId': None,
@@ -100,13 +101,15 @@ def test_http_items_and_empty_filters():
 			'registeredHeight': 1,
 			'registeredTimestamp': '2026-01-01 00:00:00',
 			'registrationType': 'root',
-			'expirationHeight': None,
-			'isUnlimitedDuration': True,
+			'expirationHeight': 0,
 			'subNamespaceCount': 1
 		},
 		expected_symbol_namespace_child_dto(
 			ROOT_ID, CHILD_ID, str(Address(OWNER)), NATIVE_MOSAIC_INFO.id)
 	] == response.json
+	# JSON false compares equal to zero in Python.
+	# pylint: disable-next=unidiomatic-typecheck
+	assert all(type(item['expirationHeight']) is int for item in response.json)
 
 
 def test_http_filter_precedes_offset():
@@ -478,26 +481,18 @@ def test_namespace_mosaic_matches_list_and_detail_contract():
 	assert expected == detail_response.json
 
 
-def test_namespace_detail_returns_root_and_child_fields():
+def test_namespace_list_and_detail_return_root_and_child_fields():
 	# Arrange:
-	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
-	blocks = [create_symbol_block(height) for height in (1, 2, 3, 4, 10)]
 	rows = _detail_rows()
+	root_level = {'name': 'root', 'namespaceId': ROOT_ID, 'parentId': None}
 	expected_mosaic = _expected_detail_mosaic()
-
-	# Act:
-	root_response, child_response = _request_namespace_details(
-		sync_state, blocks, rows, [ROOT_ID, CHILD_ID], _detail_mosaics(), _detail_alias_names())
-
-	# Assert:
-	assert 200 == root_response.status_code
-	assert {
-		'id': ROOT_ID, 'name': ROOT_ID, 'namespaceName': 'root',
-		'namespaceLevels': [{'name': 'root', 'namespaceId': ROOT_ID, 'parentId': None}],
+	expected_root = {
+		'id': ROOT_ID, 'name': ROOT_ID, 'namespaceName': 'root', 'rootNamespace': 'root',
+		'namespaceLevels': [root_level],
 		'aliasType': 'none', 'aliasMosaicId': None, 'aliasAddress': None,
 		'owner': str(Address(OWNER)),
 		'registeredHeight': 1, 'registeredTimestamp': '2026-01-01 00:00:00', 'registrationType': 'root',
-		'expirationHeight': 2, 'isUnlimitedDuration': False, 'subNamespaceCount': 3,
+		'expirationHeight': 2, 'subNamespaceCount': 3,
 		'subNamespaces': [
 			{'namespaceId': CHILD_ID, 'namespaceName': 'root.aaa', 'parentId': ROOT_ID},
 			{'namespaceId': LEAF_ID, 'namespaceName': 'root.aaa.leaf', 'parentId': CHILD_ID},
@@ -507,24 +502,79 @@ def test_namespace_detail_returns_root_and_child_fields():
 			{'namespaceId': CHILD_ID, 'namespaceName': 'root.aaa', 'data': [expected_mosaic]},
 			{'namespaceId': LEAF_ID, 'namespaceName': 'root.aaa.leaf', 'data': [expected_mosaic]}
 		]
-	} == root_response.json
-	assert 200 == child_response.status_code
-	assert {
-		'id': CHILD_ID, 'name': CHILD_ID, 'namespaceName': 'root.aaa',
+	}
+	expected_child = {
+		'id': CHILD_ID, 'name': CHILD_ID, 'namespaceName': 'root.aaa', 'rootNamespace': 'root',
 		'namespaceLevels': [
-			{'name': 'root', 'namespaceId': ROOT_ID, 'parentId': None},
+			root_level,
 			{'name': 'aaa', 'namespaceId': CHILD_ID, 'parentId': ROOT_ID}
 		],
 		'aliasType': 'mosaic', 'aliasMosaicId': MOSAIC_ID, 'aliasAddress': None,
 		'owner': str(Address(OWNER)),
 		'registeredHeight': 2, 'registeredTimestamp': '2026-01-02 00:00:00', 'registrationType': 'child',
-		'expirationHeight': 2, 'isUnlimitedDuration': False, 'subNamespaceCount': 1,
+		'expirationHeight': 2, 'subNamespaceCount': 1,
 		'subNamespaces': [{'namespaceId': LEAF_ID, 'namespaceName': 'root.aaa.leaf', 'parentId': CHILD_ID}],
 		'namespaceMosaics': [
 			{'namespaceId': CHILD_ID, 'namespaceName': 'root.aaa', 'data': [expected_mosaic]},
 			{'namespaceId': LEAF_ID, 'namespaceName': 'root.aaa.leaf', 'data': [expected_mosaic]}
 		]
-	} == child_response.json
+	}
+
+	with symbol_test_database() as (database_config, _):
+		client = _create_symbol_client(
+			database_config, create_symbol_sync_state(last_synced_height=10, finalized_height=10),
+			[create_symbol_block(height) for height in (1, 2, 3, 4, 10)], rows, _detail_mosaics(), _detail_alias_names())
+
+		# Act:
+		list_response = client.get('/api/symbol/namespaces')
+		detail_responses = [client.get(f'/api/symbol/namespace/{namespace_id}') for namespace_id in (ROOT_ID, CHILD_ID)]
+
+	# Assert:
+	assert 200 == list_response.status_code
+	list_by_id = {item['id']: item for item in list_response.json}
+	for response, expected in zip(detail_responses, (expected_root, expected_child), strict=True):
+		assert 200 == response.status_code
+		assert expected == response.json
+		list_item = list_by_id[expected['id']]
+		assert {key: value for key, value in expected.items() if key not in ('subNamespaces', 'namespaceMosaics')} == list_item
+		assert isinstance(list_item['expirationHeight'], int)
+		assert isinstance(response.json['expirationHeight'], int)
+
+
+@pytest.mark.parametrize(('stored_root_name', 'stored_root_id', 'expected_root_level_name'), [
+	pytest.param(None, ROOT_ID, ROOT_ID, id='missing-root-name-uses-id-fallback'),
+	pytest.param('root', ROOT_ID.lower(), 'root', id='lowercase-stored-root-id-returns-root-name')
+])
+def test_namespace_list_and_detail_resolve_root_names(stored_root_name, stored_root_id, expected_root_level_name):
+	# Arrange:
+	rows = [
+		_namespace(ROOT_ID, root_id=stored_root_id, name=stored_root_name, full_name=stored_root_name),
+		_namespace(
+			CHILD_ID, parent_id=ROOT_ID, root_id=stored_root_id, name='aaa', full_name='root.aaa', depth=2,
+			registration_type='child')
+	]
+	root_level = {'name': expected_root_level_name, 'namespaceId': ROOT_ID, 'parentId': None}
+
+	with symbol_test_database() as (database_config, _):
+		client = _create_symbol_client(
+			database_config, create_symbol_sync_state(last_synced_height=10, finalized_height=10),
+			[create_symbol_block(1), create_symbol_block(10)], rows)
+
+		# Act:
+		list_response = client.get('/api/symbol/namespaces')
+		root_response = client.get(f'/api/symbol/namespace/{ROOT_ID}')
+		child_response = client.get(f'/api/symbol/namespace/{CHILD_ID}')
+
+	# Assert:
+	assert 200 == list_response.status_code
+	assert 200 == root_response.status_code
+	assert 200 == child_response.status_code
+	list_by_id = {item['id']: item for item in list_response.json}
+	for root, child in ((list_by_id[ROOT_ID], list_by_id[CHILD_ID]), (root_response.json, child_response.json)):
+		assert stored_root_name == root['rootNamespace'] == child['rootNamespace']
+		assert expected_root_level_name == root['namespaceName']
+		assert 'root.aaa' == child['namespaceName']
+		assert root_level == root['namespaceLevels'][0] == child['namespaceLevels'][0]
 
 
 def test_namespace_detail_name_and_lowercase_id_return_same_json():
@@ -532,12 +582,12 @@ def test_namespace_detail_name_and_lowercase_id_return_same_json():
 	sync_state = create_symbol_sync_state(last_synced_height=10, finalized_height=10)
 	row = _namespace(ROOT_ID, name='symbol', full_name='symbol')
 	expected = {
-		'id': ROOT_ID, 'name': ROOT_ID, 'namespaceName': 'symbol',
+		'id': ROOT_ID, 'name': ROOT_ID, 'namespaceName': 'symbol', 'rootNamespace': 'symbol',
 		'namespaceLevels': [{'name': 'symbol', 'namespaceId': ROOT_ID, 'parentId': None}],
 		'aliasType': 'none', 'aliasMosaicId': None, 'aliasAddress': None,
 		'owner': str(Address(OWNER)),
 		'registeredHeight': 1, 'registeredTimestamp': '2026-01-01 00:00:00', 'registrationType': 'root',
-		'expirationHeight': None, 'isUnlimitedDuration': True, 'subNamespaceCount': 0,
+		'expirationHeight': 0, 'subNamespaceCount': 0,
 		'subNamespaces': [], 'namespaceMosaics': []
 	}
 
@@ -548,6 +598,8 @@ def test_namespace_detail_name_and_lowercase_id_return_same_json():
 	# Assert:
 	assert 200 == name_response.status_code
 	assert expected == name_response.json
+	# pylint: disable-next=unidiomatic-typecheck
+	assert type(name_response.json['expirationHeight']) is int
 	assert 200 == id_response.status_code
 	assert expected == id_response.json
 
@@ -567,7 +619,7 @@ def test_namespace_detail_uses_id_when_leaf_name_is_missing():
 	# Assert:
 	assert 200 == response.status_code
 	assert {
-		'id': LEAF_ID, 'name': LEAF_ID, 'namespaceName': LEAF_ID,
+		'id': LEAF_ID, 'name': LEAF_ID, 'namespaceName': LEAF_ID, 'rootNamespace': 'root',
 		'namespaceLevels': [
 			{'name': 'root', 'namespaceId': ROOT_ID, 'parentId': None},
 			{'name': 'aaa', 'namespaceId': CHILD_ID, 'parentId': ROOT_ID},
@@ -576,7 +628,7 @@ def test_namespace_detail_uses_id_when_leaf_name_is_missing():
 		'aliasType': 'mosaic', 'aliasMosaicId': MOSAIC_ID, 'aliasAddress': None,
 		'owner': str(Address(OWNER)),
 		'registeredHeight': 3, 'registeredTimestamp': '2026-01-03 00:00:00', 'registrationType': 'child',
-		'expirationHeight': None, 'isUnlimitedDuration': True, 'subNamespaceCount': 0, 'subNamespaces': [],
+		'expirationHeight': 0, 'subNamespaceCount': 0, 'subNamespaces': [],
 		'namespaceMosaics': [
 			{'namespaceId': LEAF_ID, 'namespaceName': LEAF_ID, 'data': [_expected_detail_mosaic()]}
 		]

@@ -7,6 +7,7 @@ class SymbolNamespaceView:  # pylint: disable=too-many-instance-attributes
 	def __init__(self, **kwargs):
 		self.namespace_id = kwargs['namespace_id'].upper()
 		self.full_name = kwargs['full_name']
+		self.root_name = kwargs['root_name']
 		self.levels = kwargs['levels']
 		self.alias_type = kwargs['alias_type']
 		self.alias_mosaic_id = kwargs['alias_mosaic_id']
@@ -28,6 +29,7 @@ class SymbolNamespaceView:  # pylint: disable=too-many-instance-attributes
 			'id': self.namespace_id,
 			'name': self.namespace_id,
 			'namespaceName': self.full_name if self.full_name is not None else self.namespace_id,
+			'rootNamespace': self.root_name,
 			'namespaceLevels': self.levels,
 			'aliasType': self.alias_type,
 			'aliasMosaicId': self.alias_mosaic_id.upper() if self.alias_mosaic_id is not None else None,
@@ -36,7 +38,6 @@ class SymbolNamespaceView:  # pylint: disable=too-many-instance-attributes
 			'registeredHeight': self.start_height,
 			'registeredTimestamp': format_timestamp(self.start_timestamp),
 			'registrationType': self.registration_type,
-			'expirationHeight': self.end_height,
-			'isUnlimitedDuration': self.end_height is None,
+			'expirationHeight': 0 if self.end_height is None else self.end_height,
 			'subNamespaceCount': self.sub_namespace_count
 		}
