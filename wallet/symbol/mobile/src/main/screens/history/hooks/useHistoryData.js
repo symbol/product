@@ -1,8 +1,10 @@
 import { useReceiptHistory } from './useReceiptHistory';
 import { useTransactionHistory } from './useTransactionHistory';
-import { SectionType, buildHistorySections, getHistoryFilterConfig } from '../utils';
+import { SectionType, buildHistorySections } from '../utils';
 import { TransactionGroup } from '@/app/constants';
 import { useInit, useLoading, useTransactionListener } from '@/app/hooks';
+import { buildFilterItems } from '@/app/utils';
+import { historyScreenConfig } from '@/brand/config/history-screen-config';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 /** @typedef {import('@/app/types/Wallet').WalletController} WalletController */
@@ -45,7 +47,7 @@ export const useHistoryData = ({ walletController }) => {
 
 	// Filter
 	const [filter, setFilter] = useState({});
-	const filterConfig = useMemo(() => getHistoryFilterConfig(), []);
+	const filterConfig = useMemo(() => buildFilterItems(historyScreenConfig.filters), []);
 	const isHarvestedMode = !!filter.harvested;
 
 	// Histories

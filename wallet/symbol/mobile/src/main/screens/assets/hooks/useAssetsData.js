@@ -1,6 +1,8 @@
-import { buildAssetsSections, getAssetsFilterConfig } from '../utils';
+import { buildAssetsSections } from '../utils';
 import { useAsyncManager, useReactiveWalletControllers } from '@/app/hooks';
 import { walletControllers as controllers } from '@/app/lib/controller';
+import { buildFilterItems } from '@/app/utils';
+import { assetsScreenConfig } from '@/brand/config/assets-screen-config';
 import { useCallback, useMemo, useState } from 'react';
 
 /** @typedef {import('@/app/types/Filter').FilterItem} FilterItem */
@@ -29,7 +31,7 @@ export const useAssetsData = () => {
 
 	// Filter
 	const [filter, setFilter] = useState({});
-	const filterConfig = useMemo(() => getAssetsFilterConfig(), []);
+	const filterConfig = useMemo(() => buildFilterItems(assetsScreenConfig.filters), []);
 
 	// Build sections
 	const sections = buildAssetsSections({ walletControllers, filter });
