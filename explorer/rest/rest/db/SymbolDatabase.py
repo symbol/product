@@ -141,6 +141,7 @@ MosaicRestrictionRecord = namedtuple(
 	'MosaicRestrictionRecord', ['composite_hash', 'mosaic_id', 'entry_type', 'target_address', 'restrictions'])
 NamespaceMosaicGroupRecord = namedtuple('NamespaceMosaicGroupRecord', ['namespace_id', 'namespace_name', 'data'])
 NamespaceDetailRecord = namedtuple('NamespaceDetailRecord', ['namespace', 'sub_namespaces', 'namespace_mosaics'])
+NamespaceHierarchy = namedtuple('NamespaceHierarchy', ['levels', 'root_name'])
 TransactionRecord = namedtuple(
 	'TransactionRecord',
 	['transaction_id', 'hash', 'is_embedded', 'aggregate_hash', 'embedded_index', 'height', 'transaction_type',
@@ -1178,8 +1179,9 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 				self._fetch_namespace_ancestors(cursor, row_by_id)
 				for row in row_by_id.values():
 					self._assert_namespace_row_is_safe(row, readable_height)
-				namespace_levels = {
-					row['namespace_id']: self._create_namespace_levels(row, row_by_id) for row in page_rows}
+
+				namespace_hierarchies = {
+					row['namespace_id']: self._create_namespace_hierarchy(row, row_by_id) for row in page_rows}
 				self._validate_namespace_families(cursor, page_rows, readable_height)
 
 				descendant_counts = self._fetch_namespace_descendant_counts(
@@ -1189,7 +1191,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 
 				return [self._create_namespace_view(
 					row,
-					namespace_levels[row['namespace_id']],
+					namespace_hierarchies[row['namespace_id']],
 					block_timestamps.get(row['start_height']),
 					descendant_counts[row['namespace_id']])
 					for row in page_rows]
@@ -1300,11 +1302,11 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 					descendant_rows = self._fetch_namespace_descendants(
 						cursor, target, row_by_id, readable_height)
 
-				namespace_levels = self._create_namespace_levels(target, row_by_id)
+				hierarchy = self._create_namespace_hierarchy(target, row_by_id)
 				block_timestamps = self._fetch_namespace_block_timestamps(
 					cursor, [target['start_height']])
 				namespace_view = self._create_namespace_view(
-					target, namespace_levels, block_timestamps.get(target['start_height']), len(descendant_rows))
+					target, hierarchy, block_timestamps.get(target['start_height']), len(descendant_rows))
 
 				all_selected_rows = [target, *descendant_rows]
 				alias_rows = [row for row in all_selected_rows if row['alias_type'] == 'mosaic']
@@ -1319,11 +1321,12 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 					for row in descendant_rows]
 				return NamespaceDetailRecord(namespace_view, sub_namespaces, mosaic_groups)
 
-	def _create_namespace_view(self, row, namespace_levels, start_timestamp, sub_namespace_count):
+	def _create_namespace_view(self, row, hierarchy, start_timestamp, sub_namespace_count):
 		return SymbolNamespaceView(
 			namespace_id=row['namespace_id'],
 			full_name=row['full_name'],
-			levels=namespace_levels,
+			root_name=hierarchy.root_name,
+			levels=hierarchy.levels,
 			alias_type=row['alias_type'],
 			alias_mosaic_id=row['alias_mosaic_id'],
 			alias_address=self._format_namespace_address(row['alias_address']),
@@ -1365,7 +1368,8 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 			frontier = next_frontier
 
 		for row in descendant_rows:
-			cls._create_namespace_levels(row, row_by_id)
+			cls._create_namespace_hierarchy(row, row_by_id)
+
 		descendant_rows.sort(key=lambda row: (cls._namespace_public_name(row), row['namespace_id'].upper()))
 		return descendant_rows
 
@@ -1396,7 +1400,8 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 			row_by_id[row['namespace_id']] = row
 
 		for row in family_rows:
-			cls._create_namespace_levels(row, family_by_id)
+			cls._create_namespace_hierarchy(row, family_by_id)
+
 		return descendant_rows
 
 	@classmethod
@@ -1610,7 +1615,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 			raise SymbolDataUnavailable('Symbol namespace data is unavailable')
 
 	@staticmethod
-	def _create_namespace_levels(row, row_by_id):
+	def _create_namespace_hierarchy(row, row_by_id):
 		path = []
 		current = row
 		seen = set()
@@ -1643,7 +1648,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 				'parentId': level['parent_id'].upper() if level['parent_id'] else None
 			})
 
-		return levels
+		return NamespaceHierarchy(levels, path[-1]['name'])
 
 	@staticmethod
 	def _format_namespace_address(value):

@@ -67,6 +67,7 @@ def expected_symbol_namespace_child_dto(root_id, child_id, owner, alias_mosaic_i
 		'id': child_id,
 		'name': child_id,
 		'namespaceName': 'foo.bar',
+		'rootNamespace': 'foo',
 		'namespaceLevels': [
 			{'name': 'foo', 'namespaceId': root_id, 'parentId': None},
 			{'name': 'bar', 'namespaceId': child_id, 'parentId': root_id}],
@@ -77,8 +78,7 @@ def expected_symbol_namespace_child_dto(root_id, child_id, owner, alias_mosaic_i
 		'registeredHeight': 1,
 		'registeredTimestamp': '2026-01-01 00:00:00',
 		'registrationType': 'child',
-		'expirationHeight': None,
-		'isUnlimitedDuration': True,
+		'expirationHeight': 0,
 		'subNamespaceCount': sub_namespace_count
 	}
 

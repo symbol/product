@@ -89,6 +89,7 @@ class SymbolNamespacesDatabaseTest(TestCase):
 			'id': LEAF_ID,
 			'name': LEAF_ID,
 			'namespaceName': 'foo.bar.leaf',
+			'rootNamespace': 'foo',
 			'namespaceLevels': [
 				{'name': 'foo', 'namespaceId': ROOT_ID, 'parentId': None},
 				{'name': 'bar', 'namespaceId': CHILD_ID, 'parentId': ROOT_ID},
@@ -101,7 +102,6 @@ class SymbolNamespacesDatabaseTest(TestCase):
 			'registeredTimestamp': '2026-01-03 00:00:00',
 			'registrationType': 'child',
 			'expirationHeight': 4,
-			'isUnlimitedDuration': False,
 			'subNamespaceCount': 0
 		}, views[0].to_dict())
 		views_by_id = {view.namespace_id: view for view in views}
