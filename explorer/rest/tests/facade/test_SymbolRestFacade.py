@@ -23,7 +23,7 @@ from rest.db.SymbolDatabase import (
 )
 from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
-from rest.model.symbol.TransactionView import TransactionMosaicRecord, create_unconfirmed_record
+from rest.model.symbol.TransactionView import TransactionMosaicRecord, TransactionViewRecord, create_unconfirmed_record
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
 from ..test.SymbolUnconfirmedTransactionTestUtils import get_unconfirmed_transaction
@@ -355,6 +355,34 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		self.assertIs(query, symbol_db.query)
 		self.assertEqual([], result)
+
+	def test_can_format_confirmed_transaction_records(self):
+		# Arrange:
+		query = TransactionQuery()
+		embedded = TransactionViewRecord(
+			transaction_hash=None, aggregate_hash='AB' * 32, embedded_index=0,
+			transaction_type=TransactionType.TRANSFER,
+			from_address='TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', to_address=None,
+			payload=[], mosaics=(TransactionMosaicRecord('1234567890ABCDEF', 123, 2),), deadline=None,
+			signature=None, size=None, version=1, height=1, timestamp=datetime(2026, 1, 1))
+		transaction = embedded._replace(
+			transaction_hash='AB' * 32, aggregate_hash=None, embedded_index=None,
+			transaction_type=TransactionType.AGGREGATE_COMPLETE, fee=0.15,
+			deadline=datetime(2026, 1, 2), size=176, signature='CD' * 64, mosaics=(), embedded_transactions=(embedded,))
+		symbol_db = TransactionSymbolDatabase([transaction])
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_transactions(query)
+
+		# Assert:
+		self.assertIs(query, symbol_db.query)
+		self.assertEqual('AB' * 32, result[0]['transactionHash'])
+		self.assertEqual(0.15, result[0]['fee'])
+		self.assertEqual('CD' * 64, result[0]['signature'])
+		self.assertEqual(
+			[{'id': '1234567890ABCDEF', 'name': '1234567890ABCDEF', 'amount': 1.23}],
+			result[0]['embeddedTransactions'][0]['value'])
 
 	def test_get_transaction_statistics_formats_contract_fields(self):
 		"""Verifies that summary record fields map to the public statistics response."""
