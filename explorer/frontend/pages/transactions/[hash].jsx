@@ -138,7 +138,7 @@ const TransactionInfo = ({ transactionInfo }) => {
 									<ValueMosaic isNative amount={transactionInfo.amount} />
 								</Field>
 								<Field title={t('field_amountInUserCurrency', { currency: userCurrency })}>
-									<div>~{amountInUserCurrencyText}</div>
+									<div>{amountInUserCurrency == null ? '—' : `~${amountInUserCurrencyText}`}</div>
 								</Field>
 							</div>
 						)}
