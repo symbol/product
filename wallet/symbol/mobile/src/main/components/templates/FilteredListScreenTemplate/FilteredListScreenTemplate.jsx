@@ -39,6 +39,16 @@ const LoadingFooter = ({ isLoading, renderPlaceholder }) => (
 );
 
 /**
+ * List loading component. Renders loading spinner at the center of the screen.
+ * @returns {React.ReactNode}
+ */
+const ListLoading = () => (
+	<View style={styles.listLoading}>
+		<LoadingIndicator />
+	</View>
+);
+
+/**
  * Section configuration for the filtered list, including title, group, and data items.
  * @typedef {object} Section
  * @property {string} title - Section title.
@@ -104,6 +114,8 @@ export const FilteredListScreenTemplate = ({
 }) => {
 	const walletController = useWalletController();
 	const { chainName } = walletController;
+	const hasItems = sections.length > 0;
+	const isAnyLoading = isLoading || isRefreshing || isPageLoading;
 
 	const listHeader = (
 		<>
@@ -119,11 +131,11 @@ export const FilteredListScreenTemplate = ({
 	);
 
 	const renderListEmpty = useCallback(() => {
-		if (isLoading || isRefreshing || isPageLoading)
-			return null;
+		if (isAnyLoading)
+			return <ListLoading />;
 
 		return <EmptyListMessage />;
-	}, [isLoading || isRefreshing || isPageLoading]);
+	}, [isAnyLoading]);
 
 	const renderSectionHeader = useCallback(({ section }) => (
 		<AnimatedListItem style={styles.sectionHeader}>
@@ -164,7 +176,7 @@ export const FilteredListScreenTemplate = ({
 					refreshControl={
 						<RefreshControl
 							tintColor={Colors.Components.loadingIndicator.surface}
-							refreshing={isRefreshing}
+							refreshing={isRefreshing && hasItems}
 							onRefresh={onRefresh}
 						/>
 					}
@@ -208,5 +220,8 @@ const styles = StyleSheet.create({
 		position: 'absolute',
 		height: '100%',
 		width: '100%'
+	},
+	listLoading: {
+		flex: 1
 	}
 });
