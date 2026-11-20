@@ -163,10 +163,17 @@ const createFetchAccountMosaicsMock = ({ createdTokens, pages, isFetchFailure })
 	if (isFetchFailure)
 		return jest.fn().mockRejectedValue(new Error('error_network'));
 
-	if (pages)
-		return jest.fn((_, searchCriteria) => Promise.resolve(pages[searchCriteria.pageNumber] ?? []));
+	if (pages) {
+		return jest.fn((_, searchCriteria) => {
+			const pageNumber = searchCriteria.cursor === null ? 1 : Number(searchCriteria.cursor);
+			const data = pages[pageNumber] ?? [];
+			const isNextPageAvailable = data.length >= searchCriteria.pageSize;
 
-	return jest.fn().mockResolvedValue(createdTokens);
+			return Promise.resolve({ data, nextCursor: isNextPageAvailable ? String(pageNumber + 1) : null });
+		});
+	}
+
+	return jest.fn().mockResolvedValue({ data: createdTokens, nextCursor: null });
 };
 
 const setupMocks = (config = {}) => {
@@ -390,7 +397,7 @@ describe('screens/mosaic/CreatedMosaicList', () => {
 					await screenTester.waitForTimer(); // complete any next page fetch
 
 					// Assert:
-					const expectedSearchCriteria = { pageNumber: expected.lastFetchedPageNumber, pageSize: PAGE_SIZE };
+					const expectedSearchCriteria = { cursor: expected.lastFetchedCursor, pageSize: PAGE_SIZE };
 					expect(mosaicModule.fetchAccountMosaics).toHaveBeenCalledTimes(expected.fetchCallCount);
 					expect(mosaicModule.fetchAccountMosaics).toHaveBeenLastCalledWith(currentAccount.address, expectedSearchCriteria);
 				});
@@ -400,12 +407,12 @@ describe('screens/mosaic/CreatedMosaicList', () => {
 				{
 					description: 'loads the next page when the list end is reached',
 					config: { pages: pagesWithSecondPageToken },
-					expected: { fetchCallCount: 2, lastFetchedPageNumber: 2 }
+					expected: { fetchCallCount: 2, lastFetchedCursor: '2' }
 				},
 				{
 					description: 'fetches no further pages when the first page is short',
 					config: { pages: pagesWithShortFirstPage },
-					expected: { fetchCallCount: 1, lastFetchedPageNumber: 1 }
+					expected: { fetchCallCount: 1, lastFetchedCursor: null }
 				}
 			];
 
@@ -429,7 +436,7 @@ describe('screens/mosaic/CreatedMosaicList', () => {
 					// Assert: the second page is fetched and only its token is shown
 					expect(mosaicModule.fetchAccountMosaics).toHaveBeenCalledTimes(2);
 					expect(mosaicModule.fetchAccountMosaics)
-						.toHaveBeenCalledWith(currentAccount.address, { pageNumber: 2, pageSize: PAGE_SIZE });
+						.toHaveBeenCalledWith(currentAccount.address, { cursor: '2', pageSize: PAGE_SIZE });
 					screenTester.expectText([expectedSecondPageTokenName]);
 					screenTester.notExpectText([expectedFirstPageTokenName]);
 				});
@@ -481,7 +488,7 @@ describe('screens/mosaic/CreatedMosaicList', () => {
 			// Assert:
 			expect(mosaicModule.fetchAccountMosaics).toHaveBeenCalledTimes(3);
 			expect(mosaicModule.fetchAccountMosaics)
-				.toHaveBeenLastCalledWith(currentAccount.address, { pageNumber: 1, pageSize: PAGE_SIZE });
+				.toHaveBeenLastCalledWith(currentAccount.address, { cursor: null, pageSize: PAGE_SIZE });
 		});
 	});
 

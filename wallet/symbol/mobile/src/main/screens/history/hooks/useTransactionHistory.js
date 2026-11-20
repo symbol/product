@@ -7,7 +7,6 @@ import { removeAllowedTransactions, removeBlockedTransactions } from 'wallet-com
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 
-const FIRST_PAGE_NUMBER = 1;
 const PAGE_SIZE = 15;
 
 /**
@@ -74,24 +73,26 @@ export const useTransactionHistory = ({ filter }) => {
 
 	// Pagination for confirmed transactions
 	const confirmedPagination = usePagination({
-		callback: async ({ pageNumber }) => {
+		callback: async ({ cursor }) => {
 			const searchCriteria = {
-				pageNumber,
+				cursor,
 				pageSize: PAGE_SIZE,
 				group: TransactionGroup.CONFIRMED,
 				filter
 			};
 			
-			const data = await walletController.fetchAccountTransactions(searchCriteria);
+			const transactionPage = await walletController.fetchAccountTransactions(searchCriteria);
 			
 			// Skip if account changed
 			if (requestedAccountPublicKey.current !== currentAccount.publicKey)
-				return [];
+				return { data: [], nextCursor: null };
 
-			return filterByBlacklist(data, blackList, filter.blocked);
+			return {
+				data: filterByBlacklist(transactionPage.data, blackList, filter.blocked),
+				nextCursor: transactionPage.nextCursor
+			};
 		},
 		pageSize: PAGE_SIZE,
-		firstPageNumber: FIRST_PAGE_NUMBER,
 		defaultData: filterByBlacklist(currentAccountLatestTransactions, blackList, filter.blocked),
 		dataUpdater: mergeTransactions,
 		onError: showError
@@ -100,7 +101,7 @@ export const useTransactionHistory = ({ filter }) => {
 	// Fetch unconfirmed and partial transactions (only on first page)
 	const pendingTransactionsManager = useAsyncManager({
 		callback: async () => {
-			const [unconfirmedData, partialData] = await Promise.all([
+			const [unconfirmedPage, partialPage] = await Promise.all([
 				walletController.fetchAccountTransactions({ 
 					group: TransactionGroup.UNCONFIRMED,
 					filter
@@ -122,8 +123,8 @@ export const useTransactionHistory = ({ filter }) => {
 
 			return {
 				accountPublicKey: requestedAccountPublicKey.current,
-				unconfirmed: filterByBlacklist(unconfirmedData, blackList, filter.blocked),
-				partial: filterByBlacklist(partialData, blackList, filter.blocked)
+				unconfirmed: filterByBlacklist(unconfirmedPage.data, blackList, filter.blocked),
+				partial: filterByBlacklist(partialPage.data, blackList, filter.blocked)
 			};
 		},
 		onSuccess: data => {
@@ -157,10 +158,9 @@ export const useTransactionHistory = ({ filter }) => {
 		confirmed: confirmedPagination.data,
 		unconfirmed: unconfirmed[currentAccount.publicKey] ?? [],
 		partial: partial[currentAccount.publicKey] ?? [],
-		isLoading: confirmedPagination.isLoading && confirmedPagination.pageNumber === FIRST_PAGE_NUMBER,
-		isPageLoading: confirmedPagination.isLoading && confirmedPagination.pageNumber > FIRST_PAGE_NUMBER,
+		isLoading: confirmedPagination.isLoading && confirmedPagination.loadedPageCount === 0,
+		isPageLoading: confirmedPagination.isLoading && confirmedPagination.loadedPageCount > 0,
 		isLastPage: confirmedPagination.isLastPage,
-		pageNumber: confirmedPagination.pageNumber,
 		refresh,
 		resetAndRefresh,
 		fetchNextPage: confirmedPagination.fetchNextPage

@@ -2,7 +2,6 @@ import { usePagination, useWalletController } from '@/app/hooks';
 import { showError } from '@/app/utils';
 import { useCallback, useRef } from 'react';
 
-const FIRST_PAGE_NUMBER = 1;
 const PAGE_SIZE = 15;
 
 /**
@@ -30,19 +29,19 @@ export const useReceiptHistory = () => {
 
 	// Pagination for harvested blocks
 	const pagination = usePagination({
-		callback: async ({ pageNumber }) => {
-			const data = await walletController.modules.harvesting.fetchAccountHarvestedBlocks({
-				pageNumber
+		callback: async ({ cursor, pageSize }) => {
+			const harvestedBlockPage = await walletController.modules.harvesting.fetchAccountHarvestedBlocks({
+				cursor,
+				pageSize
 			});
 			
 			// Skip if account changed
 			if (requestedAccountPublicKey.current !== currentAccount.publicKey)
-				return [];
+				return { data: [], nextCursor: null };
 
-			return data;
+			return harvestedBlockPage;
 		},
 		pageSize: PAGE_SIZE,
-		firstPageNumber: FIRST_PAGE_NUMBER,
 		onError: showError
 	});
 
@@ -59,10 +58,9 @@ export const useReceiptHistory = () => {
 
 	return {
 		receipts: pagination.data,
-		isLoading: pagination.isLoading && pagination.pageNumber === FIRST_PAGE_NUMBER,
-		isPageLoading: pagination.isLoading && pagination.pageNumber > FIRST_PAGE_NUMBER,
+		isLoading: pagination.isLoading && pagination.loadedPageCount === 0,
+		isPageLoading: pagination.isLoading && pagination.loadedPageCount > 0,
 		isLastPage: pagination.isLastPage,
-		pageNumber: pagination.pageNumber,
 		refresh,
 		resetAndRefresh,
 		fetchNextPage: pagination.fetchNextPage

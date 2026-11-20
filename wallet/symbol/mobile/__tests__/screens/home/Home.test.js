@@ -48,7 +48,7 @@ const mockWalletControllerConfigured = (overrides = {}) => {
 	return mockWalletController({
 		currentAccountInfo: overrides.currentAccountInfo ?? regularAccountInfo,
 		fetchAccountInfo: jest.fn().mockResolvedValue(),
-		fetchAccountTransactions: jest.fn().mockResolvedValue([]),
+		fetchAccountTransactions: jest.fn().mockResolvedValue({ data: [], nextCursor: null }),
 		modules: {
 			multisig: {
 				multisigAccounts: [],

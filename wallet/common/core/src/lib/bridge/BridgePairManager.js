@@ -11,6 +11,11 @@ import { TransactionBundle } from '../models/TransactionBundle';
 /** @typedef {import('../../types/Bridge').BridgeError} BridgeError */
 /** @typedef {import('../../types/Bridge').BridgeEstimation} BridgeEstimation */
 /** @typedef {import('../../types/Network').NetworkMap<string>} NetworkUrlMap */
+/** @typedef {import('../../types/SearchCriteria').PageCursor} PageCursor */
+/**
+ * @template T
+ * @typedef {import('../../types/SearchCriteria').Page<T>} Page
+ */
 /** @typedef {import('../../types/Token').TokenInfo} TokenInfo */
 
 /**
@@ -297,13 +302,13 @@ export class BridgePairManager {
 	 * @returns {Promise<Array<BridgeRequest|BridgeError>>}
 	 */
 	fetchRecentHistory = async count => {
-		const [requests, errors, pending] = await Promise.all([
-			this.fetchRequests({ pageSize: count, pageNumber: 1 }),
-			this.fetchErrors({ pageSize: count, pageNumber: 1 }),
-			this.fetchSentRequests({ pageSize: count, pageNumber: 1 })
+		const [requestPage, errorPage, pending] = await Promise.all([
+			this.fetchRequests({ pageSize: count }),
+			this.fetchErrors({ pageSize: count }),
+			this.fetchSentRequests({ pageSize: count })
 		]);
 
-		const allData = [...requests, ...errors, ...pending];
+		const allData = [...requestPage.data, ...errorPage.data, ...pending];
 
 		const filteredByRequestHash = allData.filter((request, index, self) =>
 			index === self.findIndex(item =>
@@ -317,20 +322,18 @@ export class BridgePairManager {
 	 * Fetch pending requests that were sent to the bridge.
 	 * @param {object} searchCriteria - Search criteria.
 	 * @param {number} searchCriteria.pageSize - Number of items to fetch.
-	 * @param {number} searchCriteria.pageNumber - Page number.
 	 * @returns {Promise<BridgeRequest[]>}
 	 */
-	fetchSentRequests = async ({ pageSize, pageNumber } = {}) => {
+	fetchSentRequests = async ({ pageSize } = {}) => {
 		if (!this.#config)
 			throw new Error('Failed to fetch sent requests. No bridge config fetched');
 
 		const bridgeAddress = this.#mode === BridgeMode.WRAP
 			? this.#config.nativeNetwork.bridgeAddress
 			: this.#config.wrappedNetwork.bridgeAddress;
-		const transactions = await this.sourceWalletController.fetchAccountTransactions({
+		const { data: transactions } = await this.sourceWalletController.fetchAccountTransactions({
 			to: bridgeAddress,
-			pageSize,
-			pageNumber
+			pageSize
 		});
 		const context = this.#getSwapContext();
 		const filteredTransactions = transactions.filter(tx =>
@@ -344,10 +347,10 @@ export class BridgePairManager {
 	 * Fetch requests for the current account that are picked by the bridge.
 	 * @param {object} searchCriteria - Search criteria.
 	 * @param {number} searchCriteria.pageSize - Number of items to fetch.
-	 * @param {number} searchCriteria.pageNumber - Page number.
-	 * @returns {Promise<BridgeRequest[]>}
+	 * @param {PageCursor|null} [searchCriteria.cursor] - Page number.
+	 * @returns {Promise<Page<BridgeRequest>>}
 	 */
-	fetchRequests = async ({ pageSize, pageNumber } = {}) => {
+	fetchRequests = async ({ pageSize, cursor } = {}) => {
 		const currentAccount = this.#getCurrentAccount();
 
 		if (!currentAccount)
@@ -356,20 +359,21 @@ export class BridgePairManager {
 		if (!this.#config)
 			throw new Error('Failed to fetch bridge requests. No bridge config fetched');
 
-		const requestDtos = await this.#bridgeApi.fetchRequests(this.#mode, currentAccount.address, { pageSize, pageNumber });
+		const requestDtoPage = await this.#bridgeApi.fetchRequests(this.#mode, currentAccount.address, { pageSize, cursor });
 		const context = this.#getSwapContext();
+		const data = requestDtoPage.data.map(dto => this.#requestFromDto(dto, context));
 
-		return requestDtos.map(dto => this.#requestFromDto(dto, context));
+		return { data, nextCursor: requestDtoPage.nextCursor };
 	};
 
 	/**
 	 * Fetch errors for the current account.
 	 * @param {object} searchCriteria - Search criteria.
 	 * @param {number} searchCriteria.pageSize - Number of items to fetch.
-	 * @param {number} searchCriteria.pageNumber - Page number.
-	 * @returns {Promise<BridgeError[]>}
+	 * @param {PageCursor|null} [searchCriteria.cursor] - Page number.
+	 * @returns {Promise<Page<BridgeError>>}
 	 */
-	fetchErrors = async ({ pageSize, pageNumber } = {}) => {
+	fetchErrors = async ({ pageSize, cursor } = {}) => {
 		const currentAccount = this.#getCurrentAccount();
 
 		if (!currentAccount)
@@ -378,10 +382,11 @@ export class BridgePairManager {
 		if (!this.#config)
 			throw new Error('Failed to fetch errors. No bridge config fetched');
 
-		const errorDtos = await this.#bridgeApi.fetchErrors(this.#mode, currentAccount.address, { pageSize, pageNumber });
+		const errorDtoPage = await this.#bridgeApi.fetchErrors(this.#mode, currentAccount.address, { pageSize, cursor });
 		const context = this.#getSwapContext();
+		const data = errorDtoPage.data.map(dto => this.#errorFromDto(dto, context));
 
-		return errorDtos.map(dto => this.#errorFromDto(dto, context));
+		return { data, nextCursor: errorDtoPage.nextCursor };
 	};
 
 	/**

@@ -1,12 +1,8 @@
+/** @typedef {import('wallet-common-core/src/types/SearchCriteria').PageCursor} PageCursor */
+/** @typedef {import('wallet-common-core/src/types/SearchCriteria').PageSearchCriteria} PageSearchCriteria */
 /**
- * @typedef {Object} SearchCriteria
- * @property {number} pageNumber - The page number.
- * @property {number} pageSize - The page size.
- */
-
-/**
- * @typedef {SearchCriteria} SortableSearchCriteria
- * @property {"asc" | "desc"} order - The sort order.
+ * @template T
+ * @typedef {import('wallet-common-core/src/types/SearchCriteria').Page<T>} Page
  */
 
 /**
@@ -17,13 +13,9 @@
  */
 
 /**
- * @typedef {SortableSearchCriteria} TransactionSearchCriteria
+ * @typedef {PageSearchCriteria} TransactionSearchCriteria
  * @property {"confirmed" | "partial" | "unconfirmed"} group - The transaction group.
  * @property {TransactionFiler} [filter] - The transaction filter.
- */
-
-/**
- * @typedef {SortableSearchCriteria} HarvestedBlockSearchCriteria
  */
 
 export default {};
