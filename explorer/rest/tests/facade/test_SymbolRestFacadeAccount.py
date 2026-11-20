@@ -60,7 +60,7 @@ class RecordingAccountDatabase:
 
 
 class SymbolRestFacadeAccountTest(TestCase):
-	def test_get_account_statistics_formats_snapshot_and_passes_refresh_settings(self):
+	def test_get_account_statistics_passes_refresh_settings_to_database(self):
 		# Arrange:
 		database = RecordingAccountDatabase()
 		facade = SymbolRestFacade(
@@ -73,13 +73,10 @@ class SymbolRestFacadeAccountTest(TestCase):
 			harvesting_balance_range=HarvestingBalanceRange(1, 2))
 
 		# Act:
-		result = facade.get_account_statistics()
+		facade.get_account_statistics()
 
 		# Assert:
 		self.assertEqual((7200, 7, HarvestingBalanceRange(1, 2)), database.account_statistics_query)
-		self.assertEqual(1, result['total'])
-		self.assertEqual(0.0, result['top10AccountsImportance'])
-		self.assertEqual([], result['pendingVerification'])
 
 	def test_statistics_requests_reuse_configured_balance_range_without_node_access(self):
 		# Arrange:

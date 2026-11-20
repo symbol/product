@@ -152,33 +152,48 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 		# Assert:
 		self.assertEqual(1, result.eligible_for_harvesting)
 
-	def test_statistics_http_reports_native_mosaic_counts_and_percentage(self):
-		# Arrange: another mosaic is a decoy and only one eligible account is active.
+	def test_statistics_http_returns_distinct_active_and_eligible_account_counts(self):
+		# Arrange: account 1 is active and eligible, 2 and 4 are eligible only, and 3 is active only.
 		entries = [
-			create_refresh_entry('selected-run', identity, identity, 1, mosaic_rows=[
+			create_refresh_entry('selected-run', identity, identity, importance, mosaic_rows=[
 				(CUSTOM_MOSAIC_ID, 1), (NATIVE_MOSAIC_ID, amount)])
-			for identity, amount in [(1, 100), (2, 200), (3, 201)]
+			for identity, amount, importance in [(1, 100, 4), (2, 200, 3), (3, 201, 2), (4, 150, 1)]
 		]
+		expected_body = {
+			'total': 4,
+			'harvestedAccounts': 2,
+			'eligibleHarvestAccounts': 3,
+			'top10AccountsImportance': 100.0,
+			'harvestingAccountsPercentage': 33.33,
+			'importanceBreakdown': [
+				[40.0, str(Address(account_address(1)))],
+				[30.0, str(Address(account_address(2)))],
+				[20.0, str(Address(account_address(3)))],
+				[10.0, str(Address(account_address(4)))]
+			],
+			'harvestingAccountsChart': [[33.33, 'Harvesting'], [66.67, 'Not harvesting']]
+		}
 		with symbol_test_database(create_symbol_sync_state(100, 100)) as (config, writer):
 			seed_refresh_run(writer, 'selected-run', entries)
-			writer.upsert_blocks([create_symbol_block(1, timestamp=NOW, beneficiary_address=account_address(1))])
+			writer.upsert_blocks([
+				create_symbol_block(1, timestamp=NOW - timedelta(seconds=1), beneficiary_address=account_address(1)),
+				create_symbol_block(2, timestamp=NOW, beneficiary_address=account_address(3))
+			])
 			with self._create_database(config) as database:
 				facade = SymbolRestFacade(
 					database, SymbolNodeConfiguration.from_url('http://node.test:3000'), NATIVE_MOSAIC_INFO, Network.TESTNET, 7200, 7,
 					harvesting_balance_range=HarvestingBalanceRange(100, 200))
 				app = Flask(__name__)
 				setup_symbol_routes(app, facade)
+
 				# Act:
 				response = app.test_client().get('/api/symbol/account/statistics')
 
 		# Assert:
-		self.assertEqual(200, response.status_code)
 		body = response.get_json()
-		self.assertEqual(3, body['total'])
-		self.assertEqual(1, body['harvesting'])
-		self.assertEqual(2, body['eligibleForHarvesting'])
-		self.assertEqual(50.0, body['harvestingAccountsPercentage'])
-		self.assertEqual([[50.0, 'Harvesting'], [50.0, 'Not harvesting']], body['harvestingAccountsChart'])
+		self.assertEqual((200, expected_body), (response.status_code, body))
+		self.assertIs(int, type(body['harvestedAccounts']))
+		self.assertIs(int, type(body['eligibleHarvestAccounts']))
 
 	def test_create_app_uses_isolated_harvesting_balance_ranges(self):
 		# Arrange:
@@ -192,7 +207,7 @@ class SymbolAccountStatisticsDatabaseTest(TestCase):  # pylint: disable=too-many
 
 		# Assert: creating the second app does not change either response from the first app.
 		self.assertEqual([200, 200, 200], [response.status_code for response in responses])
-		self.assertEqual([2, 1, 2], [response.get_json()['eligibleForHarvesting'] for response in responses])
+		self.assertEqual([2, 1, 2], [response.get_json()['eligibleHarvestAccounts'] for response in responses])
 
 	def test_statistics_http_rejects_refresh_that_ages_between_requests(self):
 		# Arrange:

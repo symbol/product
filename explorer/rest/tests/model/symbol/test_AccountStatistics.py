@@ -19,14 +19,16 @@ class SymbolAccountStatisticsViewTest(TestCase):
 
 		# Assert:
 		self.assertEqual({
-			'total': 3, 'harvesting': 2, 'eligibleForHarvesting': 2,
-			'top10AccountsImportance': 25.0842, 'harvestingAccountsPercentage': 50.0,
+			'total': 3,
+			'harvestedAccounts': 2,
+			'eligibleHarvestAccounts': 2,
+			'top10AccountsImportance': 25.0842,
+			'harvestingAccountsPercentage': 50.0,
 			'importanceBreakdown': [
 				[21.0754, 'TONE'], [0.577, 'TTWO'], [3.4318, 'TTHREE'], [74.9058, 'Rest']],
-			'harvestingAccountsChart': [[50.0, 'Harvesting'], [50.0, 'Not harvesting']],
-			'pendingVerification': []
+			'harvestingAccountsChart': [[50.0, 'Harvesting'], [50.0, 'Not harvesting']]
 		}, result)
-		self.assertIsInstance(result['total'], int)
+		self.assertIs(int, type(result['total']))
 		self.assertIsInstance(result['top10AccountsImportance'], float)
 		self.assertIsInstance(result['importanceBreakdown'][0][0], float)
 
@@ -50,12 +52,15 @@ class SymbolAccountStatisticsViewTest(TestCase):
 				(Decimal('0.04'), 'TSEVEN')))
 		expected_chart = [[85.71, 'Harvesting'], [14.29, 'Not harvesting']]
 		expected_response = {
-			'total': 7, 'harvesting': 6, 'eligibleForHarvesting': 7,
-			'top10AccountsImportance': 70.0, 'harvestingAccountsPercentage': 85.71,
+			'total': 7,
+			'harvestedAccounts': 6,
+			'eligibleHarvestAccounts': 7,
+			'top10AccountsImportance': 70.0,
+			'harvestingAccountsPercentage': 85.71,
 			'importanceBreakdown': [
 				[16.0, 'TONE'], [15.0, 'TTWO'], [12.0, 'TTHREE'], [10.0, 'TFOUR'],
 				[8.0, 'TFIVE'], [5.0, 'TSIX'], [4.0, 'TSEVEN']],
-			'harvestingAccountsChart': expected_chart, 'pendingVerification': []
+			'harvestingAccountsChart': expected_chart
 		}
 
 		# Act:
@@ -81,9 +86,13 @@ class SymbolAccountStatisticsViewTest(TestCase):
 
 		# Assert:
 		self.assertEqual({
-			'total': 0, 'harvesting': 0, 'eligibleForHarvesting': 0,
-			'top10AccountsImportance': 0, 'harvestingAccountsPercentage': 0,
-			'importanceBreakdown': [], 'harvestingAccountsChart': [], 'pendingVerification': []
+			'total': 0,
+			'harvestedAccounts': 0,
+			'eligibleHarvestAccounts': 0,
+			'top10AccountsImportance': 0,
+			'harvestingAccountsPercentage': 0,
+			'importanceBreakdown': [],
+			'harvestingAccountsChart': []
 		}, result)
 
 	def test_to_dict_returns_empty_harvesting_chart_when_active_accounts_have_no_eligible_population(self):
@@ -95,9 +104,14 @@ class SymbolAccountStatisticsViewTest(TestCase):
 
 		# Assert: active stays one; eligible denominator is zero
 		self.assertEqual({
-			'total': 1, 'harvesting': 1, 'eligibleForHarvesting': 0, 'top10AccountsImportance': 60.0,
-			'harvestingAccountsPercentage': 0, 'importanceBreakdown': [[60.0, 'TONE']],
-			'harvestingAccountsChart': [], 'pendingVerification': []}, result)
+			'total': 1,
+			'harvestedAccounts': 1,
+			'eligibleHarvestAccounts': 0,
+			'top10AccountsImportance': 60.0,
+			'harvestingAccountsPercentage': 0,
+			'importanceBreakdown': [[60.0, 'TONE']],
+			'harvestingAccountsChart': []
+		}, result)
 
 	def test_to_dict_keeps_zero_importance_accounts_without_a_zero_remainder(self):
 		# Arrange:
