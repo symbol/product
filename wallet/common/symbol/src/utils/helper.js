@@ -92,7 +92,8 @@ export const pageNumberFromCursor = cursor => {
 };
 
 /**
- * Creates a page cursor for the next page from the given current page number and other page details. Returns null when the current page is the last page.
+ * Creates a page cursor for the next page from the given current page number and other page details. 
+ * Returns null when the current page is the last page.
  * @param {number} pageNumber - The number of the current page
  * @param {number} itemCount - The number of items in the current page.
  * @param {number} pageSize - The requested page size.
