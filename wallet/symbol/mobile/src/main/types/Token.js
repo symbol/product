@@ -1,17 +1,19 @@
 /** @typedef {import('wallet-common-symbol/src/types/Token').Token} SymbolToken */
 /** @typedef {import('wallet-common-symbol/src/types/Token').RawToken} SymbolRawToken */
+/** @typedef {import('wallet-common-nem/src/types/Token').Token} NemToken */
 /** @typedef {import('wallet-common-ethereum/src/types/Token').Token} EthereumToken */
 /** @typedef {import('wallet-common-symbol/src/types/Token').TokenInfo} SymbolTokenInfo */
+/** @typedef {import('wallet-common-nem/src/types/Token').TokenInfo} NemTokenInfo */
 /** @typedef {import('wallet-common-ethereum/src/types/Token').TokenInfo} EthereumTokenInfo */
 
 /**
  * Any token handled by the mobile wallet.
- * @typedef {SymbolToken | SymbolRawToken | EthereumToken} Token
+ * @typedef {SymbolToken | SymbolRawToken | NemToken | EthereumToken} Token
  */
 
 /**
  * Any token info handled by the mobile wallet.
- * @typedef {SymbolTokenInfo | EthereumTokenInfo} TokenInfo
+ * @typedef {SymbolTokenInfo | NemTokenInfo | EthereumTokenInfo} TokenInfo
  */
 
 /**

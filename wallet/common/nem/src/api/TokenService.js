@@ -19,6 +19,36 @@ export class TokenService {
 	}
 
 	/**
+	 * Maps mosaic definitions to token infos. A supply-mutable token gets its current supply from the node.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {object[]} definitions - The mosaic definition DTOs.
+	 * @returns {Promise<Record<string, TokenInfo>>} The token infos keyed by id.
+	 */
+	#resolveTokenInfos = async (networkProperties, definitions) => {
+		const { nodeUrl, networkIdentifier } = networkProperties;
+		const tokenInfos = await Promise.all(definitions.map(async definition => {
+			const tokenInfo = tokenInfoFromDTO(definition, networkIdentifier);
+
+			if (!tokenInfo.isSupplyMutable)
+				return tokenInfo;
+
+			const { namespaceId, name } = definition.id;
+			try {
+				const { supply } = await this.#makeRequest(`${nodeUrl}/mosaic/supply?mosaicId=${namespaceId}:${name}`);
+
+				return { ...tokenInfo, supply };
+			} catch (error) {
+				if (error instanceof NotFoundError || error.statusCode === 404)
+					return tokenInfo;
+
+				throw error;
+			}
+		}));
+
+		return Object.fromEntries(tokenInfos.map(tokenInfo => [tokenInfo.id, tokenInfo]));
+	};
+
+	/**
 	 * Fetches token info for a single token ID.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string} tokenId - The token id ('namespace.name').
@@ -48,7 +78,7 @@ export class TokenService {
 			return groups;
 		}, {});
 
-		const tokenInfos = {};
+		const definitions = [];
 
 		const fetchNamespaceDefinitions = Object.entries(namespaceGroups).map(async ([namespaceId, ids]) => {
 			const endpoint = `${networkProperties.nodeUrl}/namespace/mosaic/definition/page?namespace=${namespaceId}&pageSize=100`;
@@ -65,17 +95,14 @@ export class TokenService {
 
 			for (const wrapper of (response.data || [])) {
 				const definition = wrapper.mosaic || wrapper;
-				const id = tokenIdFromRaw(definition.id);
 
-				if (!ids.includes(id))
-					continue;
-
-				tokenInfos[id] = tokenInfoFromDTO(definition);
+				if (ids.includes(tokenIdFromRaw(definition.id)))
+					definitions.push(definition);
 			}
 		});
 		await Promise.all(fetchNamespaceDefinitions);
 
-		return tokenInfos;
+		return this.#resolveTokenInfos(networkProperties, definitions);
 	};
 
 	/**
@@ -85,19 +112,17 @@ export class TokenService {
 	 * @returns {Promise<Array<Token | RawToken>>} The account's tokens with resolved amounts and metadata.
 	 */
 	fetchAccountTokens = async (networkProperties, address) => {
-		const mosaicsDTO = await this.#makeRequest(`${networkProperties.nodeUrl}/account/mosaic/owned?address=${address}`);
-		const ownedMosaics = mosaicsDTO.data || [];
+		const { nodeUrl, networkCurrency } = networkProperties;
+		const [mosaicsDTO, definitionsDTO] = await Promise.all([
+			this.#makeRequest(`${nodeUrl}/account/mosaic/owned?address=${address}`),
+			this.#makeRequest(`${nodeUrl}/account/mosaic/owned/definition?address=${address}`)
+		]);
+		const tokenInfos = await this.#resolveTokenInfos(networkProperties, definitionsDTO.data || []);
 
-		// Resolve definitions for the owned token ids by their namespace. The native currency (nem.xem) has
-		// no on-chain mosaic definition, so seed its info from networkProperties.networkCurrency.
-		const tokenIds = ownedMosaics.map(mosaic => tokenIdFromRaw(mosaic.mosaicId));
-		const tokenInfos = await this.fetchTokenInfos(networkProperties, tokenIds);
+		// XEM has no definition, so comes from network properties.
+		tokenInfos[networkCurrency.id] = networkCurrency;
 
-		const { networkCurrency } = networkProperties;
-		if (tokenIds.includes(networkCurrency.id) && !tokenInfos[networkCurrency.id])
-			tokenInfos[networkCurrency.id] = networkCurrency;
-
-		return tokenListFromDTO(ownedMosaics, tokenInfos);
+		return tokenListFromDTO(mosaicsDTO.data || [], tokenInfos);
 	};
 }
 

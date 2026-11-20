@@ -80,6 +80,7 @@ export const mosaicTransfer = {
 		id: 'test.token',
 		name: 'test.token',
 		divisibility: 2,
+		creator: alice.address,
 		supply: 10000,
 		isSupplyMutable: false,
 		isTransferable: true,

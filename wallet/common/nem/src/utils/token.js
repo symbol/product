@@ -1,3 +1,4 @@
+import { addressFromPublicKey } from './account';
 import { MosaicPropertyName } from '../constants';
 import { ApiError, absoluteToRelativeAmount } from 'wallet-common-core';
 
@@ -62,16 +63,19 @@ export const getMosaicProperty = (properties, propertyName, defaultValue = '0') 
 /**
  * Builds a TokenInfo object from a NEM mosaic definition DTO.
  * The DTO comes from /mosaic/definition/page or /account/mosaic/owned/definition.
- * @param {{ id: { namespaceId: string, name: string }, properties: Array }} mosaicDefinitionDTO - The mosaic definition DTO.
+ * @param {{ creator: string, id: { namespaceId: string, name: string }, properties: Array }} mosaicDefinitionDTO - The mosaic
+ * definition DTO.
+ * @param {string} networkIdentifier - The network identifier.
  * @returns {TokenInfo} The token info object.
  */
-export const tokenInfoFromDTO = mosaicDefinitionDTO => {
+export const tokenInfoFromDTO = (mosaicDefinitionDTO, networkIdentifier) => {
 	const id = tokenIdFromRaw(mosaicDefinitionDTO.id);
 
 	return {
 		id,
 		name: id,
 		divisibility: parseInt(getMosaicProperty(mosaicDefinitionDTO.properties, MosaicPropertyName.DIVISIBILITY)),
+		creator: addressFromPublicKey(mosaicDefinitionDTO.creator, networkIdentifier),
 		supply: parseInt(getMosaicProperty(mosaicDefinitionDTO.properties, MosaicPropertyName.INITIAL_SUPPLY)),
 		isSupplyMutable: getMosaicProperty(mosaicDefinitionDTO.properties, MosaicPropertyName.SUPPLY_MUTABLE) === 'true',
 		isTransferable: getMosaicProperty(mosaicDefinitionDTO.properties, MosaicPropertyName.TRANSFERABLE) !== 'false'
