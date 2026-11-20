@@ -37,9 +37,9 @@ export const HistoryWidget = ({
 	ticker
 }) => {
 	// Combine and tag transactions with their group
-	const transactions = useMemo(() => [
-		...partial.map(tx => ({ ...tx, group: TransactionGroup.PARTIAL })),
-		...unconfirmed.map(tx => ({ ...tx, group: TransactionGroup.UNCONFIRMED }))
+	const listItems = useMemo(() => [
+		...partial.map(transaction => ({ transaction, group: TransactionGroup.PARTIAL })),
+		...unconfirmed.map(transaction => ({ transaction, group: TransactionGroup.UNCONFIRMED }))
 	], [partial, unconfirmed]);
 
 	// Handlers
@@ -56,11 +56,11 @@ export const HistoryWidget = ({
 		<WidgetContainer title={$t('screen_history_widget_title')} onHeaderPress={handleHeaderPress}>
 			<Spacer x="s" y="s">
 				<Stack>
-					{transactions.map(item => (
+					{listItems.map(item => (
 						<TransactionListItem
-							key={`tx-${item.hash || item.id}`}
+							key={`tx-${item.transaction.hash || item.transaction.id}`}
 							group={item.group}
-							transaction={item}
+							transaction={item.transaction}
 							currentAccount={currentAccount}
 							isCurrentAccountMultisig={isCurrentAccountMultisig}
 							walletAccounts={walletAccounts}
@@ -68,7 +68,7 @@ export const HistoryWidget = ({
 							networkIdentifier={networkIdentifier}
 							chainName={chainName}
 							ticker={ticker}
-							onPress={() => handleTransactionPress(item, item.group)}
+							onPress={() => handleTransactionPress(item.transaction, item.group)}
 						/>
 					))}
 				</Stack>
