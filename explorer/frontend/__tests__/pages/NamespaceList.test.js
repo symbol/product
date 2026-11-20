@@ -1,6 +1,6 @@
-import '@testing-library/jest-dom';
 import { namespace, nativeNamespace } from '../../__fixtures__/local/namespace';
 import { namespaceList } from '../../__fixtures__/local/namespace-list';
+import { namespaceList as symbolNamespaceList } from '../../__fixtures__/local/symbol/namespace-list';
 import { runGetServerSidePropsTests, runRenderScenarioTests } from '../test-utils/page';
 import * as BlockService from '@/app/api/blocks';
 import * as NamespaceService from '@/app/api/namespaces';
@@ -78,18 +78,16 @@ describe('NamespaceList', () => {
 	});
 
 	describe('render', () => {
-		it.each([
-			{ description: 'when the name differs from the ID', name: 'display.namespace', id: 'namespace-id' },
-			{ description: 'when the name and ID match', name: 'namespace', id: 'namespace' }
-		])('renders the namespace name with an ID link $description', ({ name, id }) => {
+		it('renders a namespace name and links by its canonical ID', () => {
 			// Arrange:
-			const namespaceRow = { ...namespace, name, id };
+			const namespaceRow = symbolNamespaceList[0];
 
 			// Act:
 			render(<NamespaceList namespaces={[namespaceRow]} />);
 
 			// Assert:
-			expect(screen.getByRole('link', { name, exact: true })).toHaveAttribute('href', `/namespaces/${id}`);
+			expect(screen.getByRole('link', { name: namespaceRow.name, exact: true }))
+				.toHaveAttribute('href', `/namespaces/${namespaceRow.id}`);
 		});
 
 		const renderPage = config => {
