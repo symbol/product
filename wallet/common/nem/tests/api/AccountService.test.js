@@ -1,5 +1,5 @@
 import { multisigAccountResponse, regularAccountResponse } from '../__fixtures__/api/account-dtos';
-import { mosaicDefinitionDTO, ownedMosaicDTOs } from '../__fixtures__/api/token-dtos';
+import { ownedMosaicDTOs, ownedMosaicDefinitionDTOs } from '../__fixtures__/api/token-dtos';
 import { accountInfo, multisigAccountInfo, multisigInfo, notFoundAccountInfo } from '../__fixtures__/local/account';
 import { networkProperties } from '../__fixtures__/local/network';
 import { runApiServiceTest } from '../test-utils';
@@ -12,7 +12,7 @@ const REGULAR_ADDRESS = regularAccountResponse.account.address;
 const MULTISIG_ADDRESS = multisigAccountResponse.account.address;
 
 const accountGetUrl = address => `${NODE_URL}/account/get?address=${address}`;
-const definitionPageUrl = namespaceId => `${NODE_URL}/namespace/mosaic/definition/page?namespace=${namespaceId}&pageSize=100`;
+const ownedDefinitionUrl = address => `${NODE_URL}/account/mosaic/owned/definition?address=${address}`;
 
 // Request Maps
 
@@ -20,15 +20,14 @@ const definitionPageUrl = namespaceId => `${NODE_URL}/namespace/mosaic/definitio
 const regularRequestMap = {
 	[accountGetUrl(REGULAR_ADDRESS)]: regularAccountResponse,
 	[`${NODE_URL}/account/mosaic/owned?address=${REGULAR_ADDRESS}`]: { data: ownedMosaicDTOs },
-	[definitionPageUrl('nem')]: { data: [] },
-	[definitionPageUrl('test')]: { data: [{ mosaic: mosaicDefinitionDTO }] },
-	[definitionPageUrl('unknown')]: { data: [] }
+	[ownedDefinitionUrl(REGULAR_ADDRESS)]: { data: ownedMosaicDefinitionDTOs }
 };
 
 // A multisig account that owns no mosaics.
 const multisigRequestMap = {
 	[accountGetUrl(MULTISIG_ADDRESS)]: multisigAccountResponse,
-	[`${NODE_URL}/account/mosaic/owned?address=${MULTISIG_ADDRESS}`]: { data: [] }
+	[`${NODE_URL}/account/mosaic/owned?address=${MULTISIG_ADDRESS}`]: { data: [] },
+	[ownedDefinitionUrl(MULTISIG_ADDRESS)]: { data: [] }
 };
 
 // The node does not know the account, so /account/get returns a 404.
