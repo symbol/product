@@ -50,12 +50,6 @@ const FilterName = {
 	BLOCKED: 'blocked'
 };
 
-const LoadingState = {
-	IDLE: [false, false],
-	INITIAL_LOADING: [true, false],
-	REFRESHING: [false, true]
-};
-
 // Fixtures
 
 const currentAccount = AccountFixtureBuilder
@@ -175,6 +169,13 @@ const HISTORY_CONFIG_RECEIPTS = {
 	})
 };
 
+const HISTORY_CONFIG_LOADING = {
+	transactionHistory: createTransactionHistoryMock({
+		isLoading: true
+	}),
+	receiptHistory: createReceiptHistoryMock()
+};
+
 const mockHistoryHooks = (config = HISTORY_CONFIG_EMPTY) => {
 	useTransactionHistory.mockReturnValue(config.transactionHistory);
 	useReceiptHistory.mockReturnValue(config.receiptHistory);
@@ -185,7 +186,6 @@ describe('hooks/useHistoryData', () => {
 		mockLocalization();
 		jest.clearAllMocks();
 		jest.spyOn(hooks, 'useInit').mockImplementation(() => {});
-		jest.spyOn(hooks, 'useLoading').mockReturnValue(LoadingState.IDLE);
 		jest.spyOn(hooks, 'useTransactionListener').mockImplementation(() => {});
 		mockHistoryHooks();
 	});
@@ -328,7 +328,6 @@ describe('hooks/useHistoryData', () => {
 		const runLoadingTest = (description, config, expected) => {
 			it(description, () => {
 				// Arrange:
-				hooks.useLoading.mockReturnValue(config.loadingState);
 				mockHistoryHooks(config.historyConfig ?? HISTORY_CONFIG_EMPTY);
 				const walletController = mockWalletControllerConfigured();
 
@@ -336,6 +335,8 @@ describe('hooks/useHistoryData', () => {
 				const { result } = renderHook(() => useHistoryData({ walletController }));
 				if (config.filter)
 					act(() => result.current.setFilter(config.filter));
+				if (config.isPulledToRefresh)
+					act(() => result.current.refresh());
 
 				// Assert:
 				expect(result.current.isLoading).toBe(expected.isLoading);
@@ -348,7 +349,6 @@ describe('hooks/useHistoryData', () => {
 			{
 				description: 'returns idle loading values',
 				config: {
-					loadingState: LoadingState.IDLE,
 					historyConfig: HISTORY_CONFIG_EMPTY
 				},
 				expected: {
@@ -358,10 +358,9 @@ describe('hooks/useHistoryData', () => {
 				}
 			},
 			{
-				description: 'returns initial loading values',
+				description: 'returns loading values when the history loads without a user pull',
 				config: {
-					loadingState: LoadingState.INITIAL_LOADING,
-					historyConfig: HISTORY_CONFIG_EMPTY
+					historyConfig: HISTORY_CONFIG_LOADING
 				},
 				expected: {
 					isLoading: true,
@@ -370,13 +369,13 @@ describe('hooks/useHistoryData', () => {
 				}
 			},
 			{
-				description: 'returns refreshing values',
+				description: 'returns refreshing values when the user pulls to refresh',
 				config: {
-					loadingState: LoadingState.REFRESHING,
-					historyConfig: HISTORY_CONFIG_EMPTY
+					historyConfig: HISTORY_CONFIG_LOADING,
+					isPulledToRefresh: true
 				},
 				expected: {
-					isLoading: false,
+					isLoading: true,
 					isRefreshing: true,
 					isPageLoading: false
 				}
@@ -384,7 +383,6 @@ describe('hooks/useHistoryData', () => {
 			{
 				description: 'returns page loading from selected transaction history',
 				config: {
-					loadingState: LoadingState.IDLE,
 					historyConfig: {
 						...HISTORY_CONFIG_TRANSACTIONS,
 						transactionHistory: createTransactionHistoryMock({
@@ -496,12 +494,11 @@ describe('hooks/useHistoryData', () => {
 
 		it('defers fetchNextPage while loading and executes after loading is completed', () => {
 			// Arrange:
-			const transactionHistory = createTransactionHistoryMock();
+			const transactionHistory = createTransactionHistoryMock({ isLoading: true });
 			mockHistoryHooks({
 				transactionHistory,
 				receiptHistory: createReceiptHistoryMock()
 			});
-			hooks.useLoading.mockReturnValue(LoadingState.INITIAL_LOADING);
 			const walletController = mockWalletControllerConfigured();
 			const { result, rerender } = renderHook(() => useHistoryData({ walletController }));
 
@@ -511,7 +508,7 @@ describe('hooks/useHistoryData', () => {
 			});
 			expect(transactionHistory.fetchNextPage).not.toHaveBeenCalled();
 
-			hooks.useLoading.mockReturnValue(LoadingState.IDLE);
+			useTransactionHistory.mockReturnValue({ ...transactionHistory, isLoading: false });
 			rerender();
 
 			// Assert:
