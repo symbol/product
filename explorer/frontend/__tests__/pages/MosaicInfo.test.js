@@ -9,7 +9,7 @@ import * as MosaicService from '@/app/api/mosaics';
 import * as TransactionService from '@/app/api/transactions';
 import MosaicInfo, { getServerSideProps } from '@/app/pages/mosaics/[id]';
 import { truncateString } from '@/app/utils';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 // Mocks
 
@@ -209,21 +209,83 @@ describe('MosaicInfo', () => {
 		describe('section: details', () => {
 			const detailsCases = [
 				{
-					description: 'renders the namespace, supply and registration fields',
-					config: { mosaicInfo: customMosaic },
+					description: 'renders the NEM supply when divisibility is nonzero',
+					variants: ['nem'],
+					config: {
+						mosaicInfo: {
+							...customMosaic,
+							supply: 123456789,
+							divisibility: 6
+						}
+					},
 					expected: {
 						texts: [
 							SCREEN_TEXT.fieldMosaicNamespace,
 							customMosaic.rootNamespaceName,
 							SCREEN_TEXT.fieldSupply,
-							customMosaic.supply,
+							123456789,
 							SCREEN_TEXT.fieldDivisibility,
-							customMosaic.divisibility,
+							6,
 							SCREEN_TEXT.fieldCreator,
 							customMosaic.creator,
 							SCREEN_TEXT.fieldRegistrationHeight,
 							customMosaic.registrationHeight
 						]
+					}
+				},
+				{
+					description: 'renders the Symbol human-unit value for a divisible mosaic',
+					variants: ['symbol'],
+					config: {
+						mosaicInfo: {
+							...customMosaic,
+							namespaceName: '',
+							rootNamespaceName: null,
+							supply: 1234567890123,
+							divisibility: 6,
+							value: 1234567.890123,
+							isUnlimitedDuration: true
+						}
+					},
+					expected: {
+						texts: [SCREEN_TEXT.fieldSupply, '1234567.890123', SCREEN_TEXT.fieldDivisibility, 6],
+						hiddenTexts: ['1234567890123']
+					}
+				},
+				{
+					description: 'renders the Symbol value without scaling when divisibility is zero',
+					variants: ['symbol'],
+					config: {
+						mosaicInfo: {
+							...customMosaic,
+							namespaceName: '',
+							rootNamespaceName: null,
+							supply: 1234567890123,
+							divisibility: 0,
+							value: 1234567890123,
+							isUnlimitedDuration: true
+						}
+					},
+					expected: {
+						texts: [SCREEN_TEXT.fieldSupply, '1234567890123', SCREEN_TEXT.fieldDivisibility, 0]
+					}
+				},
+				{
+					description: 'renders a zero Symbol value',
+					variants: ['symbol'],
+					config: {
+						mosaicInfo: {
+							...customMosaic,
+							namespaceName: '',
+							rootNamespaceName: null,
+							supply: 0,
+							divisibility: 6,
+							value: 0,
+							isUnlimitedDuration: true
+						}
+					},
+					expected: {
+						texts: [SCREEN_TEXT.fieldSupply, 0, SCREEN_TEXT.fieldDivisibility, 6]
 					}
 				},
 				{
@@ -272,6 +334,83 @@ describe('MosaicInfo', () => {
 			];
 
 			runRenderScenarioTests({ renderPage, cases: detailsCases });
+		});
+
+		const describeSymbol = process.env.NEXT_PUBLIC_EXPLORER_VARIANT === 'symbol' ? describe : describe.skip;
+		describeSymbol('section: Symbol namespace aliases', () => {
+			it('hides the namespace field when there are no aliases', async () => {
+				// Arrange:
+				const mosaicInfo = {
+					...customMosaic,
+					namespaceName: '',
+					rootNamespaceName: null,
+					aliasNames: []
+				};
+
+				// Act:
+				renderPage({ mosaicInfo });
+				await act(async () => {});
+
+				// Assert:
+				expect(screen.queryByText(SCREEN_TEXT.fieldMosaicNamespace)).not.toBeInTheDocument();
+				const namespaceLinks = screen.queryAllByRole('link').filter(link => link.getAttribute('href')?.startsWith('/namespaces/'));
+				expect(namespaceLinks).toHaveLength(0);
+			});
+
+			it('renders one complete alias linked to its namespace detail route', async () => {
+				// Arrange:
+				const aliasName = 'foo.bar';
+				const mosaicInfo = {
+					...customMosaic,
+					namespaceName: '',
+					rootNamespaceName: null,
+					aliasNames: [aliasName]
+				};
+
+				// Act:
+				renderPage({ mosaicInfo });
+				await act(async () => {});
+
+				// Assert:
+				const aliasLink = screen.getByRole('link', { name: aliasName });
+				expect(screen.getByText(SCREEN_TEXT.fieldMosaicNamespace)).toBeInTheDocument();
+				expect(aliasLink).toHaveAttribute('href', `/namespaces/${aliasName}`);
+			});
+
+			it('renders every complete alias with its matching namespace detail route', async () => {
+				// Arrange:
+				const mosaicInfo = {
+					...customMosaic,
+					namespaceName: '',
+					rootNamespaceName: null,
+					aliasNames: ['foo.bar', 'foo.bar.baz']
+				};
+
+				// Act:
+				renderPage({ mosaicInfo });
+				await act(async () => {});
+
+				// Assert:
+				expect(screen.getByRole('link', { name: 'foo.bar' })).toHaveAttribute('href', '/namespaces/foo.bar');
+				expect(screen.getByRole('link', { name: 'foo.bar.baz' })).toHaveAttribute('href', '/namespaces/foo.bar.baz');
+			});
+		});
+
+		const describeNem = process.env.NEXT_PUBLIC_EXPLORER_VARIANT === 'nem' ? describe : describe.skip;
+		describeNem('section: NEM namespace alias', () => {
+			it('preserves the existing root namespace display and link', async () => {
+				// Arrange:
+				const mosaicInfo = { ...customMosaic };
+
+				// Act:
+				renderPage({ mosaicInfo });
+				await act(async () => {});
+
+				// Assert:
+				const namespaceLink = screen.getByRole('link', { name: 'testnamespace1' });
+				expect(screen.getByText(SCREEN_TEXT.fieldMosaicNamespace)).toBeInTheDocument();
+				expect(namespaceLink).toHaveAttribute('href', '/namespaces/testnamespace1');
+			});
 		});
 
 		describe('section: associated data', () => {
