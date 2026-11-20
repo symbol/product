@@ -21,6 +21,11 @@ export const requiredConfigs = [
 		exportName: 'addressBookWidgetConfig', 
 		typeName: 'AddressBookWidgetConfig' 
 	},
+	{
+		path: 'config/assets-screen-config',
+		exportName: 'assetsScreenConfig',
+		typeName: 'AssetsScreenConfig'
+	},
 	{ 
 		path: 'config/button-config', 
 		exportName: 'buttonConfig', 

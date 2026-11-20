@@ -1,5 +1,4 @@
 import { $t } from '@/app/localization';
-import { FilterType } from '@/app/types/Filter';
 import { isTokenExpired } from '@/app/utils';
 
 /** @typedef {import('@/app/types/Network').ChainName} ChainName */
@@ -8,26 +7,8 @@ import { isTokenExpired } from '@/app/utils';
 /** @typedef {import('@/app/types/Token').Token} Token */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('@/app/types/Network').NetworkProperties} NetworkProperties */
-/** @typedef {import('@/app/types/Filter').FilterItem} FilterItem */
 /** @typedef {import('@/app/types/Filter').FilterValue} FilterValue */
 /** @typedef {import('@/app/screens/assets/types/Assets').AssetSection} AssetSection */
-
-/**
- * Returns the filter configuration for the assets screen.
- * @returns {FilterItem[]} Filter configuration array.
- */
-export const getAssetsFilterConfig = () => [
-	{
-		name: 'expired',
-		title: $t('screen_assets_chip_expired'),
-		type: FilterType.BOOLEAN
-	},
-	{
-		name: 'created',
-		title: $t('screen_assets_chip_created'),
-		type: FilterType.BOOLEAN
-	}
-];
 
 /**
  * Creates an asset section from chain data.

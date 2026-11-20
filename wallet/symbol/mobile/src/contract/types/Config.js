@@ -77,6 +77,12 @@
  */
 
 /**
+ * Assets screen config.
+ * @typedef {object} AssetsScreenConfig
+ * @property {FilterItemConfig[]} filters - Filter config.
+ */
+
+/**
  * Widget config.
  * @typedef {object} HomeWidgetItem
  * @property {string} id - Random unique key.

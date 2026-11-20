@@ -1,3 +1,7 @@
+import { accounts } from './wallet';
+
+const { alice } = accounts;
+
 // Resolved token infos keyed by token id string, as produced by TokenService.fetchTokenInfos.
 // Used by the from-dto mapper to resolve non-native mosaic amounts and divisibility.
 export const tokenInfos = {
@@ -5,6 +9,7 @@ export const tokenInfos = {
 		id: 'test.token',
 		name: 'test.token',
 		divisibility: 2,
+		creator: alice.address,
 		supply: 10000,
 		isSupplyMutable: false,
 		isTransferable: true
@@ -13,8 +18,18 @@ export const tokenInfos = {
 		id: 'makoto.metals.silver',
 		name: 'makoto.metals.silver',
 		divisibility: 2,
+		creator: alice.address,
 		supply: 10000,
 		isSupplyMutable: false,
+		isTransferable: true
+	},
+	'test.mutable': {
+		id: 'test.mutable',
+		name: 'test.mutable',
+		divisibility: 2,
+		creator: alice.address,
+		supply: 15000,
+		isSupplyMutable: true,
 		isTransferable: true
 	}
 };
