@@ -202,7 +202,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 
 	useEffect(() => {
 		harvestedBlockPagination.initialRequest();
-	}, [accountInfo]);
+	}, [address]);
 
 	return (
 		<div className={styles.wrapper}>
