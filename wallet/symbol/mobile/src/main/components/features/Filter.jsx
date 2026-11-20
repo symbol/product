@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 
-const DISABLED_OPACITY = 0.7;
+const DISABLED_OPACITY = 0.5;
 
 /** @typedef {import('@/app/types/Filter').FilterItem} FilterItem */
 /** @typedef {import('@/app/types/Filter').FilterValue} FilterValue */
