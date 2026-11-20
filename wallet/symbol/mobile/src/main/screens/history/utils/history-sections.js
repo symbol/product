@@ -1,7 +1,6 @@
 import { TransactionGroup } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { Colors } from '@/app/styles';
-import { historyScreenConfig } from '@/brand/config/history-screen-config';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 
@@ -12,18 +11,6 @@ export const SectionType = {
 	TRANSACTIONS: 'transactions',
 	RECEIPTS: 'receipts'
 };
-
-/**
- * Returns the filter configuration for the history screen.
- * @returns {object[]} Filter configuration array.
- */
-export const getHistoryFilterConfig = () => historyScreenConfig.filters.map(filter => ({
-	name: filter.name,
-	title: $t(filter.titleKey),
-	type: filter.type,
-	options: filter.options?.map(option => ({ label: $t(option.labelKey), value: option.value })),
-	value: filter.value
-}));
 
 /**
  * Creates a section object for the SectionList.
