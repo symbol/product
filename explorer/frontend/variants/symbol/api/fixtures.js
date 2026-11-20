@@ -123,17 +123,6 @@ export const stubNodes = [
 	{ balance: 0, endpoint: 'http://symbol-node-3.example:7890', finalizedHeight: 4694800, height: 4695083, mainPublicKey: 'CF2105FBDE6724B3826CE70FDD15671F6FA74B6EC040AE051A1B73B68D507D07', name: 'Sym3', nodePublicKey: 'C03C3C381D2ADFE865FF2168D3BDCEE1756F14B0B57611606910514EA0801976', roles: 255, version: '1.0.3.5' }
 ];
 
-export const stubAccountStats = {
-	total: 984546, harvesting: 1875, eligibleForHarvesting: 9093, top10AccountsImportance: 69.1, harvestingAccountsPercentage: 20.62,
-	importanceBreakdown: [
-		[21.07, 'NANEPSBUVE5NLYXCTP52LK3YAOSZUAIVOAD4FGSV'],
-		[23.41, 'NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK'],
-		[0.57, 'NAXB67KOXSIDPNGTOJA35MTNCK4AHB6JE2MJRER7'],
-		[54.95, 'Rest']
-	],
-	harvestingAccountsChart: [[20.62, 'Harvesting'], [79.38, 'Not harvesting']]
-};
-
 export const stubBlockStats = {
 	blockTimeChart: stubBlocks.map((block, index) => [block.height, 20 + (index * 5)]).reverse(),
 	blockFeeChart: stubBlocks.map(block => [block.height, block.totalFee]).reverse(),
