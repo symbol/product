@@ -247,10 +247,12 @@ When `--renew-ca` is set, both CA and node certificates will be regenerated. Oth
 Renews voting keys.
 
 ```
-renew-voting-keys --config CONFIG [--directory DIRECTORY]
+renew-voting-keys --config CONFIG [--directory DIRECTORY] [--compact]
 
   --config CONFIG           path to shoestring configuration file
   --directory DIRECTORY     installation directory (default: $HOME)
+  --compact                 compacts and renumbers active voting key files starting at 1;
+                            this option requires a client restart before the current voting keys expire
 ```
 
 This command will generate a transaction that will need to be sent to the network using `announce-transaction` to update the network state.
