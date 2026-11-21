@@ -1,4 +1,7 @@
-import { transferUnconfirmedTransactionResponse } from '../../../../__fixtures__/api/symbol/transaction-list-unconfirmed';
+import {
+	aggregateBondedUnconfirmedTransactionResponse,
+	transferUnconfirmedTransactionResponse
+} from '../../../../__fixtures__/api/symbol/transaction-list-unconfirmed';
 import { runApiRequestTests, runApiResultTests } from '../../../test-utils/api';
 import config from '@/app/config';
 import { MESSAGE_TYPE, TRANSACTION_GROUP } from '@/app/constants';
@@ -50,6 +53,13 @@ const transferUnconfirmedTransaction = {
 	size: pendingTransfer.size,
 	version: pendingTransfer.version
 };
+const aggregateTransferBody = {
+	type: 'TRANSFER',
+	sender: senderAddress,
+	recipient: recipientAddress,
+	mosaics: [{ id: nativeMosaicId, name: nativeMosaicId, amount: 5 }],
+	message: null
+};
 
 // Tests
 
@@ -81,6 +91,34 @@ describe('variants/symbol/api/transactions', () => {
 					description: 'maps an unconfirmed transfer to the shared transaction shape',
 					config: { params: pendingParams, response: [pendingTransfer] },
 					expected: { result: { data: [transferUnconfirmedTransaction], pageNumber: 1 } }
+				},
+				{
+					description: 'sums unconfirmed aggregate bonded transfers and preserves their value and body order',
+					config: {
+						params: pendingParams,
+						response: [{
+							...aggregateBondedUnconfirmedTransactionResponse,
+							embeddedTransactions: [
+								aggregateBondedUnconfirmedTransactionResponse.embeddedTransactions[0],
+								{
+									...aggregateBondedUnconfirmedTransactionResponse.embeddedTransactions[0],
+									value: pendingTransfer.value
+								}
+							]
+						}]
+					},
+					expected: {
+						result: {
+							data: [expect.objectContaining({
+								type: 'AGGREGATE_BONDED',
+								group: TRANSACTION_GROUP.UNCONFIRMED,
+								amount: 128,
+								value: [...aggregateTransferBody.mosaics, nativeMosaic],
+								body: [aggregateTransferBody, transferUnconfirmedTransaction.body[0]]
+							})],
+							pageNumber: 1
+						}
+					}
 				}
 			];
 
