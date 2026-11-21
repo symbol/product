@@ -24,8 +24,11 @@ PAYLOAD_EXCLUDED_FIELDS = frozenset({
 MESSAGE_TYPE_ID_MAP = {label: type_id for type_id, label in MESSAGE_TYPE_LABELS.items()}
 AGGREGATE_TYPES = (TransactionType.AGGREGATE_COMPLETE, TransactionType.AGGREGATE_BONDED)
 
+TransactionMosaicRecord = namedtuple(
+	'TransactionMosaicRecord', ['mosaic_id', 'amount', 'divisibility', 'alias_name'], defaults=(None, None))
+
 # Records carry display-ready addresses, hex strings, and relative fees.
-# Payload and mosaics are prepared by the source-specific adapter.
+# Source-specific adapters prepare payloads, mosaic metadata, and embedded records.
 TransactionViewRecord = namedtuple('TransactionViewRecord', [
 	'transaction_hash',
 	'aggregate_hash',
@@ -42,7 +45,67 @@ TransactionViewRecord = namedtuple('TransactionViewRecord', [
 	'fee',
 	'height',
 	'timestamp',
-], defaults=(None, 0, None))
+	'embedded_transactions',
+], defaults=(None, 0, None, ()))
+
+
+def create_confirmed_record(transaction, mosaics, native_mosaic_info):  # pylint: disable=too-many-locals
+	"""Normalizes database columns and transaction body."""
+
+	try:
+		(
+			transaction_hash,
+			is_embedded,
+			aggregate_hash,
+			embedded_index,
+			height,
+			transaction_type,
+			signer_address,
+			recipient_address,
+			effective_fee,
+			timestamp,
+			message_type,
+			message_payload,
+			deadline,
+			size,
+			body_map,
+		) = transaction[1:]
+
+		transaction_type = TransactionType(transaction_type)
+		version = body_map['version']
+		signature = None if is_embedded else body_map['signature']
+		payload_map = dict(body_map)
+
+		if transaction_type == TransactionType.TRANSFER:
+			# Dedicated columns and resolved mosaic relations own confirmed transfer display.
+			payload_map.pop('message', None)
+			payload_map.pop('mosaics', None)
+		payload, _ = create_transaction_payload(payload_map, transaction_type)
+
+		if transaction_type == TransactionType.TRANSFER and message_payload is not None:
+			payload.insert(0, {'message': {
+				'type': MESSAGE_TYPE_ID_MAP.get(message_type),
+				'payload': message_payload,
+			}})
+
+		return TransactionViewRecord(
+			transaction_hash=None if is_embedded else bytes(transaction_hash).hex().upper(),
+			aggregate_hash=bytes(aggregate_hash).hex().upper() if is_embedded else None,
+			embedded_index=embedded_index,
+			transaction_type=transaction_type,
+			from_address=str(Address(bytes(signer_address))),
+			to_address=str(Address(bytes(recipient_address))) if recipient_address is not None else None,
+			payload=payload,
+			mosaics=mosaics,
+			deadline=None if is_embedded else deadline,
+			signature=signature.upper() if signature is not None else None,
+			size=None if is_embedded else size,
+			version=version,
+			fee=None if is_embedded else format_amount(effective_fee, native_mosaic_info.divisibility),
+			height=height,
+			timestamp=timestamp)
+	except (KeyError, TypeError, ValueError) as error:
+		raise SymbolDataInvalid('confirmed_transaction', 'invalid persisted transaction') from error
 
 
 def create_unconfirmed_record(item_map, network):
@@ -94,13 +157,24 @@ def create_transaction_payload(transaction_map, transaction_type):
 				'payload': message_payload,
 			}})
 		mosaics = tuple(
-			(normalize_mosaic_id(mosaic_map['id']), int(mosaic_map['amount']))
+			TransactionMosaicRecord(normalize_mosaic_id(mosaic_map['id']), int(mosaic_map['amount']))
 			for mosaic_map in payload_map.pop('mosaics', []))
 
 	if payload_map:
 		payload.append(payload_map)
 
 	return payload, mosaics
+
+
+def resolve_transaction_mosaics(mosaics, mosaic_divisibility_map):
+	"""Attaches current resolved IDs and divisibilities to pending transaction mosaics."""
+
+	resolved_mosaics = []
+	for mosaic in mosaics:
+		resolved_id, divisibility = mosaic_divisibility_map.get(mosaic.mosaic_id, (mosaic.mosaic_id, None))
+		resolved_mosaics.append(TransactionMosaicRecord(resolved_id, mosaic.amount, divisibility))
+
+	return tuple(resolved_mosaics)
 
 
 def _format_payload_addresses(payload_map, transaction_type):
@@ -122,10 +196,8 @@ def _format_payload_addresses(payload_map, transaction_type):
 class SymbolTransactionView:
 	"""Formats normalized Symbol transaction records for the Explorer API."""
 
-	def __init__(self, transaction, mosaic_divisibility_map, embedded_transactions=()):
+	def __init__(self, transaction):
 		self.transaction = transaction
-		self.mosaic_divisibility_map = mosaic_divisibility_map
-		self.embedded_transactions = embedded_transactions
 
 	def to_dict(self):
 		transaction = self.transaction
@@ -136,8 +208,8 @@ class SymbolTransactionView:
 			'toAddress': transaction.to_address,
 			'value': self._value(),
 			'embeddedTransactions': [
-				SymbolTransactionView(embedded_transaction, self.mosaic_divisibility_map).to_dict()
-				for embedded_transaction in self.embedded_transactions
+				SymbolTransactionView(embedded_transaction).to_dict()
+				for embedded_transaction in transaction.embedded_transactions
 			] or None,
 			'fee': transaction.fee,
 			'height': transaction.height,
@@ -151,11 +223,10 @@ class SymbolTransactionView:
 	def _value(self):
 		value = list(self.transaction.payload)
 
-		for mosaic_id, amount in self.transaction.mosaics:
-			resolved_id, divisibility = self.mosaic_divisibility_map.get(mosaic_id, (mosaic_id, None))
+		for mosaic in self.transaction.mosaics:
 			value.append({
-				'id': resolved_id,
-				'name': resolved_id,
-				'amount': amount if divisibility is None else format_amount(amount, divisibility)
+				'id': mosaic.mosaic_id,
+				'name': mosaic.alias_name or mosaic.mosaic_id,
+				'amount': mosaic.amount if mosaic.divisibility is None else format_amount(mosaic.amount, mosaic.divisibility)
 			})
 		return value

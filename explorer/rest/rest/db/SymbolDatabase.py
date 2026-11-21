@@ -14,17 +14,17 @@ from rest.model.symbol.Block import BLOCK_STATISTICS_WINDOW, SymbolBlockView
 from rest.model.symbol.Mosaic import SymbolMosaicView
 from rest.model.symbol.MosaicRestriction import MosaicRestrictionEntryType
 from rest.model.symbol.Namespace import SymbolNamespaceView
-from rest.model.symbol.TransactionView import AGGREGATE_TYPES, SymbolTransactionView, create_unconfirmed_record
+from rest.model.symbol.TransactionView import (
+	AGGREGATE_TYPES,
+	TransactionMosaicRecord,
+	create_confirmed_record,
+	create_unconfirmed_record,
+	resolve_transaction_mosaics
+)
 from rest.model.symbol.validation import SymbolDataInvalid
 
 from .DatabaseConnection import DatabaseConnectionPool
-from .SymbolDatabaseCommon import (
-	SymbolDataUnavailable,
-	TransactionMosaicRecord,
-	bytes_or_none,
-	is_non_public_state,
-	try_get_readable_height
-)
+from .SymbolDatabaseCommon import SymbolDataUnavailable, bytes_or_none, is_non_public_state, try_get_readable_height
 from .SymbolTransactionDetail import SymbolTransactionDetailMixin
 
 BLOCK_COLUMNS = '''
@@ -72,6 +72,26 @@ MOSAIC_COLUMNS = '''
 	revokable,
 	alias_names
 '''
+
+TRANSACTION_COLUMNS = ', '.join(f'transactions.{column}' for column in (
+	'id',
+	'hash',
+	'is_embedded',
+	'aggregate_hash',
+	'embedded_index',
+	'height',
+	'type',
+	'signer_address',
+	'recipient_address',
+	'effective_fee',
+	'timestamp',
+	'message_type',
+	'message_payload',
+	'deadline',
+	'size',
+	'body',
+))
+
 SYMBOL_ID_PATTERN = re.compile(r'[0-9A-Fa-f]{16}', re.ASCII)
 
 SYNC_STATE_COLUMNS = [
@@ -125,8 +145,8 @@ class SortOrder(str, Enum):
 TransactionQuery = namedtuple(
 	'TransactionQuery',
 	['limit', 'offset', 'height', 'transaction_types', 'address', 'signer_public_key', 'recipient_address',
-		'transfer_mosaic_id', 'include_embedded', 'sender_address'],
-	defaults=(10, 0, None, (), None, None, None, None, False, None))
+		'transfer_mosaic_id', 'sender_address'],
+	defaults=(10, 0, None, (), None, None, None, None, None))
 TransactionStatisticsRecord = namedtuple(
 	'TransactionStatisticsRecord', ['total', 'last30_day', 'last24_hours', 'average_per_block'])
 TransactionRangeRecord = namedtuple('TransactionRangeRecord', ['period', 'total_transactions'])
@@ -141,10 +161,6 @@ MosaicRestrictionRecord = namedtuple(
 	'MosaicRestrictionRecord', ['composite_hash', 'mosaic_id', 'entry_type', 'target_address', 'restrictions'])
 NamespaceMosaicGroupRecord = namedtuple('NamespaceMosaicGroupRecord', ['namespace_id', 'namespace_name', 'data'])
 NamespaceDetailRecord = namedtuple('NamespaceDetailRecord', ['namespace', 'sub_namespaces', 'namespace_mosaics'])
-TransactionRecord = namedtuple(
-	'TransactionRecord',
-	['transaction_id', 'hash', 'is_embedded', 'aggregate_hash', 'embedded_index', 'height', 'transaction_type',
-		'signer_address', 'recipient_address', 'effective_fee', 'timestamp', 'message_type', 'message_payload', 'mosaics'])
 BlockStatisticsRecord = namedtuple('BlockStatisticsRecord', ['height', 'timestamp', 'total_fee', 'difficulty'])
 AccountRecord = namedtuple(
 	'AccountRecord',
@@ -356,7 +372,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 
 		return False
 
-	def get_transactions(self, query):
+	def get_transactions(self, query):  # pylint: disable=too-many-locals
 		"""Gets a confirmed transaction page and its display relations from one database snapshot."""
 
 		with self.connection() as connection:
@@ -372,7 +388,30 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 				if not transaction_rows:
 					return []
 
-				return self._fetch_transaction_records(cursor, transaction_rows, sync_state)
+				aggregate_type_ids = tuple(transaction_type.value for transaction_type in AGGREGATE_TYPES)
+				aggregate_hashes = [bytes(row[1]) for row in transaction_rows if not row[2] and row[6] in aggregate_type_ids]
+				embedded_transaction_rows = self._fetch_embedded_transactions(cursor, aggregate_hashes)
+
+				all_rows_by_id_map = {row[0]: row for row in (*transaction_rows, *embedded_transaction_rows)}
+				mosaics_by_transaction_map = self._fetch_transaction_mosaics(
+					cursor, list(all_rows_by_id_map), sync_state)
+				records_by_id_map = {
+					row[0]: create_confirmed_record(row, tuple(mosaics_by_transaction_map[row[0]]), self.native_mosaic_info)
+					for row in all_rows_by_id_map.values()
+				}
+
+				embedded_transactions_by_hash_map = {}
+				for row in embedded_transaction_rows:
+					record = records_by_id_map[row[0]]
+					embedded_transactions_by_hash_map.setdefault(record.aggregate_hash, []).append(record)
+
+				transactions = []
+				for row in transaction_rows:
+					record = records_by_id_map[row[0]]
+					embedded_records = embedded_transactions_by_hash_map.get(record.transaction_hash)
+					transactions.append(record._replace(embedded_transactions=tuple(embedded_records)) if embedded_records else record)
+
+				return transactions
 
 	def get_transaction_statistics(self, cache=None):
 		"""Gets statistics, validating publication before cache lookup in the aggregation snapshot."""
@@ -965,20 +1004,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 		where_clauses, parameters = SymbolDatabase._create_transaction_filter(query)
 		cursor.execute(
 			f'''
-			SELECT
-				transactions.id,
-				transactions.hash,
-				transactions.is_embedded,
-				transactions.aggregate_hash,
-				transactions.embedded_index,
-				transactions.height,
-				transactions.type,
-				transactions.signer_address,
-				transactions.recipient_address,
-				transactions.effective_fee,
-				transactions.timestamp,
-				transactions.message_type,
-				transactions.message_payload
+			SELECT {TRANSACTION_COLUMNS}
 			FROM symbol_transactions AS transactions
 			JOIN symbol_sync_state AS sync_state ON sync_state.id = 1
 			WHERE {' AND '.join(where_clauses)}
@@ -994,8 +1020,24 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 		return transaction_rows
 
 	@staticmethod
+	def _fetch_embedded_transactions(cursor, aggregate_hashes):
+		"""Loads aggregate children after page selection, without page filters."""
+
+		if not aggregate_hashes:
+			return []
+
+		cursor.execute(
+			f'''SELECT {TRANSACTION_COLUMNS}
+			FROM symbol_transactions AS transactions
+			WHERE aggregate_hash = ANY(%s::bytea[]) AND transactions.is_embedded = true
+			ORDER BY aggregate_hash, embedded_index''',
+			(aggregate_hashes,))
+
+		return cursor.fetchall()
+
+	@staticmethod
 	def _create_transaction_filter(query):
-		where_clauses = ['transactions.height <= sync_state.last_synced_height']
+		where_clauses = ['transactions.height <= sync_state.last_synced_height', 'transactions.is_embedded = false']
 		parameters = []
 		filters = [
 			(query.height, 'transactions.height = %s'),
@@ -1020,37 +1062,51 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 			where_clauses.append('transactions.type = ANY(%s::integer[])')
 			parameters.append(list(query.transaction_types))
 
-		if not query.include_embedded:
-			where_clauses.append('transactions.is_embedded = false')
-
 		return where_clauses, parameters
 
-	def _fetch_transaction_records(self, cursor, transaction_rows, sync_state):
-		transaction_ids = [row[0] for row in transaction_rows]
+	def _fetch_transaction_mosaics(self, cursor, transaction_ids, sync_state):
+		"""Loads confirmed transfer amounts and display metadata in one snapshot query."""
+
+		# Native-only reads during repair use configuration without depending on current mosaic state.
+		is_metadata_unsafe = is_non_public_state(sync_state)
+		divisibility_column = 'NULL' if is_metadata_unsafe else 'm.divisibility'
+		alias_name_column = 'NULL' if is_metadata_unsafe else 'm.alias_names->>0'
+		mosaic_join = '' if is_metadata_unsafe else 'LEFT JOIN symbol_mosaics AS m ON m.mosaic_id = tm.mosaic_id'
 		cursor.execute(
-			'''
-			SELECT transaction_id, mosaic_id, amount, role, position
-			FROM symbol_transaction_mosaics
-			WHERE transaction_id = ANY(%s::bigint[])
-				AND role <> 'metadata_target'::symbol_transaction_mosaic_role
-			ORDER BY transaction_id, position
+			f'''
+			SELECT
+				tm.transaction_id,
+				tm.mosaic_id,
+				tm.amount,
+				tm.role,
+				tm.position,
+				{divisibility_column},
+				{alias_name_column}
+			FROM symbol_transaction_mosaics AS tm
+			{mosaic_join}
+			WHERE tm.transaction_id = ANY(%s::bigint[])
+				AND tm.role <> 'metadata_target'::symbol_transaction_mosaic_role
+			ORDER BY tm.transaction_id, tm.position
 			''',
 			(transaction_ids,))
 		transaction_mosaic_rows = cursor.fetchall()
-		if is_non_public_state(sync_state) and self._requires_current_transaction_metadata(transaction_mosaic_rows):
+
+		if is_metadata_unsafe and self._requires_current_transaction_metadata(transaction_mosaic_rows):
 			raise SymbolDataUnavailable(
 				'Symbol transaction data is unavailable: mosaic display depends on current state '
 				'in dirty or repairing state')
 
-		excluded_native_mosaic_id = None
-		if is_non_public_state(sync_state) and self.native_mosaic_info:
-			excluded_native_mosaic_id = self.native_mosaic_info.id
+		mosaics_by_transaction_map = {transaction_id: [] for transaction_id in transaction_ids}
+		for row in transaction_mosaic_rows:
+			if row[3] != 'transfer':
+				continue
+			normalized_id = normalize_mosaic_id(row[1])
+			divisibility = (
+				self.native_mosaic_info.divisibility
+				if self.native_mosaic_info and normalized_id == self.native_mosaic_info.id else row[5])
+			mosaics_by_transaction_map[row[0]].append(TransactionMosaicRecord(normalized_id, row[2], divisibility, row[6]))
 
-		mosaic_state_by_id = SymbolDatabase._fetch_transaction_mosaic_state(
-			cursor, transaction_mosaic_rows, excluded_native_mosaic_id)
-		mosaics_by_transaction = SymbolDatabase._map_transaction_mosaics(
-			transaction_ids, transaction_mosaic_rows, mosaic_state_by_id)
-		return [TransactionRecord(*row, tuple(mosaics_by_transaction[row[0]])) for row in transaction_rows]
+		return mosaics_by_transaction_map
 
 	def _requires_current_transaction_metadata(self, transaction_mosaic_rows):
 		for row in transaction_mosaic_rows:
@@ -1060,36 +1116,6 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 			return True
 
 		return False
-
-	@staticmethod
-	def _fetch_transaction_mosaic_state(cursor, transaction_mosaic_rows, excluded_mosaic_id=None):
-		mosaic_ids = list(dict.fromkeys(
-			row[1] for row in transaction_mosaic_rows
-			if excluded_mosaic_id is None or normalize_mosaic_id(row[1]) != excluded_mosaic_id))
-		if not mosaic_ids:
-			return {}
-
-		cursor.execute(
-			'''
-			SELECT mosaic_id, divisibility, alias_names
-			FROM symbol_mosaics
-			WHERE mosaic_id = ANY(%s::varchar[])
-			''',
-			(mosaic_ids,))
-		return {
-			mosaic_id: (divisibility, alias_names)
-			for mosaic_id, divisibility, alias_names in cursor.fetchall()
-		}
-
-	@staticmethod
-	def _map_transaction_mosaics(transaction_ids, transaction_mosaic_rows, mosaic_state_by_id):
-		mosaics_by_transaction = {transaction_id: [] for transaction_id in transaction_ids}
-		for transaction_id, mosaic_id, amount, role, position in transaction_mosaic_rows:
-			divisibility, alias_names = mosaic_state_by_id.get(mosaic_id, (None, None))
-			mosaics_by_transaction[transaction_id].append(TransactionMosaicRecord(
-				mosaic_id, amount, role, position, divisibility, alias_names))
-
-		return mosaics_by_transaction
 
 	def try_get_related_metadata(self, query):
 		"""Reads sync state, exact parent and metadata from one snapshot."""
@@ -1198,7 +1224,6 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 		"""Builds pending transaction views and enriches transfer mosaics in one batch."""
 
 		records = [create_unconfirmed_record(item_map, network) for item_map in transactions]
-
 		embedded_by_hash_map = {}
 		aggregate_hashes = set()
 		mosaic_ids_map = {}
@@ -1209,23 +1234,27 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 			if record.transaction_type in AGGREGATE_TYPES:
 				aggregate_hashes.add(record.transaction_hash)
 
-			for mosaic_id, _ in record.mosaics:
-				mosaic_ids_map[mosaic_id] = None
+			for mosaic in record.mosaics:
+				mosaic_ids_map[mosaic.mosaic_id] = None
 
 		mosaic_divisibility_map = self.get_mosaic_divisibility(list(mosaic_ids_map), self.native_mosaic_info)
 
-		views = []
+		transactions = []
 		for record in records:
 			if record.aggregate_hash in aggregate_hashes:
 				continue
 
+			record = record._replace(mosaics=resolve_transaction_mosaics(record.mosaics, mosaic_divisibility_map))
 			embedded_records = ()
 			if record.transaction_type in AGGREGATE_TYPES:
-				embedded_records = sorted(embedded_by_hash_map.get(record.transaction_hash, []), key=lambda child: child.embedded_index)
+				embedded_records = tuple(
+					embedded._replace(mosaics=resolve_transaction_mosaics(embedded.mosaics, mosaic_divisibility_map))
+					for embedded in sorted(
+						embedded_by_hash_map.get(record.transaction_hash, ()), key=lambda embedded: embedded.embedded_index))
 
-			views.append(SymbolTransactionView(record, mosaic_divisibility_map, embedded_records))
+			transactions.append(record._replace(embedded_transactions=embedded_records))
 
-		return views
+		return transactions
 
 	def get_mosaic_divisibility(self, mosaic_ids, native_mosaic_info=None):
 		"""Maps requested IDs to resolved IDs and divisibilities, querying only mosaics without configured metadata."""
@@ -1233,6 +1262,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 		divisibility_map = {native_mosaic_info.id: native_mosaic_info.divisibility} if native_mosaic_info is not None else {}
 		resolved_ids_map = {}
 		mosaic_ids_to_resolve = []
+
 		for mosaic_id in mosaic_ids:
 			upper_id = mosaic_id.upper()
 			if upper_id in divisibility_map:
