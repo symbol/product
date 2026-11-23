@@ -2227,6 +2227,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'symbol_accounts',
 			'symbol_alias_names',
 			'symbol_blocks',
+			'symbol_fork_recovery',
 			'symbol_hash_locks',
 			'symbol_metadata',
 			'symbol_mosaic_restrictions',
@@ -3288,6 +3289,139 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		self.assertEqual('unhealthy', database.get_account_refresh_state()['status'])
+
+	def test_get_maximum_finalized_sync_height_uses_verified_height_without_sync_state_table(self):
+		# Arrange:
+		database = self._create_database()
+		database.initialize_fork_recovery()
+		block_hash = b'hash 1'
+		database.upsert_blocks([_create_block(1, block_hash, previous_hash=bytes(32))])
+		with database.connection:
+			with database.connection.cursor() as cursor:
+				cursor.execute('UPDATE symbol_fork_recovery SET verified_height = 1, verified_hash = %s WHERE id = 1', (block_hash,))
+				cursor.execute('DROP TABLE symbol_sync_state')
+
+		expected_recovery = database.try_get_fork_recovery_state()
+
+		# Act:
+		maximum_finalized_height = database.get_maximum_finalized_sync_height()
+
+		# Assert:
+		self.assertEqual(1, maximum_finalized_height)
+		self.assertEqual(expected_recovery, database.try_get_fork_recovery_state())
+		with database.connection.cursor() as cursor:
+			cursor.execute("SELECT to_regclass('symbol_sync_state')")
+			self.assertEqual((None,), cursor.fetchone())
+
+	def test_get_maximum_finalized_sync_height_uses_published_height_without_recovery_table(self):
+		# Arrange:
+		database = self._create_database()
+		expected_sync_state = _create_sync_state(finalized_height=8)
+		database.upsert_sync_state(expected_sync_state)
+		with database.connection:
+			with database.connection.cursor() as cursor:
+				cursor.execute('DROP TABLE symbol_fork_recovery')
+
+		# Act:
+		maximum_finalized_height = database.get_maximum_finalized_sync_height()
+
+		# Assert:
+		self.assertEqual(8, maximum_finalized_height)
+		self.assertEqual(expected_sync_state, fetch_normalized_sync_state(database))
+		with database.connection.cursor() as cursor:
+			cursor.execute("SELECT to_regclass('symbol_fork_recovery')")
+			self.assertEqual((None,), cursor.fetchone())
+
+	def test_initialize_fork_recovery_captures_legacy_height_above_a_gap(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1, previous_hash=bytes(32)), _create_block(5)])
+
+		# Act:
+		database.initialize_fork_recovery()
+
+		# Assert:
+		recovery = database.try_get_fork_recovery_state()
+		self.assertEqual((1, True, 5), (recovery['legacy_tip'], recovery['legacy_lock_history'], recovery['legacy_history_height']))
+
+	def test_initialize_fork_recovery_captures_legacy_hash_lock_update_above_the_block_tip(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1, previous_hash=bytes(32))])
+		database.upsert_hash_lock(_create_hash_lock_row(observed_height=6, end_height=100))
+
+		# Act:
+		database.initialize_fork_recovery()
+
+		# Assert:
+		self.assertEqual(6, database.try_get_fork_recovery_state()['legacy_history_height'])
+
+	def test_initialize_fork_recovery_captures_legacy_secret_lock_update_without_blocks(self):
+		# Arrange:
+		database = self._create_database()
+		database.replace_secret_locks(
+			create_secret_lock_search_key(LOCK_OWNER, LOCK_RECIPIENT, LOCK_SECRET, 'hash160'),
+			[_create_secret_lock_row(observed_height=8, end_height=100)])
+
+		# Act:
+		database.initialize_fork_recovery()
+
+		# Assert:
+		recovery = database.try_get_fork_recovery_state()
+		self.assertEqual((0, True, 8), (recovery['legacy_tip'], recovery['legacy_lock_history'], recovery['legacy_history_height']))
+
+	def test_initialize_fork_recovery_preserves_the_first_legacy_height_after_new_writes(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1, previous_hash=bytes(32))])
+		database.initialize_fork_recovery()
+
+		# Act:
+		database.upsert_blocks([_create_block(2, previous_hash=b'hash 1')])
+		database.initialize_fork_recovery()
+
+		# Assert:
+		self.assertEqual(1, database.try_get_fork_recovery_state()['legacy_history_height'])
+
+	def test_initialize_fork_recovery_leaves_fresh_database_legacy_height_unset(self):
+		# Arrange:
+		database = self._create_database()
+
+		# Act:
+		database.initialize_fork_recovery()
+
+		# Assert:
+		recovery = database.try_get_fork_recovery_state()
+		self.assertEqual((None, False, None), (recovery['legacy_tip'], recovery['legacy_lock_history'], recovery['legacy_history_height']))
+
+	def test_initialize_fork_recovery_preserves_unknown_cutoff_of_a_previous_migration(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_blocks([_create_block(1, previous_hash=bytes(32)), _create_block(5)])
+		database.initialize_fork_recovery()
+		previous_recovery = database.try_get_fork_recovery_state()
+		with database.connection:
+			with database.connection.cursor() as cursor:
+				cursor.execute('ALTER TABLE symbol_fork_recovery DROP COLUMN legacy_history_height')
+
+		# Act:
+		database.initialize_fork_recovery()
+		database.initialize_fork_recovery()
+
+		# Assert:
+		self.assertEqual({**previous_recovery, 'legacy_history_height': None}, database.try_get_fork_recovery_state())
+
+	def test_initialize_fork_recovery_preserves_legacy_checkpoint_without_height_rows(self):
+		# Arrange:
+		database = self._create_database()
+		database.upsert_sync_state(_create_sync_state())
+
+		# Act:
+		database.initialize_fork_recovery()
+
+		# Assert:
+		recovery = database.try_get_fork_recovery_state()
+		self.assertEqual((0, True, None), (recovery['legacy_tip'], recovery['legacy_lock_history'], recovery['legacy_history_height']))
 
 	def test_create_tables_creates_symbol_sync_state_schema(self):
 		# Arrange:

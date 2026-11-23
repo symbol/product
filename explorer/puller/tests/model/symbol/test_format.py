@@ -1,6 +1,9 @@
+# pylint: disable=invalid-name
+
 from datetime import datetime, timezone
 from unittest import TestCase
 
+import pytest
 from symbolchain.symbol.Network import Network
 
 from puller.model.symbol.format import (
@@ -13,6 +16,9 @@ from puller.model.symbol.format import (
 	is_exact_integer,
 	is_hex_text,
 	label_for_type,
+	parse_decimal_uint64_text,
+	parse_hex_bytes,
+	parse_json_array,
 	str_or_none,
 	timestamp_from_network_value
 )
@@ -132,3 +138,82 @@ class SymbolFormatTest(TestCase):
 			hash_bytes_from_hex({'compositeHash': 'invalid'}, 'compositeHash', 'Symbol test')
 		with self.assertRaisesRegex(ValueError, '^Invalid Symbol test compositeHash$'):
 			hash_bytes_from_hex({'compositeHash': 'AA' * 31}, 'compositeHash', 'Symbol test')
+
+
+@pytest.mark.parametrize('value', [pytest.param([], id='empty'), pytest.param([{'name': 'value'}, None], id='populated')])
+def test_parse_json_array_returns_list(value):
+	# Act:
+	result = parse_json_array(value, 'invalid array')
+
+	# Assert:
+	assert value == result
+
+
+@pytest.mark.parametrize('value', [pytest.param({}, id='object'), pytest.param((), id='tuple')])
+def test_parse_json_array_rejects_other_types(value):
+	# Act:
+	with pytest.raises(ValueError) as raised:
+		parse_json_array(value, 'invalid array')
+
+	# Assert:
+	assert 'invalid array' == str(raised.value)
+
+
+@pytest.mark.parametrize(('value', 'expected'), [
+	pytest.param('0', 0, id='zero'),
+	pytest.param('00000000000000000001', 1, id='leading-zeroes'),
+	pytest.param('18446744073709551615', (1 << 64) - 1, id='uint64-max')
+])
+def test_parse_decimal_uint64_text_parses_ascii_digits(value, expected):
+	# Act:
+	result = parse_decimal_uint64_text(value, 'invalid decimal text')
+
+	# Assert:
+	assert expected == result
+
+
+@pytest.mark.parametrize('value', [
+	pytest.param('１２', id='non-ascii-digits'),
+	pytest.param('', id='empty'),
+	pytest.param('0' * 21, id='too-many-digits'),
+	pytest.param(1, id='json-number'),
+	pytest.param('1_000', id='digit-separator'),
+	pytest.param('18446744073709551616', id='above-uint64-max')
+])
+def test_parse_decimal_uint64_text_rejects_bad_text(value):
+	# Act:
+	with pytest.raises(ValueError) as raised:
+		parse_decimal_uint64_text(value, 'invalid decimal text')
+
+	# Assert:
+	assert 'invalid decimal text' == str(raised.value)
+
+
+@pytest.mark.parametrize(('value', 'size', 'expected'), [
+	pytest.param('aB02', 2, b'\xAB\x02', id='fixed-size'),
+	pytest.param('aB02', None, b'\xAB\x02', id='variable-size'),
+	pytest.param('', None, b'', id='empty-variable-size')
+])
+def test_parse_hex_bytes_decodes_text(value, size, expected):
+	# Act:
+	result = parse_hex_bytes(value, 'invalid hex text', size=size)
+
+	# Assert:
+	assert expected == result
+
+
+@pytest.mark.parametrize(('value', 'size'), [
+	pytest.param('AB', 2, id='short'),
+	pytest.param('AB02CD', 2, id='long'),
+	pytest.param('12G3', 2, id='non-hex-character'),
+	pytest.param('', 2, id='empty-fixed-size'),
+	pytest.param('ABC', None, id='odd-length-variable-size'),
+	pytest.param(1234, None, id='json-number')
+])
+def test_parse_hex_bytes_rejects_bad_hex(value, size):
+	# Act:
+	with pytest.raises(ValueError) as raised:
+		parse_hex_bytes(value, 'invalid hex text', size=size)
+
+	# Assert:
+	assert 'invalid hex text' == str(raised.value)

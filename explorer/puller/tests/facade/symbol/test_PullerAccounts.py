@@ -17,6 +17,7 @@ from puller.facade.SymbolPuller import ACCOUNT_BATCH_FETCH_SIZE
 from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.format import address_from_public_key
+from tests.test.SymbolBlockCommitmentTestUtils import seal_replacement_blocks
 from tests.test.SymbolTestConstants import SIGNER_ADDRESS
 
 from .account_retention_test_utils import AccountRetentionPollingFlagGate
@@ -24,6 +25,7 @@ from .puller_test_utils import (
 	BENEFICIARY_ADDRESS,
 	NATIVE_MOSAIC_ID,
 	RECIPIENT_ADDRESS,
+	ChainInfoOverrideConnector,
 	DelegatingSymbolDatabase,
 	FakeConnector,
 	SymbolPullerTestBase,
@@ -33,7 +35,6 @@ from .puller_test_utils import (
 	create_node_transaction,
 	create_resolution_statement,
 	create_symbol_puller,
-	create_sync_state,
 	create_transaction_page,
 	set_symbol_connector,
 	statement_path,
@@ -1303,8 +1304,12 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 	def test_rollback_stales_published_account_generation_and_refresh_publishes_new_generation(self):
 		# Arrange:
 		database = self.puller.symbol_db
-		self._seed_blocks(database, [1, 2, 3], {2: 'D' * 64})
-		database.upsert_sync_state(create_sync_state(last_synced_height=3))
+		orphaned_branch = [
+			create_node_block(1),
+			create_node_block(2, block_hash='D' * 64),
+			create_node_block(3, block_hash='E' * 64, previous_hash='D' * 64)
+		]
+		self._sync_with_connector(FakeConnector(3, {0: orphaned_branch}, finalized_height=1))
 		old_page = [create_account_item(
 			_address_hex(1),
 			'account-generation-old',
@@ -1325,13 +1330,13 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			(old_run_id,))
 		self.assertEqual([(NATIVE_MOSAIC_ID, 20_000 * 10 ** 6)], cursor.fetchall())
 
-		replacement_block = create_node_block(2, block_hash='B' * 64)
-		terminal_block = create_node_block(3, previous_hash='B' * 64)
-		sync_connector = FakeConnector(
+		replacement_block, terminal_block = seal_replacement_blocks([create_node_block(2), create_node_block(3)])
+		sync_connector = ChainInfoOverrideConnector(
 			3,
 			{1: [replacement_block, terminal_block]},
 			block_by_height={1: create_node_block(1), 2: replacement_block, 3: terminal_block},
 			finalized_height=3,
+			finalized_fields={'hash': terminal_block['meta']['hash']},
 			transactions_by_path={transaction_path(2, 3): create_transaction_page([])},
 			statement_pages={statement_path(2, 3): {'data': []}},
 			account_by_address=self._account_by_address_text(BENEFICIARY_ADDRESS))
@@ -1481,7 +1486,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 				asyncio.run(self.puller.sync_block_headers())
 
 		# Act: the next sync obtains the lock but fails because its block page is absent.
-		with self.assertRaises(KeyError):
+		with self.assertRaisesRegex(ValueError, 'Expected Symbol blocks at offset 0 before chain height 1'):
 			asyncio.run(self.puller.sync_block_headers())
 
 		# Assert: the failed facade operation released the session lock.
@@ -1776,6 +1781,7 @@ class SymbolPullerAccountsTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		account_row, mosaic_rows = self._create_current_account_row(inactive_address, importance='100')
 		account_row['is_harvesting_active'] = True
 		self.puller.symbol_db.upsert_account_current_state(account_row, mosaic_rows)
+		self.puller.symbol_db.initialize_fork_recovery()
 		self.puller.symbol_db.upsert_blocks([
 			self._create_block_row(1, inactive_address, datetime.now(timezone.utc) - timedelta(days=8)),
 			self._create_block_row(2, active_address, datetime.now(timezone.utc) - timedelta(days=1))

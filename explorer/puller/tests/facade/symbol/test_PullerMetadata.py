@@ -7,6 +7,7 @@ from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address
 
 from puller.facade.SymbolPuller import METADATA_FETCH_CONCURRENCY
+from tests.test.SymbolBlockCommitmentTestUtils import seal_replacement_blocks
 from tests.test.SymbolMetadataTestUtils import (
 	MOSAIC_ID,
 	NAMESPACE_ID,
@@ -24,6 +25,7 @@ from tests.test.SymbolTestConstants import RECIPIENT_ADDRESS, SIGNER_ADDRESS
 
 from .puller_test_utils import (
 	BoundedMetadataConnector,
+	ChainInfoOverrideConnector,
 	FakeConnector,
 	SymbolPullerTestBase,
 	create_account_item,
@@ -635,12 +637,14 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		expected_metadata_row,
 		expected_path,
 		expected_resolution_paths,
-		expected_body
+		expected_body,
+		*,
+		expected_metadata_requests=1
 	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		# Assert:
 		metadata_paths = [path for path in connector.paths if path.startswith('metadata?')]
 		resolution_paths = [path for path in connector.paths if path.startswith('statements/resolutions/')]
-		self.assertEqual([expected_path], metadata_paths)
+		self.assertEqual([expected_path] * expected_metadata_requests, metadata_paths)
 		self.assertEqual(expected_resolution_paths, resolution_paths)
 		self.assertEqual(transactions_snapshot, connector.transactions_by_path[transaction_path(1, 1)]['data'])
 		self.assertEqual([expected_metadata_row], fetch_metadata_rows(self.puller.symbol_db))
@@ -1102,7 +1106,10 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 	def test_sync_block_headers_converges_metadata_when_restarted_from_existing_blocks(self):
 		# Arrange:
 		connector, _, _, embedded_transaction, transactions, metadata_item = _create_embedded_metadata_fixture(
-			RECIPIENT_ADDRESS, MOSAIC_ID)
+			RECIPIENT_ADDRESS, MOSAIC_ID, connector_class=ChainInfoOverrideConnector)
+		embedded_transaction['transaction']['valueSize'] = 5
+		[block] = seal_replacement_blocks(connector.pages[0], transactions=transactions)
+		connector.finalized_fields['hash'] = block['meta']['hash']
 		expected_path = metadata_path(1, MOSAIC_ID)
 		transactions_snapshot = copy.deepcopy(transactions)
 		embedded_transaction_snapshot = copy.deepcopy(embedded_transaction)
@@ -1116,7 +1123,7 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			value_utf8='hello')
 
 		# Act:
-		self._sync_with_connector(connector)
+		self._sync_until_interrupted_checkpoint(connector)
 		first_state = fetch_metadata_rows(self.puller.symbol_db)
 		self._assert_embedded_metadata_persisted(
 			connector, transactions_snapshot, embedded_transaction_snapshot, expected_metadata_row, expected_path, [],
@@ -1127,12 +1134,10 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 				'targetMosaicId': MOSAIC_ID,
 				'scopedMetadataKey': SCOPED_METADATA_KEY,
 				'valueSizeDelta': 5,
+				'valueSize': 5,
 				'value': '68656C6C6F'
 			})
 		connector.paths.clear()
-		cursor = self.puller.symbol_db.connection.cursor()
-		cursor.execute('DELETE FROM symbol_sync_state')
-		self.puller.symbol_db.connection.commit()
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -1148,8 +1153,9 @@ class SymbolPullerMetadataTest(SymbolPullerTestBase):  # pylint: disable=too-man
 				'targetMosaicId': MOSAIC_ID,
 				'scopedMetadataKey': SCOPED_METADATA_KEY,
 				'valueSizeDelta': 5,
+				'valueSize': 5,
 				'value': '68656C6C6F'
-			})
+			}, expected_metadata_requests=2)
 
 	def test_sync_block_headers_leaves_no_partial_writes_when_metadata_fetch_fails(self):  # pylint: disable=too-many-locals
 		# Arrange:

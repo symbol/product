@@ -1,6 +1,29 @@
+import configparser
 import os
+from io import StringIO
 
 from common.symbol.NodeConfiguration import SymbolNodeConfiguration
+
+REQUIRED_DATABASE_KEYS = ('database', 'user', 'password', 'host', 'port')
+
+
+def read_migration_database_config(config_path):
+	"""Reads one config and requires explicit Symbol migration connection settings."""
+
+	config = configparser.ConfigParser()
+	config.read(config_path)
+	database_config = config['symbol_db']
+	# Preserve normal defaults for optional parameters, while checking mandatory
+	# credentials against the values written in [symbol_db] in the same snapshot.
+	config_snapshot = StringIO()
+	config.write(config_snapshot)
+	explicit_config = configparser.ConfigParser(interpolation=None, default_section='symbol_db')
+	explicit_config.read_string(config_snapshot.getvalue())
+	missing_keys = [key for key in REQUIRED_DATABASE_KEYS if key not in explicit_config.defaults()]
+	if missing_keys:
+		raise ValueError(f'Missing required [symbol_db] connection settings: {", ".join(missing_keys)}')
+
+	return database_config
 
 
 def add_common_arguments(parser):
@@ -37,4 +60,4 @@ async def run_symbol_workflow(symbol_puller_factory, args, operation, environmen
 		**(puller_kwargs or {}))
 
 	async with puller:
-		await operation(puller)
+		return await operation(puller)

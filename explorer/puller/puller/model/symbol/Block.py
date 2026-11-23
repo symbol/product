@@ -44,6 +44,9 @@ def create_block_row(node_block, epoch_adjustment_seconds, network):
 
 	signer_public_key = bytes.fromhex(block['signerPublicKey'])
 	network_timestamp = int(block['timestamp'])
+	receipts_hash = bytes.fromhex(block['receiptsHash'])
+	# Core's Mongo BlockMapper omits the statement count when there is no block statement.
+	statements_count = int(meta.get('statementsCount', 0) if receipts_hash == bytes(32) else meta['statementsCount'])
 
 	return {
 		'height': int(block['height']),
@@ -54,7 +57,7 @@ def create_block_row(node_block, epoch_adjustment_seconds, network):
 		'total_fee': int(meta['totalFee']),
 		'transactions_count': transactions_count,
 		'total_transactions_count': total_transactions_count,
-		'statements_count': int(meta['statementsCount']),
+		'statements_count': statements_count,
 		'difficulty': int(block['difficulty']),
 		'fee_multiplier': block['feeMultiplier'],
 		'block_type': label_for_type(BLOCK_TYPE_LABELS, block['type'], 'block'),
@@ -68,7 +71,7 @@ def create_block_row(node_block, epoch_adjustment_seconds, network):
 		'proof_scalar': bytes.fromhex(block['proofScalar']),
 		'state_hash': bytes.fromhex(block['stateHash']),
 		'transactions_hash': bytes.fromhex(block['transactionsHash']),
-		'receipts_hash': bytes.fromhex(block['receiptsHash']),
+		'receipts_hash': receipts_hash,
 		'state_hash_sub_cache_roots': Json(meta['stateHashSubCacheMerkleRoots']),
 		'voting_eligible_accounts_count': int_or_none(block.get('votingEligibleAccountsCount')),
 		'harvesting_eligible_accounts_count': int_or_none(block.get('harvestingEligibleAccountsCount')),

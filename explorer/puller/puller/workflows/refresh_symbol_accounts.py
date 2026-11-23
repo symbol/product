@@ -15,8 +15,7 @@ async def run_main(args, symbol_puller_factory=SymbolPuller, environment=None):
 	"""Refreshes Symbol account population for parsed command arguments."""
 
 	async def refresh_accounts(puller):
-		await puller.refresh_accounts()
+		return await puller.refresh_accounts()
 
-	await run_symbol_workflow(symbol_puller_factory, args, refresh_accounts, environment)
-
-	log.info('Account refresh completed')
+	if await run_symbol_workflow(symbol_puller_factory, args, refresh_accounts, environment) is not False:
+		log.info('Account refresh completed')

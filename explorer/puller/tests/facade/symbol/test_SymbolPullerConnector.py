@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 import pytest
 from aiohttp import client_exceptions, web
-from symbollightapi.model.Exceptions import HttpException, NodeException
+from symbollightapi.model.Exceptions import CorruptDataException, HttpException, NodeException
 
 from puller.facade.SymbolPullerConnector import SymbolPullerConnector, SymbolPullerConnectorStateError
 
@@ -662,17 +662,22 @@ async def test_does_not_map_payload_error_to_node_exception():
 	assert payload_error is exception_info.value
 
 
-async def test_maps_json_decode_error_to_node_exception():
+@pytest.mark.parametrize(('status', 'expected_exception'), [(200, CorruptDataException), (502, NodeException)])
+@pytest.mark.parametrize('json_error', [
+	json.JSONDecodeError('invalid', '', 0),
+	UnicodeDecodeError('utf-8', b'\xff', 0, 1, 'invalid byte')
+])
+async def test_distinguishes_corrupt_success_payloads_from_unavailable_http_responses(status, expected_exception, json_error):
 	# Arrange:
-	json_error = json.JSONDecodeError('invalid', '', 0)
-	connector, _, _, _ = _create_connector([FakeResponse(json_error=json_error)])
+	connector, _, _, _ = _create_connector([FakeResponse(json_error=json_error, status=status)])
 
 	async with connector:
 		# Act:
-		with pytest.raises(NodeException) as exception_info:
+		with pytest.raises(expected_exception) as exception_info:
 			await connector.get('invalid-json')
 
 	# Assert:
+	assert type(exception_info.value) is expected_exception  # pylint: disable=unidiomatic-typecheck
 	assert json_error is exception_info.value.__cause__
 
 
@@ -689,6 +694,16 @@ async def test_maps_http_500_to_http_exception_with_full_error():
 			'HTTP request failed with code 500\nFailure\nfailed')
 
 
+@pytest.mark.parametrize('response_json', [None, ['code'], 'message', 123, True])
+async def test_maps_http_503_non_object_json_to_http_exception(response_json):
+	# Arrange:
+	connector, _, _, _ = _create_connector([FakeResponse(response_json, status=503)])
+
+	async with connector:
+		# Act:
+		await _assert_http_exception(connector, 'unavailable', 503, 'HTTP request failed with code 503')
+
+
 async def test_maps_404_to_http_exception_by_default():
 	# Arrange:
 	connector, _, _, _ = _create_connector([FakeResponse({'code': 'ResourceNotFound', 'message': 'missing'}, status=404)])
@@ -702,9 +717,9 @@ async def test_maps_404_to_http_exception_by_default():
 			'HTTP request failed with code 404\nResourceNotFound\nmissing')
 
 
-async def test_returns_resource_not_found_json_when_not_found_is_allowed():
+@pytest.mark.parametrize('response_json', [{'code': 'ResourceNotFound', 'message': 'missing'}, None, ['message']])
+async def test_returns_resource_not_found_json_when_not_found_is_allowed(response_json):
 	# Arrange:
-	response_json = {'code': 'ResourceNotFound', 'message': 'missing'}
 	connector, _, _, _ = _create_connector([FakeResponse(response_json, status=404)])
 
 	async with connector:

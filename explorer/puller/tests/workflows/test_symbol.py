@@ -27,6 +27,7 @@ def test_help_lists_symbol_commands(capsys):
 	output = capsys.readouterr().out
 	assert 'sync-block' in output
 	assert 'refresh-accounts' in output
+	assert 'recover-fork' in output
 
 
 def test_no_command_prints_help(capsys):
@@ -40,6 +41,7 @@ def test_no_command_prints_help(capsys):
 	assert 'Run a Symbol puller workflow.' in output
 	assert 'sync-block' in output
 	assert 'refresh-accounts' in output
+	assert 'recover-fork' in output
 
 
 def test_unknown_command_is_rejected(capsys):
@@ -105,8 +107,8 @@ def test_sync_block_rejects_non_positive_limit(option, capsys):
 
 @pytest.mark.parametrize(
 	('command', 'expected_text'),
-	[('sync-block', '--max-height'), ('refresh-accounts', '--symbol-node')],
-	ids=['sync-block', 'refresh-accounts'])
+	[('sync-block', '--max-height'), ('refresh-accounts', '--symbol-node'), ('recover-fork', '--candidate-hash')],
+	ids=['sync-block', 'refresh-accounts', 'recover-fork'])
 def test_command_help(command, expected_text, capsys):
 	# Act + Assert:
 	with pytest.raises(SystemExit) as exception:
@@ -135,6 +137,21 @@ def test_command_help_describes_single_writer_contract(command, capsys):
 	assert 'database lock rejects overlapping' in normalized_output
 	assert 'once connected to the database, overlaps fail immediately with a nonzero exit' in normalized_output
 	assert 'scheduling and retries are external' in normalized_output
+
+
+@pytest.mark.parametrize('missing_option', ['--candidate-height', '--candidate-hash'])
+def test_recover_fork_requires_a_height_and_hash(missing_option, capsys):
+	# Arrange:
+	arguments = _base_arguments('recover-fork') + ['--candidate-height', '7', '--candidate-hash', '00' * 32]
+	missing_index = arguments.index(missing_option)
+	del arguments[missing_index:missing_index + 2]
+
+	# Act and assert:
+	with pytest.raises(SystemExit) as exception:
+		asyncio.run(main(arguments))
+
+	assert 2 == exception.value.code
+	assert missing_option in capsys.readouterr().err
 
 
 def test_sync_block_dispatches_with_forwarded_limits_and_config():

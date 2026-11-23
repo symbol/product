@@ -11,6 +11,7 @@ from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Lock import create_hash_lock_row, create_secret_lock_row, create_secret_lock_search_key
 from puller.model.symbol.MosaicRestriction import MosaicRestrictionEntryType, MosaicRestrictionKey, create_mosaic_restriction_row
 from puller.model.symbol.Receipt import create_receipt_rows
+from tests.test.SymbolBlockCommitmentTestUtils import seal_replacement_blocks
 from tests.test.SymbolLockTestUtils import create_secret_lock_item
 from tests.test.SymbolMetadataTestUtils import create_expected_metadata_row, create_metadata_item
 from tests.test.SymbolMosaicTestUtils import create_expected_mosaic_row, create_mosaic_item
@@ -19,6 +20,7 @@ from tests.test.SymbolTestConstants import RECIPIENT_ADDRESS, SIGNER_ADDRESS
 
 from ...test.SymbolTransactionTestUtils import create_transaction_entry
 from .puller_test_utils import (
+	ChainInfoOverrideConnector,
 	FakeConnector,
 	SymbolPullerTestBase,
 	create_account_item,
@@ -344,7 +346,7 @@ class PullerMosaicRestrictionsIntegrationTest(SymbolPullerTestBase):
 			'data': [_global_response_item('6B66D046670F91BE')]}, GLOBAL_RESTRICTION_PATH, 'does not match')
 
 
-class RestrictionResponseConnector(FakeConnector):
+class RestrictionResponseConnector(ChainInfoOverrideConnector):
 	def __init__(self, *args, restriction_responses=None, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.block_by_height = {1: create_node_block(1), **self.block_by_height}
@@ -406,12 +408,12 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 			overrides['referenceMosaicId'] = reference_mosaic_id
 		return create_node_transaction(height, transaction_hash='A' * 64, transaction_id='restriction-transaction', **overrides)
 
-	def _create_normal_connector(self, response):
+	def _create_normal_connector(self, response, height=1):
 		path = _restriction_path(0, RECIPIENT_ADDRESS)
 		return RestrictionResponseConnector(
-			1,
-			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
-			transactions_by_path={transaction_path(1, 1): create_transaction_page([self._restriction_transaction()])},
+			height,
+			{height - 1: [create_node_block(height, transactions_count=1, total_transactions_count=1)]},
+			transactions_by_path={transaction_path(height, height): create_transaction_page([self._restriction_transaction(height)])},
 			restriction_responses={path: response})
 
 	@staticmethod
@@ -441,7 +443,7 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 
 	def _seed_complete_batch_state(self):
 		database = self.puller.symbol_db
-		self._seed_blocks(database, [1], {1: 'FF' * 32})
+		self._sync_with_connector(FakeConnector(1, {0: [create_node_block(1)]}, finalized_height=1))
 		database.upsert_transactions_for_height(1, [create_transaction_entry(
 			1,
 			key='existing-transaction',
@@ -504,14 +506,6 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 		database.replace_mosaic_restrictions(
 			restriction_key,
 			[create_mosaic_restriction_row(self._restriction_response()['data'][0], 1)])
-		database.upsert_sync_state(create_sync_state(
-			chain_height=0,
-			finalized_height=0,
-			finalized_hash=b'',
-			finalized_epoch=0,
-			finalized_point=0,
-			last_synced_height=0,
-			last_synced_block_hash=b''))
 
 	def _assert_sync_failure_has_no_write_state(self, connector, exception_type, expected_error):
 		# Arrange:
@@ -559,7 +553,7 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 		self._seed_complete_batch_state()
 		before_state = self._fetch_complete_batch_state()
 		before_sync_state = database.get_sync_state()
-		connector = self._create_normal_connector(RuntimeError('restriction fetch failed'))
+		connector = self._create_normal_connector(RuntimeError('restriction fetch failed'), height=2)
 
 		# Act + Assert:
 		with self.assertRaisesRegex(RuntimeError, 'restriction fetch failed'):
@@ -568,6 +562,7 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 		# Assert:
 		self.assertEqual(before_state, self._fetch_complete_batch_state())
 		self.assertEqual(before_sync_state, database.get_sync_state())
+		self.assertEqual([_restriction_path(0, RECIPIENT_ADDRESS)], _restriction_paths(connector))
 
 	def test_sync_block_headers_restriction_resource_not_found_does_not_delete_existing_row(self):
 		# Arrange:
@@ -588,13 +583,20 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 
 	def test_sync_block_headers_restriction_state_converges_when_restarted(self):
 		# Arrange:
-		connector = self._create_normal_connector(self._restriction_response())
-		self._sync_with_connector(connector)
+		transaction = self._restriction_transaction()
+		fields = transaction['transaction']
+		fields.pop('recipientAddress')
+		fields.pop('mosaics')
+		fields.update(restrictionKey='0000000000000001', previousRestrictionValue='0', newRestrictionValue='2')
+		blocks = seal_replacement_blocks([create_node_block(1)], transactions=[transaction])
+		connector = RestrictionResponseConnector(
+			1, {0: blocks}, block_by_height={1: blocks[0]}, finalized_fields={'hash': blocks[0]['meta']['hash']},
+			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
+			restriction_responses={_restriction_path(0, RECIPIENT_ADDRESS): self._restriction_response()})
+		self._sync_until_interrupted_checkpoint(connector)
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute('SELECT composite_hash, updated_at_height FROM symbol_mosaic_restrictions')
 		first_state = cursor.fetchall()
-		cursor.execute('DELETE FROM symbol_sync_state')
-		self.puller.symbol_db.connection.commit()
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -625,6 +627,15 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 		self.assertEqual([(MOSAIC_ID, 0)], cursor.fetchall())
 		self.assertEqual([expected_path], _restriction_paths(normal_connector))
 
+	@staticmethod
+	def _create_restriction_rollback_connector(restriction_responses):
+		transactions = [create_node_transaction(2, type=TransactionType.TRANSFER.value)]
+		blocks = seal_replacement_blocks([create_node_block(2), create_node_block(3)], transactions=transactions)
+		return RestrictionResponseConnector(
+			3, {1: blocks}, block_by_height={2: blocks[0]},
+			transactions_by_path={transaction_path(2, 3): create_transaction_page(transactions)},
+			restriction_responses=restriction_responses)
+
 	def test_rollback_uses_persisted_resolved_child_relations_for_address_restriction_aliases(self):
 		# Arrange: persist the transaction and resolved child relations on the branch that will become orphaned.
 		normal_connector, expected_path = self._create_address_restriction_alias_connector({
@@ -638,19 +649,9 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 
 		# _repair_from_height reads the orphaned branch's resolved child relations before
 		# repair_rollback_from_height performs destructive database updates.
-		canonical_block_hash = '22' * 32
-		rollback_connector = RestrictionResponseConnector(
-			3,
-			{1: [
-				create_node_block(2, block_hash=canonical_block_hash, transactions_count=1, total_transactions_count=1),
-				create_node_block(3, previous_hash=canonical_block_hash)
-			]},
-			block_by_height={2: create_node_block(2, block_hash=canonical_block_hash)},
-			transactions_by_path={transaction_path(2, 3): create_transaction_page([
-				create_node_transaction(2, type=TransactionType.TRANSFER.value)
-			])},
-			restriction_responses={expected_path: self._restriction_response(
-				0, RECIPIENT_ADDRESS, composite_hash='CC' * 32, mosaic_id=MOSAIC_ID)})
+		rollback_connector = self._create_restriction_rollback_connector({
+			expected_path: self._restriction_response(0, RECIPIENT_ADDRESS, composite_hash='CC' * 32, mosaic_id=MOSAIC_ID)
+		})
 
 		# Act:
 		self._sync_with_connector(rollback_connector)
@@ -675,7 +676,7 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 		sync_state = self.puller.symbol_db.get_sync_state()
 		self.assertEqual('healthy', sync_state['status'])
 		self.assertEqual(3, sync_state['last_synced_height'])
-		self.assertEqual(bytes.fromhex(f'{3:064X}'), bytes(sync_state['last_synced_block_hash']))
+		self.assertEqual(bytes.fromhex(rollback_connector.pages[1][-1]['meta']['hash']), bytes(sync_state['last_synced_block_hash']))
 
 	def test_sync_block_headers_uses_only_global_primary_restriction_mosaic_when_both_aliases_resolve(self):
 		# Arrange:
@@ -814,14 +815,9 @@ class PullerMosaicRestrictionsSyncIntegrationTest(SymbolPullerTestBase):
 				mosaic_rows=[{'mosaic_id': MOSAIC_ID, 'amount': 0, 'role': 'restriction', 'position': 0}]
 			)])
 		response_path = _restriction_path(1)
-		connector = RestrictionResponseConnector(
-			3,
-			{1: [create_node_block(2, transactions_count=1, total_transactions_count=1), create_node_block(3)]},
-			block_by_height={2: create_node_block(2)},
-			transactions_by_path={transaction_path(2, 3): create_transaction_page([
-				create_node_transaction(2, type=TransactionType.TRANSFER.value)
-			])},
-			restriction_responses={response_path: self._restriction_response(1, None, 'CC' * 32)})
+		connector = self._create_restriction_rollback_connector({
+			response_path: self._restriction_response(1, None, 'CC' * 32)
+		})
 		return connector, response_path
 
 	def test_rollback_restores_restriction_from_transaction_derived_key_without_current_row(self):

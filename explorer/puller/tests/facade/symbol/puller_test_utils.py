@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import asyncio
 import re
 import tempfile
@@ -69,6 +70,13 @@ class DelegatingSymbolDatabase:
 		return getattr(self.database, name)
 
 
+class InterruptedCheckpointDatabase(DelegatingSymbolDatabase):
+	"""Leaves all batch writes durable while failing their first checkpoint."""
+
+	def checkpoint_sync_state(self, sync_state):  # pylint: disable=unused-argument,no-self-use
+		raise RuntimeError('batch checkpoint interrupted')
+
+
 def create_db_config(config_dir, db_config=None, include_symbol_db=True):
 	db_config = db_config or DatabaseConfiguration(
 		'symbol',
@@ -110,7 +118,8 @@ def create_symbol_puller(  # pylint: disable=too-many-arguments,too-many-positio
 	retention_time_source=None,
 	retention_time_budget_seconds=None,
 	cleanup_logger=None,
-	retention_logger=None
+	retention_logger=None,
+	reconciliation_budget_factory=None
 ):
 	node_config = SymbolNodeConfiguration.from_url(
 		node_url,
@@ -131,6 +140,10 @@ def create_symbol_puller(  # pylint: disable=too-many-arguments,too-many-positio
 		puller_kwargs['cleanup_logger'] = cleanup_logger
 	if retention_logger is not None:
 		puller_kwargs['retention_logger'] = retention_logger
+
+	if reconciliation_budget_factory is not None:
+		puller_kwargs['reconciliation_budget_factory'] = reconciliation_budget_factory
+
 	if connector is not None:
 		puller_kwargs['connector_factory'] = lambda _endpoint, _timeout_seconds, _connection_limit: connector
 
@@ -452,7 +465,8 @@ def create_network_properties(epoch_adjustment='100s', voting_set_grouping='10')
 		'network': {'epochAdjustment': epoch_adjustment},
 		'chain': {
 			'currencyMosaicId': "0x72C0'212E'67A0'8BCE",
-			'votingSetGrouping': voting_set_grouping
+			'votingSetGrouping': voting_set_grouping,
+			'enableVerifiableReceipts': 'false'
 		}
 	}
 
@@ -562,7 +576,7 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 		if url_path.startswith('blocks?pageSize=100&offset='):
 			offset = int(url_path.split('offset=')[1].split('&')[0])
 			return {
-				'data': self.pages[offset],
+				'data': self._get_blocks_at_offset(offset),
 				'pagination': {
 					'pageSize': 100,
 					'offset': offset
@@ -661,6 +675,33 @@ class FakeConnector:  # pylint: disable=too-many-instance-attributes
 			return items
 
 		raise KeyError(url_path)
+
+	def _get_blocks_at_offset(self, offset):
+		if offset in self.pages:
+			page = self.pages[offset]
+			if isinstance(page, Exception):
+				raise page
+
+			return page
+
+		available = {
+			int(block['block']['height']): block
+			for blocks in self.pages.values() if isinstance(blocks, list)
+			for block in blocks if isinstance(block, dict) and 'block' in block
+		}
+		available.update(self.block_by_height)
+		page = []
+		for height in range(offset + 1, min(self.chain_height, offset + MAX_PAGE_SIZE) + 1):
+			if height not in available:
+				break
+
+			block = available[height]
+			if isinstance(block, Exception):
+				raise block
+
+			page.append(block)
+
+		return page
 
 	def _get_mosaic_response(self, mosaic_id):
 		response = self.mosaics_by_id[mosaic_id]
@@ -936,6 +977,15 @@ class SymbolPullerTestBase(TestCase):
 			for height in heights
 		]
 		database.upsert_blocks(rows)
+
+	def _sync_until_interrupted_checkpoint(self, connector):
+		database = self.puller.symbol_db
+		self.puller.symbol_db = InterruptedCheckpointDatabase(database)
+		try:
+			with self.assertRaisesRegex(RuntimeError, 'batch checkpoint interrupted'):
+				self._sync_with_connector(connector)
+		finally:
+			self.puller.symbol_db = database
 
 	def _sync_with_connector(self, connector, max_height=None):
 		# Arrange:

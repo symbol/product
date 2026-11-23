@@ -1,11 +1,11 @@
 """Explicitly upgrade existing Symbol account refresh tables."""
 import argparse
-import configparser
 from contextlib import closing
-from io import StringIO
 
 import psycopg2
 from psycopg2 import sql
+
+from puller.workflows.symbol_workflow_utils import read_migration_database_config
 
 # Stop all Puller jobs before upgrading; operators own exclusion, and ALTER TABLE can block readers.
 COLUMNS = (
@@ -18,7 +18,6 @@ COLUMNS = (
 	)),
 	('symbol_account_refresh_accounts', (('address_height', 'bigint'),))
 )
-REQUIRED_DATABASE_KEYS = ('database', 'user', 'password', 'host', 'port')
 
 
 def main(argv=None, connection_factory=psycopg2.connect):
@@ -29,17 +28,7 @@ def main(argv=None, connection_factory=psycopg2.connect):
 		'and deploy REST PR #2808. Operators must prevent overlapping Puller runs during migration.'
 	))
 	parser.add_argument('--db-config', required=True, help='INI file containing the symbol_db connection settings')
-	config = configparser.ConfigParser()
-	config.read(parser.parse_args(argv).db_config)
-	database_config = config['symbol_db']
-	# Inspect only keys written in [symbol_db], while preserving normal defaults for optional parameters.
-	config_snapshot = StringIO()
-	config.write(config_snapshot)
-	explicit_config = configparser.ConfigParser(interpolation=None, default_section='symbol_db')
-	explicit_config.read_string(config_snapshot.getvalue())
-	missing_keys = [key for key in REQUIRED_DATABASE_KEYS if key not in explicit_config.defaults()]
-	if missing_keys:
-		raise ValueError(f'Missing required [symbol_db] connection settings: {", ".join(missing_keys)}')
+	database_config = read_migration_database_config(parser.parse_args(argv).db_config)
 
 	# Upgrade both tables atomically, preserving generations and markers without backfilling old heights.
 	with closing(connection_factory(**dict(database_config))) as connection:

@@ -2,7 +2,7 @@ import argparse
 import asyncio
 
 from puller.facade.SymbolPuller import SymbolPuller
-from puller.workflows import refresh_symbol_accounts, sync_symbol_block
+from puller.workflows import recover_symbol_fork, refresh_symbol_accounts, sync_symbol_block
 from puller.workflows.log_utils import configure_logging
 
 COMMANDS = (
@@ -17,6 +17,12 @@ COMMANDS = (
 		'Refresh Symbol accounts. A database lock rejects overlapping sync-block and refresh-accounts runs, including manual runs. '
 		'Once connected to the database, overlaps fail immediately with a nonzero exit; scheduling and retries are external.',
 		refresh_symbol_accounts
+	),
+	(
+		'recover-fork',
+		'Revalidate a retained Symbol block and finalized proof before reopening a terminal fork reconciliation stop. '
+		'Uses the shared database workflow lock and fails during another Symbol workflow.',
+		recover_symbol_fork
 	)
 )
 

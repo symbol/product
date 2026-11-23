@@ -55,6 +55,34 @@ def is_hex_text(value):
 	return all(character in '0123456789abcdefABCDEF' for character in value)
 
 
+def parse_json_array(value, error_message='expected a JSON array'):
+	"""Returns a JSON array or raises ValueError with the caller's diagnostic."""
+	if not isinstance(value, list):
+		raise ValueError(error_message)
+
+	return value
+
+
+def parse_decimal_uint64_text(value, error_message):
+	"""Parses up to 20 ASCII decimal digits as an integer in the uint64 range."""
+	if not isinstance(value, str) or len(value) > 20 or not value.isascii() or not value.isdecimal():
+		raise ValueError(error_message)
+
+	number = int(value)
+	if number >= 1 << 64:
+		raise ValueError(error_message)
+
+	return number
+
+
+def parse_hex_bytes(value, error_message='expected hexadecimal bytes', *, size=None):
+	"""Decodes hexadecimal bytes, enforcing an exact byte count when specified."""
+	if not isinstance(value, str) or len(value) % 2 or (size is not None and len(value) != 2 * size) or not is_hex_text(value):
+		raise ValueError(error_message)
+
+	return bytes.fromhex(value)
+
+
 def str_or_none(value):
 	"""Converts an optional value to a str."""
 	return str(value) if value is not None else None

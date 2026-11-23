@@ -3,12 +3,13 @@ import asyncio
 
 from common.tests.AccountRefreshTestUtils import seed_account_refresh_state
 from psycopg2 import Error as PsycopgError
-from symbolchain.sc import TransactionType
+from symbolchain.sc import ReceiptType, TransactionType
 from symbolchain.symbol.Network import Address
 
 from puller.facade.SymbolPuller import SymbolRollbackError
 from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
+from tests.test.SymbolBlockCommitmentTestUtils import seal_replacement_blocks
 from tests.test.SymbolDatabaseTestUtils import fetch_full_block_state, fetch_normalized_sync_state
 from tests.test.SymbolMetadataTestUtils import create_expected_metadata_row, create_metadata_item, fetch_metadata_rows, metadata_path
 from tests.test.SymbolMosaicTestUtils import (
@@ -35,6 +36,7 @@ from .puller_test_utils import (
 	SymbolPullerTestBase,
 	create_account_item,
 	create_amount_statement_item,
+	create_network_properties,
 	create_node_block,
 	create_node_transaction,
 	create_sync_state,
@@ -117,7 +119,13 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			'mosaic_id': NATIVE_MOSAIC_ID,
 			'amount': 17,
 			'artifact_id': None,
-			'raw_payload': {'amount': '17'}
+			'raw_payload': {
+				'version': 1,
+				'type': ReceiptType.HARVEST_FEE.value,
+				'targetAddress': BENEFICIARY_ADDRESS,
+				'mosaicId': NATIVE_MOSAIC_ID,
+				'amount': '17'
+			}
 		}], 0)
 		account_row, mosaic_rows = create_account_row(
 			create_account_item(BENEFICIARY_ADDRESS), self.puller.symbol_facade.network, 2, NATIVE_MOSAIC_ID, 6)
@@ -126,11 +134,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			'status': 'healthy', 'last_successful_run_id': 'range-read-failure', 'last_completed_height': 3
 		})
 		database.upsert_sync_state(create_sync_state())
-		replacement_block = create_node_block(2)
-		connector = self._create_rollback_connector(
-			3,
-			{1: [replacement_block, create_node_block(3)]},
-			{2: replacement_block})
+		connector = self._create_replacement_connector()
 		set_symbol_connector(self.puller, connector)
 
 		return database, connector
@@ -163,14 +167,16 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			self.assertEqual(before_sync_state['last_synced_height'], after_sync_state['last_synced_height'])
 			self.assertEqual(before_sync_state['last_synced_block_hash'], after_sync_state['last_synced_block_hash'])
 			self.assertEqual(before_sync_state['dirty_state_from_height'], after_sync_state['dirty_state_from_height'])
-			self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+			self.assertEqual(
+				['blocks?pageSize=100&offset=0&orderBy=height'],
+				[path for path in connector.paths if path.startswith('blocks?pageSize=')])
 
 			# Act: the failed cursor has been rolled back, so this is the same PostgreSQL session.
 			asyncio.run(self.puller.sync_block_headers())
 
 			# Assert:
 			self.assertEqual('healthy', database.get_sync_state()['status'])
-			self.assertEqual(bytes.fromhex(f'{2:064X}'), self._fetch_block_hash(database, 2))
+			self.assertEqual(bytes.fromhex(connector.pages[1][0]['meta']['hash']), self._fetch_block_hash(database, 2))
 			self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
 			cursor.execute('SELECT pg_backend_pid()')
 			self.assertEqual(backend_pid, cursor.fetchone()[0])
@@ -194,7 +200,9 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			# Assert:
 			self.assertIs(failing_connection.range_error, exception_context.exception.__cause__)
 			self.assertIsNotNone(failing_connection.status_error)
-			self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+			self.assertEqual(
+				['blocks?pageSize=100&offset=0&orderBy=height'],
+				[path for path in connector.paths if path.startswith('blocks?pageSize=')])
 			original_connection.rollback()
 			self.assertEqual(before_state, self._fetch_complete_batch_state())
 		finally:
@@ -236,8 +244,9 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertEqual(before_sync_state['last_synced_block_hash'], after_sync_state['last_synced_block_hash'])
 		self.assertEqual(before_sync_state['dirty_state_from_height'], after_sync_state['dirty_state_from_height'])
 		self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
-		self.assertEqual(1, connector.paths.count('blocks/5'))
-		self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+		self.assertEqual(
+			['blocks?pageSize=100&offset=0&orderBy=height', 'blocks?pageSize=100&offset=1&orderBy=height'],
+			[path for path in connector.paths if path.startswith('blocks?pageSize=')])
 
 	@staticmethod
 	def _create_rollback_connector(chain_height, pages, *args, **kwargs):
@@ -245,6 +254,21 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		block_by_height = args[0] if args else kwargs.pop('block_by_height', None)
 		block_by_height = {1: create_node_block(1), **(block_by_height or {})}
 		return FakeConnector(chain_height, pages, block_by_height, *args[1:], **kwargs)
+
+	@staticmethod
+	def _create_replacement_connector(*, transactions=(), statements=(), **kwargs):
+		# These cases replace the two blocks after the retained height-1 finalized anchor.
+		blocks = seal_replacement_blocks(
+			[create_node_block(2), create_node_block(3)], transactions=transactions, statements=statements)
+		network_properties = create_network_properties()
+		if statements:
+			network_properties['chain']['enableVerifiableReceipts'] = 'true'
+
+		return FakeConnector(
+			3, {1: blocks}, block_by_height={1: create_node_block(1)},
+			transactions_by_path={transaction_path(2, 3): create_transaction_page(list(transactions))},
+			statement_pages={statement_path(2, 3): {'data': list(statements)}},
+			network_properties=network_properties, **kwargs)
 
 	def _fetch_namespace_rows(self):
 		cursor = self.puller.symbol_db.connection.cursor()
@@ -288,10 +312,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			target_address=bytes.fromhex(RECIPIENT_ADDRESS),
 			body=body,
 			mosaic_rows=mosaic_rows)])
-		connector = self._create_rollback_connector(
-			3,
-			{1: [create_node_block(2), create_node_block(3)]},
-			{2: create_node_block(2)},
+		connector = self._create_replacement_connector(
 			metadata_by_query={metadata_key_path: {'data': [metadata_item]}})
 		set_symbol_connector(self.puller, connector)
 
@@ -323,10 +344,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			create_namespace_item(NAMESPACE_SUB_ID, NAMESPACE_ROOT_ID, NAMESPACE_ROOT_ID),
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'orphaned'},
 			3)
-		connector = self._create_rollback_connector(
-			3,
-			{1: [create_node_block(2), create_node_block(3)]},
-			{2: create_node_block(2)},
+		connector = self._create_replacement_connector(
 			namespace_by_id={
 				NAMESPACE_ROOT_ID: create_namespace_item(),
 				NAMESPACE_SUB_ID: {
@@ -370,10 +388,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			2)
 		original_sync_state = self.puller.symbol_db.get_sync_state()
 		original_namespace_rows = self._fetch_namespace_rows()
-		connector = self._create_rollback_connector(
-			3,
-			{},
-			{2: create_node_block(2)},
+		connector = self._create_replacement_connector(
 			namespace_by_id={
 				NAMESPACE_ROOT_ID: create_namespace_item(),
 				NAMESPACE_SUB_ID: RuntimeError('namespace fetch failed')})
@@ -418,10 +433,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			mosaic_id=survivor_id,
 			supply='999',
 			item_id='000000000000000000000005')
-		connector = self._create_rollback_connector(
-			3,
-			{1: [create_node_block(2), create_node_block(3)]},
-			{2: create_node_block(2)},
+		connector = self._create_replacement_connector(
 			mosaics_by_id={survivor_id: canonical_survivor_item, fork_only_id: None})
 		set_symbol_connector(self.puller, connector)
 
@@ -459,10 +471,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		original_sync_state = self.puller.symbol_db.get_sync_state()
 		original_mosaic_state = fetch_mosaic_state(self.puller.symbol_db)
 		original_namespace_state = self._fetch_namespace_rows()
-		connector = self._create_rollback_connector(
-			3,
-			{},
-			{2: create_node_block(2)},
+		connector = self._create_replacement_connector(
 			namespace_by_id={NAMESPACE_ROOT_ID: create_namespace_item(alias={'type': 1, 'mosaicId': mosaic_id})},
 			namespace_names={NAMESPACE_ROOT_ID: 'root'},
 			mosaics_by_id={mosaic_id: RuntimeError('mosaic fetch failed')})
@@ -522,10 +531,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.puller.symbol_db.upsert_metadata(create_expected_metadata_row(
 			fork_only_item, 3, composite_hash=bytes.fromhex('33' * 32), metadata_type='mosaic',
 			scoped_metadata_key='0000000000000003', target_id=mosaic_id, value_hex='666F726B', value_utf8='fork'))
-		connector = self._create_rollback_connector(
-			3,
-			{1: [create_node_block(2), create_node_block(3)]},
-			{2: create_node_block(2)},
+		connector = self._create_replacement_connector(
 			metadata_by_query={
 				metadata_path(1, mosaic_id, scoped_metadata_key='0000000000000002'): {
 					'data': [canonical_survivor_item]},
@@ -611,10 +617,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertEqual(1, len(original_namespace_state[0]))
 		self.assertEqual(1, len(original_mosaic_state))
 		self.assertEqual(1, len(original_metadata_rows))
-		connector = self._create_rollback_connector(
-			3,
-			{},
-			{2: create_node_block(2)},
+		connector = self._create_replacement_connector(
 			namespace_by_id={NAMESPACE_ROOT_ID: canonical_namespace_item},
 			namespace_names={NAMESPACE_ROOT_ID: 'root'},
 			mosaics_by_id={mosaic_id: canonical_mosaic_item},
@@ -928,10 +931,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			unaffected_item,
 			{'B95F1F8A96159516': 'unaffected'},
 			1)
-		connector = self._create_rollback_connector(
-			3,
-			{1: [create_node_block(2), create_node_block(3)]},
-			{2: create_node_block(2)},
+		connector = self._create_replacement_connector(
 			namespace_by_id={
 				NAMESPACE_ROOT_ID: canonical_root_item,
 				NAMESPACE_SUB_ID: canonical_child_item,
@@ -994,10 +994,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			{NAMESPACE_ROOT_ID: 'root', NAMESPACE_SUB_ID: 'child', NAMESPACE_SUB_SUB_ID: 'grandchild'},
 			2)
 		# The root remains on the canonical node; both known descendants explicitly return ResourceNotFound.
-		connector = self._create_rollback_connector(
-			3,
-			{1: [create_node_block(2), create_node_block(3)]},
-			{2: create_node_block(2)},
+		connector = self._create_replacement_connector(
 			namespace_by_id={
 				NAMESPACE_ROOT_ID: create_namespace_item(),
 				NAMESPACE_SUB_ID: {
@@ -1068,20 +1065,12 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_sync_block_headers_repairs_shallow_unfinalized_rollback(self):
 		# Arrange:
-		connector = self._create_rollback_connector(
-			3,
-			{1: [create_node_block(2), create_node_block(3)]},
-			{2: create_node_block(2)},
-			mosaics_by_id={NATIVE_MOSAIC_ID: create_mosaic_item(NATIVE_MOSAIC_ID)},
-			statement_pages={
-				statement_path(2, 3): {
-					'data': [
-						create_amount_statement_item(2, 222),
-						create_amount_statement_item(3, 333)
-					]
-				}
-			}
-		)
+		statements = [create_amount_statement_item(2, 222), create_amount_statement_item(3, 333)]
+		for item in statements:
+			item['statement']['source']['primaryId'] = 0
+
+		connector = self._create_replacement_connector(
+			statements=statements, mosaics_by_id={NATIVE_MOSAIC_ID: create_mosaic_item(NATIVE_MOSAIC_ID)})
 		self._seed_blocks(
 			self.puller.symbol_db,
 			[1, 2, 3],
@@ -1102,7 +1091,12 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 			'mosaic_id': '72C0212E67A08BCE',
 			'amount': 999,
 			'artifact_id': None,
-			'raw_payload': {'amount': '999'}
+			'raw_payload': {
+				'version': 1,
+				'type': ReceiptType.INFLATION.value,
+				'mosaicId': NATIVE_MOSAIC_ID,
+				'amount': '999'
+			}
 		}], 999)
 		self.puller.symbol_db.upsert_sync_state(create_sync_state())
 		set_symbol_connector(self.puller, connector)
@@ -1118,33 +1112,20 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 		self.assertEqual([1, 2, 3], block_heights)
 		self.assertEqual(
-			bytes.fromhex(f'{2:064X}'),
+			bytes.fromhex(connector.pages[1][0]['meta']['hash']),
 			block_hash
 		)
 		self.assertEqual([
-			(2, 'inflation', 'inflation', 2, 0, '72C0212E67A08BCE', 222),
-			(3, 'inflation', 'inflation', 3, 0, '72C0212E67A08BCE', 333)
+			(2, 'inflation', 'inflation', 0, 0, '72C0212E67A08BCE', 222),
+			(3, 'inflation', 'inflation', 0, 0, '72C0212E67A08BCE', 333)
 		], receipts)
 		self.assertEqual('healthy', sync_state['status'])
 		self.assertEqual(3, sync_state['last_synced_height'])
 
 	def test_sync_block_headers_repairs_transaction_rows_on_shallow_unfinalized_rollback(self):
 		# Arrange:
-		replacement_transaction_hash = 'C' * 64
-		connector = self._create_rollback_connector(
-			3,
-			{1: [create_node_block(2, transactions_count=1, total_transactions_count=1), create_node_block(3)]},
-			{2: create_node_block(2)},
-			transactions_by_path={
-				transaction_path(2, 3): create_transaction_page([
-					create_node_transaction(
-						2,
-						transaction_hash=replacement_transaction_hash,
-						transaction_id='replacement-transaction'
-					)
-				])
-			}
-		)
+		replacement_transaction = create_node_transaction(2, transaction_id='replacement-transaction')
+		connector = self._create_replacement_connector(transactions=[replacement_transaction])
 		self._seed_blocks(
 			self.puller.symbol_db,
 			[1, 2, 3],
@@ -1176,7 +1157,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		address_rows = self._fetch_transaction_address_rows(self.puller.symbol_db)
 
 		self.assertEqual([
-			(2, bytes.fromhex(replacement_transaction_hash))
+			(2, bytes.fromhex(replacement_transaction['meta']['hash']))
 		], transaction_rows)
 		self.assertEqual([
 			(NATIVE_MOSAIC_ID, 2000, 'transfer')
@@ -1322,7 +1303,10 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		self.assertEqual([1, 2, 3], block_heights)
 		self.assertEqual(3, sync_state['last_synced_height'])
 		self.assertEqual(
-			['chain/info', 'network/properties', f'mosaics/{NATIVE_MOSAIC_ID}', 'blocks/1', 'blocks/2', 'blocks/3'],
+			[
+				'chain/info', 'network/properties', f'mosaics/{NATIVE_MOSAIC_ID}', 'blocks/3',
+				'blocks?pageSize=100&offset=0&orderBy=height', 'blocks?pageSize=100&offset=1&orderBy=height'
+			],
 			connector.paths
 		)
 
@@ -1330,7 +1314,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 		# Arrange:
 		connector = self._create_rollback_connector(
 			3,
-			{2: [create_node_block(3)]},
+			{2: seal_replacement_blocks([create_node_block(3)])},
 			{2: create_node_block(2)}
 		)
 		self._seed_blocks(self.puller.symbol_db, [1, 2])
@@ -1350,10 +1334,7 @@ class SymbolPullerRollbackTest(SymbolPullerTestBase):  # pylint: disable=too-man
 
 	def test_sync_block_headers_repairs_gap_in_unfinalized_block_hashes(self):
 		# Arrange:
-		connector = self._create_rollback_connector(
-			3,
-			{1: [create_node_block(2), create_node_block(3)]}
-		)
+		connector = self._create_replacement_connector()
 		self._seed_blocks(self.puller.symbol_db, [1, 3])
 		self.puller.symbol_db.upsert_sync_state(create_sync_state())
 		set_symbol_connector(self.puller, connector)

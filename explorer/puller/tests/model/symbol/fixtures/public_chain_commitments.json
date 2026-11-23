@@ -1,0 +1,3712 @@
+{
+  "retrievedAtUtc": "2026-11-20",
+  "networks": {
+    "mainnet": {
+      "node": {
+        "version": 16777995,
+        "publicKey": "2CEFBCE2E5EA5DD5BA61B302C33002CDA1EDB122EFD18713AF02ABFA9C73A28C",
+        "networkGenerationHashSeed": "57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6",
+        "roles": 3,
+        "port": 7900,
+        "networkIdentifier": 104,
+        "host": "symbol-main-1.nemtus.com",
+        "friendlyName": "NEMTUS",
+        "nodePublicKey": "B56A3C73CA345A00CDDC84CFDF711CD67B2CCE10BEB82CB74835086774FE587F"
+      },
+      "chain": {
+        "height": "5969257",
+        "scoreHigh": "40",
+        "scoreLow": "4548315358965706409",
+        "latestFinalizedBlock": {
+          "finalizationEpoch": 4147,
+          "finalizationPoint": 20,
+          "height": "5969224",
+          "hash": "7E7522ECEBD5F4BE380B811DD40F4180F5F8DB39CE0DD9DBA36750193A668B59"
+        }
+      },
+      "baseUrl": "https://symbol-main-1.nemtus.com:3001",
+      "nodeInfoPath": "/node/info",
+      "chainInfoPath": "/chain/info"
+    },
+    "testnet": {
+      "node": {
+        "version": 16777995,
+        "publicKey": "07D38BAE29464C1F54CC1C8202DD83B65AF21C8E5FF1FB01ACEEE2243C55EF2A",
+        "networkGenerationHashSeed": "49D6E1CE276A85B70EAFE52349AACCA389302E7A9754BCF1221E79494FC665A4",
+        "roles": 7,
+        "port": 7900,
+        "networkIdentifier": 152,
+        "host": "001-sai-dual.symboltest.net",
+        "friendlyName": "001-sai-dual",
+        "nodePublicKey": "31143029EB7415B7C45EDD9A05C28C4BD28EE16CF5127617AC7302E05219A55A"
+      },
+      "chain": {
+        "scoreHigh": "1",
+        "scoreLow": "17131947774821059594",
+        "height": "3475293",
+        "latestFinalizedBlock": {
+          "finalizationEpoch": 4491,
+          "finalizationPoint": 55,
+          "height": "3232800",
+          "hash": "A7819982381F5A648EA7E4D2647E5AB637929D7CB3627479AD51D16324893D70"
+        }
+      },
+      "baseUrl": "https://001-sai-dual.symboltest.net:3001",
+      "nodeInfoPath": "/node/info",
+      "chainInfoPath": "/chain/info"
+    }
+  },
+  "transactions": {
+    "account_key_link": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16716&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/5928978",
+        "proof": "/blocks/5928978/transactions/EACF2F39C9A6008F8E22386FB072470BDD4CF54889620D1B4E954BF1970A3A88/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "90C465A04399826394740C8534DE0C97DC26735D9379E3D997C46A5508BDC90D",
+          "generationHash": "FFFFB91631BBE2DED6317ACAE842DF6B22F2492DBC4DD82A725392C080032CE2",
+          "totalFee": "9499",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "38755E2EA84336B4DE9A45D32D013A92CABE14E1B4AE5761D7B11C30DD8737BA",
+            "FBF5A1DB9768DCC113F8F2C838E277CAE95DDCB3B571F5BD929C9803C0257870",
+            "34C19425C07BDAD09DF6905ED49D48D7A2EB3E9B542B79FE3088FC306AD774C5",
+            "C9073C14E725FA2704187289264ADD28CB9B1313FF405A5F11631B2A0C4D2E4C",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "B43BE24B4D3982803001367065CFA9F694C4298EFE2F21A958A2C23016C7E7D5",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "35EB74FF4BC6576126DAE708093B0D56AB4D136203EF152233296636B728400E"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 537,
+          "signature": "C5A99229CF51E76828B2636FEB928C7867295BC0DE49A41519EA82CA11D77FC9E70D16B703DC49C0C58834A099BC4EE9DF65AF4090E30C2A0E5A0FF006EFD409",
+          "signerPublicKey": "68BECAC85CDF55786314954E10848CB51C05C58BEFF0848020B4F724F5BFAC56",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5928978",
+          "timestamp": "178119854171",
+          "difficulty": "125342627683546",
+          "proofGamma": "F5EB000E6DE87509DC95924707CF255751947C89AEF427838D0B3CB403AD5B59",
+          "proofVerificationHash": "C52AD96AC2081965949628172ED0216C",
+          "proofScalar": "0E22B52B267E94D70EEB0B71AE026415735B366E645CEEB9AD145C6B75619808",
+          "previousBlockHash": "2602DE7DA3B0B81309BDECE37F159818EC9E8F92951E6940DF231AF434868198",
+          "transactionsHash": "EACF2F39C9A6008F8E22386FB072470BDD4CF54889620D1B4E954BF1970A3A88",
+          "receiptsHash": "E17F9F9EADE683DF23BF6EF2DF331EA4F735517EF305E3591B3F2ED807BD777F",
+          "stateHash": "5A1C864BD210D1F2FEDFE660F04B86C02F101CCDE3249144C14D82B4062243D6",
+          "beneficiaryAddress": "684D54A07960E7F093742B973478F7A1B59BF11045474760",
+          "feeMultiplier": 59
+        },
+        "id": "6AEDDB3C89A17219AA027C90"
+      },
+      "transaction": {
+        "meta": {
+          "height": "5928978",
+          "hash": "EACF2F39C9A6008F8E22386FB072470BDD4CF54889620D1B4E954BF1970A3A88",
+          "merkleComponentHash": "EACF2F39C9A6008F8E22386FB072470BDD4CF54889620D1B4E954BF1970A3A88",
+          "index": 0,
+          "timestamp": "178119854171",
+          "feeMultiplier": 59
+        },
+        "transaction": {
+          "size": 161,
+          "signature": "EB8AAE0E95383537811EA67926B21D1133F08EFF210D3AB29629C1D7AA316E80BCF604A7C57128739F607206E35245BE0B5C0CAB98E3DDCA6F94F4346C85A207",
+          "signerPublicKey": "A07B8F19D4D20674E4140B5490604D980A6ED4306A2269A2EE0996F996D8E2E6",
+          "version": 1,
+          "network": 104,
+          "type": 16716,
+          "maxFee": "9603",
+          "deadline": "178127059817",
+          "linkedPublicKey": "ACE8ECB7362827BBBA7A69F746131B7F0C500FD24CE865B0FB7AE3E3547C64C4",
+          "linkAction": 1
+        },
+        "id": "6AEDDB3C89A17219AA027C8E"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "node_key_link": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16972&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/5905484",
+        "proof": "/blocks/5905484/transactions/539AB595E79E81A09EA6A4E1219A41C316CCB75DF148BF9BCFBDF008FB490B91/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "0ECCC1E6A0257209E8AF1777DFB7DA210395405D6385C0AE4A9743A6F0282336",
+          "generationHash": "FFDE85E5005F640C13A7316D2EE9D0132850D6349C61EFE2CEE6D1B74EA372DF",
+          "totalFee": "9660",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "2EBD4F2F7AC7BF1392C1469B7D365C30EE2DE247437392E7A7A898F77D30F0B6",
+            "2E820549D72B91B6247319B601E80BB41F5DC522EC391659D45F381BCF3BC8DB",
+            "9CC33256A74AA8F5801676B3E8F9D66800B63764E426E70FFD7FAD3D92953D0F",
+            "7BFE2266D4A3965EE2937D38164C2E93CB27E53B629608982D1026E5BB4989E3",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "6F242BC01DE7679D12F4D8045794A9595DAC72D431F5F73241C1DFE7194ED315",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "822651B73DCC990234F353746E99AE485A83A1511D16E92305A6C1D71439C3CF"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 537,
+          "signature": "3B47B881C994954897AFD7FC49A76F3B67C7D867D77575FF75DF8A96B9122BA66690332A4BC705B2B31B05E307813F64078ED9E23428E0C3A632FC18415BFE07",
+          "signerPublicKey": "689E22379E42A0A88533E6AD2CE4EAD87E2A7F0DBD2847344A3D09630C469251",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5905484",
+          "timestamp": "177414514340",
+          "difficulty": "112989322435465",
+          "proofGamma": "D27CD8E665C48E4B01B69E9428A0B1E2FF75D3F4F384A68E075106B89DF6D85E",
+          "proofVerificationHash": "0CF25592622EA7DF7B57E586351BE2C9",
+          "proofScalar": "A6345574F7C897F57DE8B352B151449F564848651AE795C7771C231DEF92B500",
+          "previousBlockHash": "8CA9FDE3EAA931F448E1C7B8EB55F1AC590F2F3A60A0700C8CE9EA8ECFCB9BB8",
+          "transactionsHash": "539AB595E79E81A09EA6A4E1219A41C316CCB75DF148BF9BCFBDF008FB490B91",
+          "receiptsHash": "5A0D0777582F46CC541C22DE29B5B83D399E05F2D5F4CB696EED7AF0B1056EB7",
+          "stateHash": "A5EC265CE08C233A155D3AA9F9A0783A036CD8954C109FBE72E21AE61D1F9871",
+          "beneficiaryAddress": "6890BF179BEF6CB3D181F59F39D23EBCC5E899AE740499DA",
+          "feeMultiplier": 60
+        },
+        "id": "6AE317ED13763710330BE0EA"
+      },
+      "transaction": {
+        "meta": {
+          "height": "5905484",
+          "hash": "539AB595E79E81A09EA6A4E1219A41C316CCB75DF148BF9BCFBDF008FB490B91",
+          "merkleComponentHash": "539AB595E79E81A09EA6A4E1219A41C316CCB75DF148BF9BCFBDF008FB490B91",
+          "index": 0,
+          "timestamp": "177414514340",
+          "feeMultiplier": 60
+        },
+        "transaction": {
+          "size": 161,
+          "signature": "548E7AF1E6912092C7ADF980EDAC35F2FA18FD4C7A9AF3EEF0F6C59BEFA95DA2BF548875CFF5ED1D94E2ED04F98AB4EF46A2E3D7C00CEBDEC1871D649F85AB02",
+          "signerPublicKey": "91AF5CDF14B48C8D99CE997AC0F83473254BED8B251AC14A28359D6B83525E57",
+          "version": 1,
+          "network": 104,
+          "type": 16972,
+          "maxFee": "9660",
+          "deadline": "177421621752",
+          "linkedPublicKey": "76A2294DF3180CFC2053DE216BB89C75FB7C135B54F07485369E95CA96297442",
+          "linkAction": 0
+        },
+        "id": "6AE317ED13763710330BE0E8"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "aggregate_complete_v3": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16705&embedded=false&pageSize=10&order=desc",
+        "aggregate": "/transactions/confirmed?fromHeight=5969019&toHeight=5969019&pageSize=100&pageNumber=1&order=asc&embedded=true",
+        "block": "/blocks/5969019",
+        "proof": "/blocks/5969019/transactions/B767BCB567C9235523317E5D8C23CBE9805D7BF307677356467C4572AAD50584/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "6FA0B8EA6660D0767288C98008905521084830F407FBA3142D27B72C4386107C",
+          "generationHash": "F32EDF492981967B1219016CB7161C65310551D8016516413DBBD7A124DB63F5",
+          "totalFee": "1260032",
+          "totalTransactionsCount": 2,
+          "stateHashSubCacheMerkleRoots": [
+            "59D8E4319335609132445251AA71FF5331ECFFC6384506B12A442A5678529D5A",
+            "738153A1E31524BCBE8D458DF0AFA4528ABCFC5FAC67796F9331BCC132BD6CF8",
+            "7239D6610185325A2B7EE03EE2125E26241017B873618A7AD02F92ACFC66DAB6",
+            "F3C58780CB033A91AFBB74F2A0AD03A57D3EEF087E93F62D987E48B40E023140",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "B43BE24B4D3982803001367065CFA9F694C4298EFE2F21A958A2C23016C7E7D5",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "65B568744C3E8C86C5EC9E408E406238EE8204FBC5F0B9CD056555179B561CCA"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 744,
+          "signature": "ECC8905E90666D7F1B6C46B8A94D1C14E4D064504F71D55CE4F1A162E67328C51D45A344C8537FCA757EB1335A56D5158AF320E4908335BAEFEDAF1724292200",
+          "signerPublicKey": "C547A9C70F72F3EB3371FDB709687C2D748EF394088C8BA3302AF57C03D222E3",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5969019",
+          "timestamp": "179323425862",
+          "difficulty": "117894836089850",
+          "proofGamma": "CE019F271DA65AA4A4691C85EE928F6FB3A4D6EC4BA4CDC2702C6BBF35220AA2",
+          "proofVerificationHash": "6DECA65261A1285DA01C1088EFB1B1BF",
+          "proofScalar": "43D3EF599C20F600C32F5183BAF0E8C15F6668E6B0587B4E4068DD5485E92001",
+          "previousBlockHash": "F5A8C9E41D01185EB3DE9D1AFEFCCAF47BE9F8D9F8AA2A93534FAD29D3BCE3BA",
+          "transactionsHash": "B767BCB567C9235523317E5D8C23CBE9805D7BF307677356467C4572AAD50584",
+          "receiptsHash": "7A62FFC796D0645EE327747FD1F9B6541A820C68877D48FF7E86E87E9E8FD44E",
+          "stateHash": "5482AFEF6A6856470298D2BC93C984CE67A0C3717F57A063F70000CCA3355408",
+          "beneficiaryAddress": "68035269AA71F8ADEFCE0D6535548C61681EE8562260ED2E",
+          "feeMultiplier": 3424
+        },
+        "id": "6B00389C6B8437479E0095CF"
+      },
+      "transaction": {
+        "meta": {
+          "height": "5969019",
+          "hash": "174DFC95DBBBBA319A2CCE2A6760E6C34A83CEFEB5FCB905DA128E93EB4A4813",
+          "merkleComponentHash": "B767BCB567C9235523317E5D8C23CBE9805D7BF307677356467C4572AAD50584",
+          "index": 0,
+          "timestamp": "179323425862",
+          "feeMultiplier": 3424
+        },
+        "transaction": {
+          "size": 368,
+          "signature": "273CEC96CB87D827BA7EA1941E17E72D4BD8A8BBDFDB8C08F4965D4CA4A61807EA8A2972C245565B6E137A84A5CE9E0CB91E8412FBBECC9B8B9384951369250F",
+          "signerPublicKey": "FE925D2B19C5FA6EF0BFA26D66C5C88462C500EBF50783E96474B83D648F7B72",
+          "version": 3,
+          "network": 104,
+          "type": 16705,
+          "maxFee": "1260032",
+          "deadline": "179330062459",
+          "transactionsHash": "36A1EA2C6B1CCB5FFCFA9808752285BDBB860286E43FA824060046FBE8D57B52",
+          "cosignatures": [
+            {
+              "version": "0",
+              "signerPublicKey": "E71F326C7058F0E5DEDCA3C8F68B4789A5CE7039144C1300B9D0D52BA4FCBC6A",
+              "signature": "B0D0B31C1B1221F90515DA869D3CE06B6A1E293751C569532EB1674DE93CCF43E64C4CC209A2F0D459BE40E132478E19DB30B586CC55264ABDB68D76947E7E01"
+            }
+          ]
+        },
+        "id": "6B00389C6B8437479E0095CC"
+      },
+      "embeddedTransactions": [
+        {
+          "meta": {
+            "height": "5969019",
+            "aggregateHash": "174DFC95DBBBBA319A2CCE2A6760E6C34A83CEFEB5FCB905DA128E93EB4A4813",
+            "aggregateId": "6B00389C6B8437479E0095CC",
+            "index": 0,
+            "timestamp": "179323425862",
+            "feeMultiplier": 3424
+          },
+          "transaction": {
+            "signerPublicKey": "8F03A175B2B972A98F183D91A7F5DAA5FC1046A619B285C07C4F87AAD22EE96B",
+            "version": 1,
+            "network": 104,
+            "type": 16724,
+            "recipientAddress": "68109A004FF0542616BF17D03966401FE8D0B004DCD9F4AB",
+            "mosaics": [
+              {
+                "id": "6BED913FA20223F8",
+                "amount": "135529141724"
+              }
+            ]
+          },
+          "id": "6B00389C6B8437479E0095CD"
+        }
+      ],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "aggregate_complete_v2": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16705&embedded=false&pageSize=10&fromHeight=4758000&toHeight=4759099&order=desc",
+        "aggregate": "/transactions/confirmed?fromHeight=4759093&toHeight=4759093&pageSize=100&pageNumber=1&order=asc&embedded=true",
+        "block": "/blocks/4759093",
+        "proof": "/blocks/4759093/transactions/28F2BFC98229700697C029F7B9CA50473F6C36E1933D3F358F1E7E383FE27773/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "DAFB819EBB053066501D5D37718D1F1091B1091ADF0A2B0B860B23E2B3D9C8BC",
+          "generationHash": "FFCA56ED34BF990BBF250227494FB4FAB40683EF7453A0A3041813EACF1BB2BF",
+          "totalFee": "87200",
+          "totalTransactionsCount": 4,
+          "stateHashSubCacheMerkleRoots": [
+            "3263C4A96592E523FB0FF3D4A20070337A042CC6516C54DB472B630027E5598A",
+            "CC9749100A62D783EA68F2D746AF53E16F8ED5B697A2B00A783EC793753C422C",
+            "9251818DDDBA1009C0E92A22C5C88A17300C5B268F87FF89516294DB1A84DE12",
+            "2ED751890CB73C206DC531E7757496C78DC5C6DE36CFF6F10401B252C164BD0B",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "6B1C1C1C1F94FFE98919D57D18F1D5E96A96CB21DA24D934B1F6F5AEE3B38279",
+            "76B79FF18D44E00FC9EAEFAF6C5F024A6CED6FEAA224C38FE0051546C6CBD74C",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "EED1A98790F97F5C5BA080D46223905362BFF0C6ED94B40A3A70FFD54E45450B"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 2120,
+          "signature": "0107C44AAB7C081448CB4988EDC86DC46CBF6F9B69430A3448CAF51B73DAEE76F158AF4D2B25BF262FD5D43E4FA7BD19F10EC65D8D4C96F89D3C5CAE123B4000",
+          "signerPublicKey": "6D6BE2E4E18B75C26D7F8AD06577CB7AC69437B5664D60538573D3A5F4D20A16",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "4759093",
+          "timestamp": "142990194255",
+          "difficulty": "113262145389256",
+          "proofGamma": "F4FFBE53108C494B3D2E11DB3FBE860C9B9174D8E06CBBA755E8978519D48C2E",
+          "proofVerificationHash": "F4855BD8EF10666FE8AAD1172F5D0735",
+          "proofScalar": "2EF005AEDFCC50B35AC1A9CBA20B35EC4741C17146049830FFDD8CB14394820C",
+          "previousBlockHash": "C6AA1F9CE123181240915984EDF8BF5D504CCFA0792349B5F02B58611D309E2C",
+          "transactionsHash": "28F2BFC98229700697C029F7B9CA50473F6C36E1933D3F358F1E7E383FE27773",
+          "receiptsHash": "1BF3188DD6F2B62887F43BEA9FC2DFC4652A62964821499274FA37BDFDE119C1",
+          "stateHash": "0A793473FFA24DCDDC241FA7C202762AF8C2DA160BA246D98D7870FDA24A81F5",
+          "beneficiaryAddress": "684BE2E81F87B8C9ED6B1B180707BFF53B8D12982C194E1F",
+          "feeMultiplier": 50
+        },
+        "id": "6A8E51D51EF24682208F5CCA"
+      },
+      "transaction": {
+        "meta": {
+          "height": "4759093",
+          "hash": "DFC4A04474F78404C4FB7362D110B8DCA7CACE74DC71A599FCF53A0A0A3BE41A",
+          "merkleComponentHash": "28F2BFC98229700697C029F7B9CA50473F6C36E1933D3F358F1E7E383FE27773",
+          "index": 0,
+          "timestamp": "142990194255",
+          "feeMultiplier": 50
+        },
+        "transaction": {
+          "size": 1744,
+          "signature": "04C4F613E4EB1C13D214B40E45095764CC60481D203A18363EFC661B6F78F297D7007E311C031D41319663DC6097EF1D1910A02D5709731C50FC2AC7A80E8F0C",
+          "signerPublicKey": "C538B3ABCA509625D4D64F9E6DAAFE728671234845A6DF34733F7F59BE530AB2",
+          "version": 2,
+          "network": 104,
+          "type": 16705,
+          "maxFee": "87200",
+          "deadline": "142997360189",
+          "transactionsHash": "DC6438140B71C49405D2B560BA712F1BF574C3434C0CF59F947D3DC24618708C",
+          "cosignatures": [
+            {
+              "version": "0",
+              "signerPublicKey": "9AF5058B68FB7A5BCCC72235D70884FE0CCCB33AC33C7F44BFDA1D45616DCDBA",
+              "signature": "2A7EA7D9345D1113445127B6D0EE6F285CAFC43895B0F5E4151CDF63583F573544F9E79310B43BB84CBE7B67ECCC1ED4A264747DF212CB5F3627D85EBDA8BF09"
+            }
+          ]
+        },
+        "id": "6A8E51D51EF24682208F5CC5"
+      },
+      "embeddedTransactions": [
+        {
+          "meta": {
+            "height": "4759093",
+            "aggregateHash": "DFC4A04474F78404C4FB7362D110B8DCA7CACE74DC71A599FCF53A0A0A3BE41A",
+            "aggregateId": "6A8E51D51EF24682208F5CC5",
+            "index": 0,
+            "timestamp": "142990194255",
+            "feeMultiplier": 50
+          },
+          "transaction": {
+            "signerPublicKey": "9AF5058B68FB7A5BCCC72235D70884FE0CCCB33AC33C7F44BFDA1D45616DCDBA",
+            "version": 1,
+            "network": 104,
+            "type": 16724,
+            "recipientAddress": "68DBEAA904C7F86AAF9F2DF2BA03E6E29B9EB456725927B1",
+            "message": "0146354630314131384632363738333039413841313645363643304138363931363933323842394636363835443844333843304435384638443645334143453537343139343731394142434142334631364243314643354431363441413234394645464233343146314139383146344146374433333237414431374236364532303443414133434633384438323133414530313632344443413541323130434641314136423745363239443245394532434542344533423332343444373239303637414645314245413034344236363439414146383745354643353736433944314641364635464443383743343346314243303446393146384242354534353746394334443138313646313842344542363339394232354135304342443732434439463539393039304143433732444231343035433546343631343530353443343143384431433638424130414239464545313130364435433142343135363035413345413239454238423038453331433441363944394130343242323532433944333444433746333038333531433746303430323234303244313532383330363135354230344135414437424533343636333431464431314535444143334233433233383437304332463234424138303938454331373230463533303743453041324441423646463837323342324342374245363233434133373132313844454133443135393443384345344435313946463336373746373638333731344146453830463637304232443746464530423131384646423945333837464136394538354141333332313735304534333842423636323431463143323532413338413745",
+            "mosaics": []
+          },
+          "id": "6A8E51D51EF24682208F5CC6"
+        },
+        {
+          "meta": {
+            "height": "4759093",
+            "aggregateHash": "DFC4A04474F78404C4FB7362D110B8DCA7CACE74DC71A599FCF53A0A0A3BE41A",
+            "aggregateId": "6A8E51D51EF24682208F5CC5",
+            "index": 1,
+            "timestamp": "142990194255",
+            "feeMultiplier": 50
+          },
+          "transaction": {
+            "signerPublicKey": "9AF5058B68FB7A5BCCC72235D70884FE0CCCB33AC33C7F44BFDA1D45616DCDBA",
+            "version": 1,
+            "network": 104,
+            "type": 16724,
+            "recipientAddress": "68DBEAA904C7F86AAF9F2DF2BA03E6E29B9EB456725927B1",
+            "message": "0136444641344231453836374131423435453939363635443441364642384143353634383232443843424133303146453539303539324634333530424134444436393545453038303537413934424542333043463335454346363632373843354338394237343336304634373642394435434134464244304330373935423534324431344438384535333839453630394434453035453441424435363833304137414434324637394230424231363230383339344444444631374638364331333746423946303731433430334534453942394542463035393544453932314144453032374230374445383734313245453637463433354231414136444133384237423837383735304643434244383035413833393045443646344438343742443542343038344633334244314345304231364241364543433133323237344644374445303933314232383134343137443146443732373433443441463042304546443531394344303839333542314444323833433332314639453936423430353439383735453246324641423734363837373831453030373935313743304143354136344334423230453137463631433930423641324443464346424138453937343037313843313335383746423345323238414541333745413534413739343033343641303535313744363742464443303233364333453737423435384339313643323445344235303233343731424642343942373433423638333841343844443631363730383833363131374337343736393538373935463736413136313539344443333735443942313532373135444446384633324134333346324533313533",
+            "mosaics": []
+          },
+          "id": "6A8E51D51EF24682208F5CC7"
+        },
+        {
+          "meta": {
+            "height": "4759093",
+            "aggregateHash": "DFC4A04474F78404C4FB7362D110B8DCA7CACE74DC71A599FCF53A0A0A3BE41A",
+            "aggregateId": "6A8E51D51EF24682208F5CC5",
+            "index": 2,
+            "timestamp": "142990194255",
+            "feeMultiplier": 50
+          },
+          "transaction": {
+            "signerPublicKey": "C538B3ABCA509625D4D64F9E6DAAFE728671234845A6DF34733F7F59BE530AB2",
+            "version": 1,
+            "network": 104,
+            "type": 16724,
+            "recipientAddress": "68E44DDCB1276AE23EEEA72B2BAD9A55482B6A9DC931A9B6",
+            "mosaics": []
+          },
+          "id": "6A8E51D51EF24682208F5CC8"
+        }
+      ],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "aggregate_complete_v1": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16705&embedded=false&pageSize=10&fromHeight=2&toHeight=1500&order=asc",
+        "aggregate": "/transactions/confirmed?fromHeight=94&toHeight=94&pageSize=100&pageNumber=1&order=asc&embedded=true",
+        "block": "/blocks/94",
+        "proof": "/blocks/94/transactions/5FDBF3A7B72B4A23CE62CEDA175D432DDE6B685F96FAD13F2BD3255E3495F3BA/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "191A1750E6F49C1F778ED2CE0A884EFC9665D5E8FA8ECB0BFA5615A262C82769",
+          "generationHash": "FC333C6272F20BD1F1D61C7EE7927F8A728F6C6D157602F6CBCB85CE1BCAF017",
+          "totalFee": "104800",
+          "totalTransactionsCount": 6,
+          "stateHashSubCacheMerkleRoots": [
+            "7E53D6D9F9B625C3A0208AD0CD3DD4B630AA54F1A4ABABDBC9821D253874DB98",
+            "61AD37E805BCBAE69A6F070BADB7CACD5D137AF30AEF3D2C2A2DCF7B60C4D986",
+            "40E25671545024486A7E5137ACC6FA7F2569F6D71C1EB2B1A114C31D37D47CEE",
+            "88BF5DCB76FE57DDD4E690A324706A0FE8065EF488D2AEAFD884B72AD3CACF4E",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "84B7F1A18F6787417B6F49B3B7F805925B8EFD7A35589B8C674661CBA9EDA70E",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 1424,
+          "signature": "AA7E902484724FC40F33689B7B2D83D8F4CD18E96F387D1FD67C26ED2D89898DDB277C24C79A580AC13B9C06B1D3AE7EE37BD70E69CC2649F8118D3117F0430F",
+          "signerPublicKey": "66F8739CDC3D9048F158AA97626F5EDC14EF1FE543E8D21C3775D3DDDCB0A86E",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "94",
+          "timestamp": "87573066",
+          "difficulty": "12175850105391",
+          "proofGamma": "410F7211D419B802F95D6915ABE6CEAAE34ACFC2AFA7E14BAD73A313DD2966F6",
+          "proofVerificationHash": "F3C2428F7513F2A743CC346275AB5570",
+          "proofScalar": "0BA8A194A441F2063FC9D35C5271AB30961FB512BB8973069EF81ACC26F37800",
+          "previousBlockHash": "E0A6B697BFDE91BEEA1EFFADE062D9C7F9B6DDDBF1170DE1D6A1A43A98B3519B",
+          "transactionsHash": "5FDBF3A7B72B4A23CE62CEDA175D432DDE6B685F96FAD13F2BD3255E3495F3BA",
+          "receiptsHash": "97F534CE23C2FC926B41A667D31C007ECD0B78246AF7B8BA1950FE48EA7EEA03",
+          "stateHash": "B01871593C8DFB4D0AB641231A7C7AE03F3DE9C522C55CB2AA7F32404C269119",
+          "beneficiaryAddress": "68903FE829718D144A8FDA46EB52E2E874B13D6198AD8528",
+          "feeMultiplier": 100
+        },
+        "id": "6A8BADB2FB7CD68A0406A108"
+      },
+      "transaction": {
+        "meta": {
+          "height": "94",
+          "hash": "D24D000FABBD1AC4BC21006A5CAE76AE9C32792A4920F66D6A6C6F76B438BDF1",
+          "merkleComponentHash": "5FDBF3A7B72B4A23CE62CEDA175D432DDE6B685F96FAD13F2BD3255E3495F3BA",
+          "index": 0,
+          "timestamp": "87573066",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 1048,
+          "signature": "476123229F741E4E6C4908C87159D304E56955341CA0F7365503DFDD9CF76493DCF8F16CF3F9D472C4185565D78C1271309A547EDF5A1A23660ECD402ED8B601",
+          "signerPublicKey": "CAC17407C55FF316198605D74E9FF77DFCAD1D1D1B15807F860BAEBE90EFA0ED",
+          "version": 1,
+          "network": 104,
+          "type": 16705,
+          "maxFee": "104800",
+          "deadline": "97200000",
+          "transactionsHash": "5FDEF85E8B3669FF155B5F3DA98288C6ED8A293CC699338ADB743C0F5E8614ED",
+          "cosignatures": [
+            {
+              "version": "0",
+              "signerPublicKey": "BE4DAB05B7B4C27869215E52A68CFF3BFD3A456FAB48C2067B8C738EBDE20387",
+              "signature": "0904EF57F732CBB6C2E4996F25BAF11DC213E733F32D524E322E6246755F7D9F846A9D8364DEA52C53D0E7DA77C2F238BBC0D361F7B845283B9D22E0B1C99A0F"
+            },
+            {
+              "version": "0",
+              "signerPublicKey": "694F0D0EAFADAF44EA98C7F11B564CF4018B3A6FB69E74D40F80C0A364E42148",
+              "signature": "5EF86D92677392B71AFC96BF4D74DC0498BCB19366481BF9D306C862B037882119B1836C87D4628B8C5068E892C476F0BB946A885A21B433779E583927237006"
+            },
+            {
+              "version": "0",
+              "signerPublicKey": "46FF837226D3DE0C0DE8B1551427B7B1D461DEC6D0AC81A4352E12463CB0678C",
+              "signature": "55A5745AB43D1B95384AC2B032ECC3335E397D3279C371938CF663F453AF199B9668F0701E9A1E3714600CC83E72236385E18A746C92F98A0E84D04F17AFFC05"
+            },
+            {
+              "version": "0",
+              "signerPublicKey": "14D97DB9B1C3E01D779DAD4C941053D782AE54DDC87C5F1AD73335CAF1A664B4",
+              "signature": "555DCB8A2C9DBF0C83C7B98A1426CAF3F86B9D2D042CCC3CFBEC82C989F74E88454A8C98A91991653A4AE6CD6A0337D063F548F27F6C62D966CBA5B44B8E3508"
+            }
+          ]
+        },
+        "id": "6A8BADB2FB7CD68A0406A101"
+      },
+      "embeddedTransactions": [
+        {
+          "meta": {
+            "height": "94",
+            "aggregateHash": "D24D000FABBD1AC4BC21006A5CAE76AE9C32792A4920F66D6A6C6F76B438BDF1",
+            "aggregateId": "6A8BADB2FB7CD68A0406A101",
+            "index": 0,
+            "timestamp": "87573066",
+            "feeMultiplier": 100
+          },
+          "transaction": {
+            "signerPublicKey": "CAC17407C55FF316198605D74E9FF77DFCAD1D1D1B15807F860BAEBE90EFA0ED",
+            "version": 1,
+            "network": 104,
+            "type": 16724,
+            "recipientAddress": "682B9FCA53BF12F626232BE1A9E6406D05BEB5F925440411",
+            "mosaics": [
+              {
+                "id": "6BED913FA20223F8",
+                "amount": "2656790356494"
+              }
+            ]
+          },
+          "id": "6A8BADB2FB7CD68A0406A102"
+        },
+        {
+          "meta": {
+            "height": "94",
+            "aggregateHash": "D24D000FABBD1AC4BC21006A5CAE76AE9C32792A4920F66D6A6C6F76B438BDF1",
+            "aggregateId": "6A8BADB2FB7CD68A0406A101",
+            "index": 1,
+            "timestamp": "87573066",
+            "feeMultiplier": 100
+          },
+          "transaction": {
+            "signerPublicKey": "BE4DAB05B7B4C27869215E52A68CFF3BFD3A456FAB48C2067B8C738EBDE20387",
+            "version": 1,
+            "network": 104,
+            "type": 16976,
+            "restrictionFlags": 2,
+            "restrictionAdditions": [
+              "6BED913FA20223F8"
+            ],
+            "restrictionDeletions": []
+          },
+          "id": "6A8BADB2FB7CD68A0406A103"
+        },
+        {
+          "meta": {
+            "height": "94",
+            "aggregateHash": "D24D000FABBD1AC4BC21006A5CAE76AE9C32792A4920F66D6A6C6F76B438BDF1",
+            "aggregateId": "6A8BADB2FB7CD68A0406A101",
+            "index": 2,
+            "timestamp": "87573066",
+            "feeMultiplier": 100
+          },
+          "transaction": {
+            "signerPublicKey": "BE4DAB05B7B4C27869215E52A68CFF3BFD3A456FAB48C2067B8C738EBDE20387",
+            "version": 1,
+            "network": 104,
+            "type": 16716,
+            "linkedPublicKey": "0FA5A9A5DD1F90C2897CAFBC28C32AEB5A871494077A373BD041F76BDB1920A8",
+            "linkAction": 1
+          },
+          "id": "6A8BADB2FB7CD68A0406A104"
+        },
+        {
+          "meta": {
+            "height": "94",
+            "aggregateHash": "D24D000FABBD1AC4BC21006A5CAE76AE9C32792A4920F66D6A6C6F76B438BDF1",
+            "aggregateId": "6A8BADB2FB7CD68A0406A101",
+            "index": 3,
+            "timestamp": "87573066",
+            "feeMultiplier": 100
+          },
+          "transaction": {
+            "signerPublicKey": "BE4DAB05B7B4C27869215E52A68CFF3BFD3A456FAB48C2067B8C738EBDE20387",
+            "version": 1,
+            "network": 104,
+            "type": 16963,
+            "linkedPublicKey": "C2EA8B1364E5BB71EB52144CB973E5CAEEB7F3C8EF53F04BA15E2239CE360C9B",
+            "linkAction": 1
+          },
+          "id": "6A8BADB2FB7CD68A0406A105"
+        },
+        {
+          "meta": {
+            "height": "94",
+            "aggregateHash": "D24D000FABBD1AC4BC21006A5CAE76AE9C32792A4920F66D6A6C6F76B438BDF1",
+            "aggregateId": "6A8BADB2FB7CD68A0406A101",
+            "index": 4,
+            "timestamp": "87573066",
+            "feeMultiplier": 100
+          },
+          "transaction": {
+            "signerPublicKey": "BE4DAB05B7B4C27869215E52A68CFF3BFD3A456FAB48C2067B8C738EBDE20387",
+            "version": 1,
+            "network": 104,
+            "type": 16725,
+            "minRemovalDelta": 2,
+            "minApprovalDelta": 2,
+            "addressAdditions": [
+              "682A2726CE2E89002B05C03C65C8D1C197E24A0B38782C82",
+              "682A0A636343E4F30B152BD41CDD98E9E7E787ACF8BBA680",
+              "682A1FECB50BEC10391D26EE0E0E98071E3EF003743334CF"
+            ],
+            "addressDeletions": []
+          },
+          "id": "6A8BADB2FB7CD68A0406A106"
+        }
+      ],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "aggregate_bonded_v1": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16961&embedded=false&pageSize=10&order=asc",
+        "aggregate": "/transactions/confirmed?fromHeight=594&toHeight=594&pageSize=100&pageNumber=1&order=asc&embedded=true",
+        "block": "/blocks/594",
+        "proof": "/blocks/594/transactions/3633E9D2C05F954D7A8EBDF3A95CF5634A5F0452FF3E242CB9F4F54E8EC2E634/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "661CE6BD274326FD9AE036D3775B4F48D60999287C942FF002F90DE8C7C9A870",
+          "generationHash": "FFE11D03BC019CFDC1E23D4D11311DFC418D85AA4569321159E98017F97C4C23",
+          "totalFee": "8635848",
+          "totalTransactionsCount": 23,
+          "stateHashSubCacheMerkleRoots": [
+            "B374EFD74D6B3CF127F6AFDEC4AAA0DBDB016F4447216149C801DE8A7AEA17D0",
+            "5511AE74AFC0DA82F8A5AC9FB89A6188CE145F0BC6AFE59936557E7BE628F6E8",
+            "CC03A421F60C86B35F0F09645BD121415D031A01C928418AACF1751028303504",
+            "CC4B9B38058E90910181588DF88D8899451BCC62CB6333351B5B503388024F45",
+            "530509A79AAFBAAC036B1B051E77B41F344424494F31F3AD7633ADB378A7BFC1",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "84B7F1A18F6787417B6F49B3B7F805925B8EFD7A35589B8C674661CBA9EDA70E",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "transactionsCount": 14,
+          "statementsCount": 2
+        },
+        "block": {
+          "size": 4152,
+          "signature": "DA141BD63D3B27BC2835E5569FBB6BEAB5E5211D0D88933F9C6681791664096C4A65A4417FCE127AF346BC1ABA9011BE8EA7F1C07CB840887C99C1D263E04A01",
+          "signerPublicKey": "3CCFC470571C460C88C3AFABCFDE5491A445A6372EB52EF0F8C2E6477D9CF0BB",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "594",
+          "timestamp": "102596491",
+          "difficulty": "13242229408947",
+          "proofGamma": "2FD84A63EBF01DE1CB9B5887F8E730281A7D9B8F72C5A4D8C0A65E4709B74429",
+          "proofVerificationHash": "CEFE3C3AA28002476AC2DCDBC1C78BE0",
+          "proofScalar": "688E8302BD3352F65473A079CF5F1CD5317E351C3AC20AE2C21065BA90DFD205",
+          "previousBlockHash": "C41786093AE921D6C183907583DC90EA1B5B770613346E041748C43FB64C865A",
+          "transactionsHash": "7F7ABD7146B731BBCF572F253D1DC2DC6F9B40C30FFB8BD5BD08F7B8E848B38C",
+          "receiptsHash": "0D4C138BBBB5CC2B068BF3A472A78BA27C836DBBC2C4A5D582D6C54A5CF20940",
+          "stateHash": "4729C4F0D5391A623F19BB1EA3630C1513FE1CA2F05706B0DC5851EB8D441ECD",
+          "beneficiaryAddress": "68A48712C4D6FDCBDDFEEF35EB6E3430638700D1DA98C120",
+          "feeMultiplier": 2314
+        },
+        "id": "6A8BADC0FB7CD68A0406AC8A"
+      },
+      "transaction": {
+        "meta": {
+          "height": "594",
+          "hash": "5ED8F8177EB7E5D4D4282D6C7CF044BF9BD1C03586611FB2865DA7511A6C5960",
+          "merkleComponentHash": "3633E9D2C05F954D7A8EBDF3A95CF5634A5F0452FF3E242CB9F4F54E8EC2E634",
+          "index": 10,
+          "timestamp": "102596491",
+          "feeMultiplier": 2314
+        },
+        "transaction": {
+          "size": 368,
+          "signature": "48C24268355EC4FCCF79BBCA6831990CFD69224F76B2821E095E47230ED12CEE01E5AB888621FEB163E6EC41164987D5B6D8EEFC7FCBFC56A34FA961FB43D704",
+          "signerPublicKey": "6A789FB6706C4CBA437C5FA61E6ED0C1AC871EA4D19286098AE3D63122BCE25A",
+          "version": 1,
+          "network": 104,
+          "type": 16961,
+          "maxFee": "880280",
+          "deadline": "109709860",
+          "transactionsHash": "4E7C6BC7941CF5320D483FC76C33681300963618BE29F63180B38D06D1BEAA46",
+          "cosignatures": [
+            {
+              "version": "0",
+              "signerPublicKey": "5E88ACA8B2EFB84E1A4E01AFEEF8FDDE0C398BCBB1F832B3B098F4E4F6EBC2C9",
+              "signature": "85ED52366430F79A6CF1E22492841537994E5ACAA4C45417F35F214AA5355D1FE99D80D3822E9D2C89D249F4EE89DF2B22800AD9E719F431BACB477754FBF100"
+            }
+          ]
+        },
+        "id": "6A8BADC0FB7CD68A0406AC7E"
+      },
+      "embeddedTransactions": [
+        {
+          "meta": {
+            "height": "594",
+            "aggregateHash": "5ED8F8177EB7E5D4D4282D6C7CF044BF9BD1C03586611FB2865DA7511A6C5960",
+            "aggregateId": "6A8BADC0FB7CD68A0406AC7E",
+            "index": 0,
+            "timestamp": "102596491",
+            "feeMultiplier": 2314
+          },
+          "transaction": {
+            "signerPublicKey": "CC36FB90669E33C07618E7662B85734C515F3BD6C8103BFA5F0C55B0145D602A",
+            "version": 1,
+            "network": 104,
+            "type": 16724,
+            "recipientAddress": "68F8E742E3809E5439DA3213FAE4C17C4FA1269CAB5D5825",
+            "mosaics": [
+              {
+                "id": "6BED913FA20223F8",
+                "amount": "100000000"
+              }
+            ]
+          },
+          "id": "6A8BADC0FB7CD68A0406AC80"
+        }
+      ],
+      "proof": {
+        "merklePath": [
+          {
+            "hash": "7924C526E551E6172F6330C065C710DC8BB9FD255995ED8125D497ECBDDC6EF0",
+            "position": "right"
+          },
+          {
+            "hash": "58F2FB8AC89B4B9921EEEE27CC4685C0B793E2A9CA48E5B43340A4F47F9C8298",
+            "position": "left"
+          },
+          {
+            "hash": "286716DC55A9A4E3FFFEF5A1AFD12CD7E3150BA1B301359CBF1A7B96C4281FD4",
+            "position": "right"
+          },
+          {
+            "hash": "62A375307508957B3D64F86E2AA5F15C7C61D33CAA7FA469967F57ECFF974110",
+            "position": "left"
+          }
+        ]
+      }
+    },
+    "aggregate_bonded_v2": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16961&embedded=false&pageSize=10&order=desc&toHeight=4759099",
+        "aggregate": "/transactions/confirmed?fromHeight=4757621&toHeight=4757621&pageSize=100&pageNumber=1&order=asc&embedded=true",
+        "block": "/blocks/4757621",
+        "proof": "/blocks/4757621/transactions/2F86A4B654EFB88386684511A28A6B0C4F20F33BD6636B200C37449835905AA9/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "4F75C6CFC2A62E1B40C85F9198DA2EF831AFF9EE6AADA2E4FF8F259744AD28B9",
+          "generationHash": "FF9EE7EB779ABFD4923FDFC1A98DD21C09896163DFCAC7A96CFCE022C60226ED",
+          "totalFee": "33480",
+          "totalTransactionsCount": 2,
+          "stateHashSubCacheMerkleRoots": [
+            "CBA15F9AEBF3C0E6B6059CCC5A75A0DA3B3EE364D6A42D33ED3A606DAAC9F97F",
+            "CC9749100A62D783EA68F2D746AF53E16F8ED5B697A2B00A783EC793753C422C",
+            "81448E68F885A58129328FA9AAD1D1B008D641A0483BF28BD95801522F7915FF",
+            "FBD7210FBD9F93E29F6127F9E6F93941952DB248576AB3DAF5916E6FD340605A",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "6B1C1C1C1F94FFE98919D57D18F1D5E96A96CB21DA24D934B1F6F5AEE3B38279",
+            "76B79FF18D44E00FC9EAEFAF6C5F024A6CED6FEAA224C38FE0051546C6CBD74C",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "EED1A98790F97F5C5BA080D46223905362BFF0C6ED94B40A3A70FFD54E45450B"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 2
+        },
+        "block": {
+          "size": 736,
+          "signature": "20084124B722C699E603FBD1B40597A9AFCB75CA96D2B2D06C7CB40960517B2AAE2A06F1A7BBEE664E0C2CE740876E840AEA22112AD79A30839393C690E11701",
+          "signerPublicKey": "706662A7494EEE2634FA106F9C2A5CEB2E771C7D9E8D55BBC61935E84E07D463",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "4757621",
+          "timestamp": "142946094624",
+          "difficulty": "101776952108552",
+          "proofGamma": "A23CF68FB1F4EAC57DE9C173CF4C87F78FA4C0F88DF5EB7A95FF8FD19D00D0AF",
+          "proofVerificationHash": "19166583C89629B0A9F3317E756D5257",
+          "proofScalar": "2A07D36ED59744FD95AE5584DF78B1B2DB883BE3739B31C476ACBD36AB314B01",
+          "previousBlockHash": "B7B8C1E62A243D369D0DE04C28D897D317668D130E034C72E718C66399BB5E8D",
+          "transactionsHash": "2F86A4B654EFB88386684511A28A6B0C4F20F33BD6636B200C37449835905AA9",
+          "receiptsHash": "249A809178029E314E88B6511570316299F4125ABF99C7E64E03A40EC4D93888",
+          "stateHash": "4448FFC51FAC7153CFB604ED69B33EEAE4D756F135C479B0D2608AAFB1D19944",
+          "beneficiaryAddress": "68A77444F668D9971002A70B49CA9DFCDDB38B5B193588DA",
+          "feeMultiplier": 93
+        },
+        "id": "6A8E51A21EF24682208F5109"
+      },
+      "transaction": {
+        "meta": {
+          "height": "4757621",
+          "hash": "C7D7E2503BA28394699DCC4CEC6FD9069020D6CD61439EB1A656E0288A86FFDA",
+          "merkleComponentHash": "2F86A4B654EFB88386684511A28A6B0C4F20F33BD6636B200C37449835905AA9",
+          "index": 0,
+          "timestamp": "142946094624",
+          "feeMultiplier": 93
+        },
+        "transaction": {
+          "size": 360,
+          "signature": "05035DCFBAFDEAF495F23E91CBAA14839C288F0E750F325A8C93F4037D058B04A82C6451F41DCAE6C12DE687C81E2383B68BF5907C6E7248A9B372DCD3883705",
+          "signerPublicKey": "298468C61D1784A4B7E21128993743C55C4EEF20B7AB838FAADC020ECDDDF911",
+          "version": 2,
+          "network": 104,
+          "type": 16961,
+          "maxFee": "33686",
+          "deadline": "143118795981",
+          "transactionsHash": "9AEDC2BB3EBE3B5C8DF21FA5FDCA5D3312ACDDCADA3708F1D51850BD292D3B2C",
+          "cosignatures": [
+            {
+              "version": "0",
+              "signerPublicKey": "B4D0A8FF099D926DDFFCA8C34888FAEDC64290CB6D7C0CADA4128990B3D5F019",
+              "signature": "79C923B064D29CFF2E3315AF6AA444BD970596AB0844E1D7F22D413F4F74E0A20308323327E82A2BBCF8336DDC10F36438FEAF76E5AC2FD60860381E13E1400C"
+            }
+          ]
+        },
+        "id": "6A8E51A21EF24682208F5105"
+      },
+      "embeddedTransactions": [
+        {
+          "meta": {
+            "height": "4757621",
+            "aggregateHash": "C7D7E2503BA28394699DCC4CEC6FD9069020D6CD61439EB1A656E0288A86FFDA",
+            "aggregateId": "6A8E51A21EF24682208F5105",
+            "index": 0,
+            "timestamp": "142946094624",
+            "feeMultiplier": 93
+          },
+          "transaction": {
+            "signerPublicKey": "F20460178349A7F6B04EA94B70E2ADC529752CD243AAC9A94489FD6C919DB4F8",
+            "version": 1,
+            "network": 104,
+            "type": 16972,
+            "linkedPublicKey": "FD525450181E520DAB17AD1486F78183FF4665351FF6077D990B4CC2977A095D",
+            "linkAction": 0
+          },
+          "id": "6A8E51A21EF24682208F5106"
+        }
+      ],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "aggregate_bonded_v3": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16961&embedded=false&pageSize=10&order=desc",
+        "aggregate": "/transactions/confirmed?fromHeight=5966488&toHeight=5966488&pageSize=100&pageNumber=1&order=asc&embedded=true",
+        "block": "/blocks/5966488",
+        "proof": "/blocks/5966488/transactions/8D98CFD5146CFA60DBB0FC2202E55C9FB4BB90DDE90F76F61D3247F0BD375CB6/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "AF3581FA52ADF12EF1DF8A1008436492FB85A98BE667F1B3066AF918217033C6",
+          "generationHash": "FFD6A45C9A1155039472C135E954FDB16A77CC905BF80B17A2CD566EB4486C88",
+          "totalFee": "44536",
+          "totalTransactionsCount": 3,
+          "stateHashSubCacheMerkleRoots": [
+            "53FCB9301D48C5A6EF513D23BF041E388860A2BE4DC1E6C1129CCBC91C5D581A",
+            "CB00A40468CD91BCC7F3EE81243AF5CFC1FC83AAA6044B53A6FB68D9813006CD",
+            "7D6A79EC5332E2CCC79A1801518709F172EADB7E5166DBF5DB12F16F4924A2A7",
+            "F3C58780CB033A91AFBB74F2A0AD03A57D3EEF087E93F62D987E48B40E023140",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "B43BE24B4D3982803001367065CFA9F694C4298EFE2F21A958A2C23016C7E7D5",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "7BF2EDFF71A55FA1AC98CE5B8FE98448AB2F3FD3EA7A80ABA0040386136AE382"
+          ],
+          "transactionsCount": 2,
+          "statementsCount": 2
+        },
+        "block": {
+          "size": 962,
+          "signature": "800CDC6676A8CE5C6913D6B0C222365BB19DB61B72B3DF40AA907282C4B0268825F9721FC811F930CF080A8C48A6DCBB7A2CBC0695006D443364E03D3567D909",
+          "signerPublicKey": "9C4B93C67B75A5EBB33173B206AE90921F95E3A2FE16B1B00E061FFD18AFE19F",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5966488",
+          "timestamp": "179247488730",
+          "difficulty": "105263312743213",
+          "proofGamma": "97CA3343A791E1F9BFF2A1C6450215F3A05C11538B01A157BD802D07402C6525",
+          "proofVerificationHash": "FEE6723EFF23A6E6AE7F4D93421EC926",
+          "proofScalar": "F7BB74FFD131037A7D4FDB591FF1BA6AB3B548F7682F03B308A41CE255F5FF04",
+          "previousBlockHash": "8D25C2C03FFA4D57BA961F1D2D49803A556CBDB8701BC39EC60DC4C26E0BB08B",
+          "transactionsHash": "1E5587DDEA9191ADF87692F989A5A9D373889E3878BAB51611470BC297B76181",
+          "receiptsHash": "056825C0C3E07F7D904DFDC21789E606ED4189FB1E4DEBB8FE69544BAD35A184",
+          "stateHash": "AD9E4E119A5743DCF45721AF967750665AED0F29E013AAAC385C5A760DDA06C6",
+          "beneficiaryAddress": "688C1922600B3224FF01988F25B8EB2EEE097E354923F717",
+          "feeMultiplier": 76
+        },
+        "id": "6AFF0FFB6B8437479E00804F"
+      },
+      "transaction": {
+        "meta": {
+          "height": "5966488",
+          "hash": "3DADBEAAD062929AC5F93E84CB1DBDE6FDC4B26EC1EC468408AB250C389675D5",
+          "merkleComponentHash": "8D98CFD5146CFA60DBB0FC2202E55C9FB4BB90DDE90F76F61D3247F0BD375CB6",
+          "index": 0,
+          "timestamp": "179247488730",
+          "feeMultiplier": 76
+        },
+        "transaction": {
+          "size": 360,
+          "signature": "72242F0359BC8EE964C69098D6C5E420F7CE3B1050C3C60A5F162067C80D525E6C9050F9B136F688485C57BAA954120CF10B6482F7453C0719ECA1F91BE6410E",
+          "signerPublicKey": "7013E148F0C63149C095F81DC38DD9E94C21C2958B9C5F9A56A1C559597BF898",
+          "version": 3,
+          "network": 104,
+          "type": 16961,
+          "maxFee": "27376",
+          "deadline": "179420096254",
+          "transactionsHash": "FD3DCA700AE59384BCE05E9F6758A9F791AB02F838D56510EEE40990B5D9A9B6",
+          "cosignatures": [
+            {
+              "version": "0",
+              "signerPublicKey": "2EF75C584B933E2E4CA8D121F1E92D3E59C05EB4B091698DFBC0348205748D7C",
+              "signature": "6E3322ECFDC8142017446E770E684D9AE0BFEEF50031ACF1EF77531FEF70A065DCA775C6B1B1BB34D6C324CDAAA0CAA008C44D3E4274FCD9B40F00067389900B"
+            }
+          ]
+        },
+        "id": "6AFF0FFB6B8437479E00804A"
+      },
+      "embeddedTransactions": [
+        {
+          "meta": {
+            "height": "5966488",
+            "aggregateHash": "3DADBEAAD062929AC5F93E84CB1DBDE6FDC4B26EC1EC468408AB250C389675D5",
+            "aggregateId": "6AFF0FFB6B8437479E00804A",
+            "index": 0,
+            "timestamp": "179247488730",
+            "feeMultiplier": 76
+          },
+          "transaction": {
+            "signerPublicKey": "82D0FB285CC235EFD69100BC919C9E9500AB6E8D11A671898166A4F52E576683",
+            "version": 1,
+            "network": 104,
+            "type": 16972,
+            "linkedPublicKey": "5F875EE34A8C942246AD01B8539124FF9791F064831637905766DAC662724A9E",
+            "linkAction": 0
+          },
+          "id": "6AFF0FFB6B8437479E00804B"
+        }
+      ],
+      "proof": {
+        "merklePath": [
+          {
+            "hash": "7D3FF657FEAC6EBEADC70185A2F5BC33366E21288C014A80E49FECCE20122BC6",
+            "position": "right"
+          }
+        ]
+      }
+    },
+    "voting_key_link": {
+      "network": "testnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16707&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/3475736",
+        "proof": "/blocks/3475736/transactions/CE3A20A09080E9B38BE334B78CD4623438294EC21D3A19613079D0C5073FBE5A/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "761163B8B37AF86D3BC941B22232175BB87F5D6FE750C0E3CD2FC0198D2E2EAC",
+          "generationHash": "F10C5237260FF34ABBD1201C097219F6D5852D46C7F618DD017F87A086303DCE",
+          "totalFee": "50600",
+          "totalTransactionsCount": 3,
+          "stateHashSubCacheMerkleRoots": [
+            "312DB546A30DA5B20467C81FD84C2D427134B85D0241C17CF710FDC5EE0C0F93",
+            "C5D6AE2D4329AA54B4135DCD6A4E0ACFBBE66B8C60D0CD356BCDC632A78A2237",
+            "02297C32864FD73858A3FF3136E0EA7981342D502F4C9BE24EE247F096BBB44A",
+            "0C7EF5B5170886206D2A7CC1076ACAD9B10DE76F7E4C0F7BD2EF1875603DFF06",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "9C56E94000509EDC36472B5F67D4E2C4ACFF59A6B52C27650583E85C03034139",
+            "EF4E9D16A3ED817BD7925099FB098A444E21A852256D6B2E7B00BC176713708A",
+            "6956001CC2591FF789AF4846D045964DF750046422BA0F21A0AA5CE0449772B6"
+          ],
+          "transactionsCount": 3,
+          "statementsCount": 2
+        },
+        "block": {
+          "size": 889,
+          "signature": "09470DBD70059CCF27D6EF83202C9E9B0D98A0F6BC8114DCF93577169D4D632D46ED3A136B2C0041E98506B85694FB9D28CB1D9E6BB635C802ABC9CE9CFBC506",
+          "signerPublicKey": "56FDD71F89193034761E5CBFB571491B1B72A7A6E72C5294493F0EFBFE170CBA",
+          "version": 1,
+          "network": 152,
+          "type": 33091,
+          "height": "3475736",
+          "timestamp": "114560278557",
+          "difficulty": "10246831316364",
+          "proofGamma": "89CE8977B2662629337E1B42F8ECEDE172584B7F2DA13E1B3EB9185E6B948CFD",
+          "proofVerificationHash": "D7B92DF170747DB9E2E230A4642CDE3D",
+          "proofScalar": "CCE1D14571CFDD52C71B65B5FBD680FD0A1FF1E7E83CCD5344AE87DD9E050A05",
+          "previousBlockHash": "AB1B88A2C9CE58BA23C39F03AB86AA023AA1C99376F316B5CB777ACA6DF4DA67",
+          "transactionsHash": "9EC4CF73B861239E36D647C2917327C775A160C2704725435EA8E8CEFC972EAB",
+          "receiptsHash": "E80CBC821A36800B42E41E693BD686F98D7A77E6C51039373D27C32F31FC6C87",
+          "stateHash": "5EB5F3025854DEFF6AFF1A44F12970DD75537CAC775E8536EF29836433DC75EA",
+          "beneficiaryAddress": "9860B7FE54FD99456EF8621397D913D1D3B7CEA97D8A96A6",
+          "feeMultiplier": 100
+        },
+        "id": "6B005444CB5702EF26BEE895"
+      },
+      "transaction": {
+        "meta": {
+          "height": "3475736",
+          "hash": "CE3A20A09080E9B38BE334B78CD4623438294EC21D3A19613079D0C5073FBE5A",
+          "merkleComponentHash": "CE3A20A09080E9B38BE334B78CD4623438294EC21D3A19613079D0C5073FBE5A",
+          "index": 2,
+          "timestamp": "114560278557",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 169,
+          "signature": "285E0388CA05654E597746DE53998862152FEB2C5F56DE30160D042EC506946EA51684379F871E39F04E8682AA6CA6B67D705B8B78EF0E94F137C65448772708",
+          "signerPublicKey": "08274885995EF354694F51F8C388A6183DAC3E7368DDE1C0405A6627AE4EFE38",
+          "version": 1,
+          "network": 152,
+          "type": 16707,
+          "maxFee": "16900",
+          "deadline": "114567470514",
+          "linkedPublicKey": "08274885995EF354694F51F8C388A6183DAC3E7368DDE1C0405A662700000000",
+          "startEpoch": 10,
+          "endEpoch": 150,
+          "linkAction": 0
+        },
+        "id": "6B005444CB5702EF26BEE892"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": [
+          {
+            "hash": "CE3A20A09080E9B38BE334B78CD4623438294EC21D3A19613079D0C5073FBE5A",
+            "position": "right"
+          },
+          {
+            "hash": "9A7F3E881D18101334861DAB105EFC86F6368B2EFB3DE96B151944B0299A6313",
+            "position": "left"
+          }
+        ]
+      }
+    },
+    "vrf_key_link": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16963&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/5928982",
+        "proof": "/blocks/5928982/transactions/E40DA567C3C267D2DFBD0062D0898CE73D3BFD0F9DDB1498F238C38E51CB3D68/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "13B5568623B45D5BBEB039776D02F788826ED84FC900240E644C30541987FBB4",
+          "generationHash": "FFFFFB81B4363967A53D8F9C217B8F9DB3FA08C1987EB521EA817BFA3E726B56",
+          "totalFee": "9499",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "21A728C8A52C6F3D0CB2750A74E0E76EFD0DFCCB4765C6C12A665F7ED407FC40",
+            "FBF5A1DB9768DCC113F8F2C838E277CAE95DDCB3B571F5BD929C9803C0257870",
+            "79FEDC6672770EFFBB942CD559ADDF6B80F6BD575A27F9C0A01068BD1A89E721",
+            "C9073C14E725FA2704187289264ADD28CB9B1313FF405A5F11631B2A0C4D2E4C",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "B43BE24B4D3982803001367065CFA9F694C4298EFE2F21A958A2C23016C7E7D5",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "35EB74FF4BC6576126DAE708093B0D56AB4D136203EF152233296636B728400E"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 537,
+          "signature": "4628793B5D5331E596729638D36BEA9B8668752AC343F20632216B0668783D1AB1FD78313760E6C6E5551FA720A425C7FDADBD4AB3B575971894CBFA06992D0A",
+          "signerPublicKey": "587AAFD65DCCA8AD8BD92839DFDD0D764FEBECCC65C0EB32B7C3DDC9AF0289EF",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5928982",
+          "timestamp": "178119960563",
+          "difficulty": "126345054735570",
+          "proofGamma": "5CCC0B37936DA61ED193E7421FD58ED11767EBED50FB453BDB891EAAE5446513",
+          "proofVerificationHash": "AAF95000C420F5DE10C24E6DF48C83BD",
+          "proofScalar": "8266AE3A770BD96714C60FFC73FAD3E6B59E6602A016E2EFC044C3244857CA08",
+          "previousBlockHash": "9530D540307F786BB1B5037E570D0FF181316DA24C713B18D53B4FCD29118F9E",
+          "transactionsHash": "E40DA567C3C267D2DFBD0062D0898CE73D3BFD0F9DDB1498F238C38E51CB3D68",
+          "receiptsHash": "AD32D437E5213F53B88B3C75A51289EAE52D141F2598FAC63701DFC25E5A2934",
+          "stateHash": "BFD1CC10EE152B06F1AF50E0E8258421C283694746FA7E9D98E4AE52765CC3F6",
+          "beneficiaryAddress": "685BDA05BC696C84EF6FF3E2BE95C1BF526FA50672F5BF82",
+          "feeMultiplier": 59
+        },
+        "id": "6AEDDBAD89A17219AA027CAE"
+      },
+      "transaction": {
+        "meta": {
+          "height": "5928982",
+          "hash": "E40DA567C3C267D2DFBD0062D0898CE73D3BFD0F9DDB1498F238C38E51CB3D68",
+          "merkleComponentHash": "E40DA567C3C267D2DFBD0062D0898CE73D3BFD0F9DDB1498F238C38E51CB3D68",
+          "index": 0,
+          "timestamp": "178119960563",
+          "feeMultiplier": 59
+        },
+        "transaction": {
+          "size": 161,
+          "signature": "6572ACFB20246B4C25F1C2C311DE32166F5D245077BE62931678178D6DA82567B982EF240C452C7E697F61E646BB946933A119AEDAA7B89B1FE19C6AE1624C00",
+          "signerPublicKey": "A07B8F19D4D20674E4140B5490604D980A6ED4306A2269A2EE0996F996D8E2E6",
+          "version": 1,
+          "network": 104,
+          "type": 16963,
+          "maxFee": "9603",
+          "deadline": "178127074825",
+          "linkedPublicKey": "6A540D7A4BB9F1B81981DF41E37B1FDA61804A57370E0DBEFF896956D57B4144",
+          "linkAction": 1
+        },
+        "id": "6AEDDBAD89A17219AA027CAC"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "hash_lock": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16712&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/5966490",
+        "proof": "/blocks/5966490/transactions/12A9FBB1D6CB825E6443209BB3BF2984ECBDF452FA95DCAE45D99D77168BE30F/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "246E22FF3B984C7A6B34D67464FA4E2E1A2817CF183C2FF3BBD5F5F7F825B4CB",
+          "generationHash": "FFEBD1A7ACC6AE75BC609D315E780CEE5B874E425C398994A09E3D15715F9C69",
+          "totalFee": "10856",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "A0F08F97675621EE12E5A729BE8A1CE469016798B5AF59441395547716243144",
+            "CB00A40468CD91BCC7F3EE81243AF5CFC1FC83AAA6044B53A6FB68D9813006CD",
+            "6C906D1801D56AD7BE5E6D130F4C3D1605B658920E61BC0046C7DCC2017E5167",
+            "F3C58780CB033A91AFBB74F2A0AD03A57D3EEF087E93F62D987E48B40E023140",
+            "456B734794C1C7BA61B082156AF27EAB6D764CF00D3C758184AED8BACEB89898",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "B43BE24B4D3982803001367065CFA9F694C4298EFE2F21A958A2C23016C7E7D5",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "7BF2EDFF71A55FA1AC98CE5B8FE98448AB2F3FD3EA7A80ABA0040386136AE382"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 2
+        },
+        "block": {
+          "size": 560,
+          "signature": "AA81BF041D206FE22186FA02C517DC076066C812B3BCEC23502C867A23D3A65C13612B888C9E838EE12A1D70F356C739D7EB2B817EE623AA27B0A8C053F33001",
+          "signerPublicKey": "8D79C1C97C6556FA0390DF9E3AFA359DCAF0171B6D8745D9532D545A3CFE53A3",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5966490",
+          "timestamp": "179247560410",
+          "difficulty": "106225735259973",
+          "proofGamma": "CD070CEAD07ECFFC6AC218DD0D64AAD2C4B5B7AA8F9F7FB75331FFB4C318BC0F",
+          "proofVerificationHash": "144E1EED692726B8189D561F62F2F327",
+          "proofScalar": "4EC144C281F02A11BEBEB03475D5E0D578DE75FCECF323279ACDB0F90B29300F",
+          "previousBlockHash": "C339F265E84AB66418AD67E8FFAA812F9FE05E1E0F57CD8A1935C1262A47BF24",
+          "transactionsHash": "12A9FBB1D6CB825E6443209BB3BF2984ECBDF452FA95DCAE45D99D77168BE30F",
+          "receiptsHash": "2949C4B5B44CDCB3C5E4FD19DCFB6A0F7FBC5F554E63043317E17138689F3F0A",
+          "stateHash": "8247CE76F8C21D53810C8A3B4347EB488385D8B8F2C4A30128A731DEFBB1A40D",
+          "beneficiaryAddress": "684F4EC6601902A6B0C8A53002A5F64275DFBC3108397DF0",
+          "feeMultiplier": 59
+        },
+        "id": "6AFF10436B8437479E008056"
+      },
+      "transaction": {
+        "meta": {
+          "height": "5966490",
+          "hash": "12A9FBB1D6CB825E6443209BB3BF2984ECBDF452FA95DCAE45D99D77168BE30F",
+          "merkleComponentHash": "12A9FBB1D6CB825E6443209BB3BF2984ECBDF452FA95DCAE45D99D77168BE30F",
+          "index": 0,
+          "timestamp": "179247560410",
+          "feeMultiplier": 59
+        },
+        "transaction": {
+          "size": 184,
+          "signature": "318C52DDCE882450AA0B08608620C6107BE45A0129BE816EDBCF65B378F58BE0620460C44CFE7DD8ECB5FBEF8F265372C3BF5353A4E799034DD70F4C9E6EEA06",
+          "signerPublicKey": "7013E148F0C63149C095F81DC38DD9E94C21C2958B9C5F9A56A1C559597BF898",
+          "version": 1,
+          "network": 104,
+          "type": 16712,
+          "maxFee": "10856",
+          "deadline": "179269146552",
+          "duration": "5760",
+          "mosaicId": "6BED913FA20223F8",
+          "amount": "10000000",
+          "hash": "18E0DA61F8761274C2BAFC6303EEB0A2194A299E12BD991FD6DD3A72CA617AE5"
+        },
+        "id": "6AFF10436B8437479E008053"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "secret_lock": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16722&embedded=false&pageSize=10&fromHeight=5000000&toHeight=5600000&order=desc",
+        "block": "/blocks/5593953",
+        "proof": "/blocks/5593953/transactions/77EDC017E490F708CFA9C5324EA26DBD59A1D36CAEE1E37DAFA641BD7D8EE54A/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "11932359A60C03902163B35D1DDF8BCD454A459581D150A579B90F846E19D234",
+          "generationHash": "FDE609CE6E4FA5159C11F21EE6323D33862E72A450E38A751BE8200FB57A4FF1",
+          "totalFee": "20900",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "3CD4362B396C7DCB9648488DBE60AF2665AE2F4D5B75818B0D5FCEB1319386F2",
+            "A39410B20ED5711596F49FEEB23DDA39B09163BE84E5C5476ECB858333EE7DC4",
+            "809A4421DB5A0BAA843133BDC47BC5CF5427ED78F137FCFB2E4F17BAFDA6D156",
+            "DEE317199596198529FA8F80EDD13BD8B3EFF9B1CCF261AE678DF62B237CCECF",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "AF8177DD682EDE1DBC17FBD99DA7F0E8CC84DD3315B316F0B4E220D525AD902E",
+            "72D9A475EECFA47386A3915FE5D12FD25544DAEF7B8B17A23B93AE145E526372",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "81EDADDAEBAACC4A28BAF124175BCEAAA733A1E6BD41A91702C3C0FEE9F5FA48"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 2
+        },
+        "block": {
+          "size": 585,
+          "signature": "F80CD2FD2AB0F29AD4E4AD35AAC4C991B345C64EB7BCCA2775C5418C45D1F0BA3D8D7A239FF5338852668C033359B955BF43A5870B3AEF755AB20053CC8B640A",
+          "signerPublicKey": "8007C29B4FD10B34BE07BEDF9D76F4BE04DC865C0975BAC3E40DBCBFE37EE3A4",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5593953",
+          "timestamp": "168059803397",
+          "difficulty": "120680523214841",
+          "proofGamma": "0682E0B1C89E77470A82A88FA9E68F4308CBE1676194A5E195E6AEB5517EA3F5",
+          "proofVerificationHash": "55F348A328209BA36302E35F14677603",
+          "proofScalar": "5BD37614DBBDE290BE624DF37A0C681C0A3BF6C4C9F70927D5753B3A319A7400",
+          "previousBlockHash": "3CC94B569760DD8255E824D67DC00A0CC34B46C911070C3CB21BD46EDF2C7343",
+          "transactionsHash": "77EDC017E490F708CFA9C5324EA26DBD59A1D36CAEE1E37DAFA641BD7D8EE54A",
+          "receiptsHash": "E586B5CA8531AEC869074FA603C8CFB2A13266E4D72523B69D3CBD0E73336859",
+          "stateHash": "3BF60B2C7B856CD1DA194B14896324E745EE2B49DB3E12AA20E4E3D315BD6A08",
+          "beneficiaryAddress": "68035269AA71F8ADEFCE0D6535548C61681EE8562260ED2E",
+          "feeMultiplier": 100
+        },
+        "id": "6A8EC6051EF2468220AC8DC0"
+      },
+      "transaction": {
+        "meta": {
+          "height": "5593953",
+          "hash": "77EDC017E490F708CFA9C5324EA26DBD59A1D36CAEE1E37DAFA641BD7D8EE54A",
+          "merkleComponentHash": "77EDC017E490F708CFA9C5324EA26DBD59A1D36CAEE1E37DAFA641BD7D8EE54A",
+          "index": 0,
+          "timestamp": "168059803397",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 209,
+          "signature": "D0898D4E639F3B29220938526F6B6E9DCDC54E08B89B171A5095A182657E5DD63185685719A30CC18184DE4EAC4148E03CCB16329A1BD70F9253DE1CDF505D0E",
+          "signerPublicKey": "0CE97D450AFBA89A4D1506AA30F00E388E302F4F4455CED3153C4CAACEC34006",
+          "version": 1,
+          "network": 104,
+          "type": 16722,
+          "maxFee": "20900",
+          "deadline": "168066986000",
+          "duration": "5760",
+          "mosaicId": "6BED913FA20223F8",
+          "amount": "1000000",
+          "hashAlgorithm": 0,
+          "secret": "47737C26A5D86262A568834137C1A4885E94077819B4ECE1FC33E2C3331D3F23",
+          "recipientAddress": "6860F8C38DDE2975DBBCC37ED33C3AB3B17E7FA0E47C6C5B"
+        },
+        "id": "6A8EC6051EF2468220AC8DBD"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "secret_proof": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16978&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/5136429",
+        "proof": "/blocks/5136429/transactions/07E1DE23A36BF8DF6E63FE35F3FEAE0635A428D86445546CA18C7A15BBA75CB4/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "6FB2EE098F025BABD425E023F6690CDFCB25BD4A88F092BA62652FA46DCEF6D9",
+          "generationHash": "F0858D6C4859A620C472867F3D090A9805C79DDC940A10CA8B01F4554E928A9F",
+          "totalFee": "29394",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "9DCE551003DFD6B9D9C8DAB44882312C3F91058F00828F1D6BDC7D98F3A1AE71",
+            "5131F2B7D6227603197C406C9C3F38144C1F7B4732C3A1875D688EE55E5C6489",
+            "C78AE25130BA3E23F1A2A73E0D271D4FC6AC254FD765BBA2A954D907CEED1972",
+            "628624664E0124369FEEF65D92B300316C4E88825802DB73D419D52107E1CAC7",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "E9E9B7C2A76AAAEDD5C1B586FAD7A79BF173014D3D8F0C726191E4396C1503E7",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "68AFD0302932F95E687159F738312B2D98DDFEF73537AEB7B32F466AA2B9240C"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 2
+        },
+        "block": {
+          "size": 583,
+          "signature": "89FBE99BE6DD79CC1169E1D14A7084339637F146D1DCE00AE1B2D32F810E5A7E36E2F3370CE487204C42BD3F86AFFC4F9E1796684F5F0A2D18D6ACCDD421AB01",
+          "signerPublicKey": "DF98FF767B679B53D366BDF2A7BF34ABC95A1DC9BE134579050CC06B61693BFC",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5136429",
+          "timestamp": "154321086314",
+          "difficulty": "121281877209946",
+          "proofGamma": "81CFF85858295E5B8B7AE597FE533140B90968E0D2D73AEB96BE393FBFCCE73A",
+          "proofVerificationHash": "A4087B3C89C4489F104DB1F167B7E667",
+          "proofScalar": "5F4DA17CB248EC24D23AD685D0ED03BD5E4ACCB9AF80810571FA4CB694A3260B",
+          "previousBlockHash": "8AD544DCA08E04BA7E561CFADD33FC0B51BD591E052AE44E87AB6211EC6B1E92",
+          "transactionsHash": "07E1DE23A36BF8DF6E63FE35F3FEAE0635A428D86445546CA18C7A15BBA75CB4",
+          "receiptsHash": "C104BA5EA5C57C4CF06AB54C889E3BEF6004E4D03107ACFF02B420E960E81F82",
+          "stateHash": "FF356B7EA767CAD9314A8F970B53996D71B437F5003F86967AA09CFB71C10436",
+          "beneficiaryAddress": "68035269AA71F8ADEFCE0D6535548C61681EE8562260ED2E",
+          "feeMultiplier": 142
+        },
+        "id": "6A8E87151EF24682209C8F4A"
+      },
+      "transaction": {
+        "meta": {
+          "height": "5136429",
+          "hash": "07E1DE23A36BF8DF6E63FE35F3FEAE0635A428D86445546CA18C7A15BBA75CB4",
+          "merkleComponentHash": "07E1DE23A36BF8DF6E63FE35F3FEAE0635A428D86445546CA18C7A15BBA75CB4",
+          "index": 0,
+          "timestamp": "154321086314",
+          "feeMultiplier": 142
+        },
+        "transaction": {
+          "size": 207,
+          "signature": "B2AA033D465B9880D5A9D4F0E93E505BA2B5DB7F1C4F5DFB7326AFEEDDCCA506BBD0F93C46B3388E8D9B7A328AD5B1A285B19A7FD81322256013DE5A7BAED20B",
+          "signerPublicKey": "096122224A49FD3127F358B036D45CBF99037BF652B02A697D9973D8ED246373",
+          "version": 1,
+          "network": 104,
+          "type": 16978,
+          "maxFee": "29394",
+          "deadline": "154339061430",
+          "hashAlgorithm": 0,
+          "secret": "36B5123EC4A0819308AF0CC8B87485AAF143E3B4E3F3F7316DB7C1E884434EA2",
+          "recipientAddress": "68C9F75EB98B419243D644A4FE2DAE01C93D0978777FE205",
+          "proof": "1608A533952F2AF0261E79947EDEF07AD72DED32"
+        },
+        "id": "6A8E87151EF24682209C8F47"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "mosaic_definition": {
+      "network": "testnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16717&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/3476592",
+        "proof": "/blocks/3476592/transactions/6B192A051C6C7CFA5D18ACD6ACADEBB37CA4FCF49AA9EE92CB110699E5E49627/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "DFA0C06DB8DE27BB2FB5EB2C12E75F6EA0BC662C0D1826A17DC8A9A91D62A45D",
+          "generationHash": "D1E31FE6C9133CD5BB7C2E0612718E953D798F76C4C3C7E8E647B9505FB36B73",
+          "totalFee": "15000",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "E11C19C00C6C9D17D3F271A1E334DD7C4C7E837A57B8A13D2DF96E9768CAF8E0",
+            "FB8D1059802899750850C7F51C5A0D684922E6B60F7CD557C540A0098B3A265C",
+            "6F3D2CECD627BC346CF03322DB2D25941D597E757CF5DD9194D90EC5D8B12EF4",
+            "98B1423B3E140703AABF78E566CE49513BA1B6E4A4593CE92F1207E8A74FFB8A",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "9C56E94000509EDC36472B5F67D4E2C4ACFF59A6B52C27650583E85C03034139",
+            "97DDD439501320F9AD25CBBCAD2F54F425A9A85AC15E50585F7A68A37CCB7CA0",
+            "08C16742E86F1E19662BE644E532EC0AB5A107FA87831DF13BDFBB33BA2E1C32"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 2
+        },
+        "block": {
+          "size": 526,
+          "signature": "9977D03B38E1825603FE63B1AC7C245AFB34A2D7EAD5D9EBEB1D421B3FDF797F2C4E099123E1162E1FC462AB2839244C5D9780196948C526DADEEE25327E6B0C",
+          "signerPublicKey": "36EAF65AFA6805A2CFE768492F699130182E079D9ACD9B4C9A52827172159EB2",
+          "version": 1,
+          "network": 152,
+          "type": 33091,
+          "height": "3476592",
+          "timestamp": "114586348824",
+          "difficulty": "10811759240024",
+          "proofGamma": "B9FE18ADF9B29EC722B4B423FAC6E7EFC85C4FA5F55E72826AD747614A54271B",
+          "proofVerificationHash": "E0DBA8F163987D08BD3CCD0E80AF7283",
+          "proofScalar": "41252BC3EAFCBBA7EE5BA54D8DDC3E1FF5F48D957780DC21014492B03CE55E08",
+          "previousBlockHash": "5E1A67FE9809D7EFB42BDC415413F1431313964FA3284419C801F963333281DA",
+          "transactionsHash": "6B192A051C6C7CFA5D18ACD6ACADEBB37CA4FCF49AA9EE92CB110699E5E49627",
+          "receiptsHash": "7FB2249D8B611F4A63A0E7C478F2D49DE7BAC80542CEA8447189E589679C8400",
+          "stateHash": "27C28158C353AAEFA7B787F6F17DA8CD7138B1A5C97C5BE07992D3BE941AEBC4",
+          "beneficiaryAddress": "98F676EE20FB22D82FBC07C366E822249607E0F0AC72B031",
+          "feeMultiplier": 100
+        },
+        "id": "6B005475CB5702EF26BEF043"
+      },
+      "transaction": {
+        "meta": {
+          "height": "3476592",
+          "hash": "6B192A051C6C7CFA5D18ACD6ACADEBB37CA4FCF49AA9EE92CB110699E5E49627",
+          "merkleComponentHash": "6B192A051C6C7CFA5D18ACD6ACADEBB37CA4FCF49AA9EE92CB110699E5E49627",
+          "index": 0,
+          "timestamp": "114586348824",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 150,
+          "signature": "3B363A192F16F00EFC23C516F9878451FD44319C18EB8CDA33F2BE3A261FD05FCF8AE73713A57F2A61B21FA358A2FA1C9303A349FB3DA3AE477B324F7EE2010E",
+          "signerPublicKey": "B2942BFC1C60990BD360B5B089FAFC145244B8840E8BE92108959F1213477AFF",
+          "version": 1,
+          "network": 152,
+          "type": 16717,
+          "maxFee": "15000",
+          "deadline": "114593520558",
+          "nonce": 123,
+          "id": "42B244EEF658A3A9",
+          "flags": 8,
+          "divisibility": 0,
+          "duration": "0"
+        },
+        "id": "6B005475CB5702EF26BEF040"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "mosaic_supply_change": {
+      "network": "testnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16973&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/3476593",
+        "proof": "/blocks/3476593/transactions/2D3A1AD3A88B8333841A800DA7595C1703127AB27AAFA41BEA4EB53A8BDBBBEC/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "CA129757835DD7EA47EF07D47CB6D0688A2CC5B4BF80EC07C35751A9DC7AF1B1",
+          "generationHash": "EE6CC984ECA1A367BE32C4DA4A75DD6EC45F6B6584DD7981194D2696FA193249",
+          "totalFee": "14500",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "955EFF2DC68B526B29BCF40C679955FD6F1B0CA1B0C2FA539C24059F5011A217",
+            "FB8D1059802899750850C7F51C5A0D684922E6B60F7CD557C540A0098B3A265C",
+            "C3F8CFB5F83C65C85FAC7AACCB443D1618C0A42BDC2D640869037EAA9D5E249A",
+            "98B1423B3E140703AABF78E566CE49513BA1B6E4A4593CE92F1207E8A74FFB8A",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "9C56E94000509EDC36472B5F67D4E2C4ACFF59A6B52C27650583E85C03034139",
+            "97DDD439501320F9AD25CBBCAD2F54F425A9A85AC15E50585F7A68A37CCB7CA0",
+            "08C16742E86F1E19662BE644E532EC0AB5A107FA87831DF13BDFBB33BA2E1C32"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 521,
+          "signature": "BCD7BC4EC76884169CB38E028DB9261B259A0963BF2898CF2007BA426E09C192F5AF4F748C9436A5621DDA1BD6DABB9DFB3A0B87332BAB12696B09FC33163B07",
+          "signerPublicKey": "B1913E3FE25A38AAFCFD2211D8B445BFC26D66BF19C2FBB02C0D01CF21E5B5C3",
+          "version": 1,
+          "network": 152,
+          "type": 33091,
+          "height": "3476593",
+          "timestamp": "114586374967",
+          "difficulty": "10809192914126",
+          "proofGamma": "927C7865AC0497E2FA20A12DB2B817BB91336B15E2989B759A182F2AA06143E6",
+          "proofVerificationHash": "319A12B3F722BE27B0CB42D22211F333",
+          "proofScalar": "98A7F709668FD68696E3043EC0871B3066278BD4759196E01C12DB5E0851DB00",
+          "previousBlockHash": "DFA0C06DB8DE27BB2FB5EB2C12E75F6EA0BC662C0D1826A17DC8A9A91D62A45D",
+          "transactionsHash": "2D3A1AD3A88B8333841A800DA7595C1703127AB27AAFA41BEA4EB53A8BDBBBEC",
+          "receiptsHash": "4F7DBFBD35140F892706EE99A6E5A1D0E55890ECABA2FD0C5432F0AD356D2DE2",
+          "stateHash": "DAE52959DCC30BB33A73B4DC8376608D1DF55A6AC84FA0DF22AD6108886916C3",
+          "beneficiaryAddress": "98F8CCFBCCAD2FE24DA8BB565F481FC466FA785CBF7D94C0",
+          "feeMultiplier": 100
+        },
+        "id": "6B005475CB5702EF26BEF046"
+      },
+      "transaction": {
+        "meta": {
+          "height": "3476593",
+          "hash": "2D3A1AD3A88B8333841A800DA7595C1703127AB27AAFA41BEA4EB53A8BDBBBEC",
+          "merkleComponentHash": "2D3A1AD3A88B8333841A800DA7595C1703127AB27AAFA41BEA4EB53A8BDBBBEC",
+          "index": 0,
+          "timestamp": "114586374967",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 145,
+          "signature": "8769CF24DFC0BDE17013E154D160A0D06273CE3428E7C782EA68452F2D10A650DAC874E1C9B93778DEBDCF8286C2078D20089B557A781AA405A6FF3C170BD80F",
+          "signerPublicKey": "B2942BFC1C60990BD360B5B089FAFC145244B8840E8BE92108959F1213477AFF",
+          "version": 1,
+          "network": 152,
+          "type": 16973,
+          "maxFee": "14500",
+          "deadline": "114593560724",
+          "mosaicId": "42B244EEF658A3A9",
+          "action": 1,
+          "delta": "10000"
+        },
+        "id": "6B005475CB5702EF26BEF044"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "mosaic_supply_revocation": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=17229&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/5968241",
+        "proof": "/blocks/5968241/transactions/76F9FF8EEFF224EF066CC97E15D5F427CF104745A56AF375B8B8976C1EA99CED/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "43A661E69B2683B7EBED92C67565FE0E7AC301617362D61A9242BC88CCF10552",
+          "generationHash": "FFE89CDF70DC3C59C3D689AFFED335A1A680931B4A61CF1AAC9E6496ADF05393",
+          "totalFee": "16800",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "1AB7A0D2F46BEC6E2B2F231B607B8A47BB0ADDB4499F303B94FB71D4DF24273C",
+            "738153A1E31524BCBE8D458DF0AFA4528ABCFC5FAC67796F9331BCC132BD6CF8",
+            "3117FFBA6AB258D7CD041F47C3C8658BF8FEAC308781A302278F5AF0FC6F78E0",
+            "F3C58780CB033A91AFBB74F2A0AD03A57D3EEF087E93F62D987E48B40E023140",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "B43BE24B4D3982803001367065CFA9F694C4298EFE2F21A958A2C23016C7E7D5",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "65B568744C3E8C86C5EC9E408E406238EE8204FBC5F0B9CD056555179B561CCA"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 544,
+          "signature": "B4996EC7962B9EF3BE6C3D64D9865B6842D63DEC4E677F4C8A9DE523493B73B958F6940E9ADB1914CCBFBC068A1BD19F962493F5F44607C34EAE9780F10E7606",
+          "signerPublicKey": "9C8E84283E930AD92ED8F85F0DBF39196DD01255BA35C2C0E163F6C48BC49AA0",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5968241",
+          "timestamp": "179300147800",
+          "difficulty": "104177593179539",
+          "proofGamma": "5A19B4FD0655017E3995CF4D280A335F2509F2ADBD660C96C43AA4211A714EB8",
+          "proofVerificationHash": "078908012D9CB4247F32BC6155AA62BC",
+          "proofScalar": "09D0366010C4016879762C398CDB5EF31A6CC3FED6DDFB50206F62F9FC647D0B",
+          "previousBlockHash": "A78AD14E1519DB5B36960ABDA91F528976C523BDB0E62FC27D73ACEB25AF9EDF",
+          "transactionsHash": "76F9FF8EEFF224EF066CC97E15D5F427CF104745A56AF375B8B8976C1EA99CED",
+          "receiptsHash": "E8B23E5F4EEF959ECDF3DD2C83A90828BFD29862FC43D993E97B433B41C1ECBC",
+          "stateHash": "0C52E2D29DC758B5CFE7B52D6D06035F11FECDAF8FC7AE898D9BE6E585BB6B1F",
+          "beneficiaryAddress": "68BDC52DED667A8DC2925C58CD867C246DB9F5315CE99C56",
+          "feeMultiplier": 100
+        },
+        "id": "6AFFDDAE6B8437479E008EFF"
+      },
+      "transaction": {
+        "meta": {
+          "height": "5968241",
+          "hash": "76F9FF8EEFF224EF066CC97E15D5F427CF104745A56AF375B8B8976C1EA99CED",
+          "merkleComponentHash": "76F9FF8EEFF224EF066CC97E15D5F427CF104745A56AF375B8B8976C1EA99CED",
+          "index": 0,
+          "timestamp": "179300147800",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 168,
+          "signature": "09D2A802663B7F3ED723B39DB516D16D8D78489EA4740AC4D65EA9AF4243A59DB08438FB4E0DD1A4F92B07D1D8AA72B3D87C0859CC03959FAE354264DC09F902",
+          "signerPublicKey": "313D9280B406364C8E7C9DB01EA815E2D90ECD264CCD3CE839316B7A17C25A53",
+          "version": 1,
+          "network": 104,
+          "type": 17229,
+          "maxFee": "16800",
+          "deadline": "179307329914",
+          "sourceAddress": "6810B0A04C78235CB777FC5854B209CC6ED1A57FFD73CED1",
+          "mosaicId": "1F0678830E5BF221",
+          "amount": "3000"
+        },
+        "id": "6AFFDDAE6B8437479E008EFD"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "address_alias": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16974&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/5862818",
+        "proof": "/blocks/5862818/transactions/409B3E358CA52740ECD99574AB94ECB00A18C48B80B911C0A5393F844AE3C845/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "789A757F0F29DDED70A54381F00EE8216FCBC1A6E5E735DD61875CB45A56455F",
+          "generationHash": "F7237AB49595DE883956C10B17E602084A20CEEF1B54F606E08CA47C6B7E4CE0",
+          "totalFee": "16100",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "0F9EC0C3C4B76DE394BDAD46C312F2E0DA5BAAFEB955BC6D43BCD3344A395E06",
+            "B0D642D37DB9CFF2A2CB43D60B8F8E75E4D505E1C4D22491A16E7A2F5068138F",
+            "BE2F2E8C0FB72CCD6F9E5E3558D55BAE7B186C5BE108031978C905FAABE28285",
+            "88A8AC1EC7594478FA93A2627A2F98AC3674F75A18621FA10B3E3DA8172C728F",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "F2D21F1C58C9C06AB6D353FBEC8756FFF50A5D0A4A413EBEE7DE3EF3F1D3B576",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "88C8BAD1E6E0E7358D1EBD5236DCC941834866E26A74575160EFC6F03B8563F6"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 537,
+          "signature": "D31CF17EDF554287ABF1A58C36431653C1A728F20C03EA476C6A9A1F8AF5BA7BF00A55A694C9BC40A1F89E8B3C95D407BD1F494AB222010355F2F6CF13201A08",
+          "signerPublicKey": "932B5EE81F47BE80D970DF960B9D76BFC6B894D4BAC7CA962F7F1109C5C4C85C",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5862818",
+          "timestamp": "176133359147",
+          "difficulty": "109976287396684",
+          "proofGamma": "831E9BE468C7F35819A4E74C21E2A715E35946966F777A7110C5E7F5299F268C",
+          "proofVerificationHash": "0870D3C5AAAF45AB1375FE7C069EBDBD",
+          "proofScalar": "F1FC3B4DE166E447BE484CFFE190DF1A8AF94633A1F63FD5D65FD09EC1CC7A0E",
+          "previousBlockHash": "8686C2F44787FD568AF2DAEB963D65F4F5EB982660DBF482511D3C57B4D9802F",
+          "transactionsHash": "409B3E358CA52740ECD99574AB94ECB00A18C48B80B911C0A5393F844AE3C845",
+          "receiptsHash": "9AD7385376EA7BF97D03404A7AF1684419D8C6613D8DE827946DDFB34C53EDCD",
+          "stateHash": "24F03A23921B1AED6C3C98919E7838BD1E088BCCA548437435EE037A09B13874",
+          "beneficiaryAddress": "6884D3CE6A30E0ECC42DDA0C15A907556C2E0FCCC9A0949D",
+          "feeMultiplier": 100
+        },
+        "id": "6ACF9740B3394D84DC0CE600"
+      },
+      "transaction": {
+        "meta": {
+          "height": "5862818",
+          "hash": "409B3E358CA52740ECD99574AB94ECB00A18C48B80B911C0A5393F844AE3C845",
+          "merkleComponentHash": "409B3E358CA52740ECD99574AB94ECB00A18C48B80B911C0A5393F844AE3C845",
+          "index": 0,
+          "timestamp": "176133359147",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 161,
+          "signature": "AA23265A313B4F225EDD11F97FC9545FC9375F34B6E7F96C68E166E688BA3C9E12D3614B9AF97E18E8E1B26676639E13934691564BC5F40DDAE7B044E3469C00",
+          "signerPublicKey": "AB8E9C454A03C992FC302F285BC16B5015FF6FE6AECF6DC2CE30FAEA766C47AD",
+          "version": 1,
+          "network": 104,
+          "type": 16974,
+          "maxFee": "16100",
+          "deadline": "176140282007",
+          "namespaceId": "BB2EBDD003BB2BA4",
+          "aliasAction": 1,
+          "address": "68FEFD82F0A79B53CB571D625702EFF401FE4E5BC6B93019"
+        },
+        "id": "6ACF9740B3394D84DC0CE5FE"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "mosaic_alias": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=17230&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/5862922",
+        "proof": "/blocks/5862922/transactions/831A77D51BD5EEEFE8E758F8E6C800BA3EE14D409BECD1883DDB2538E8A5109C/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "F26C2F29624F18CC710543208CB426AE1D3C08ECCF43299C8F83E291DA82DDF3",
+          "generationHash": "FF5C6902572713D9BBCFB83DDCA5FE77D01AD0C2C7A3F489BF1825B9FA0A4543",
+          "totalFee": "14500",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "446C2F4CE37870FD3E8C8C51E602F19241C91A6C0D3C7D429CE7E93D7430D820",
+            "9293F2DB22FF63C29BD9292FCF37FD8DFD07BFBAD88E2F774AF4172A957B6B7F",
+            "2CC36B658A908E9B1310F71E0AD6839D7BFD2BCCF1962AB176F1A3A167224BAC",
+            "88A8AC1EC7594478FA93A2627A2F98AC3674F75A18621FA10B3E3DA8172C728F",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "F2D21F1C58C9C06AB6D353FBEC8756FFF50A5D0A4A413EBEE7DE3EF3F1D3B576",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "88C8BAD1E6E0E7358D1EBD5236DCC941834866E26A74575160EFC6F03B8563F6"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 521,
+          "signature": "EC081F328EB6348F4B255E374176C74D56643617406983DF3D3DD371E88E59FC247142739A82F53C2C2FB5ED45DC2B690F55A14EADC43738385AFA521154D303",
+          "signerPublicKey": "C8B8204703B5434AFB2057A21E724D08A54D8CDAFC6CE993F291357FAF7179B1",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5862922",
+          "timestamp": "176136410601",
+          "difficulty": "116714466285378",
+          "proofGamma": "A4D0A4F1034BF3CDEE04EB9B59C0F3C001AE71D1BEC154C392308BB16DEF0422",
+          "proofVerificationHash": "88EB94497B09B82CCD5DA1DF9A523BE6",
+          "proofScalar": "6DB813AADBE648CDE006742C0E3A7A6C85546365DA307A998E89CDF65EE2D009",
+          "previousBlockHash": "C818D307A21CEE70C500A1AED507DDC63DB680DA283960541370EF4571BF52D5",
+          "transactionsHash": "831A77D51BD5EEEFE8E758F8E6C800BA3EE14D409BECD1883DDB2538E8A5109C",
+          "receiptsHash": "0A80084488520BF629BE5127D5F8D1D2181B30C82DBCDDE7E0AC8CA75814D86E",
+          "stateHash": "AEE5C3F06B321F6010031E324FA3144DBAC8E17FF2DB266A512CF92E021CB7FA",
+          "beneficiaryAddress": "687672E2953277629D96D8571F06709EEAF21E301BCF87DC",
+          "feeMultiplier": 100
+        },
+        "id": "6ACF9756B3394D84DC0CE6DF"
+      },
+      "transaction": {
+        "meta": {
+          "height": "5862922",
+          "hash": "831A77D51BD5EEEFE8E758F8E6C800BA3EE14D409BECD1883DDB2538E8A5109C",
+          "merkleComponentHash": "831A77D51BD5EEEFE8E758F8E6C800BA3EE14D409BECD1883DDB2538E8A5109C",
+          "index": 0,
+          "timestamp": "176136410601",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 145,
+          "signature": "23126D038BF159E53BB1DABF397D5A87404F93650D1B65084E0310C4298C1054B5B9E1F6DC3856DAA95C455796679E29CD26ADD3262D9AA8B01F714811DAF50F",
+          "signerPublicKey": "AB8E9C454A03C992FC302F285BC16B5015FF6FE6AECF6DC2CE30FAEA766C47AD",
+          "version": 1,
+          "network": 104,
+          "type": 17230,
+          "maxFee": "14500",
+          "deadline": "176142937304",
+          "namespaceId": "BB351303E34EC167",
+          "aliasAction": 1,
+          "mosaicId": "391A8E0B556D1236"
+        },
+        "id": "6ACF9756B3394D84DC0CE6DD"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "namespace_registration_root": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16718&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/5811018",
+        "proof": "/blocks/5811018/transactions/881D9AEA42E82D9A18B6E92CFAF9B78FB0B98C438DEA78B12A96CE42C4B260EC/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "56D54EBE40E7BBC8381113973CE28FEA855174D01A29FD38A9B50BF2D3E84F75",
+          "generationHash": "FFA22966E27E083D39131B883B82B5A0FE0830EF04EABAC8D7963DBEED1DE05E",
+          "totalFee": "14800",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "0F7938C84FEA45481016F1AC6FE6EB0F833FE382DB6FD52833C2E5D97B02AA38",
+            "F83048F56E78798186F873820B00C1498BB3DA7337839B6E7AD71516773D1ECA",
+            "04B499810A1C7AFED20619CDC303A35478295BAA23693B7FC4AC13E1CDFD498A",
+            "5B95ECB28F5CBB65216F653A2FDD2F59E6341FE433AF404A3EA74A9A520C6E6A",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "3897A60BE37CCA8ABCA4DD7D75973E73821CEB4B80D20C6C16A6339E63F1E948",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "BB937DC81F7CA1DDBD96F6B5AF443E51D5AEEC9F9D9548EB37CC4BEB0D1235C1"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 2
+        },
+        "block": {
+          "size": 524,
+          "signature": "BCB5A4BAD152B5BA570984D146A2BCCDDBF953CD84282DBA6D3FE015D8DF6E4C0DF3B395F945D3F8899232739AE9145CC16D4A0849C49F85B8BF2176BED7BA0D",
+          "signerPublicKey": "5CE54C8C79F82F7DF4E82ABDAEDA5F339699F32C6727ADBB9FD77E3C83455C0B",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5811018",
+          "timestamp": "174577757017",
+          "difficulty": "127905882922917",
+          "proofGamma": "C9A2F71A246B71F2883FF85483EBE85BB88F783FD11F9C923532D2AD40CD4D60",
+          "proofVerificationHash": "84DB8E5AA3DD97D1D8ACB752530CBDCE",
+          "proofScalar": "5123F28B7F997BC64A8AD70965C94AFC8851B7EBFE1050B0800A54D9D0209003",
+          "previousBlockHash": "D5FA96F77AE5F95C6B0427A4E5D6231F04500655B3F38F625B3D5D936E0384D9",
+          "transactionsHash": "881D9AEA42E82D9A18B6E92CFAF9B78FB0B98C438DEA78B12A96CE42C4B260EC",
+          "receiptsHash": "BEFAACA2CD3188DDB60F77B8D3351CCDFC6B91C6642E2EB592439AD4BA1D3FC6",
+          "stateHash": "B8EA12CB59B3C9A37C83230682670E2E6FA446DF8145CDB75398BFE8353416E3",
+          "beneficiaryAddress": "688B8296BBE687099F39FC771C85989F1DBAB450E62BE7B9",
+          "feeMultiplier": 100
+        },
+        "id": "6AB7CED89DF11D77160A5453"
+      },
+      "transaction": {
+        "meta": {
+          "height": "5811018",
+          "hash": "881D9AEA42E82D9A18B6E92CFAF9B78FB0B98C438DEA78B12A96CE42C4B260EC",
+          "merkleComponentHash": "881D9AEA42E82D9A18B6E92CFAF9B78FB0B98C438DEA78B12A96CE42C4B260EC",
+          "index": 0,
+          "timestamp": "174577757017",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 148,
+          "signature": "436FA9E7AC64DEC9A3D566735F7253434C1A6DA448DDDF7A071021316F237012898F1F92557BCC45566CC7011545900463574FA6A530C5A2E40067ACD4A61B05",
+          "signerPublicKey": "E7AF04BFF8C6CF43A4FE993CAB5C4187360CDB6C2AF292372969A74F0C12BCE9",
+          "version": 1,
+          "network": 104,
+          "type": 16718,
+          "maxFee": "14800",
+          "deadline": "174584918511",
+          "registrationType": 0,
+          "duration": "2000000",
+          "id": "B0680AEC11C5DD0C",
+          "name": "ai"
+        },
+        "id": "6AB7CED89DF11D77160A5450"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "namespace_registration_child": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16718&embedded=false&pageSize=10&order=asc&fromHeight=2",
+        "block": "/blocks/756",
+        "proof": "/blocks/756/transactions/1FEC7131B46EB6C9DB6B869FF72BC8BCA9D73943899624813C16BF090D076CEF/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "F6207E1BFA0A888E644D67876F65A819DDB054B245F6535B11F2A9B9C96F5615",
+          "generationHash": "F6FC14E6199C20B1E95240C7CBBBE24885CE8E1657A4AC7F1D745588346A07FB",
+          "totalFee": "9781278",
+          "totalTransactionsCount": 31,
+          "stateHashSubCacheMerkleRoots": [
+            "EFD2C1AD1882F0C28DFB160843729A68D5247E98F6DD5D7FD44897DDC1FD3A3E",
+            "2DB06AA8542EF0985CD6C098F8CB9C0160C4B4919E873739F18E52DE7462BEAE",
+            "CC03A421F60C86B35F0F09645BD121415D031A01C928418AACF1751028303504",
+            "CC4B9B38058E90910181588DF88D8899451BCC62CB6333351B5B503388024F45",
+            "3C63E04F376D7F852AA7E6A80EFD0632E620F0C5C1CBF3464AD52BCFBC1E7993",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "84B7F1A18F6787417B6F49B3B7F805925B8EFD7A35589B8C674661CBA9EDA70E",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "transactionsCount": 16,
+          "statementsCount": 2
+        },
+        "block": {
+          "size": 4648,
+          "signature": "C803436B2ED09DAF364FD1675B0B6CB028E1EB9DC668E85CCAD8A53610C9D2DB8ABF886A669E565CF62C6A919EF77254799F7819E19F384B8F8F06E1F1962A0E",
+          "signerPublicKey": "070414CEE28B94B1E8088A5C57110E2DB80EB3BFDC74C8C06F964618EBFB9AE0",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "756",
+          "timestamp": "107319740",
+          "difficulty": "15840732035721",
+          "proofGamma": "3D30D65AF64962D2579410FE572D15B2C56A7960F73B86EE7C73C8FD32B95132",
+          "proofVerificationHash": "738D709F7397A83F6A9F87DA55153D73",
+          "proofScalar": "8A667D5983D79800BB2A8A142D1B71139D296DF7D9DF1B960672F3C49D461F09",
+          "previousBlockHash": "9F7BEB0C84F4523CDDFABFA514394A8A0EC43EF9DA609C33AB90DFD8F6B89082",
+          "transactionsHash": "75FADEBE8259714F258A4AEDF603FF0C42C8BF07C64C026811500B2F7CDD2AE4",
+          "receiptsHash": "5A65EE3C1C81E7EFB35481E25640268E5DB9223A7836D98F475F7D3D02D28243",
+          "stateHash": "53A45F645B0509A6B62DA6FB310C04D8E28C28CE9A483AEC77E10C798D6390C7",
+          "beneficiaryAddress": "6862F5B6D7AE0FBE2CC68517F82B79BDB26BBEE3DAF1A45A",
+          "feeMultiplier": 2314
+        },
+        "id": "6A8BADC6FB7CD68A0406BAD3"
+      },
+      "transaction": {
+        "meta": {
+          "height": "756",
+          "hash": "1FEC7131B46EB6C9DB6B869FF72BC8BCA9D73943899624813C16BF090D076CEF",
+          "merkleComponentHash": "1FEC7131B46EB6C9DB6B869FF72BC8BCA9D73943899624813C16BF090D076CEF",
+          "index": 8,
+          "timestamp": "107319740",
+          "feeMultiplier": 2314
+        },
+        "transaction": {
+          "size": 150,
+          "signature": "EEC2FF1337F8B1E2F9F9625BC5AD3081943BC95E0E81EED4560BBF0FCD4EA9B3B0DE6996E631C8161F2A2D66E83A757A8B9E3612DE08CAE7B0BE5C84EC18600B",
+          "signerPublicKey": "E0AEE1F3A30581DA2A179C35A01B7617DE81AB5883F27BAF3A1CEA3286D7FD7F",
+          "version": 1,
+          "network": 104,
+          "type": 16718,
+          "maxFee": "347100",
+          "deadline": "113959980",
+          "registrationType": 1,
+          "parentId": "A43415EB268C7385",
+          "id": "C612F303FD782796",
+          "name": "card"
+        },
+        "id": "6A8BADC6FB7CD68A0406BABD"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": [
+          {
+            "hash": "CB68BA726525AE4FD94C3CB872930C64BF9327630B97AF5B067BF409940267E9",
+            "position": "right"
+          },
+          {
+            "hash": "33201606B56987C14C9D35EA87FACE543620F1C3F8D9D644EC879C4788B7FCCE",
+            "position": "right"
+          },
+          {
+            "hash": "6D1E2C94B3F78339D56DE1B01EDA326B3E6555A1941FA97BC9B237650C3B5B6F",
+            "position": "right"
+          },
+          {
+            "hash": "88D6E1713C08446DF05DA4A509FCFB8A5E21A60574F7504F55C33108DD07342D",
+            "position": "left"
+          }
+        ]
+      }
+    },
+    "account_address_restriction": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16720&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/5925682",
+        "proof": "/blocks/5925682/transactions/D66F6403588660EAD3A94AC6B40F5C32225F47BB2150DC8378EDD40A5C68D8E1/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "B4DD940B9CED7C7123F87697722A595604DC0CEDE028746187394FA6C2BB22CA",
+          "generationHash": "FFFFED93050A310410DFF4616D5BC359A5E9D02CA050C88B02F0675376D65A8D",
+          "totalFee": "16000",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "26DDF5FFFC7B2E73549D95F4262FDDBED0D46249235DAEA2CACD28581CE70920",
+            "FBF5A1DB9768DCC113F8F2C838E277CAE95DDCB3B571F5BD929C9803C0257870",
+            "036F67733A667CF59FAD6AF74FEBD0410BA57C37B2F3EE441B684B7507B679A8",
+            "B096BC4660DC28EFAE510D8B1C826C811848FCA77DC2682DC416E23319F1CD4F",
+            "68452A323A86F31A86381BF39BA975A98ED29EA9092E257990D6E509FAC9C387",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "B43BE24B4D3982803001367065CFA9F694C4298EFE2F21A958A2C23016C7E7D5",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "822651B73DCC990234F353746E99AE485A83A1511D16E92305A6C1D71439C3CF"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 536,
+          "signature": "7C222DFCE0CD67C3195D571DE1A44AE943297F2F2B6F9989048A7BBA30CDA862F8A7F822E13642A814D4526A3B076D44DEA419911944BCA8E5358C35D9ED4401",
+          "signerPublicKey": "A6246D16E34E8E725938B4DCD4E66182B47CE3FAA7CD42C320910EF6FE73E866",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5925682",
+          "timestamp": "178020866435",
+          "difficulty": "131905226599173",
+          "proofGamma": "8041E992FACFA3BCBF4F0BAAA88FDBD31521793B3088DC5A6DC00E76B0CDC4D6",
+          "proofVerificationHash": "6B394B43B624DD4F3DD0165FB36C3508",
+          "proofScalar": "9A88E0234852697510F6E760C2D644B6665293E20C8AEFEB56C4BC52B0AE0503",
+          "previousBlockHash": "D0EAE3FFEF1686120D57087E88F10265493A97375EEBFC733A399494551118F6",
+          "transactionsHash": "D66F6403588660EAD3A94AC6B40F5C32225F47BB2150DC8378EDD40A5C68D8E1",
+          "receiptsHash": "3B1E03D0AE579B79063D3261F85F2C9664EDF3383A47BAF6325568BC6729A445",
+          "stateHash": "CFB17587404E5D2601414AD68ED07A490D791EF2E0F169A07692B495E18BDC4E",
+          "beneficiaryAddress": "686FCB0CB4B3AC464DC549BCFD0EA5BB789870AF5A147483",
+          "feeMultiplier": 100
+        },
+        "id": "6AEC589389A17219AA0250BD"
+      },
+      "transaction": {
+        "meta": {
+          "height": "5925682",
+          "hash": "D66F6403588660EAD3A94AC6B40F5C32225F47BB2150DC8378EDD40A5C68D8E1",
+          "merkleComponentHash": "D66F6403588660EAD3A94AC6B40F5C32225F47BB2150DC8378EDD40A5C68D8E1",
+          "index": 0,
+          "timestamp": "178020866435",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 160,
+          "signature": "E6031820206C673ACBC7F67AAAB47FAE65FC5935F1C48DF392D8BF42983ABC2F72949935E037AF5A861C38CC6D6B878A2528C47D9C496B6AD5147145CFECAD03",
+          "signerPublicKey": "840BCA627FC2D8A00317B093C21041B631AF62285FCA55EC90F07914C37F72B3",
+          "version": 1,
+          "network": 104,
+          "type": 16720,
+          "maxFee": "16000",
+          "deadline": "178031233064",
+          "restrictionFlags": 1,
+          "restrictionAdditions": [
+            "68255611A7F2AFA080B984A5F648B12AC03C0FE2C268BCA3"
+          ],
+          "restrictionDeletions": []
+        },
+        "id": "6AEC589389A17219AA0250BB"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "account_metadata_embedded": {
+      "network": "testnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16708&embedded=true&pageSize=10&order=desc",
+        "aggregate": "/transactions/confirmed?fromHeight=3476583&toHeight=3476583&pageSize=100&pageNumber=1&order=asc&embedded=true",
+        "block": "/blocks/3476583",
+        "proof": "/blocks/3476583/transactions/0C54EFCC2972B53247D019A31242AEAE5BD1434F835DA7B67E2D03B8C86F8B1E/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "16304C96A85460DA020AE4A44BE4A3AF2278290104449896E48985546695E6F0",
+          "generationHash": "C9629271F0DDC0B38EB3EB96C7CC9AAAFE1CEAA05B0BBF949625D60DED7AEE27",
+          "totalFee": "29600",
+          "totalTransactionsCount": 2,
+          "stateHashSubCacheMerkleRoots": [
+            "0679864003ACA23EEC6323A95949002FF108E53E6F6B5A6E8AD9A69A40CC2D40",
+            "EC691A64D1F8161734B99F53231A19EC8EC090C9308DC681201B29A4677591C4",
+            "884981737F9C0857F27D20AA36E616971767FFB40AA8CC51B5BA674A301C87F7",
+            "98B1423B3E140703AABF78E566CE49513BA1B6E4A4593CE92F1207E8A74FFB8A",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "9C56E94000509EDC36472B5F67D4E2C4ACFF59A6B52C27650583E85C03034139",
+            "97DDD439501320F9AD25CBBCAD2F54F425A9A85AC15E50585F7A68A37CCB7CA0",
+            "70AAEADC3BFB84DAC946CC96D75106726EC549857D8D71A9389DCED5C49E1025"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 672,
+          "signature": "3ABAD3583E2BF4AD0DD7AFBB7BCDBC318FF1A8E04D0F909C95C8FC16472D9DD78B6EEF2BCFDD7E874C7EF0CD39DE7104B4FB9A1A30B7A78B78D54A68E99AD904",
+          "signerPublicKey": "56FDD71F89193034761E5CBFB571491B1B72A7A6E72C5294493F0EFBFE170CBA",
+          "version": 1,
+          "network": 152,
+          "type": 33091,
+          "height": "3476583",
+          "timestamp": "114586145797",
+          "difficulty": "10316921241289",
+          "proofGamma": "79C70D3247AE3607399E123B38D803F9BDCE4CF7A64A1A25931AF3DBBA0AD7CA",
+          "proofVerificationHash": "88596AE53BB65D2545EA8300925F5C00",
+          "proofScalar": "1946BF3A490FE0D6FFA5F6D3834054EB9B3A9C6113543D7E6B4F99EE3911B503",
+          "previousBlockHash": "E9B0E386AD45B75B0039D2C7E33DC642881C9AC3B9828E4C5431B94DBFAF1A4B",
+          "transactionsHash": "0C54EFCC2972B53247D019A31242AEAE5BD1434F835DA7B67E2D03B8C86F8B1E",
+          "receiptsHash": "99B8417934147BEB78BFE323E5067002862D415E54689E726A20BADFD0D9425D",
+          "stateHash": "65CB260DEFD31EEDAE89A58BBF0E3DDCA8A06A758919089288BB6DB1926EFD38",
+          "beneficiaryAddress": "9860B7FE54FD99456EF8621397D913D1D3B7CEA97D8A96A6",
+          "feeMultiplier": 100
+        },
+        "id": "6B005475CB5702EF26BEF020"
+      },
+      "transaction": {
+        "meta": {
+          "height": "3476583",
+          "hash": "0C54EFCC2972B53247D019A31242AEAE5BD1434F835DA7B67E2D03B8C86F8B1E",
+          "merkleComponentHash": "0C54EFCC2972B53247D019A31242AEAE5BD1434F835DA7B67E2D03B8C86F8B1E",
+          "index": 0,
+          "timestamp": "114586145797",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 296,
+          "signature": "536AE0B6D3DF23AD36D2E4D634DEBE39B309FDC4267C01063D3A35A570AA08892AEB4E7DCEB2FA338E2F0E3312282EA51811E3A13522F9524AA863B7CB366F0E",
+          "signerPublicKey": "B2942BFC1C60990BD360B5B089FAFC145244B8840E8BE92108959F1213477AFF",
+          "version": 3,
+          "network": 152,
+          "type": 16705,
+          "maxFee": "29600",
+          "deadline": "114593319787",
+          "transactionsHash": "D6CA1E984DFC50A04FD799C49A99AA68CFBB72AF7741914069974764C0690ABE",
+          "cosignatures": []
+        },
+        "id": "6B005475CB5702EF26BEF01D"
+      },
+      "embeddedTransactions": [
+        {
+          "meta": {
+            "height": "3476583",
+            "aggregateHash": "0C54EFCC2972B53247D019A31242AEAE5BD1434F835DA7B67E2D03B8C86F8B1E",
+            "aggregateId": "6B005475CB5702EF26BEF01D",
+            "index": 0,
+            "timestamp": "114586145797",
+            "feeMultiplier": 100
+          },
+          "transaction": {
+            "signerPublicKey": "B2942BFC1C60990BD360B5B089FAFC145244B8840E8BE92108959F1213477AFF",
+            "version": 1,
+            "network": 152,
+            "type": 16708,
+            "targetAddress": "98CCC4375CF845099665A6DC4CF9AB708010688331224AC9",
+            "scopedMetadataKey": "0072657474697774",
+            "valueSizeDelta": -9,
+            "valueSize": 44,
+            "value": "00000000000000000000000000000000000000007E3B796B7F767E79757A626F7B65716D616C666F726D6564"
+          },
+          "id": "6B005475CB5702EF26BEF01E"
+        }
+      ],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "mosaic_metadata_embedded": {
+      "network": "testnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16964&embedded=true&pageSize=10&order=desc",
+        "aggregate": "/transactions/confirmed?fromHeight=3476602&toHeight=3476602&pageSize=100&pageNumber=1&order=asc&embedded=true",
+        "block": "/blocks/3476602",
+        "proof": "/blocks/3476602/transactions/8CAFF1442D1F7ED86F59A86BEDAD87A35541FEE8367E25433D5B7C0A42B38F1A/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "D5F48514EE64DFDFB977652D89AC732F453CEC52F9CAFB59C6170B8436EFFE5B",
+          "generationHash": "E87DD51203CB190A377F29CE520B2BE63EDB8B85A014DD29AA930CFB30F06BE8",
+          "totalFee": "36800",
+          "totalTransactionsCount": 2,
+          "stateHashSubCacheMerkleRoots": [
+            "CD6DFC5629922EAA615CC452B7A1722EDA52C74F8E8D3A728DEEB71A7802D6E0",
+            "FB8D1059802899750850C7F51C5A0D684922E6B60F7CD557C540A0098B3A265C",
+            "243B03ECE6F2CCF79F47F3910E58D7A73907013AF2EB549D2E05F12F74E0CDEA",
+            "98B1423B3E140703AABF78E566CE49513BA1B6E4A4593CE92F1207E8A74FFB8A",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "9C56E94000509EDC36472B5F67D4E2C4ACFF59A6B52C27650583E85C03034139",
+            "97DDD439501320F9AD25CBBCAD2F54F425A9A85AC15E50585F7A68A37CCB7CA0",
+            "60BF85D4D30EAF2DBA64E4C500B7601E066CD6CCEF943C01F007B609FA5D1097"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 744,
+          "signature": "ADF15EB153EB25761466453B1226ACBB1DAC144553C6F0D95CC18122C7BF2ED0A15D2A473E208306FE3221428F9CE7AA69BE6216F7576B678278982DFD89D905",
+          "signerPublicKey": "56FDD71F89193034761E5CBFB571491B1B72A7A6E72C5294493F0EFBFE170CBA",
+          "version": 1,
+          "network": 152,
+          "type": 33091,
+          "height": "3476602",
+          "timestamp": "114586657859",
+          "difficulty": "11041050555951",
+          "proofGamma": "AF233A8814E7EF6D7B2B28FA0E4129C248683C35CEDCA993CD0C3020B6D2E553",
+          "proofVerificationHash": "83534C77095BE0F8CC89024C96549114",
+          "proofScalar": "02E9B2C5FE24F74F4F4633733CC0DF40CA6FCFC31D2CC24F320B80279512220F",
+          "previousBlockHash": "1FA82021BA864063FB24B8E9260D6CFDC83F0BA835CA97221D346D5FCFEB3B10",
+          "transactionsHash": "8CAFF1442D1F7ED86F59A86BEDAD87A35541FEE8367E25433D5B7C0A42B38F1A",
+          "receiptsHash": "215AC5A82188DA27D5FBA8DB984A42807F226468121F187FD56B8C1247CA571E",
+          "stateHash": "7C7094F8144B078017E198734C2C518321F4D28D9B861A42D2AB5C2669BC26B0",
+          "beneficiaryAddress": "9860B7FE54FD99456EF8621397D913D1D3B7CEA97D8A96A6",
+          "feeMultiplier": 100
+        },
+        "id": "6B005475CB5702EF26BEF06A"
+      },
+      "transaction": {
+        "meta": {
+          "height": "3476602",
+          "hash": "0DE17F9A1CFFEDBB0EC43D9EA71EFEB871F90E2D268A3B308B28A80547DD4C37",
+          "merkleComponentHash": "8CAFF1442D1F7ED86F59A86BEDAD87A35541FEE8367E25433D5B7C0A42B38F1A",
+          "index": 0,
+          "timestamp": "114586657859",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 368,
+          "signature": "A9202C97DC965707DCFECB769EDD9E9C15C040267CEFFD7F26D9A8C0F25A85D7ECEEB7F8E916B2E78748CE0B233CC28C4C814ADCECF2175A1F18FB8F4241F30A",
+          "signerPublicKey": "34A54177C29F507530CCFF22716A4FE49783DCC75BEE1FA3D901E9E3E26A1613",
+          "version": 3,
+          "network": 152,
+          "type": 16705,
+          "maxFee": "36800",
+          "deadline": "114593801518",
+          "transactionsHash": "40943780E22872925D532FE07365476043C5199FF3D39C101A9A34B4E0A89BAB",
+          "cosignatures": [
+            {
+              "version": "0",
+              "signerPublicKey": "B2942BFC1C60990BD360B5B089FAFC145244B8840E8BE92108959F1213477AFF",
+              "signature": "FF87B6DEF9D897BEEC97CE2A24A1043BF5FB83F757C886FDB58B9A6F05E558A3481E38D16657B051872FFB11CBBB57B0E60231FFB0ADE1451F33EE5F06436606"
+            }
+          ]
+        },
+        "id": "6B005475CB5702EF26BEF067"
+      },
+      "embeddedTransactions": [
+        {
+          "meta": {
+            "height": "3476602",
+            "aggregateHash": "0DE17F9A1CFFEDBB0EC43D9EA71EFEB871F90E2D268A3B308B28A80547DD4C37",
+            "aggregateId": "6B005475CB5702EF26BEF067",
+            "index": 0,
+            "timestamp": "114586657859",
+            "feeMultiplier": 100
+          },
+          "transaction": {
+            "signerPublicKey": "34A54177C29F507530CCFF22716A4FE49783DCC75BEE1FA3D901E9E3E26A1613",
+            "version": 1,
+            "network": 152,
+            "type": 16964,
+            "targetAddress": "98CCC4375CF845099665A6DC4CF9AB708010688331224AC9",
+            "scopedMetadataKey": "0000676E69746172",
+            "targetMosaicId": "42B244EEF658A3A9",
+            "valueSizeDelta": 0,
+            "valueSize": 4,
+            "value": "91220000"
+          },
+          "id": "6B005475CB5702EF26BEF068"
+        }
+      ],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "namespace_metadata_embedded": {
+      "network": "testnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=17220&embedded=true&pageSize=10&order=desc",
+        "aggregate": "/transactions/confirmed?fromHeight=3476590&toHeight=3476590&pageSize=100&pageNumber=1&order=asc&embedded=true",
+        "block": "/blocks/3476590",
+        "proof": "/blocks/3476590/transactions/C14408A49C9631B6C00B8389FA3BA66E0EC0919D91F813C857B087C06FD2C993/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "F020B403A4452F97D3927C538AC16EB846286C02BEC49FEEB550D932A7A6419D",
+          "generationHash": "E6D2B3E5B22A89CB7F9239E2BA9C415423785F70C763CF97B8ACBE4808A2DFE0",
+          "totalFee": "28000",
+          "totalTransactionsCount": 2,
+          "stateHashSubCacheMerkleRoots": [
+            "26CD1BF1809C6B49B03EC11F8C6D1D6B35F5F95F5B5E58CB8BA50FFD84895175",
+            "FB8D1059802899750850C7F51C5A0D684922E6B60F7CD557C540A0098B3A265C",
+            "4265B237BA2B03488ADB3970DE9F438CA39625022426ADEB51F6A4A73BF4BE37",
+            "98B1423B3E140703AABF78E566CE49513BA1B6E4A4593CE92F1207E8A74FFB8A",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "9C56E94000509EDC36472B5F67D4E2C4ACFF59A6B52C27650583E85C03034139",
+            "97DDD439501320F9AD25CBBCAD2F54F425A9A85AC15E50585F7A68A37CCB7CA0",
+            "08C16742E86F1E19662BE644E532EC0AB5A107FA87831DF13BDFBB33BA2E1C32"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 656,
+          "signature": "A19F815343F3FB5BA8C3A0281BA07F9A343C7ABB44E4DED80001D43E24DB3D975AB6478D8D0987DF412E4317C2D790791F592C0F05086431B825C74A9B7AAC09",
+          "signerPublicKey": "56FDD71F89193034761E5CBFB571491B1B72A7A6E72C5294493F0EFBFE170CBA",
+          "version": 1,
+          "network": 152,
+          "type": 33091,
+          "height": "3476590",
+          "timestamp": "114586292538",
+          "difficulty": "10805582559476",
+          "proofGamma": "844BAA2ADE2EDB90D7CEA12C5FF12B36CE672333A909D535B6713122277520A7",
+          "proofVerificationHash": "D0755B599C50C906CFB0D5B5C5B37E68",
+          "proofScalar": "1F16394A06648D45716428EB27EB600117C20C727E7AAD1B90F260FB4803FE05",
+          "previousBlockHash": "897974B1420690F23012779874828351F24162816A3691E60AF699B21A728DFB",
+          "transactionsHash": "C14408A49C9631B6C00B8389FA3BA66E0EC0919D91F813C857B087C06FD2C993",
+          "receiptsHash": "6DEE6DB9A4A102977B1EBD1BFB5F5492FC052725D5A2343792BF2916EAAA6283",
+          "stateHash": "4924DA81DD7C3A656654E50BF8B89067BF629BF280109835E47B99EDA9A3E32C",
+          "beneficiaryAddress": "9860B7FE54FD99456EF8621397D913D1D3B7CEA97D8A96A6",
+          "feeMultiplier": 100
+        },
+        "id": "6B005475CB5702EF26BEF03B"
+      },
+      "transaction": {
+        "meta": {
+          "height": "3476590",
+          "hash": "C14408A49C9631B6C00B8389FA3BA66E0EC0919D91F813C857B087C06FD2C993",
+          "merkleComponentHash": "C14408A49C9631B6C00B8389FA3BA66E0EC0919D91F813C857B087C06FD2C993",
+          "index": 0,
+          "timestamp": "114586292538",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 280,
+          "signature": "A50C742E25BF6DD7091E159DEDA83064CE72467CBD0DEC5D826148959ACF4706B61819A9326A6F4DB6F6FD4BEEA9A174D179367D257182729CCD10BE2CD7D800",
+          "signerPublicKey": "B2942BFC1C60990BD360B5B089FAFC145244B8840E8BE92108959F1213477AFF",
+          "version": 3,
+          "network": 152,
+          "type": 16705,
+          "maxFee": "28000",
+          "deadline": "114593480371",
+          "transactionsHash": "E9E9027381FCF087EDBAD668C8584DD881D945BF532DFED46B55BD6280ECDC26",
+          "cosignatures": []
+        },
+        "id": "6B005475CB5702EF26BEF038"
+      },
+      "embeddedTransactions": [
+        {
+          "meta": {
+            "height": "3476590",
+            "aggregateHash": "C14408A49C9631B6C00B8389FA3BA66E0EC0919D91F813C857B087C06FD2C993",
+            "aggregateId": "6B005475CB5702EF26BEF038",
+            "index": 0,
+            "timestamp": "114586292538",
+            "feeMultiplier": 100
+          },
+          "transaction": {
+            "signerPublicKey": "B2942BFC1C60990BD360B5B089FAFC145244B8840E8BE92108959F1213477AFF",
+            "version": 1,
+            "network": 152,
+            "type": 17220,
+            "targetAddress": "98CCC4375CF845099665A6DC4CF9AB708010688331224AC9",
+            "scopedMetadataKey": "00000000656D616E",
+            "targetNamespaceId": "F5A4572FD566DC1D",
+            "valueSizeDelta": 5,
+            "valueSize": 17,
+            "value": "0F00011A0452390F094D28137274656C6C"
+          },
+          "id": "6B005475CB5702EF26BEF039"
+        }
+      ],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "multisig_account_modification_embedded": {
+      "network": "testnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16725&embedded=true&pageSize=10&order=desc",
+        "aggregate": "/transactions/confirmed?fromHeight=3476631&toHeight=3476631&pageSize=100&pageNumber=1&order=asc&embedded=true",
+        "block": "/blocks/3476631",
+        "proof": "/blocks/3476631/transactions/F4879C82D8F5C9D4744E042263C451C3D1B28CD7B57354B2CB88B69238A69454/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "A731C50F45B64B24915ED9DC71A6CDCAC0C82B8504BB36AF361B814F5B0BFB72",
+          "generationHash": "65D9332492F3406E2E1AE1A1E3D668FD14D11C3C0652C094E593B76580E91C99",
+          "totalFee": "60800",
+          "totalTransactionsCount": 2,
+          "stateHashSubCacheMerkleRoots": [
+            "0E08651F31543D6CB6FACF6DE6D814DE99ACB2FEF6F74DD86FE03B5A80FFA4AB",
+            "FB8D1059802899750850C7F51C5A0D684922E6B60F7CD557C540A0098B3A265C",
+            "E21D0C994F002DE40DC7B22A405BBEA338BFD8820366C2A55C195366EC64137D",
+            "F46859F10B24271CCEFB5B7BD22916DDFAAA18960B840E2F51FC98827F04AA45",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "9C56E94000509EDC36472B5F67D4E2C4ACFF59A6B52C27650583E85C03034139",
+            "FFCF9A0CEC15B0DEE1A1216EF6B6A87600AB82FABC609B7B045B2E58A999EF47",
+            "60BF85D4D30EAF2DBA64E4C500B7601E066CD6CCEF943C01F007B609FA5D1097"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 2
+        },
+        "block": {
+          "size": 984,
+          "signature": "2DA511025742B6480A31726D0E6EAFD24564FB6980AF3DC0EA29E3B60B33EA82F12D6E262E84551A5C501C3CAB137A128B00A172ADC1C8F293DB4798F7A4B90C",
+          "signerPublicKey": "56FDD71F89193034761E5CBFB571491B1B72A7A6E72C5294493F0EFBFE170CBA",
+          "version": 1,
+          "network": 152,
+          "type": 33091,
+          "height": "3476631",
+          "timestamp": "114587585307",
+          "difficulty": "10809802839199",
+          "proofGamma": "42DAA81E4A265BC9DA67FBA715C0C4304FBBF9C74AE0A0F89E561C1AD646F00D",
+          "proofVerificationHash": "3476A9909AFF0D098E00739B852A3A1E",
+          "proofScalar": "712CCCCE3622737057E8B7AF50628AB3BE47360B1C6628AE1AC74FD36FD28E0F",
+          "previousBlockHash": "7F1F368CD520D532AE5437128A289E2148FB8006D5852839CC0DDDAB30A54BAA",
+          "transactionsHash": "F4879C82D8F5C9D4744E042263C451C3D1B28CD7B57354B2CB88B69238A69454",
+          "receiptsHash": "002420355F8421E6A61FC8B300EC08C8537326B3BABA152349B466564EB88A4C",
+          "stateHash": "740757908D0947346A5122510CFA6CFA5E9E88ED828E2C7CCD4DE33FD2729FC0",
+          "beneficiaryAddress": "9860B7FE54FD99456EF8621397D913D1D3B7CEA97D8A96A6",
+          "feeMultiplier": 100
+        },
+        "id": "6B005475CB5702EF26BEF0DF"
+      },
+      "transaction": {
+        "meta": {
+          "height": "3476631",
+          "hash": "A19117D775AC2F9CBF14671A7A83BD25CBAA4CFE64855B100A08E9E6078444B0",
+          "merkleComponentHash": "F4879C82D8F5C9D4744E042263C451C3D1B28CD7B57354B2CB88B69238A69454",
+          "index": 0,
+          "timestamp": "114587585307",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 608,
+          "signature": "430F0B19DDE0D3A8BD2E0FC22EC13288BB4E74C5EDB5C5C2DB9364909AF1DB887A9B8A1FCC5203E05F4F79BCA5E015ED722FAFB5B34083B56AFDF9BDA4A76A07",
+          "signerPublicKey": "8961B998FD5C6E808A7C0FC012A08CFC1AF5BBEC291DC1B0FFBD2EA6D92CD123",
+          "version": 3,
+          "network": 152,
+          "type": 16961,
+          "maxFee": "60800",
+          "deadline": "114594719840",
+          "transactionsHash": "3CF3C166DAEBD1DAA54EAF59179280D1918631548153F6BE2E4A32E2DABDCB34",
+          "cosignatures": [
+            {
+              "version": "0",
+              "signerPublicKey": "2E568970D67536CA1CAB817B4110C14839757F74E40AC4E9E4D7BB5476C6B92F",
+              "signature": "0955D61CF6FB975EF53BDA28CC40ADDAD3FB9B54B439663C3364663324C0F95C35846B0410116902A02EC30D7F279DC46F4A376406B437EB014030CC12107C02"
+            },
+            {
+              "version": "0",
+              "signerPublicKey": "E133ED7AAF93000F9C211927C04E9E2F734F355E5ECC273A14729C70D2D55DE5",
+              "signature": "E4FAC225618348F120651BDE8BC8BD0B90C5E80FD9875100FAFF20BD2733F7B3D65BB0B17EB303488257CADAE535766A265DBFBC23587D611117771C706CBD09"
+            },
+            {
+              "version": "0",
+              "signerPublicKey": "F5990C0E7CF63689771BBB0570C9E29EDB0D1DDDDC7E77408D03300976E77EFB",
+              "signature": "6270E2BE85AEB589C5EA3C24081F48F3AD3AFAD155B16E443D1B27262EEAF965139C050EBCA067E903440E5A8297B694BC22FEE96843C3543B74927C1410DA00"
+            }
+          ]
+        },
+        "id": "6B005475CB5702EF26BEF0DB"
+      },
+      "embeddedTransactions": [
+        {
+          "meta": {
+            "height": "3476631",
+            "aggregateHash": "A19117D775AC2F9CBF14671A7A83BD25CBAA4CFE64855B100A08E9E6078444B0",
+            "aggregateId": "6B005475CB5702EF26BEF0DB",
+            "index": 0,
+            "timestamp": "114587585307",
+            "feeMultiplier": 100
+          },
+          "transaction": {
+            "signerPublicKey": "8961B998FD5C6E808A7C0FC012A08CFC1AF5BBEC291DC1B0FFBD2EA6D92CD123",
+            "version": 1,
+            "network": 152,
+            "type": 16725,
+            "minRemovalDelta": 2,
+            "minApprovalDelta": 2,
+            "addressAdditions": [
+              "98D06ABD6F30AD628F7D7095EA9DEDC92DC33C2B683130FF",
+              "981F2BFADE16CE4AF913D90271A1417D1617F4EB9C56290C",
+              "98AE2EB955541621C809027258654B5704841EE21A23F6A7"
+            ],
+            "addressDeletions": []
+          },
+          "id": "6B005475CB5702EF26BEF0DC"
+        }
+      ],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "account_mosaic_restriction": {
+      "network": "testnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16976&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/3188400",
+        "proof": "/blocks/3188400/transactions/027133CAEDDE5E8C7956AB2EAE6A652FF9AAB57A79B09364E0615C9FFBCC4A5E/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "103011CAE71BBF4BA6F39E9977C74C5B4744FAEB8387480CBE2114F2487AB782",
+          "generationHash": "E4692F48603605D533D60A4173C08E68925F7C09A9D19E3586B7E165B395AE26",
+          "totalFee": "47200",
+          "totalTransactionsCount": 4,
+          "stateHashSubCacheMerkleRoots": [
+            "F4626133FCD93896CBBC0EE698E74DA70DC528532DB4CAB6E001FF9EBCF35613",
+            "1CA7751C8DEA90E0DFB011E77A7F720797288304909ED00DA12FA26E01B5400D",
+            "21F019ED58484F562156F26F48883DF81A122CBA77D444B16756DE1C29887681",
+            "21DB815D35E12EB5511E2B0E393F7DA6E88FD025F9C943F061FCD06EC8E5DC6F",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "185D461371119786767A1DCE05C74C690D9A148FBF9D339CCFA7C307E47C6214",
+            "C819F623AE2C74216A992BC1D7D8CC02E0365B2EBAD9AEC815F3954B1AEACB8A",
+            "B3C3326965D2113087E756793CA8BE2F852075123908C61F892C2FDC8973CD67"
+          ],
+          "transactionsCount": 2,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 848,
+          "signature": "85CE5B0D8B03FD666C4E54769D62DB07E4A75DEFCCD536B3B390818E67E2BCB86240F9A005B50B227E4F7BB795AEEBB3426274CADA04793AD605029C388D410D",
+          "signerPublicKey": "56FDD71F89193034761E5CBFB571491B1B72A7A6E72C5294493F0EFBFE170CBA",
+          "version": 1,
+          "network": 152,
+          "type": 33091,
+          "height": "3188400",
+          "timestamp": "105653492900",
+          "difficulty": "10180130745287",
+          "proofGamma": "1918B6A7B1C4A5E286E1B041C6F07CD61DA5F650872255D09D610F3A0847F35D",
+          "proofVerificationHash": "F44CA1EADEBC17B1F83442305B4A05D2",
+          "proofScalar": "5835ABA6CAF3755E1C4830310E440A7ACA9B8D4221F3144A563413DBB870BE09",
+          "previousBlockHash": "B2D024DA019311B306251FEC5CF042025AED7569B16EF15453CBD9362CB74C75",
+          "transactionsHash": "0A29EACD718F6D6D6270B466AC38FE6EFB3704813DA696753F683035982AF9EC",
+          "receiptsHash": "0B1F14879C2A796C4294E82BBCE650F14A1E40F6E09BDCE44F3783AC8A6201E8",
+          "stateHash": "24BBF6F41D62291646A83D2583993B3C682FE8FACECD9E6A976CC65D31129616",
+          "beneficiaryAddress": "9860B7FE54FD99456EF8621397D913D1D3B7CEA97D8A96A6",
+          "feeMultiplier": 100
+        },
+        "id": "6B0006E2CB5702EF26B28E32"
+      },
+      "transaction": {
+        "meta": {
+          "height": "3188400",
+          "hash": "027133CAEDDE5E8C7956AB2EAE6A652FF9AAB57A79B09364E0615C9FFBCC4A5E",
+          "merkleComponentHash": "027133CAEDDE5E8C7956AB2EAE6A652FF9AAB57A79B09364E0615C9FFBCC4A5E",
+          "index": 0,
+          "timestamp": "105653492900",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 144,
+          "signature": "4543184C1E95829CB3A509AF3A0B230BBF18612086463DA6CFBD20150F1ACDB331E9D663512509C333E8B973ED9E363F775385242A42DF707F7C909B2FF72109",
+          "signerPublicKey": "943DD1ECA7C98A9828DC748AB01FD4F23F12316523B963ED49EF7F794B6EA932",
+          "version": 1,
+          "network": 152,
+          "type": 16976,
+          "maxFee": "14400",
+          "deadline": "105660672254",
+          "restrictionFlags": 32770,
+          "restrictionAdditions": [],
+          "restrictionDeletions": [
+            "57E632FB0F62FA83"
+          ]
+        },
+        "id": "6B0006E2CB5702EF26B28E2D"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": [
+          {
+            "hash": "020F8A9E56E097898C440B4EE725EDC864F2C77BDDFEE02D98FDC5913153387A",
+            "position": "right"
+          }
+        ]
+      }
+    },
+    "account_operation_restriction": {
+      "network": "testnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=17232&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/3389396",
+        "proof": "/blocks/3389396/transactions/B726E96FC6A9C58F902873261783E29D5C6FA61B6BD527CFD0F8D8F494C2A1D1/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "16322082F8351845AEB4A338A1F90B54B4C4468D70C1BF7D0A70184AD47765D9",
+          "generationHash": "C77A5742B486224B71EEE169421B005B2C306CB3E4E2E1B3EB0E497F8949248D",
+          "totalFee": "13800",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "B003C2B81EE9A146F5C6B0C0ACB1196C713EC2420D6D126847B1867A741C3445",
+            "382BD3A859E6563D0C320E771C63D3548E11483F1EB0CDAFBCFE9466649723A6",
+            "A99F0D63D1F3A6CE4C4343F59A654FD933BA45472A8F3635D530C061269F8D11",
+            "9CC1C62585BC69C1EA9ED01AE66479D89EB72DC864C840CB169FC2D31B8F0305",
+            "C06F2B66D025F41184EA52A80694B972FF6AC060E75748D8A11ED073C52CC251",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "57AA817ADC3B235E8ADB03EC52342CD8AAE69C2358AE09C06BBC3690195A9FAE",
+            "552980791CD0B623AB3D1CB0B9B830F4D8AFB0958439DB740763C2ACDFADAA84",
+            "1C8752E1F5633D53592A08928A69A7652B8390A493812A9260EBC594A29C862D"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 514,
+          "signature": "83F70FB11D8D88EEF8A1EB32567CF46A8FC068EEA2B97CD70B46842155616788D04F922624458DA304FC55B3CE4F8B78D2968B6DFFA10A8811CAD7BE38B3900C",
+          "signerPublicKey": "56FDD71F89193034761E5CBFB571491B1B72A7A6E72C5294493F0EFBFE170CBA",
+          "version": 1,
+          "network": 152,
+          "type": 33091,
+          "height": "3389396",
+          "timestamp": "111961162420",
+          "difficulty": "10541541712248",
+          "proofGamma": "5B55A545C6F94C3466E11D00317D149C084A3D3131246EEBDF5B139100622DBA",
+          "proofVerificationHash": "F2507707C1CC8C954EC307E46256C3A0",
+          "proofScalar": "674A430A581EF2396AD1586FA892075C9EA0A0C6E0BDF39EAD0D9DFC3EB05708",
+          "previousBlockHash": "A0E12E678F7D864DC1A41869517393D742C62DD63C4D84B84487F092FC52F6B7",
+          "transactionsHash": "B726E96FC6A9C58F902873261783E29D5C6FA61B6BD527CFD0F8D8F494C2A1D1",
+          "receiptsHash": "CCD92857835223092A317696AB8EF5D953930466BB27DA244D58A3E920B3C0B8",
+          "stateHash": "05F880C62C714760B95DBE08A916E405C895F07E2E23BE77CE6BC706F498681C",
+          "beneficiaryAddress": "9860B7FE54FD99456EF8621397D913D1D3B7CEA97D8A96A6",
+          "feeMultiplier": 100
+        },
+        "id": "6B003E0ECB5702EF26BC2D39"
+      },
+      "transaction": {
+        "meta": {
+          "height": "3389396",
+          "hash": "B726E96FC6A9C58F902873261783E29D5C6FA61B6BD527CFD0F8D8F494C2A1D1",
+          "merkleComponentHash": "B726E96FC6A9C58F902873261783E29D5C6FA61B6BD527CFD0F8D8F494C2A1D1",
+          "index": 0,
+          "timestamp": "111961162420",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 138,
+          "signature": "2F4BF3EFCD92E79C2D5E378AB0473E87F833BF61AC7022B6EC30F1330F3048D0FD6FC83C05EA1F50F93DFA1A7B406F625FC9543C9008B4D8CCFF9D0F5D69F60F",
+          "signerPublicKey": "5DBA41C479048EF80F1D5A5CE29093A4C7418056DDF6FFB6627110AFDC5D1513",
+          "version": 1,
+          "network": 152,
+          "type": 17232,
+          "maxFee": "13800",
+          "deadline": "111968338717",
+          "restrictionFlags": 16388,
+          "restrictionAdditions": [],
+          "restrictionDeletions": [
+            16720
+          ]
+        },
+        "id": "6B003E0ECB5702EF26BC2D37"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "mosaic_address_restriction": {
+      "network": "testnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16977&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/3476606",
+        "proof": "/blocks/3476606/transactions/19112697D1DFCF7E8801EB7055F918C76BB387590AA4F2722A8FD31BC139573B/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "458116301420D29A6462950D5AC7E3269D67BFBC2CF58E2BDD750DEFBE19F0A3",
+          "generationHash": "C43CD758CBD8CA298FE2CC6FF7F62A1C595F5C5248BC4A8DFE89263A1891EA3F",
+          "totalFee": "18400",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "67170A300E8BBC68E4A230B8D670418FE8D470215D0DD988FD32A42582DBE7E0",
+            "FB8D1059802899750850C7F51C5A0D684922E6B60F7CD557C540A0098B3A265C",
+            "471723938B9D480064B43E3551024C63BF4EDA110AE50374F0E8F8D1552288BC",
+            "98B1423B3E140703AABF78E566CE49513BA1B6E4A4593CE92F1207E8A74FFB8A",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "9C56E94000509EDC36472B5F67D4E2C4ACFF59A6B52C27650583E85C03034139",
+            "DD587275E8728CE28C45B71233B3882E5BE27EA6B66F0E2B01E3239E6EA69FBC",
+            "60BF85D4D30EAF2DBA64E4C500B7601E066CD6CCEF943C01F007B609FA5D1097"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 560,
+          "signature": "9409B7B704529645D311271CFAA1ED9D090182614B20ADC0D3489BD593D34E5A4CB357F76E32781E8804B5AF25EB1F3BBA3FF5DC04B6B1DE4F3EB2537495E104",
+          "signerPublicKey": "36EAF65AFA6805A2CFE768492F699130182E079D9ACD9B4C9A52827172159EB2",
+          "version": 1,
+          "network": 152,
+          "type": 33091,
+          "height": "3476606",
+          "timestamp": "114586792415",
+          "difficulty": "10980654306215",
+          "proofGamma": "F019AB689F32D5243E0C836C8643549C4F4C76482C94FD603047F7146B40B1DC",
+          "proofVerificationHash": "4EAEE059E7A8BCCE55C36B4402673524",
+          "proofScalar": "06B31F069922B7C3D85AE383A1734E8FBE0081783348EF8ECB1B5E8AAE73310C",
+          "previousBlockHash": "2B3F9548C6C7E6E298820F8BE849309C9C483AA9808FA8FCC56A4C18B09F3016",
+          "transactionsHash": "19112697D1DFCF7E8801EB7055F918C76BB387590AA4F2722A8FD31BC139573B",
+          "receiptsHash": "7494677C98EB18BAFAC08FEBE9459873D2DEAD4E681B6D7B268256A66D5BF91B",
+          "stateHash": "035F7BC5573DC1CE006C0B6C33AB30B930573B5D7A97391562ECD24DD92AD7DE",
+          "beneficiaryAddress": "98F676EE20FB22D82FBC07C366E822249607E0F0AC72B031",
+          "feeMultiplier": 100
+        },
+        "id": "6B005475CB5702EF26BEF076"
+      },
+      "transaction": {
+        "meta": {
+          "height": "3476606",
+          "hash": "19112697D1DFCF7E8801EB7055F918C76BB387590AA4F2722A8FD31BC139573B",
+          "merkleComponentHash": "19112697D1DFCF7E8801EB7055F918C76BB387590AA4F2722A8FD31BC139573B",
+          "index": 0,
+          "timestamp": "114586792415",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 184,
+          "signature": "FB63A6022686A20B7CA0F9B45AF5BBEBD6CBD6F63FEA257B94EAE464A865B90989C6BE295B695EAD2A0D92A1F92BF39B33C5AA32B7B507D6DDCCBE67F6140F0E",
+          "signerPublicKey": "B2942BFC1C60990BD360B5B089FAFC145244B8840E8BE92108959F1213477AFF",
+          "version": 1,
+          "network": 152,
+          "type": 16977,
+          "maxFee": "18400",
+          "deadline": "114593962267",
+          "mosaicId": "42B244EEF658A3A9",
+          "restrictionKey": "00000000000C0FFE",
+          "targetAddress": "9816811048DF42D42600E89B452343C6E57690EFCA64EA80",
+          "previousRestrictionValue": "18446744073709551615",
+          "newRestrictionValue": "2"
+        },
+        "id": "6B005475CB5702EF26BEF074"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "mosaic_global_restriction": {
+      "network": "testnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16721&embedded=false&pageSize=10&order=desc",
+        "block": "/blocks/3476607",
+        "proof": "/blocks/3476607/transactions/36AF6F82C655FF72181D3974CF393748FEACE9806A070808082964BCEFFD2EDF/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "19BA604FED20AD9E7C96114A50D3F21031B4B9D90B894E15C1A09EEBD4709216",
+          "generationHash": "D86891F3AF79501345198BFBFFEEFD26CCBB15A81DC20A9AD37E81010DFAB9C8",
+          "totalFee": "17000",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "1B193935E7B283C6D27F3EF6B49E58DB580DDEE8F4F2F705DDAF3BB04910F0FB",
+            "FB8D1059802899750850C7F51C5A0D684922E6B60F7CD557C540A0098B3A265C",
+            "C25723B777AE338DAC356945FC92510F4135784C200012E1B67D0EACB7C87A77",
+            "98B1423B3E140703AABF78E566CE49513BA1B6E4A4593CE92F1207E8A74FFB8A",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "9C56E94000509EDC36472B5F67D4E2C4ACFF59A6B52C27650583E85C03034139",
+            "FFCF9A0CEC15B0DEE1A1216EF6B6A87600AB82FABC609B7B045B2E58A999EF47",
+            "60BF85D4D30EAF2DBA64E4C500B7601E066CD6CCEF943C01F007B609FA5D1097"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 546,
+          "signature": "265AAF465F7911B04224FF0C93BE7CFE9299609419B4AC88ECD44BF569C343338E849552A1E8356BF40A3AFBE13BB8108887B8E1357EF535E09F08C7719AEC0E",
+          "signerPublicKey": "B1913E3FE25A38AAFCFD2211D8B445BFC26D66BF19C2FBB02C0D01CF21E5B5C3",
+          "version": 1,
+          "network": 152,
+          "type": 33091,
+          "height": "3476607",
+          "timestamp": "114586824521",
+          "difficulty": "10908642338430",
+          "proofGamma": "32BEF12E2C92AEC4CF600BAE788BDC7E8420D50D675A0669CA18E9638FB9A790",
+          "proofVerificationHash": "C5F3515010D70CCB20BC06D2DF0F95BF",
+          "proofScalar": "4000EA015060A49AF62D74E90D4DFE08A31387E52D24E7F5CD98D5F974376400",
+          "previousBlockHash": "458116301420D29A6462950D5AC7E3269D67BFBC2CF58E2BDD750DEFBE19F0A3",
+          "transactionsHash": "36AF6F82C655FF72181D3974CF393748FEACE9806A070808082964BCEFFD2EDF",
+          "receiptsHash": "3118B49E204396B0C52F94DC31BF8933FB2306196AB6FFEE8BFBE83E7B50530F",
+          "stateHash": "DE32AACAAFE1CD1FA7C02AAFE6F38A17A49D0300C224B8D26C39F38348DD5C8F",
+          "beneficiaryAddress": "98F8CCFBCCAD2FE24DA8BB565F481FC466FA785CBF7D94C0",
+          "feeMultiplier": 100
+        },
+        "id": "6B005475CB5702EF26BEF079"
+      },
+      "transaction": {
+        "meta": {
+          "height": "3476607",
+          "hash": "36AF6F82C655FF72181D3974CF393748FEACE9806A070808082964BCEFFD2EDF",
+          "merkleComponentHash": "36AF6F82C655FF72181D3974CF393748FEACE9806A070808082964BCEFFD2EDF",
+          "index": 0,
+          "timestamp": "114586824521",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 170,
+          "signature": "8C8870F3778FC628F978C4B5C3D63028DFDD19710671528940C15779607C0166F4DB0C8CF04D890CE61183EC3FDFB22475B78F5B6501D32E00E29B5BE9A2770B",
+          "signerPublicKey": "B2942BFC1C60990BD360B5B089FAFC145244B8840E8BE92108959F1213477AFF",
+          "version": 1,
+          "network": 152,
+          "type": 16721,
+          "maxFee": "17000",
+          "deadline": "114594002370",
+          "mosaicId": "42B244EEF658A3A9",
+          "referenceMosaicId": "0000000000000000",
+          "restrictionKey": "00000000000C0FFE",
+          "previousRestrictionValue": "1",
+          "previousRestrictionType": 6,
+          "newRestrictionValue": "2",
+          "newRestrictionType": 6
+        },
+        "id": "6B005475CB5702EF26BEF077"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "transfer_with_message": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16724&embedded=false&pageSize=10&order=asc&fromHeight=2",
+        "block": "/blocks/152",
+        "proof": "/blocks/152/transactions/AF6E38EBC7274617307E2601D06B3AC02F418CB55C772C43DA13B97CB7E4E508/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "F7183C84D04B5165C9BD264E18AB0F3EE063BBA7A1D2DFA30AAC88E4E5D8E4B3",
+          "generationHash": "FAAEC2C4127EE0881A82B44D42AF69701E9E570E394ED9041BE13A3197EE8EB7",
+          "totalFee": "17900",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "05494439014B2E788EA685247B8D212CEB05F94EBEF0F0BBACEE09530F842672",
+            "61AD37E805BCBAE69A6F070BADB7CACD5D137AF30AEF3D2C2A2DCF7B60C4D986",
+            "CC03A421F60C86B35F0F09645BD121415D031A01C928418AACF1751028303504",
+            "88BF5DCB76FE57DDD4E690A324706A0FE8065EF488D2AEAFD884B72AD3CACF4E",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "84B7F1A18F6787417B6F49B3B7F805925B8EFD7A35589B8C674661CBA9EDA70E",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 555,
+          "signature": "9306C7E0ECE65DEF4DACE9475F660374CF0655B723DC7BAA7F29A6E061D0AA22C7AF84854A25AED586D5C9D3D5984FFA355BA7B68F1399A86E8FD949D079A409",
+          "signerPublicKey": "2C0DE085CA3D933FEDE8F8C87DBE116342A8C3EA88BD99E21590D438A18FFD45",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "152",
+          "timestamp": "89349583",
+          "difficulty": "11373264063068",
+          "proofGamma": "833F01E5D7188AFC96FD369C95A88C4952A59AB8409B141C4A59C21C8AB10151",
+          "proofVerificationHash": "2131340C0BCAA6BA6246008D97DE4216",
+          "proofScalar": "A9C9D617DF11A24BED1403E80010A259C1664F7F6356D81CCAABA81909848309",
+          "previousBlockHash": "4B62F1D9949EA689C749232828A089460166E9958E49D98097B0E2DFCCC3D96A",
+          "transactionsHash": "AF6E38EBC7274617307E2601D06B3AC02F418CB55C772C43DA13B97CB7E4E508",
+          "receiptsHash": "002622123003EBB5DB0D05857228589A0479B872660AE49E81B1FBE226630328",
+          "stateHash": "D4B3A7E700D17962AE1F0C5B0CF98383507EE5C030BD82078B2AC9C662A91679",
+          "beneficiaryAddress": "681B7E4D97820B9F63B468B4561F25E2E9AC0CADFFF4C27A",
+          "feeMultiplier": 100
+        },
+        "id": "6A8BADB3FB7CD68A0406A184"
+      },
+      "transaction": {
+        "meta": {
+          "height": "152",
+          "hash": "AF6E38EBC7274617307E2601D06B3AC02F418CB55C772C43DA13B97CB7E4E508",
+          "merkleComponentHash": "AF6E38EBC7274617307E2601D06B3AC02F418CB55C772C43DA13B97CB7E4E508",
+          "index": 0,
+          "timestamp": "89349583",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 179,
+          "signature": "5CA76648DE1407D8E3978A3C97FEEB0BA7ACBBF2DD0CBAFFA840BB0F0AEED4315549FBC13FC32FDA4B3FFC179585034D437097F2672568524E3DBAF2C78CA402",
+          "signerPublicKey": "5CDAA6A2ACA82103A0BCB5E867230BD16614D5E5D366D985FC476D67514FA556",
+          "version": 1,
+          "network": 104,
+          "type": 16724,
+          "maxFee": "17900",
+          "deadline": "96516791",
+          "recipientAddress": "6830A1BF73E605117308C31EA08E4647058A51F0DDAD80C7",
+          "message": "004869",
+          "mosaics": [
+            {
+              "id": "6BED913FA20223F8",
+              "amount": "2000000"
+            }
+          ]
+        },
+        "id": "6A8BADB3FB7CD68A0406A182"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "transfer_without_message": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16724&embedded=false&pageSize=10&order=asc&fromHeight=2",
+        "block": "/blocks/157",
+        "proof": "/blocks/157/transactions/CB2AA7D60EF99CD2D8A797250B2151A193318B8438D186D81DB882D02290020D/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "3ADB5F68028ED119F615DDF2A66E2529352A79A06C18C6E24513EAE83ABD6984",
+          "generationHash": "F3B5322AA7956AE69B03FB131F9AA22675B2E4D620186BFA00725F532C97C9D8",
+          "totalFee": "19200",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "A581DD87FF5DA06D529AC7C9ADD7F6D5703465DB67DECF4A19EE75450C3AD245",
+            "61AD37E805BCBAE69A6F070BADB7CACD5D137AF30AEF3D2C2A2DCF7B60C4D986",
+            "CC03A421F60C86B35F0F09645BD121415D031A01C928418AACF1751028303504",
+            "88BF5DCB76FE57DDD4E690A324706A0FE8065EF488D2AEAFD884B72AD3CACF4E",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "84B7F1A18F6787417B6F49B3B7F805925B8EFD7A35589B8C674661CBA9EDA70E",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 568,
+          "signature": "EE77EB41B408B03CB7227973BC55205DE6EA014F6429A39BEC644EFE0A2E43CBBDB9B2C9D4DEB6C7A79C40D4EA6FB1562F32950AA3618527D558AA164359770C",
+          "signerPublicKey": "FD8B9EE34A42EF5248C5E14772EA40078A7DDD7D489A7DF25A9C040FFE740D1B",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "157",
+          "timestamp": "89523470",
+          "difficulty": "11137625276603",
+          "proofGamma": "323B89755BF335D48C7E0D8571273ADBD785823568242C0AF50663B0A4D27F58",
+          "proofVerificationHash": "B124FEC1CA2128E0325D13DFDB4E57CE",
+          "proofScalar": "402C9B6E4B7690429F54D7D9C795B20B21440E80B6A56401C6277706A58D9E05",
+          "previousBlockHash": "B24CCDCBAE763F7B2D16DC9631565F2BAABB08F0238B2A0EF45D27495E5FEBAC",
+          "transactionsHash": "CB2AA7D60EF99CD2D8A797250B2151A193318B8438D186D81DB882D02290020D",
+          "receiptsHash": "5B8F0D52E6BC7EA79F2B1C0C2A72005DE3E49781A70B2C7E11A614378A9B7ABB",
+          "stateHash": "F94455F13632D1F63127A5583FB5C867208174BC1B61F59077754E837F41BE22",
+          "beneficiaryAddress": "681AEB5DD5FFAF259C7CCCDDA6365489868C485A33771F14",
+          "feeMultiplier": 100
+        },
+        "id": "6A8BADB3FB7CD68A0406A18F"
+      },
+      "transaction": {
+        "meta": {
+          "height": "157",
+          "hash": "CB2AA7D60EF99CD2D8A797250B2151A193318B8438D186D81DB882D02290020D",
+          "merkleComponentHash": "CB2AA7D60EF99CD2D8A797250B2151A193318B8438D186D81DB882D02290020D",
+          "index": 0,
+          "timestamp": "89523470",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 192,
+          "signature": "1E78C0C587300F75A29EE73C0E14296154E47B5F903077BFF758D7E74C9BC2055EBCE51A07B64C5BBEA23BB93D3CCEBD5C87D0313C0C705CD7E23F8F6C7F670E",
+          "signerPublicKey": "7E43EC810A64FCCA5F9FBF6FC3E51AA89A0507762DC7E6B8047DCACBE97A8D4B",
+          "version": 1,
+          "network": 104,
+          "type": 16724,
+          "maxFee": "19200",
+          "deadline": "96702183",
+          "recipientAddress": "68AB4BFADE08863B85098A61BEF1B1E2FF375495422E3437",
+          "mosaics": [
+            {
+              "id": "63078E73FBCC2CAC",
+              "amount": "38"
+            },
+            {
+              "id": "6BED913FA20223F8",
+              "amount": "3800000"
+            }
+          ]
+        },
+        "id": "6A8BADB3FB7CD68A0406A18D"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "transfer_with_address_and_mosaic_aliases": {
+      "network": "testnet",
+      "sources": {
+        "discovery": "/transactions/confirmed/BA0C65DB752A3BF1B25285540642537ECE8C2CA716577EDF8BF0F8597A85ADC4",
+        "reference": "https://docs.symboltest.net/en/devbook/namespaces/resolve-namespace-from-receipt/",
+        "block": "/blocks/3125903",
+        "proof": "/blocks/3125903/transactions/BA0C65DB752A3BF1B25285540642537ECE8C2CA716577EDF8BF0F8597A85ADC4/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "95F9679FDA5140962994EDE3840D212BEC3CB233CD69501C254F12DCF55BA81F",
+          "generationHash": "C7BEAA81F78E0CF516AAD2E706F91CBDFCAD2C6860D5436CBF1894DB21DBBAFB",
+          "totalFee": "50400",
+          "totalTransactionsCount": 4,
+          "stateHashSubCacheMerkleRoots": [
+            "96E5CD34D2517C801D6604463296C39238D9B028A5C57E17BC96998028024E74",
+            "D371A310E921DD498F0E9F376D5A229D17327FCE69711323D5C0A5C8AF1CEA95",
+            "BAFAEA7C4ABC8DB569BBB35098F9BE5131F6D2277069FDE9F192EDD61A3D44EC",
+            "78F78DADE64350E273089352E21B105A5912A2B2B0AC098EFCA96FFC62E7D62C",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "035023CC389323ADB81AD49E6D800ECA40CE0E9439AAD0648EC3FBF32BA08168",
+            "FD49241CF34E9245A267590DB5DC9451DF21A95A1348A9409918856E73F6272A",
+            "694C050A6E4993E7D6367FBC5562E2F0F77D58360C25670E50BD9276495DB251"
+          ],
+          "transactionsCount": 2,
+          "statementsCount": 3
+        },
+        "block": {
+          "size": 880,
+          "signature": "462B1C827FE73CF4B93A7C870902A8D723F535474954713049D234E422938E169CE5E30B8E657C14FC7100BBF2A79869608A7FA3D1AFF6FBDCAE42F390934600",
+          "signerPublicKey": "56FDD71F89193034761E5CBFB571491B1B72A7A6E72C5294493F0EFBFE170CBA",
+          "version": 1,
+          "network": 152,
+          "type": 33091,
+          "height": "3125903",
+          "timestamp": "103754614983",
+          "difficulty": "10067592883275",
+          "proofGamma": "BB5FE7387B9E8F77DA38C2342AA5D04A59F9D93E7791966AE360347F395581BB",
+          "proofVerificationHash": "ED827C300A72ED1AFB4E1D60D67B28B6",
+          "proofScalar": "FA70916AF313F26FE89A322BB341A830ECD050F491C27DB4BA43B9C3574FE307",
+          "previousBlockHash": "D45C67F3FC9121CD4E64E66E4F9522CDC268DA0FC37C9435014BE934FC60FA77",
+          "transactionsHash": "8783DF80EAA0D040D5FAC72951195C24424C44572A187C03605CC60C72E91B41",
+          "receiptsHash": "EBA4B12EB4E73184238559E94C763919C4F706A86C14DF1CEE7032911FE79A5D",
+          "stateHash": "89A516713F3751924FD4D021A389B5650DA5E2D2D5D90EB65ABC8080120841B2",
+          "beneficiaryAddress": "9860B7FE54FD99456EF8621397D913D1D3B7CEA97D8A96A6",
+          "feeMultiplier": 100
+        },
+        "id": "6AFFF650CB5702EF26AF1CB8"
+      },
+      "transaction": {
+        "meta": {
+          "height": "3125903",
+          "hash": "BA0C65DB752A3BF1B25285540642537ECE8C2CA716577EDF8BF0F8597A85ADC4",
+          "merkleComponentHash": "BA0C65DB752A3BF1B25285540642537ECE8C2CA716577EDF8BF0F8597A85ADC4",
+          "index": 0,
+          "timestamp": "103754614983",
+          "feeMultiplier": 100
+        },
+        "transaction": {
+          "size": 176,
+          "signature": "FCF87112840450AF5D5A63456B9D0140F05D803736059AD310A6BA46184F37DA6FE736A49D14F68DEB588288758E1138631602522863848B08DD14CFBD3A2B09",
+          "signerPublicKey": "87DA603E7BE5656C45692D5FC7F6D0EF8F24BB7A5C10ED5FDA8C5CFBC49FCBC8",
+          "version": 1,
+          "network": 152,
+          "type": 16724,
+          "maxFee": "17600",
+          "deadline": "103761794662",
+          "recipientAddress": "99EC0888813BE133E6000000000000000000000000000000",
+          "mosaics": [
+            {
+              "id": "E74B99BA41F4AFEE",
+              "amount": "100000"
+            }
+          ]
+        },
+        "id": "6AFFF650CB5702EF26AF1CB4"
+      },
+      "embeddedTransactions": [],
+      "proof": {
+        "merklePath": [
+          {
+            "hash": "A0C140FE0A1B1A4799E4764280468DE759D5496CAB803390DE578FCD5B44E643",
+            "position": "right"
+          }
+        ]
+      }
+    },
+    "aggregate_complete_v1_small_payload": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16705&embedded=false&pageSize=10&fromHeight=2&toHeight=1500&order=asc",
+        "aggregate": "/transactions/confirmed?fromHeight=421&toHeight=421&pageSize=100&pageNumber=1&order=asc&embedded=true",
+        "block": "/blocks/421",
+        "proof": "/blocks/421/transactions/3551A8F74354A7E8B7C6BFA562F76E2CE6F72F8068A09C1D3D64D9C1899E7066/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "3A70742CDC5FB13166E2B605664F027578E5378518D553E8C40A7CC06C066A44",
+          "generationHash": "FDD18D91F603A7CA5895A68DED1FE2E6C6BC7C51F790A3388CEBD175861CEB1B",
+          "totalFee": "999936",
+          "totalTransactionsCount": 2,
+          "stateHashSubCacheMerkleRoots": [
+            "BA37FE75D6F2C2EEEC96450B976D7FD2C7F9F4286E3B232F8ADD9956BD1912ED",
+            "61AD37E805BCBAE69A6F070BADB7CACD5D137AF30AEF3D2C2A2DCF7B60C4D986",
+            "CC03A421F60C86B35F0F09645BD121415D031A01C928418AACF1751028303504",
+            "CC4B9B38058E90910181588DF88D8899451BCC62CB6333351B5B503388024F45",
+            "1923802A04B540848FD31238C9A6856F9FED93248184A179F16D9FEDF3ACFE30",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "84B7F1A18F6787417B6F49B3B7F805925B8EFD7A35589B8C674661CBA9EDA70E",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 632,
+          "signature": "E60EABC0C91F1DF06A3380C46E2B367AB3AFA0BA5E713B9B68C9A063AE4260D96F9B12592920D3515D3FE692C61B6B066F85B334AEDFC378FD975F6C2507AF0C",
+          "signerPublicKey": "D10712DB7DC67CC30508DDFDF32FBDDA6FFA165D2EB6937150D82CFC86C99B57",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "421",
+          "timestamp": "97681579",
+          "difficulty": "10000000000000",
+          "proofGamma": "455F9A652E3A90037442A1C55AB89757BE8C1C97EAB4506A0C3F7BA99EEA6952",
+          "proofVerificationHash": "365059791FADC2697609EC3BB345895A",
+          "proofScalar": "9B97DFA70DD12340A7C5F4E309FA882B443DAF494FA832F14B1058735EB68C0F",
+          "previousBlockHash": "22C8AECAFB700AA259F7870C58B7771167D88389B4582B6E820E5FC5D251467B",
+          "transactionsHash": "3551A8F74354A7E8B7C6BFA562F76E2CE6F72F8068A09C1D3D64D9C1899E7066",
+          "receiptsHash": "F7C44FEF9E858C6B587C0E210217177CED6BBA24DFE0CF47ACD39E8472110466",
+          "stateHash": "2D7F6F580FA4FCB345A244C2E8650F1739D62E5F9B84D6C0916DC50A6BF8AE67",
+          "beneficiaryAddress": "6825FD2BA9418350867E0C75758DD93C212F91EC03717708",
+          "feeMultiplier": 3906
+        },
+        "id": "6A8BADBFFB7CD68A0406A3BF"
+      },
+      "transaction": {
+        "meta": {
+          "height": "421",
+          "hash": "3551A8F74354A7E8B7C6BFA562F76E2CE6F72F8068A09C1D3D64D9C1899E7066",
+          "merkleComponentHash": "3551A8F74354A7E8B7C6BFA562F76E2CE6F72F8068A09C1D3D64D9C1899E7066",
+          "index": 0,
+          "timestamp": "97681579",
+          "feeMultiplier": 3906
+        },
+        "transaction": {
+          "size": 256,
+          "signature": "2A15B5A2BF6D52D56D9927C701F2977DFB4990E6D164CB0C4F38C8BBC52484DA57D2B8666C75D616EC3D32928FF1B83812864F1C467A49EEE294300916F3320F",
+          "signerPublicKey": "0B349D6FB4E93FAB29065D51B7A5375FFAF3856BA7F64DDE66B86579816D6E77",
+          "version": 1,
+          "network": 104,
+          "type": 16705,
+          "maxFee": "1000000",
+          "deadline": "104868194",
+          "transactionsHash": "575DE134F003CC825847C445B7F75A6F110D5F1F6546E4D1B8E717FFA1B4679F",
+          "cosignatures": []
+        },
+        "id": "6A8BADBFFB7CD68A0406A3BC"
+      },
+      "embeddedTransactions": [
+        {
+          "meta": {
+            "height": "421",
+            "aggregateHash": "3551A8F74354A7E8B7C6BFA562F76E2CE6F72F8068A09C1D3D64D9C1899E7066",
+            "aggregateId": "6A8BADBFFB7CD68A0406A3BC",
+            "index": 0,
+            "timestamp": "97681579",
+            "feeMultiplier": 3906
+          },
+          "transaction": {
+            "signerPublicKey": "0B349D6FB4E93FAB29065D51B7A5375FFAF3856BA7F64DDE66B86579816D6E77",
+            "version": 1,
+            "network": 104,
+            "type": 16972,
+            "linkedPublicKey": "3451ACEBC96871FFE7DE6A4AF3711A5F0FEF6EF506A5CCFB966A2435DB31AA1F",
+            "linkAction": 1
+          },
+          "id": "6A8BADBFFB7CD68A0406A3BD"
+        }
+      ],
+      "proof": {
+        "merklePath": []
+      }
+    },
+    "aggregate_complete_v2_small_payload": {
+      "network": "mainnet",
+      "sources": {
+        "discovery": "/transactions/confirmed?type=16705&embedded=false&pageSize=10&fromHeight=4758000&toHeight=4759099&order=desc",
+        "aggregate": "/transactions/confirmed?fromHeight=4759026&toHeight=4759026&pageSize=100&pageNumber=1&order=asc&embedded=true",
+        "block": "/blocks/4759026",
+        "proof": "/blocks/4759026/transactions/4957949BB7DFC29D7529CBF96962E2238E7BD0CD762612CB3BCDC67DF9C696FB/merkle"
+      },
+      "block": {
+        "meta": {
+          "hash": "DA331E3CB98C585A62E13D727CA9B26CBE674D72894C51812C82B0FCE2E999D2",
+          "generationHash": "FFB6DF6FDECD7ADAC2E9E4B06102D5993997212C65FF078DFC35345BADFB7567",
+          "totalFee": "10560",
+          "totalTransactionsCount": 3,
+          "stateHashSubCacheMerkleRoots": [
+            "368A88E4F13BA09B45347DE975750F50EC53BA76D4A45082A164D63D52E340FF",
+            "CC9749100A62D783EA68F2D746AF53E16F8ED5B697A2B00A783EC793753C422C",
+            "1FAF77C4CECDC16A50484104AADFAFB1E239C36D22A88DAA4EFAEC8FEDFFB4F9",
+            "2ED751890CB73C206DC531E7757496C78DC5C6DE36CFF6F10401B252C164BD0B",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "6B1C1C1C1F94FFE98919D57D18F1D5E96A96CB21DA24D934B1F6F5AEE3B38279",
+            "76B79FF18D44E00FC9EAEFAF6C5F024A6CED6FEAA224C38FE0051546C6CBD74C",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "EED1A98790F97F5C5BA080D46223905362BFF0C6ED94B40A3A70FFD54E45450B"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 728,
+          "signature": "B42524EE027FCCE1B9B3D4C5EA1AA687855977C7E1427997DE849588CE2FC59DD54B32522A3D10A7563A9D89E61D0E91D23B10C66C12E338FE6A7A18AF457C0A",
+          "signerPublicKey": "92455442AEB5F90B6CD1C4262538938CA2A5D6E9F9EB76B2D1190E05AB94D668",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "4759026",
+          "timestamp": "142988133975",
+          "difficulty": "117960467722846",
+          "proofGamma": "E71D079AB6F45ACF8377E2AAA855FE687DC5D86180067650969E49901A5B6213",
+          "proofVerificationHash": "E4480CE836AABDAC08B799710EF9E1B3",
+          "proofScalar": "1B2B7BE145FEAEDA28EC7ADEB9AB1FB6836E7907B8BE750530780BC0F18EA608",
+          "previousBlockHash": "BE0CA1D8E121DC86326DC62C5EBD4AEA9E31CCF6B5B92B54DD48A50C89EB00D2",
+          "transactionsHash": "4957949BB7DFC29D7529CBF96962E2238E7BD0CD762612CB3BCDC67DF9C696FB",
+          "receiptsHash": "90E6E9671CB82A8812CEE0DBDDEA673883ACBCFA0CA9077831558A2A5E4D059D",
+          "stateHash": "6680E424DF48197015AF74D99AA0F499225E09A0917EEA828862FC270416B4C5",
+          "beneficiaryAddress": "68DBF4F881615F9CE305892C7C5380D4EDB101433BE13A43",
+          "feeMultiplier": 30
+        },
+        "id": "6A8E51D51EF24682208F5C3C"
+      },
+      "transaction": {
+        "meta": {
+          "height": "4759026",
+          "hash": "4957949BB7DFC29D7529CBF96962E2238E7BD0CD762612CB3BCDC67DF9C696FB",
+          "merkleComponentHash": "4957949BB7DFC29D7529CBF96962E2238E7BD0CD762612CB3BCDC67DF9C696FB",
+          "index": 0,
+          "timestamp": "142988133975",
+          "feeMultiplier": 30
+        },
+        "transaction": {
+          "size": 352,
+          "signature": "A6013AF127673E67823DC3FBD27222D5F890EF97A8C71FAFC28A83039C3DE4D38187E4EDB3BB116FBE1A7F9E665EB74D1D9EE84B8C32B4C11D3DF4DCCA30430E",
+          "signerPublicKey": "BD5E6FE83E05B5B545533B7E2C797889BA6EE800566B72E1FF1CE08B24CF44C6",
+          "version": 2,
+          "network": 104,
+          "type": 16705,
+          "maxFee": "10560",
+          "deadline": "142995295859",
+          "transactionsHash": "7A4774B3AB118385BA9C156A84CD807D49D1BADADAE5B38C74FD4F3EA1A0E5F8",
+          "cosignatures": []
+        },
+        "id": "6A8E51D51EF24682208F5C38"
+      },
+      "embeddedTransactions": [
+        {
+          "meta": {
+            "height": "4759026",
+            "aggregateHash": "4957949BB7DFC29D7529CBF96962E2238E7BD0CD762612CB3BCDC67DF9C696FB",
+            "aggregateId": "6A8E51D51EF24682208F5C38",
+            "index": 0,
+            "timestamp": "142988133975",
+            "feeMultiplier": 30
+          },
+          "transaction": {
+            "signerPublicKey": "BD5E6FE83E05B5B545533B7E2C797889BA6EE800566B72E1FF1CE08B24CF44C6",
+            "version": 1,
+            "network": 104,
+            "type": 17229,
+            "sourceAddress": "684CAE214ABDE3540638ACA1C3BB61601BB7EF176484328D",
+            "mosaicId": "516366C333435AA8",
+            "amount": "0"
+          },
+          "id": "6A8E51D51EF24682208F5C39"
+        },
+        {
+          "meta": {
+            "height": "4759026",
+            "aggregateHash": "4957949BB7DFC29D7529CBF96962E2238E7BD0CD762612CB3BCDC67DF9C696FB",
+            "aggregateId": "6A8E51D51EF24682208F5C38",
+            "index": 1,
+            "timestamp": "142988133975",
+            "feeMultiplier": 30
+          },
+          "transaction": {
+            "signerPublicKey": "BD5E6FE83E05B5B545533B7E2C797889BA6EE800566B72E1FF1CE08B24CF44C6",
+            "version": 1,
+            "network": 104,
+            "type": 16724,
+            "recipientAddress": "680A3E3FE3C1FDB166D9D8CEB1284E9BC957AED195FCB7CB",
+            "mosaics": [
+              {
+                "id": "516366C333435AA8",
+                "amount": "0"
+              }
+            ]
+          },
+          "id": "6A8E51D51EF24682208F5C3A"
+        }
+      ],
+      "proof": {
+        "merklePath": []
+      }
+    }
+  },
+  "receipts": {
+    "5969019": {
+      "network": "mainnet",
+      "sources": {
+        "block": "/blocks/5969019",
+        "transactions": "/statements/transaction?fromHeight=5969019&toHeight=5969019&pageSize=100&pageNumber=1",
+        "addresses": "/statements/resolutions/address?height=5969019&pageSize=100&pageNumber=1",
+        "mosaics": "/statements/resolutions/mosaic?height=5969019&pageSize=100&pageNumber=1"
+      },
+      "block": {
+        "meta": {
+          "hash": "6FA0B8EA6660D0767288C98008905521084830F407FBA3142D27B72C4386107C",
+          "generationHash": "F32EDF492981967B1219016CB7161C65310551D8016516413DBBD7A124DB63F5",
+          "totalFee": "1260032",
+          "totalTransactionsCount": 2,
+          "stateHashSubCacheMerkleRoots": [
+            "59D8E4319335609132445251AA71FF5331ECFFC6384506B12A442A5678529D5A",
+            "738153A1E31524BCBE8D458DF0AFA4528ABCFC5FAC67796F9331BCC132BD6CF8",
+            "7239D6610185325A2B7EE03EE2125E26241017B873618A7AD02F92ACFC66DAB6",
+            "F3C58780CB033A91AFBB74F2A0AD03A57D3EEF087E93F62D987E48B40E023140",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "B43BE24B4D3982803001367065CFA9F694C4298EFE2F21A958A2C23016C7E7D5",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "65B568744C3E8C86C5EC9E408E406238EE8204FBC5F0B9CD056555179B561CCA"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 1
+        },
+        "block": {
+          "size": 744,
+          "signature": "ECC8905E90666D7F1B6C46B8A94D1C14E4D064504F71D55CE4F1A162E67328C51D45A344C8537FCA757EB1335A56D5158AF320E4908335BAEFEDAF1724292200",
+          "signerPublicKey": "C547A9C70F72F3EB3371FDB709687C2D748EF394088C8BA3302AF57C03D222E3",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5969019",
+          "timestamp": "179323425862",
+          "difficulty": "117894836089850",
+          "proofGamma": "CE019F271DA65AA4A4691C85EE928F6FB3A4D6EC4BA4CDC2702C6BBF35220AA2",
+          "proofVerificationHash": "6DECA65261A1285DA01C1088EFB1B1BF",
+          "proofScalar": "43D3EF599C20F600C32F5183BAF0E8C15F6668E6B0587B4E4068DD5485E92001",
+          "previousBlockHash": "F5A8C9E41D01185EB3DE9D1AFEFCCAF47BE9F8D9F8AA2A93534FAD29D3BCE3BA",
+          "transactionsHash": "B767BCB567C9235523317E5D8C23CBE9805D7BF307677356467C4572AAD50584",
+          "receiptsHash": "7A62FFC796D0645EE327747FD1F9B6541A820C68877D48FF7E86E87E9E8FD44E",
+          "stateHash": "5482AFEF6A6856470298D2BC93C984CE67A0C3717F57A063F70000CCA3355408",
+          "beneficiaryAddress": "68035269AA71F8ADEFCE0D6535548C61681EE8562260ED2E",
+          "feeMultiplier": 3424
+        },
+        "id": "6B00389C6B8437479E0095CF"
+      },
+      "transactions": {
+        "data": [
+          {
+            "statement": {
+              "height": "5969019",
+              "source": {
+                "primaryId": 0,
+                "secondaryId": 0
+              },
+              "receipts": [
+                {
+                  "version": 1,
+                  "type": 8515,
+                  "targetAddress": "68035269AA71F8ADEFCE0D6535548C61681EE8562260ED2E",
+                  "mosaicId": "6BED913FA20223F8",
+                  "amount": "49931750"
+                },
+                {
+                  "version": 1,
+                  "type": 8515,
+                  "targetAddress": "682AE8CC97DA1E1052D00851B46C2343A5C054EFCAC4517F",
+                  "mosaicId": "6BED913FA20223F8",
+                  "amount": "3566553"
+                },
+                {
+                  "version": 1,
+                  "type": 8515,
+                  "targetAddress": "68035269AA71F8ADEFCE0D6535548C61681EE8562260ED2E",
+                  "mosaicId": "6BED913FA20223F8",
+                  "amount": "17832767"
+                },
+                {
+                  "version": 1,
+                  "type": 20803,
+                  "mosaicId": "6BED913FA20223F8",
+                  "amount": "70071038"
+                }
+              ]
+            },
+            "id": "6B00389C6B8437479E0095CE",
+            "meta": {
+              "timestamp": "179323425862"
+            }
+          }
+        ],
+        "pagination": {
+          "pageNumber": 1,
+          "pageSize": 100
+        }
+      },
+      "addresses": {
+        "data": [],
+        "pagination": {
+          "pageNumber": 1,
+          "pageSize": 100
+        }
+      },
+      "mosaics": {
+        "data": [],
+        "pagination": {
+          "pageNumber": 1,
+          "pageSize": 100
+        }
+      }
+    },
+    "5966484": {
+      "network": "mainnet",
+      "sources": {
+        "block": "/blocks/5966484",
+        "transactions": "/statements/transaction?fromHeight=5966484&toHeight=5966484&pageSize=100&pageNumber=1",
+        "addresses": "/statements/resolutions/address?height=5966484&pageSize=100&pageNumber=1",
+        "mosaics": "/statements/resolutions/mosaic?height=5966484&pageSize=100&pageNumber=1"
+      },
+      "block": {
+        "meta": {
+          "hash": "8DC3EB5767C354DE1AB87D8B9E3FFD3336B03E9C3BB72E3CCEF3053E38B80444",
+          "generationHash": "FFE4105959964C35B4D29332AC3F8FF2C9B48F81116C82D4E718CE6A3743B772",
+          "totalFee": "10856",
+          "totalTransactionsCount": 1,
+          "stateHashSubCacheMerkleRoots": [
+            "DDDCCD1D881CF80D45C25EA117EF132905E94CF2978BB9CC8B3C55DF8FA186BF",
+            "CB00A40468CD91BCC7F3EE81243AF5CFC1FC83AAA6044B53A6FB68D9813006CD",
+            "38EF74A474CF4C3F3CA4892CC753F66B9F530D017E014A89E2820D03BA5EE884",
+            "F3C58780CB033A91AFBB74F2A0AD03A57D3EEF087E93F62D987E48B40E023140",
+            "72963351BC79533B2B4112E17D8DC9D9418E1E53BDAE76F1AA09338B99A9965C",
+            "271C4CC44F2B5979CB8BBF0FADA0FFB8C70C553AC66059941C9762B9DF8A3B60",
+            "B43BE24B4D3982803001367065CFA9F694C4298EFE2F21A958A2C23016C7E7D5",
+            "71F6FA9C3B6F19BB35210D8B6F3736254A699B5F0BD8759169CFC3D3D1C65007",
+            "7BF2EDFF71A55FA1AC98CE5B8FE98448AB2F3FD3EA7A80ABA0040386136AE382"
+          ],
+          "transactionsCount": 1,
+          "statementsCount": 2
+        },
+        "block": {
+          "size": 560,
+          "signature": "3E804507F802D6FFE9E1A6F56EC793F1895A99E60E74B0624A4E6B48FCB554FB142CF8D918BAE4CC0F5017B73C9FCEBFEE689FD5654338526A376ACD429FCB0E",
+          "signerPublicKey": "170355F6C148E75DBAEF51AA1F05AFAC3B78329611F083F745BE89B3683F0E1B",
+          "version": 1,
+          "network": 104,
+          "type": 33091,
+          "height": "5966484",
+          "timestamp": "179247369313",
+          "difficulty": "106302477137956",
+          "proofGamma": "B2B3A18B98A4D394BB7F430AD037183CAA5FF1A0E78333DEAD595D7557C59F94",
+          "proofVerificationHash": "0515D8DDD61FA14E8A0D44F42E212526",
+          "proofScalar": "F9F62959F02A688778547DAD945BC19013918562563F6CA3A9361738D3CE7D05",
+          "previousBlockHash": "EBCAC61E102E4891A744A26EAFE8BB5FDEA0900A074D4B8917A8216C5B34981F",
+          "transactionsHash": "56EBCCF5684817C7D052998F0635ABF411EA49C38D1DEBCB9C67D47E1A816964",
+          "receiptsHash": "2E49C9405040EE8FBF860679B684E6C2386752D315D068CDC5EA80B7E178EB85",
+          "stateHash": "3D953FBAEF8BAF5370A81D36ED643AAEF9447AF3093A176E6EF90F55A300F360",
+          "beneficiaryAddress": "687205BDEBBBD4C81D9EA95763B52FBA1B559DEBEC9DB62D",
+          "feeMultiplier": 59
+        },
+        "id": "6AFF0F846B8437479E00803E"
+      },
+      "transactions": {
+        "data": [
+          {
+            "statement": {
+              "height": "5966484",
+              "source": {
+                "primaryId": 0,
+                "secondaryId": 0
+              },
+              "receipts": [
+                {
+                  "version": 1,
+                  "type": 8515,
+                  "targetAddress": "6896C77C871E68670E6AE4BDB799C1D0FA55F3AD207A75D1",
+                  "mosaicId": "6BED913FA20223F8",
+                  "amount": "49057327"
+                },
+                {
+                  "version": 1,
+                  "type": 8515,
+                  "targetAddress": "682AE8CC97DA1E1052D00851B46C2343A5C054EFCAC4517F",
+                  "mosaicId": "6BED913FA20223F8",
+                  "amount": "3504094"
+                },
+                {
+                  "version": 1,
+                  "type": 8515,
+                  "targetAddress": "687205BDEBBBD4C81D9EA95763B52FBA1B559DEBEC9DB62D",
+                  "mosaicId": "6BED913FA20223F8",
+                  "amount": "17520473"
+                },
+                {
+                  "version": 1,
+                  "type": 20803,
+                  "mosaicId": "6BED913FA20223F8",
+                  "amount": "70071038"
+                }
+              ]
+            },
+            "id": "6AFF0F846B8437479E00803C",
+            "meta": {
+              "timestamp": "179247369313"
+            }
+          },
+          {
+            "statement": {
+              "height": "5966484",
+              "source": {
+                "primaryId": 1,
+                "secondaryId": 0
+              },
+              "receipts": [
+                {
+                  "version": 1,
+                  "type": 12616,
+                  "targetAddress": "68BA8C38FA1FB6B90EEB6259FA15DDDC85A53DD064CF7AB7",
+                  "mosaicId": "6BED913FA20223F8",
+                  "amount": "10000000"
+                }
+              ]
+            },
+            "id": "6AFF0F846B8437479E00803D",
+            "meta": {
+              "timestamp": "179247369313"
+            }
+          }
+        ],
+        "pagination": {
+          "pageNumber": 1,
+          "pageSize": 100
+        }
+      },
+      "addresses": {
+        "data": [],
+        "pagination": {
+          "pageNumber": 1,
+          "pageSize": 100
+        }
+      },
+      "mosaics": {
+        "data": [],
+        "pagination": {
+          "pageNumber": 1,
+          "pageSize": 100
+        }
+      }
+    },
+    "3125903": {
+      "network": "testnet",
+      "sources": {
+        "block": "/blocks/3125903",
+        "transactions": "/statements/transaction?fromHeight=3125903&toHeight=3125903&pageSize=100&pageNumber=1",
+        "addresses": "/statements/resolutions/address?height=3125903&pageSize=100&pageNumber=1",
+        "mosaics": "/statements/resolutions/mosaic?height=3125903&pageSize=100&pageNumber=1"
+      },
+      "block": {
+        "meta": {
+          "hash": "95F9679FDA5140962994EDE3840D212BEC3CB233CD69501C254F12DCF55BA81F",
+          "generationHash": "C7BEAA81F78E0CF516AAD2E706F91CBDFCAD2C6860D5436CBF1894DB21DBBAFB",
+          "totalFee": "50400",
+          "totalTransactionsCount": 4,
+          "stateHashSubCacheMerkleRoots": [
+            "96E5CD34D2517C801D6604463296C39238D9B028A5C57E17BC96998028024E74",
+            "D371A310E921DD498F0E9F376D5A229D17327FCE69711323D5C0A5C8AF1CEA95",
+            "BAFAEA7C4ABC8DB569BBB35098F9BE5131F6D2277069FDE9F192EDD61A3D44EC",
+            "78F78DADE64350E273089352E21B105A5912A2B2B0AC098EFCA96FFC62E7D62C",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "035023CC389323ADB81AD49E6D800ECA40CE0E9439AAD0648EC3FBF32BA08168",
+            "FD49241CF34E9245A267590DB5DC9451DF21A95A1348A9409918856E73F6272A",
+            "694C050A6E4993E7D6367FBC5562E2F0F77D58360C25670E50BD9276495DB251"
+          ],
+          "transactionsCount": 2,
+          "statementsCount": 3
+        },
+        "block": {
+          "size": 880,
+          "signature": "462B1C827FE73CF4B93A7C870902A8D723F535474954713049D234E422938E169CE5E30B8E657C14FC7100BBF2A79869608A7FA3D1AFF6FBDCAE42F390934600",
+          "signerPublicKey": "56FDD71F89193034761E5CBFB571491B1B72A7A6E72C5294493F0EFBFE170CBA",
+          "version": 1,
+          "network": 152,
+          "type": 33091,
+          "height": "3125903",
+          "timestamp": "103754614983",
+          "difficulty": "10067592883275",
+          "proofGamma": "BB5FE7387B9E8F77DA38C2342AA5D04A59F9D93E7791966AE360347F395581BB",
+          "proofVerificationHash": "ED827C300A72ED1AFB4E1D60D67B28B6",
+          "proofScalar": "FA70916AF313F26FE89A322BB341A830ECD050F491C27DB4BA43B9C3574FE307",
+          "previousBlockHash": "D45C67F3FC9121CD4E64E66E4F9522CDC268DA0FC37C9435014BE934FC60FA77",
+          "transactionsHash": "8783DF80EAA0D040D5FAC72951195C24424C44572A187C03605CC60C72E91B41",
+          "receiptsHash": "EBA4B12EB4E73184238559E94C763919C4F706A86C14DF1CEE7032911FE79A5D",
+          "stateHash": "89A516713F3751924FD4D021A389B5650DA5E2D2D5D90EB65ABC8080120841B2",
+          "beneficiaryAddress": "9860B7FE54FD99456EF8621397D913D1D3B7CEA97D8A96A6",
+          "feeMultiplier": 100
+        },
+        "id": "6AFFF650CB5702EF26AF1CB8"
+      },
+      "transactions": {
+        "data": [
+          {
+            "statement": {
+              "height": "3125903",
+              "source": {
+                "primaryId": 0,
+                "secondaryId": 0
+              },
+              "receipts": [
+                {
+                  "version": 1,
+                  "type": 8515,
+                  "targetAddress": "98699CA34F65FCD521743819EACD2DC2709994E85245DB40",
+                  "mosaicId": "72C0212E67A08BCE",
+                  "amount": "79467766"
+                },
+                {
+                  "version": 1,
+                  "type": 8515,
+                  "targetAddress": "9845B05F9364B1698AD1F2C677AAD082FEA789CC3904DD21",
+                  "mosaicId": "72C0212E67A08BCE",
+                  "amount": "5676268"
+                },
+                {
+                  "version": 1,
+                  "type": 8515,
+                  "targetAddress": "9860B7FE54FD99456EF8621397D913D1D3B7CEA97D8A96A6",
+                  "mosaicId": "72C0212E67A08BCE",
+                  "amount": "28381344"
+                },
+                {
+                  "version": 1,
+                  "type": 20803,
+                  "mosaicId": "72C0212E67A08BCE",
+                  "amount": "113474978"
+                }
+              ]
+            },
+            "id": "6AFFF650CB5702EF26AF1CB5",
+            "meta": {
+              "timestamp": "103754614983"
+            }
+          }
+        ],
+        "pagination": {
+          "pageNumber": 1,
+          "pageSize": 100
+        }
+      },
+      "addresses": {
+        "data": [
+          {
+            "statement": {
+              "height": "3125903",
+              "unresolved": "99EC0888813BE133E6000000000000000000000000000000",
+              "resolutionEntries": [
+                {
+                  "source": {
+                    "primaryId": 1,
+                    "secondaryId": 0
+                  },
+                  "resolved": "98AD8BAAB80B1DC684542EC175259711AB2C41D2FE4DA9AD"
+                }
+              ]
+            },
+            "id": "6AFFF650CB5702EF26AF1CB6",
+            "meta": {
+              "timestamp": "103754614983"
+            }
+          }
+        ],
+        "pagination": {
+          "pageNumber": 1,
+          "pageSize": 100
+        }
+      },
+      "mosaics": {
+        "data": [
+          {
+            "statement": {
+              "height": "3125903",
+              "unresolved": "E74B99BA41F4AFEE",
+              "resolutionEntries": [
+                {
+                  "source": {
+                    "primaryId": 1,
+                    "secondaryId": 0
+                  },
+                  "resolved": "72C0212E67A08BCE"
+                }
+              ]
+            },
+            "id": "6AFFF650CB5702EF26AF1CB7",
+            "meta": {
+              "timestamp": "103754614983"
+            }
+          }
+        ],
+        "pagination": {
+          "pageNumber": 1,
+          "pageSize": 100
+        }
+      }
+    }
+  }
+}

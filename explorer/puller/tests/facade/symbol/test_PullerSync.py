@@ -4,7 +4,7 @@ import copy
 import json
 from contextlib import contextmanager
 from datetime import datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 from common.tests.AccountRefreshTestUtils import seed_account_refresh_state
 from common.tests.PostgresTestUtils import drop_symbol_block_tables_if_present
@@ -21,6 +21,7 @@ from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Block import create_block_row
 from puller.model.symbol.Receipt import create_receipt_rows
 from puller.model.symbol.Transaction import TRANSACTION_TYPE_LABELS
+from tests.test.SymbolBlockCommitmentTestUtils import seal_replacement_blocks
 from tests.test.SymbolDatabaseTestUtils import normalize_sync_state
 from tests.test.SymbolLockTestUtils import create_secret_lock_item
 from tests.test.SymbolMetadataTestUtils import (
@@ -79,7 +80,6 @@ from .puller_test_utils import (
 	resolution_path,
 	set_symbol_connector,
 	set_symbol_rate_limiter,
-	set_sync_block_pages,
 	statement_path,
 	transaction_path
 )
@@ -162,7 +162,7 @@ def _fetch_transaction_counts(database):
 
 
 class FailingSyncWriteIntentDatabase(DelegatingSymbolDatabase):
-	def mark_sync_write_intent(self, height):  # pylint: disable=no-self-use
+	def mark_sync_write_intent(self, height, *, expected_checkpoint=None):  # pylint: disable=no-self-use,unused-argument
 		raise RuntimeError(f'write intent failed at height {height}')
 
 
@@ -180,7 +180,7 @@ class FailingAdaptiveSecondRangeReceiptDatabase(DelegatingSymbolDatabase):
 
 
 class FailingSyncBlockDatabase(DelegatingSymbolDatabase):
-	def upsert_blocks(self, blocks):  # pylint: disable=unused-argument,no-self-use
+	def upsert_blocks(self, blocks, *, expected_checkpoint=None):  # pylint: disable=unused-argument,no-self-use
 		raise RuntimeError('block write failed')
 
 
@@ -190,10 +190,10 @@ class InvalidFinalSyncStateDatabase(DelegatingSymbolDatabase):
 		self.publication_attempts = 0
 		self.publication_error = None
 
-	def upsert_sync_state(self, sync_state):
+	def checkpoint_sync_state(self, sync_state):
 		self.publication_attempts += 1
 		try:
-			return self.database.upsert_sync_state({**sync_state, 'status': 'invalid'})
+			return self.database.checkpoint_sync_state({**sync_state, 'status': 'invalid'})
 		except PsycopgError as exception:
 			self.publication_error = exception
 			raise
@@ -246,6 +246,9 @@ class FailingSyncCurrentStateDatabase(DelegatingSymbolDatabase):
 
 class FailingSyncTransactionAndStatusDatabase(FailingSyncTransactionDatabase):
 	def mark_sync_unhealthy(self):  # pylint: disable=no-self-use
+		raise RuntimeError('status update failed')
+
+	def stop_fork_recovery(self, reason):  # pylint: disable=unused-argument,no-self-use
 		raise RuntimeError('status update failed')
 
 
@@ -301,7 +304,7 @@ class FailingRollbackArtifactStateDatabase(DelegatingSymbolDatabase):
 		raise RuntimeError('artifact state gap lookup failed')
 
 
-class RollbackAccountResponseConnector(FakeConnector):
+class RollbackAccountResponseConnector(ChainInfoOverrideConnector):
 	def __init__(self, *args, batch_response=None, account_lookup_response=None, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.batch_response = batch_response
@@ -324,7 +327,7 @@ class RollbackAccountResponseConnector(FakeConnector):
 		return await super().get(url_path, *args)
 
 
-class NodeBlockEvidenceConnector(FakeConnector):
+class NodeBlockEvidenceConnector(ChainInfoOverrideConnector):
 	"""Returns selected block responses verbatim for rollback evidence validation."""
 
 	def __init__(self, *args, block_response_overrides=None, **kwargs):
@@ -345,7 +348,7 @@ class NodeBlockEvidenceConnector(FakeConnector):
 		return await super().get(url_path, *args)
 
 
-class WorkflowDetailConnector(FakeConnector):
+class WorkflowDetailConnector(ChainInfoOverrideConnector):
 	"""Adds deterministic current-state detail responses to the shared sync fixture."""
 
 	def __init__(self, *args, hash_lock_item=None, secret_lock_item=None, restriction_response=None, **kwargs):
@@ -422,6 +425,62 @@ class DatabaseObservingPerformanceLogger:
 				self.completed_state_snapshots.append(self.state_snapshot())
 
 
+def _replacement_connector_arguments(replacement_blocks, finalized_height, *, transactions=(), statements=()):
+	seal_replacement_blocks(replacement_blocks, transactions=transactions, statements=statements)
+	start_height = int(replacement_blocks[0]['block']['height'])
+	blocks = [create_node_block(height) for height in range(1, start_height)] + replacement_blocks
+	chain_height = len(blocks)
+	network_properties = create_network_properties()
+	if statements:
+		network_properties['chain']['enableVerifiableReceipts'] = 'true'
+
+	return {
+		'chain_height': chain_height,
+		'pages': {0: blocks},
+		'finalized_height': finalized_height,
+		'finalized_fields': {'hash': blocks[finalized_height - 1]['meta']['hash']},
+		'statement_pages': {statement_path(start_height, chain_height): {'data': list(statements)}},
+		'network_properties': network_properties
+	}
+
+
+def _create_dirty_replay_connector(blocks, *, finalized_height=1, transactions=(), connector_class=ChainInfoOverrideConnector, **kwargs):
+	connector_args = _replacement_connector_arguments(blocks, finalized_height, transactions=transactions)
+	start, end = int(blocks[0]['block']['height']), connector_args['chain_height']
+	return connector_class(
+		**connector_args, transactions_by_path={transaction_path(start, end): create_transaction_page(list(transactions))}, **kwargs)
+
+
+def _create_non_transfer_transaction(height, **overrides):
+	item = create_node_transaction(height, **overrides)
+	item['transaction'].pop('mosaics')
+	if 'recipientAddress' not in overrides:
+		item['transaction'].pop('recipientAddress')
+
+	return item
+
+
+def _seal_checkpoint_retry(blocks, start, transaction_pages, statement_pages):
+	transactions = [
+		item for page in transaction_pages.values() for item in page['data'] if int(item['meta']['height']) >= start
+	]
+	for item in transactions:
+		item['transaction']['deadline'] = str(2000 + item['meta']['index'])
+
+	statements = [
+		item for page in statement_pages.values() for item in page['data'] if int(item['statement']['height']) >= start
+	]
+	for item in statements:
+		item['statement']['source']['primaryId'] = 0
+
+	seal_replacement_blocks(blocks[start - 1:], transactions=transactions, statements=statements)
+	for page_start in range(start, len(blocks) + 1, MAX_PAGE_SIZE):
+		end = min(page_start + MAX_PAGE_SIZE - 1, len(blocks))
+		statement_pages[statement_path(page_start, end)] = {'data': [
+			item for item in statements if page_start <= int(item['statement']['height']) <= end
+		]}
+
+
 def _create_adaptive_sync_fixture(failing_transaction_range=None):
 	blocks, transaction_pages, statement_pages = create_adaptive_batch_fixture(
 		(0, 2, 3, 1, 4, 0, 2),
@@ -445,23 +504,10 @@ def _create_adaptive_sync_fixture(failing_transaction_range=None):
 	return blocks, transaction_pages, statement_pages
 
 
-def _expected_adaptive_transaction_identities(through_height):
-	identities = [
-		(2, bytes.fromhex('A' * 64), None),
-		(2, bytes.fromhex('A' * 64), 0)
-	]
-	for height, transaction_count in ((3, 3), (4, 1), (5, 4), (7, 2)):
-		if height <= through_height:
-			identities.extend(
-				(height, bytes.fromhex(f'{height:060X}{index:04X}'), None)
-				for index in range(transaction_count))
-
-	return [identity for identity in identities if identity[0] <= through_height]
-
-
 def _capture_adaptive_transaction_payloads(transaction_pages):
 	first_range_items = transaction_pages[transaction_path(1, 3)]['data']
 	second_range_items = transaction_pages[transaction_path(4, 6)]['data']
+	transaction_metadata = [item['meta'] for page in transaction_pages.values() for item in page['data']]
 	return {
 		'aggregate': copy.deepcopy(next(
 			item for item in first_range_items
@@ -469,7 +515,12 @@ def _capture_adaptive_transaction_payloads(transaction_pages):
 		'embedded': copy.deepcopy(next(
 			item for item in first_range_items
 			if item['meta']['height'] == '2' and 'aggregateHash' in item['meta'])),
-		'transfer': copy.deepcopy(next(item for item in second_range_items if item['meta']['height'] == '4'))
+		'transfer': copy.deepcopy(next(item for item in second_range_items if item['meta']['height'] == '4')),
+		'identities': [
+			(int(meta['height']), bytes.fromhex(meta['aggregateHash']), meta['index'])
+			if 'aggregateHash' in meta else (int(meta['height']), bytes.fromhex(meta['hash']), None)
+			for meta in transaction_metadata
+		]
 	}
 
 
@@ -559,16 +610,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				'amount': '11'
 			},
 			'rollback-account-beneficiary')), 0)
-		replacement_block = create_node_block(2, block_hash='B' * 64)
-		terminal_block = create_node_block(3, previous_hash='B' * 64)
-		connector_args = {
-			'chain_height': 3,
-			'pages': {1: [replacement_block, terminal_block]},
-			'block_by_height': {1: create_node_block(1), 2: replacement_block, 3: terminal_block},
-			'finalized_height': 3,
-			'transactions_by_path': {transaction_path(2, 3): create_transaction_page([])},
-			'statement_pages': {statement_path(2, 3): {'data': []}}
-		}
+		connector_args = _replacement_connector_arguments([create_node_block(2), create_node_block(3)], finalized_height=3)
 		return database, address, other_address, connector_args
 
 	def _seed_uncheckpointed_dirty_range(self, heights, block_hashes=None):
@@ -581,29 +623,16 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	@staticmethod
 	def _create_namespace_batch_connector():
-		return FakeConnector(
-			1,
-			{0: [create_node_block(1, transactions_count=2, total_transactions_count=2)]},
-			transactions_by_path={
-				transaction_path(1, 1): create_transaction_page([
-					create_node_transaction(
-						1,
-						transaction_hash='A' * 64,
-						transaction_id='namespace-registration',
-						type=TransactionType.NAMESPACE_REGISTRATION.value,
-						id=NAMESPACE_ROOT_ID,
-						name='root',
-						registrationType=0),
-					create_node_transaction(
-						1,
-						transaction_hash='B' * 64,
-						transaction_id='mosaic-alias',
-						type=TransactionType.MOSAIC_ALIAS.value,
-						namespaceId=NAMESPACE_ROOT_ID,
-						mosaicId=NATIVE_MOSAIC_ID,
-						aliasAction=1)
-				])
-			},
+		transactions = [
+			_create_non_transfer_transaction(
+				1, transaction_id='namespace-registration', type=TransactionType.NAMESPACE_REGISTRATION.value,
+				id=NAMESPACE_ROOT_ID, name='root', registrationType=0, duration='0'),
+			_create_non_transfer_transaction(
+				1, transaction_id='mosaic-alias', block_index=1, type=TransactionType.MOSAIC_ALIAS.value,
+				namespaceId=NAMESPACE_ROOT_ID, mosaicId=NATIVE_MOSAIC_ID, aliasAction=1)
+		]
+		return _create_dirty_replay_connector(
+			[create_node_block(1)], transactions=transactions,
 			namespace_by_id={
 				NAMESPACE_ROOT_ID: create_namespace_item(alias={'type': 1, 'mosaicId': NATIVE_MOSAIC_ID})
 			},
@@ -874,12 +903,18 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_converges_mosaic_state_when_restarted_from_existing_blocks(self):
 		# Arrange:
-		connector = self._create_mosaic_definition_sync_connector()
+		transaction = _create_non_transfer_transaction(
+			1, transaction_id='mosaic-definition', type=TransactionType.MOSAIC_DEFINITION.value,
+			id=MOSAIC_ID, duration='0', flags=2, divisibility=6, nonce=0)
+		connector = _create_dirty_replay_connector(
+			[create_node_block(1)], transactions=[transaction], mosaics_by_id={MOSAIC_ID: create_mosaic_item()})
 		self._sync_with_connector(connector)
 		first_mosaic_state = fetch_mosaic_state(self.puller.symbol_db)
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute('DELETE FROM symbol_sync_state')
+		cursor.execute('DELETE FROM symbol_fork_recovery')
 		self.puller.symbol_db.connection.commit()
+		self.puller.symbol_db.mark_sync_write_intent(1)
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -1042,7 +1077,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		first_namespace_state = fetch_namespace_state(self.puller.symbol_db.connection)
 		cursor = self.puller.symbol_db.connection.cursor()
 		cursor.execute('DELETE FROM symbol_sync_state')
+		cursor.execute('DELETE FROM symbol_fork_recovery')
 		self.puller.symbol_db.connection.commit()
+		self.puller.symbol_db.mark_sync_write_intent(1)
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -1055,11 +1092,11 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 		# Assert:
 		self.assertEqual(first_namespace_state, fetch_namespace_state(self.puller.symbol_db.connection))
-		# The two identical requests correspond to the initial sync and the resync after sync state deletion.
+		# Restart refreshes the orphaned current state before fetching the replay batch.
 		self.assertEqual([f'namespaces/{NAMESPACE_ROOT_ID}'], first_sync_namespace_paths)
-		self.assertEqual([f'namespaces/{NAMESPACE_ROOT_ID}'], second_sync_namespace_paths)
+		self.assertEqual([f'namespaces/{NAMESPACE_ROOT_ID}'] * 2, second_sync_namespace_paths)
 		self.assertEqual([{'namespaceIds': [NAMESPACE_ROOT_ID]}], first_sync_names_payloads)
-		self.assertEqual([{'namespaceIds': [NAMESPACE_ROOT_ID]}], second_sync_names_payloads)
+		self.assertEqual([{'namespaceIds': [NAMESPACE_ROOT_ID]}] * 2, second_sync_names_payloads)
 
 	def test_sync_block_headers_does_not_write_batch_state_when_namespace_fetch_fails(self):
 		# Arrange:
@@ -1465,7 +1502,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual('unhealthy', sync_state['status'])
 		self.assertEqual(1, sync_state['dirty_state_from_height'])
 
-	def test_sync_block_headers_propagates_capped_status_update_failure(self):
+	def test_sync_block_headers_preserves_capped_stop_when_status_update_fails(self):
 		# Arrange:
 		database = self.puller.symbol_db
 		self._seed_blocks(database, [1, 2, 3, 4, 5])
@@ -1480,7 +1517,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 		with _replace_symbol_database(self.puller, FailingSyncTransactionAndStatusDatabase(database)):
 			# Act:
-			with self.assertRaisesRegex(RuntimeError, 'status update failed'):
+			with self.assertRaisesRegex(SymbolRollbackError, 'max_height prevents safe repair of the persisted dirty range'):
 				asyncio.run(self.puller.sync_block_headers(max_height=2))
 
 		# Assert:
@@ -1490,7 +1527,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_preserves_original_error_when_unhealthy_update_fails(self):
 		# Arrange:
-		connector = FakeConnector(1, {0: [create_node_block(1)]})
+		connector = _create_dirty_replay_connector([create_node_block(1)])
 		database = self.puller.symbol_db
 		with _replace_symbol_database(self.puller, FailingSyncTransactionAndStatusDatabase(database)):
 			# Act / Assert:
@@ -1503,7 +1540,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual(1, sync_state['dirty_state_from_height'])
 
 		# Act:
-		self._sync_with_connector(FakeConnector(1, {0: [create_node_block(1)]}))
+		self._sync_with_connector(connector)
 
 		# Assert:
 		sync_state = database.get_sync_state()
@@ -1532,14 +1569,14 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_repairs_height_one_dirty_tail_before_forward_sync(self):
 		# Arrange:
-		connector = FakeConnector(1, {0: [create_node_block(1)]})
+		connector = _create_dirty_replay_connector([create_node_block(1)])
 		database = self.puller.symbol_db
 		with _replace_symbol_database(self.puller, FailingSyncCurrentStateDatabase(database)):
 			with self.assertRaisesRegex(RuntimeError, 'current-state write failed'):
 				self._sync_with_connector(connector)
 
 		# Act:
-		self._sync_with_connector(FakeConnector(1, {0: [create_node_block(1)]}))
+		self._sync_with_connector(connector)
 
 		# The height-1 repair can temporarily leave node-confirmed current state without a block; the run above completes
 		# the subsequent forward sync and establishes the terminal healthy state.
@@ -1551,13 +1588,14 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_keeps_minimum_dirty_height_when_forward_sync_fails_after_repair(self):
 		# Arrange:
-		first_connector = FakeConnector(1, {0: [create_node_block(1)]})
+		blocks = [create_node_block(1), create_node_block(2)]
+		first_connector = _create_dirty_replay_connector(blocks[:1])
 		database = self.puller.symbol_db
 		with _replace_symbol_database(self.puller, FailingSyncTransactionDatabase(database)):
 			with self.assertRaisesRegex(RuntimeError, 'transaction write failed at height 1'):
 				self._sync_with_connector(first_connector)
 
-		second_connector = FakeConnector(2, {0: [create_node_block(1), create_node_block(2)]})
+		second_connector = _create_dirty_replay_connector(blocks)
 		with _replace_symbol_database(self.puller, FailingSyncCurrentStateDatabase(database)):
 			# Act / Assert:
 			with self.assertRaisesRegex(RuntimeError, 'current-state write failed'):
@@ -1583,7 +1621,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		set_symbol_connector(self.puller, connector)
 
 		# Act:
-		asyncio.run(self.puller.sync_block_headers(max_height=2))
+		with self.assertRaisesRegex(SymbolRollbackError, 'max_height prevents safe repair of the persisted dirty range'):
+			asyncio.run(self.puller.sync_block_headers(max_height=2))
 
 		# Assert:
 		self.assertEqual([1, 2, 3, 4, 5], self._fetch_block_heights(database))
@@ -1606,7 +1645,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		set_symbol_connector(self.puller, connector)
 
 		# Act:
-		asyncio.run(self.puller.sync_block_headers(max_height=4))
+		with self.assertRaisesRegex(SymbolRollbackError, 'max_height prevents safe repair of the persisted dirty range'):
+			asyncio.run(self.puller.sync_block_headers(max_height=4))
 
 		# Assert:
 		self.assertEqual([1, 2, 3, 4, 5], self._fetch_block_heights(database))
@@ -1640,6 +1680,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual('healthy', sync_state['status'])
 		self.assertEqual(3, sync_state['last_synced_height'])
 		self.assertIsNone(sync_state['dirty_state_from_height'])
+		self.assertIsNone(database.try_get_fork_recovery_state()['resume_height'])
 
 	def test_sync_block_headers_converges_orphan_current_state_before_forward_sync(self):
 		# Arrange:
@@ -1677,10 +1718,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			source_address=SOURCE_ADDRESS,
 			target_address=TARGET_ADDRESS,
 			scoped_metadata_key=SCOPED_METADATA_KEY)
-		connector = FakeConnector(
-			6,
-			{4: [create_node_block(5), create_node_block(6)]},
-			block_by_height={height: create_node_block(height) for height in range(1, 6)},
+		connector = _create_dirty_replay_connector(
+			[create_node_block(5), create_node_block(6)],
 			namespace_by_id={NAMESPACE_ROOT_ID: namespace_not_found},
 			mosaics_response=[],
 			mosaics_by_id={orphan_mosaic_id: None},
@@ -1702,6 +1741,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			)
 		]
 		self.assertEqual([
+			'blocks?pageSize=100&offset=0&orderBy=height',
+			'blocks?pageSize=100&offset=1&orderBy=height',
+			'blocks?pageSize=100&offset=4&orderBy=height',
 			f'namespaces/{NAMESPACE_ROOT_ID}',
 			'mosaics',
 			f'mosaics/{orphan_mosaic_id}',
@@ -1735,9 +1777,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Assert:
 		self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
 		self.assertEqual([1, 2, 3, 4, 5], self._fetch_block_heights(database))
-		self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?page')])
+		self.assertEqual([], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
 
-	def test_sync_block_headers_preserves_existing_empty_watermark_when_no_pages_are_returned(self):
+	def test_sync_block_headers_preserves_existing_empty_watermark_when_promised_block_is_missing(self):
 		# Arrange:
 		database = self.puller.symbol_db
 		database.upsert_sync_state(create_sync_state(
@@ -1747,10 +1789,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			last_synced_height=None,
 			last_synced_block_hash=None))
 		set_symbol_connector(self.puller, FakeConnector(1, {}, finalized_height=0))
-		set_sync_block_pages(self.puller, AsyncMock(return_value=(None, None)))
-
 		# Act:
-		asyncio.run(self.puller.sync_block_headers())
+		with self.assertRaisesRegex(ValueError, 'Expected Symbol blocks at offset 0 before chain height 1'):
+			asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
 		sync_state = database.get_sync_state()
@@ -1789,6 +1830,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			'network/properties',
 			f'mosaics/{NATIVE_MOSAIC_ID}',
 			'blocks/1',
+			'blocks?pageSize=100&offset=0&orderBy=height',
 			'blocks?pageSize=100&offset=1&orderBy=height'
 		], connector.paths)
 
@@ -1901,14 +1943,15 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_keeps_dirty_marker_when_metadata_write_fails_and_restart_converges(self):
 		# Arrange:
-		block = create_node_block(1, transactions_count=1, total_transactions_count=1)
-		transaction = create_node_transaction(
+		block = create_node_block(1)
+		transaction = _create_non_transfer_transaction(
 			1,
 			type=TransactionType.MOSAIC_METADATA.value,
 			targetAddress=RECIPIENT_ADDRESS,
 			targetMosaicId=NATIVE_MOSAIC_ID,
 			scopedMetadataKey=SCOPED_METADATA_KEY,
 			valueSizeDelta=5,
+			valueSize=5,
 			value='68656C6C6F')
 		metadata_item = create_metadata_item(
 			metadata_type=1,
@@ -1916,11 +1959,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			source_address=SIGNER_ADDRESS,
 			target_address=RECIPIENT_ADDRESS)
 		metadata_query = metadata_path(1, NATIVE_MOSAIC_ID)
-		connector = FakeConnector(
-			1,
-			{0: [block]},
-			block_by_height={1: block},
-			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
+		connector = _create_dirty_replay_connector(
+			[block], transactions=[transaction],
 			metadata_by_query={metadata_query: {'data': [metadata_item]}})
 		database = self.puller.symbol_db
 		with _replace_symbol_database(self.puller, FailingSyncMetadataDatabase(database)):
@@ -1945,20 +1985,21 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Assert:
 		sync_state = database.get_sync_state()
 		self.assertEqual(1, sync_state['last_synced_height'])
-		self.assertEqual(create_block_hash(1), bytes(sync_state['last_synced_block_hash']))
+		self.assertEqual(bytes.fromhex(block['meta']['hash']), bytes(sync_state['last_synced_block_hash']))
 		self.assertIsNone(sync_state['dirty_state_from_height'])
 		self.assertEqual(1, len(fetch_metadata_rows(database)))
 
 	def test_sync_block_headers_keeps_dirty_marker_when_hash_lock_write_fails_and_restart_converges(self):
 		# Arrange:
 		lock_hash = 'AA' * 32
-		block = create_node_block(1, transactions_count=1, total_transactions_count=1)
-		transaction = create_node_transaction(
+		block = create_node_block(1)
+		transaction = _create_non_transfer_transaction(
 			1,
 			type=TransactionType.HASH_LOCK.value,
 			hash=lock_hash,
 			mosaicId=NATIVE_MOSAIC_ID,
-			amount='1234')
+			amount='1234',
+			duration='99')
 		hash_lock_item = {
 			'lock': {
 				'hash': lock_hash,
@@ -1970,12 +2011,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			},
 			'id': 'hash-lock'
 		}
-		connector = WorkflowDetailConnector(
-			1,
-			{0: [block]},
-			block_by_height={1: block},
-			hash_lock_item=hash_lock_item,
-			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])})
+		connector = _create_dirty_replay_connector(
+			[block], transactions=[transaction], connector_class=WorkflowDetailConnector, hash_lock_item=hash_lock_item)
 		database = self.puller.symbol_db
 		with _replace_symbol_database(self.puller, FailingSyncHashLockDatabase(database)):
 			# Act + Assert:
@@ -2001,7 +2038,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Assert:
 		sync_state = database.get_sync_state()
 		self.assertEqual(1, sync_state['last_synced_height'])
-		self.assertEqual(create_block_hash(1), bytes(sync_state['last_synced_block_hash']))
+		self.assertEqual(bytes.fromhex(block['meta']['hash']), bytes(sync_state['last_synced_block_hash']))
 		self.assertIsNone(sync_state['dirty_state_from_height'])
 		cursor.execute('SELECT COUNT(*) FROM symbol_hash_locks')
 		self.assertEqual(1, cursor.fetchone()[0])
@@ -2009,14 +2046,16 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def test_sync_block_headers_keeps_dirty_marker_when_secret_lock_write_fails_and_restart_converges(self):
 		# Arrange:
 		secret = 'CC' * 32
-		block = create_node_block(1, transactions_count=1, total_transactions_count=1)
-		transaction = create_node_transaction(
+		block = create_node_block(1)
+		transaction = _create_non_transfer_transaction(
 			1,
 			type=TransactionType.SECRET_LOCK.value,
 			secret=secret,
 			hashAlgorithm=1,
 			mosaicId=NATIVE_MOSAIC_ID,
-			amount='1234')
+			amount='1234',
+			duration='99',
+			recipientAddress=RECIPIENT_ADDRESS)
 		secret_lock_item = create_secret_lock_item(
 			composite_hash='DD' * 32,
 			owner_address=SIGNER_ADDRESS,
@@ -2028,12 +2067,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			end_height='100',
 			status=0,
 			item_id='secret-lock')
-		connector = WorkflowDetailConnector(
-			1,
-			{0: [block]},
-			block_by_height={1: block},
-			secret_lock_item=secret_lock_item,
-			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])})
+		connector = _create_dirty_replay_connector(
+			[block], transactions=[transaction], connector_class=WorkflowDetailConnector, secret_lock_item=secret_lock_item)
 		database = self.puller.symbol_db
 		with _replace_symbol_database(self.puller, FailingSyncSecretLockDatabase(database)):
 			# Act + Assert:
@@ -2059,19 +2094,22 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Assert:
 		sync_state = database.get_sync_state()
 		self.assertEqual(1, sync_state['last_synced_height'])
-		self.assertEqual(create_block_hash(1), bytes(sync_state['last_synced_block_hash']))
+		self.assertEqual(bytes.fromhex(block['meta']['hash']), bytes(sync_state['last_synced_block_hash']))
 		self.assertIsNone(sync_state['dirty_state_from_height'])
 		cursor.execute('SELECT COUNT(*) FROM symbol_secret_locks')
 		self.assertEqual(1, cursor.fetchone()[0])
 
 	def test_sync_block_headers_keeps_dirty_marker_when_mosaic_restriction_write_fails_and_restart_converges(self):
 		# Arrange:
-		block = create_node_block(1, transactions_count=1, total_transactions_count=1)
-		transaction = create_node_transaction(
+		block = create_node_block(1)
+		transaction = _create_non_transfer_transaction(
 			1,
 			type=TransactionType.MOSAIC_ADDRESS_RESTRICTION.value,
 			mosaicId=NATIVE_MOSAIC_ID,
-			targetAddress=RECIPIENT_ADDRESS)
+			targetAddress=RECIPIENT_ADDRESS,
+			restrictionKey='0000000000000001',
+			previousRestrictionValue=str((1 << 64) - 1),
+			newRestrictionValue='2')
 		restriction_response = {
 			'pagination': {'pageNumber': 1, 'pageSize': 100},
 			'data': [{
@@ -2086,12 +2124,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				}
 			}]
 		}
-		connector = WorkflowDetailConnector(
-			1,
-			{0: [block]},
-			block_by_height={1: block},
-			restriction_response=restriction_response,
-			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])})
+		connector = _create_dirty_replay_connector(
+			[block], transactions=[transaction], connector_class=WorkflowDetailConnector, restriction_response=restriction_response)
 		database = self.puller.symbol_db
 		with _replace_symbol_database(self.puller, FailingSyncMosaicRestrictionDatabase(database)):
 			# Act + Assert:
@@ -2117,7 +2151,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Assert:
 		sync_state = database.get_sync_state()
 		self.assertEqual(1, sync_state['last_synced_height'])
-		self.assertEqual(create_block_hash(1), bytes(sync_state['last_synced_block_hash']))
+		self.assertEqual(bytes.fromhex(block['meta']['hash']), bytes(sync_state['last_synced_block_hash']))
 		self.assertIsNone(sync_state['dirty_state_from_height'])
 		cursor.execute('SELECT COUNT(*) FROM symbol_mosaic_restrictions')
 		self.assertEqual(1, cursor.fetchone()[0])
@@ -2126,12 +2160,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		first_batch_end = BLOCK_PAGE_FETCH_CONCURRENCY * MAX_PAGE_SIZE
 		second_batch_end = first_batch_end * 2
 		chain_height = second_batch_end + 1
-		transaction_heights = (1, first_batch_end + 1, chain_height)
 		pages = create_multi_batch_block_pages(chain_height)
-		for height in transaction_heights:
-			offset = (height - 1) // MAX_PAGE_SIZE * MAX_PAGE_SIZE
-			pages[offset][height - offset - 1]['meta']['transactionsCount'] = 1
-			pages[offset][height - offset - 1]['meta']['totalTransactionsCount'] = 1
+		blocks = [block for page in pages.values() for block in page]
+		blocks[0]['meta'].update(transactionsCount=1, totalTransactionsCount=1)
 		transaction_pages = {
 			transaction_path(1, first_batch_end): create_transaction_page([
 				create_node_transaction(1, transaction_hash='1' * 64, transaction_id='transaction-1')]),
@@ -2147,7 +2178,13 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			},
 			statement_path(chain_height, chain_height): {'data': [create_amount_statement_item(chain_height, 30)]}
 		}
+		_seal_checkpoint_retry(blocks, first_batch_end + 1, transaction_pages, statement_pages)
 		return {
+			'finalized_hash': blocks[-1]['meta']['hash'],
+			'transaction_hashes': {
+				int(item['meta']['height']): item['meta']['hash'].lower()
+				for page in transaction_pages.values() for item in page['data']
+			},
 			'first_batch_end': first_batch_end,
 			'second_batch_end': second_batch_end,
 			'chain_height': chain_height,
@@ -2162,10 +2199,14 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	@staticmethod
 	def _create_checkpoint_commit_failure_connector(scenario):
-		return FakeConnector(
+		network_properties = create_network_properties()
+		network_properties['chain']['enableVerifiableReceipts'] = 'true'
+		return ChainInfoOverrideConnector(
 			scenario['chain_height'],
 			scenario['pages'],
 			finalized_height=scenario['chain_height'],
+			finalized_fields={'hash': scenario['finalized_hash']},
+			network_properties=network_properties,
 			transactions_by_path=scenario['transaction_pages'],
 			statement_pages=scenario['statement_pages'],
 			mosaics_by_id={NATIVE_MOSAIC_ID: create_mosaic_item(NATIVE_MOSAIC_ID)})
@@ -2184,8 +2225,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual({
 			'status': 'unhealthy',
 			'chain_height': chain_height,
-			'finalized_height': first_batch_end,
-			'finalized_hash': create_block_hash(first_batch_end),
+			'finalized_height': None,
+			'finalized_hash': None,
 			'finalized_epoch': None,
 			'finalized_point': None,
 			'last_synced_height': first_batch_end,
@@ -2197,22 +2238,24 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		database = self.puller.symbol_db
 		first_batch_end = scenario['first_batch_end']
 		second_batch_end = scenario['second_batch_end']
+		transaction_hashes = scenario['transaction_hashes']
 		self.assertEqual(list(range(1, second_batch_end + 1)), self._fetch_block_heights(database))
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT height, hash FROM symbol_blocks WHERE height <= %s ORDER BY height', (first_batch_end,))
 		first_checkpointed_blocks = [(height, bytes(block_hash)) for height, block_hash in cursor.fetchall()]
 		cursor.execute('SELECT height, encode(hash, \'hex\') FROM symbol_transactions ORDER BY height')
-		self.assertEqual([(1, '1' * 64), (first_batch_end + 1, '2' * 64)], cursor.fetchall())
+		self.assertEqual([(1, '1' * 64), (first_batch_end + 1, transaction_hashes[first_batch_end + 1])], cursor.fetchall())
 		cursor.execute('SELECT height, amount FROM symbol_receipts ORDER BY height')
 		self.assertEqual([(1, 10), (first_batch_end + 1, 20)], cursor.fetchall())
 		self._assert_checkpoint_account_rows(cursor, first_batch_end, second_batch_end, second_batch_end)
 		self._assert_checkpoint_transaction_mosaic_rows(cursor, [
 			(1, bytes.fromhex('1' * 64), NATIVE_MOSAIC_ID, 1_000, 'transfer', 0),
-			(first_batch_end + 1, bytes.fromhex('2' * 64), NATIVE_MOSAIC_ID, (first_batch_end + 1) * 1_000, 'transfer', 0)
+			(first_batch_end + 1, bytes.fromhex(transaction_hashes[first_batch_end + 1]), NATIVE_MOSAIC_ID,
+				(first_batch_end + 1) * 1_000, 'transfer', 0)
 		])
 		_assert_checkpoint_transaction_address_rows(self, cursor, (
 			(1, '1' * 64),
-			(first_batch_end + 1, '2' * 64)))
+			(first_batch_end + 1, transaction_hashes[first_batch_end + 1])))
 		return first_checkpointed_blocks
 
 	def _assert_checkpoint_failure_events(self, scenario, logger):
@@ -2228,8 +2271,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual({
 			'status': 'healthy',
 			'chain_height': chain_height,
-			'finalized_height': first_batch_end,
-			'finalized_hash': create_block_hash(first_batch_end),
+			'finalized_height': None,
+			'finalized_hash': None,
 			'finalized_epoch': None,
 			'finalized_point': None,
 			'last_synced_height': first_batch_end,
@@ -2284,11 +2327,11 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			'status': 'healthy',
 			'chain_height': chain_height,
 			'finalized_height': chain_height,
-			'finalized_hash': create_block_hash(chain_height),
+			'finalized_hash': bytes.fromhex(scenario['finalized_hash']),
 			'finalized_epoch': 4,
 			'finalized_point': 5,
 			'last_synced_height': chain_height,
-			'last_synced_block_hash': create_block_hash(chain_height),
+			'last_synced_block_hash': bytes.fromhex(scenario['finalized_hash']),
 			'dirty_state_from_height': None
 		}, normalize_sync_state(database.get_sync_state()))
 		self.assertEqual(list(range(1, chain_height + 1)), self._fetch_block_heights(database))
@@ -2356,7 +2399,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			if height <= through_height
 		], _fetch_transaction_counts(database))
 		expected_identities = sorted(
-			_expected_adaptive_transaction_identities(through_height),
+			(identity for identity in expected_payloads['identities'] if identity[0] <= through_height),
 			key=lambda identity: (identity[0], identity[1], -1 if identity[2] is None else identity[2]))
 		self.assertEqual(expected_identities, actual_identities)
 
@@ -2457,7 +2500,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		expected_row_selectors = (
 			('aggregate', 'hash = %s', (bytes.fromhex('A' * 64),)),
 			('embedded', 'aggregate_hash = %s AND embedded_index = 0', (bytes.fromhex('A' * 64),)),
-			('transfer', 'hash = %s', (bytes.fromhex(f'{4:060X}0000'),))
+			('transfer', 'hash = %s', (bytes.fromhex(expected_payloads['transfer']['meta']['hash']),))
 		)
 		for name, selector, parameters in expected_row_selectors:
 			if 'transfer' == name and through_height < 4:
@@ -2477,11 +2520,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def _assert_restarted_checkpoint_rows(self, scenario, cursor):
 		first_batch_end = scenario['first_batch_end']
 		chain_height = scenario['chain_height']
+		transaction_hashes = scenario['transaction_hashes']
 		cursor.execute('SELECT height, encode(hash, \'hex\') FROM symbol_transactions ORDER BY height')
 		self.assertEqual([
 			(1, '1' * 64),
-			(first_batch_end + 1, '2' * 64),
-			(chain_height, '3' * 64)
+			(first_batch_end + 1, transaction_hashes[first_batch_end + 1]),
+			(chain_height, transaction_hashes[chain_height])
 		], cursor.fetchall())
 		cursor.execute('SELECT height, amount FROM symbol_receipts ORDER BY height')
 		self.assertEqual([(1, 10), (first_batch_end + 1, 20), (chain_height, 30)], cursor.fetchall())
@@ -2489,34 +2533,44 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self._assert_checkpoint_account_rows(cursor, first_batch_end, chain_height, chain_height)
 		self._assert_checkpoint_transaction_mosaic_rows(cursor, [
 			(1, bytes.fromhex('1' * 64), NATIVE_MOSAIC_ID, 1_000, 'transfer', 0),
-			(first_batch_end + 1, bytes.fromhex('2' * 64), NATIVE_MOSAIC_ID, (first_batch_end + 1) * 1_000, 'transfer', 0),
-			(chain_height, bytes.fromhex('3' * 64), NATIVE_MOSAIC_ID, chain_height * 1_000, 'transfer', 0)
+			(first_batch_end + 1, bytes.fromhex(transaction_hashes[first_batch_end + 1]), NATIVE_MOSAIC_ID,
+				(first_batch_end + 1) * 1_000, 'transfer', 0),
+			(chain_height, bytes.fromhex(transaction_hashes[chain_height]), NATIVE_MOSAIC_ID, chain_height * 1_000, 'transfer', 0)
 		])
 		_assert_checkpoint_transaction_address_rows(self, cursor, (
 			(1, '1' * 64),
-			(first_batch_end + 1, '2' * 64),
-			(chain_height, '3' * 64)))
+			(first_batch_end + 1, transaction_hashes[first_batch_end + 1]),
+			(chain_height, transaction_hashes[chain_height])))
 
 	def _assert_checkpoint_restart_requests(self, scenario, connector):
 		first_batch_end = scenario['first_batch_end']
 		second_batch_end = scenario['second_batch_end']
 		chain_height = scenario['chain_height']
+		forward_offsets = list(range(first_batch_end, chain_height, MAX_PAGE_SIZE))
+		verification_offsets = [first_batch_end - MAX_PAGE_SIZE, *forward_offsets]
+		replacement_offsets = forward_offsets
 		self.assertEqual([
 			f'blocks?pageSize=100&offset={offset}&orderBy=height'
-			for offset in range(first_batch_end, chain_height, MAX_PAGE_SIZE)
+			for offset in verification_offsets + replacement_offsets + forward_offsets
 		], [path for path in connector.paths if path.startswith('blocks?pageSize=100&offset=')])
 		self.assertEqual(
-			[f'blocks/{height}' for height in range(first_batch_end, second_batch_end + 1)] + [f'blocks/{chain_height}'],
+			[f'blocks/{height}' for height in (
+				second_batch_end, first_batch_end, first_batch_end + 1, chain_height,
+				chain_height, first_batch_end + 1, second_batch_end
+			)],
 			[path for path in connector.paths if path.startswith('blocks/')])
 		self.assertEqual([
 			transaction_path(first_batch_end + 1, second_batch_end),
 			transaction_path(chain_height, chain_height)
 		], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
-		self.assertEqual([
+		replacement_statement_paths = [
+			statement_path(offset + 1, min(offset + MAX_PAGE_SIZE, chain_height)) for offset in replacement_offsets
+		]
+		self.assertEqual(replacement_statement_paths + [
 			statement_path(first_batch_end + 1, second_batch_end),
 			statement_path(chain_height, chain_height)
 		], [path for path in connector.paths if path.startswith('statements/transaction?')])
-		self.assertEqual(1, connector.paths.count('chain/info'))
+		self.assertEqual(4, connector.paths.count('chain/info'))
 		self.assertEqual(1, connector.paths.count('network/properties'))
 		self.assertEqual(1, connector.paths.count(f'mosaics/{NATIVE_MOSAIC_ID}'))
 		self.assertEqual(3, connector.paths.count('accounts'))
@@ -2561,10 +2615,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def test_sync_block_headers_logs_existing_checkpoint_when_first_new_batch_fetch_fails(self):
 		# Arrange:
 		checkpoint_height = 1000
-		self._seed_blocks(self.puller.symbol_db, range(1, checkpoint_height + 1))
-		self.puller.symbol_db.upsert_sync_state(create_checkpoint_sync_state(
-			checkpoint_height, checkpoint_height,
-			chain_height=checkpoint_height))
+		self._sync_with_connector(FakeConnector(
+			checkpoint_height, create_multi_batch_block_pages(checkpoint_height), finalized_height=checkpoint_height))
 		connector = FailingNextBatchFetchConnector(
 			checkpoint_height + 1,
 			{},
@@ -2610,6 +2662,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		], [bytes(state['last_synced_block_hash']) for state in recording_database.published_states])
 		self.assertEqual([None, None], [
 			state['dirty_state_from_height'] for state in recording_database.published_states])
+		self.assertEqual([None, chain_height - 1], [
+			state['finalized_height'] for state in recording_database.published_states])
 		self.assertEqual([chain_height - 1, chain_height], [
 			state['last_synced_height'] for state in logger.completed_sync_states])
 
@@ -2636,8 +2690,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			(1, 0), (2, 2), (3, 3), (4, 1), (5, 4), (6, 0), (7, 2)
 		], _fetch_transaction_counts(database))
 		self.assertEqual([
-			(3, create_block_hash(3), None, 3, create_block_hash(3), None, None),
-			(6, create_block_hash(6), None, 6, create_block_hash(6), None, None),
+			(3, create_block_hash(3), None, None, None, None, None),
+			(6, create_block_hash(6), None, None, None, None, None),
 			(7, create_block_hash(7), None, 7, create_block_hash(7), 4, 5)
 		], [
 			(
@@ -2645,7 +2699,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				bytes(state['last_synced_block_hash']),
 				state['dirty_state_from_height'],
 				state['finalized_height'],
-				bytes(state['finalized_hash']),
+				bytes(state['finalized_hash']) if state['finalized_hash'] is not None else None,
 				state['finalized_epoch'],
 				state['finalized_point'])
 			for state in recording_database.published_states
@@ -2790,11 +2844,17 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Arrange:
 		self.puller._max_transactions_per_batch = 5  # pylint: disable=protected-access
 		blocks, transaction_pages, statement_pages = _create_adaptive_sync_fixture()
+		_seal_checkpoint_retry(blocks, 4, transaction_pages, statement_pages)
+		finalized_hash = blocks[-1]['meta']['hash']
+		network_properties = create_network_properties()
+		network_properties['chain']['enableVerifiableReceipts'] = 'true'
 		expected_payloads = _capture_adaptive_transaction_payloads(transaction_pages)
-		connector = FakeConnector(
+		connector = ChainInfoOverrideConnector(
 			7,
 			{0: blocks},
 			finalized_height=7,
+			finalized_fields={'hash': finalized_hash},
+			network_properties=network_properties,
 			transactions_by_path=transaction_pages,
 			statement_pages=statement_pages)
 		database = self.puller.symbol_db
@@ -2823,8 +2883,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual({
 			'status': 'unhealthy',
 			'chain_height': 7,
-			'finalized_height': 3,
-			'finalized_hash': create_block_hash(3),
+			'finalized_height': None,
+			'finalized_hash': None,
 			'finalized_epoch': None,
 			'finalized_point': None,
 			'last_synced_height': 3,
@@ -2847,10 +2907,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			for event in failed_batch_events])
 
 		# Act: restart with the real writer and the same adaptive cap.
-		restart_connector = FakeConnector(
+		restart_connector = ChainInfoOverrideConnector(
 			7,
 			{0: blocks, 3: blocks[3:]},
 			finalized_height=7,
+			finalized_fields={'hash': finalized_hash},
+			network_properties=network_properties,
 			transactions_by_path=transaction_pages,
 			statement_pages=statement_pages,
 			mosaics_by_id={NATIVE_MOSAIC_ID: create_mosaic_item(NATIVE_MOSAIC_ID)})
@@ -2878,11 +2940,11 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			'status': 'healthy',
 			'chain_height': 7,
 			'finalized_height': 7,
-			'finalized_hash': create_block_hash(7),
+			'finalized_hash': bytes.fromhex(finalized_hash),
 			'finalized_epoch': 4,
 			'finalized_point': 5,
 			'last_synced_height': 7,
-			'last_synced_block_hash': create_block_hash(7),
+			'last_synced_block_hash': bytes.fromhex(finalized_hash),
 			'dirty_state_from_height': None
 		}, normalize_sync_state(sync_state))
 		self.assertEqual([
@@ -2921,8 +2983,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual({
 			'status': 'healthy',
 			'chain_height': 7,
-			'finalized_height': 3,
-			'finalized_hash': create_block_hash(3),
+			'finalized_height': None,
+			'finalized_hash': None,
 			'finalized_epoch': None,
 			'finalized_point': None,
 			'last_synced_height': 3,
@@ -3005,11 +3067,17 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Arrange:
 		self.puller._max_transactions_per_batch = 5  # pylint: disable=protected-access
 		blocks, transaction_pages, statement_pages = _create_adaptive_sync_fixture()
+		_seal_checkpoint_retry(blocks, 4, transaction_pages, statement_pages)
+		finalized_hash = blocks[-1]['meta']['hash']
+		network_properties = create_network_properties()
+		network_properties['chain']['enableVerifiableReceipts'] = 'true'
 		expected_payloads = _capture_adaptive_transaction_payloads(transaction_pages)
-		connector = FakeConnector(
+		connector = ChainInfoOverrideConnector(
 			7,
 			{0: blocks},
 			finalized_height=7,
+			finalized_fields={'hash': finalized_hash},
+			network_properties=network_properties,
 			transactions_by_path=transaction_pages,
 			statement_pages=statement_pages)
 		database = self.puller.symbol_db
@@ -3035,8 +3103,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual({
 			'status': 'unhealthy',
 			'chain_height': 7,
-			'finalized_height': 3,
-			'finalized_hash': create_block_hash(3),
+			'finalized_height': None,
+			'finalized_hash': None,
 			'finalized_epoch': None,
 			'finalized_point': None,
 			'last_synced_height': 3,
@@ -3059,10 +3127,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		], [path for path in connector.paths if path.startswith('statements/transaction?')])
 
 		# Act: restart with the real writer and the same adaptive cap.
-		restart_connector = FakeConnector(
+		restart_connector = ChainInfoOverrideConnector(
 			7,
 			{0: blocks, 3: blocks[3:]},
 			finalized_height=7,
+			finalized_fields={'hash': finalized_hash},
+			network_properties=network_properties,
 			transactions_by_path=transaction_pages,
 			statement_pages=statement_pages,
 			mosaics_by_id={NATIVE_MOSAIC_ID: create_mosaic_item(NATIVE_MOSAIC_ID)})
@@ -3089,11 +3159,11 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			'status': 'healthy',
 			'chain_height': 7,
 			'finalized_height': 7,
-			'finalized_hash': create_block_hash(7),
+			'finalized_hash': bytes.fromhex(finalized_hash),
 			'finalized_epoch': 4,
 			'finalized_point': 5,
 			'last_synced_height': 7,
-			'last_synced_block_hash': create_block_hash(7),
+			'last_synced_block_hash': bytes.fromhex(finalized_hash),
 			'dirty_state_from_height': None
 		}, normalize_sync_state(sync_state))
 		self.assertEqual([
@@ -3120,8 +3190,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual('healthy', sync_state['status'])
 		self.assertEqual(chain_height - 1, sync_state['last_synced_height'])
 		self.assertEqual(create_block_hash(chain_height - 1), bytes(sync_state['last_synced_block_hash']))
-		self.assertEqual(chain_height - 1, sync_state['finalized_height'])
-		self.assertEqual(create_block_hash(chain_height - 1), bytes(sync_state['finalized_hash']))
+		self.assertIsNone(sync_state['finalized_height'])
+		self.assertIsNone(sync_state['finalized_hash'])
 		self.assertIsNone(sync_state['dirty_state_from_height'])
 		failed_events = [event for event in logger.events if event['event'] == 'symbol_sync_failed']
 		self.assertEqual(1, len(failed_events))
@@ -3237,14 +3307,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_rejects_mismatched_new_finalized_hash_before_checkpoint(self):
 		# Arrange:
-		database = self.puller.symbol_db
-		self._seed_blocks(database, [1])
-		checkpoint_hash = create_block_hash(1)
-		database.upsert_sync_state(create_checkpoint_sync_state(
-			1, 1,
-			chain_height=1,
-			finalized_hash=checkpoint_hash,
-			last_synced_block_hash=checkpoint_hash))
+		self._sync_with_connector(FakeConnector(1, {0: [create_node_block(1)]}, finalized_height=1))
 		connector = ChainInfoOverrideConnector(
 			2,
 			{1: [create_node_block(2)]},
@@ -3257,15 +3320,13 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			self._sync_with_connector(connector)
 
 		# Assert:
-		sync_state = database.get_sync_state()
+		sync_state = self.puller.symbol_db.get_sync_state()
 		self.assertEqual('unhealthy', sync_state['status'])
 		self.assertEqual(1, sync_state['last_synced_height'])
 		self.assertEqual(create_block_hash(1), bytes(sync_state['last_synced_block_hash']))
 		self.assertEqual(2, sync_state['dirty_state_from_height'])
 		self.assertEqual([
 			'chain/info',
-			'network/properties',
-			f'mosaics/{NATIVE_MOSAIC_ID}',
 			'blocks/1',
 			'blocks?pageSize=100&offset=1&orderBy=height',
 			transaction_path(2, 2),
@@ -3274,31 +3335,18 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			f'account/{self._beneficiary_address_text()}/multisig'
 		], connector.paths)
 
-	def test_rollback_verification_respects_max_height_scan_boundary(self):
-		# Arrange: the cap is two, so saved height three must not be compared with the node.
-		database = self.puller.symbol_db
-		self._seed_blocks(database, [1, 2, 3])
-		sync_state = create_checkpoint_sync_state(1, 3)
-		connector = FakeConnector(
-			5,
-			{},
-			block_by_height={height: create_node_block(height) for height in (1, 2)},
-			finalized_height=5)
-		set_symbol_connector(self.puller, connector)
+	def test_rollback_verification_keeps_history_above_a_valid_max_height(self):
+		# Arrange:
+		blocks = [create_node_block(height) for height in range(1, 6)]
+		self._sync_with_connector(FakeConnector(3, {0: blocks[:3]}, finalized_height=1))
+		connector = FakeConnector(5, {0: blocks}, finalized_height=5)
 
 		# Act:
-		repair_height = asyncio.run(self.puller._repair_from_recorded_finalized_anchor(  # pylint: disable=protected-access
-			sync_state,
-			5,
-			create_block_hash(5),
-			2,
-			node_chain_height=5,
-			node_finalized_height=5))
+		heights, state = self._sync_with_connector(connector, max_height=2)
 
 		# Assert:
-		self.assertIsNone(repair_height)
-		self.assertEqual(['blocks/1', 'blocks/2'], connector.paths)
-		self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
+		self.assertEqual(([1, 2, 3], 2, 1), (heights, state['last_synced_height'], state['finalized_height']))
+		self.assertEqual(['blocks/3'], [path for path in connector.paths if path.startswith('blocks')])
 
 	def test_saved_block_fetch_failure_marks_sync_unhealthy_before_repair(self):
 		# Arrange:
@@ -3311,21 +3359,14 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			{},
 			block_by_height={
 				1: create_node_block(1),
-				2: RuntimeError('saved block fetch failed'),
+				2: ValueError('saved block fetch failed'),
 				3: create_node_block(3)},
 			finalized_height=3)
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
 		with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify saved block range'):
-			asyncio.run(self.puller._repair_from_recorded_finalized_anchor(  # pylint: disable=protected-access
-				sync_state,
-				3,
-				create_block_hash(3),
-				3,
-				node_chain_height=3,
-				node_finalized_height=3,
-				node_finalized_hash=create_block_hash(3)))
+			self._sync_with_connector(connector)
 
 		# Assert: only health changes; the recorded anchor and saved rows remain available for retry.
 		self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
@@ -3348,23 +3389,13 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			signer_address=bytes.fromhex(SIGNER_ADDRESS),
 			target_address=bytes.fromhex(RECIPIENT_ADDRESS),
 			body={})])
-		connector = FakeConnector(
-			3,
-			{},
-			block_by_height={1: create_node_block(1), 2: create_node_block(2), 3: create_node_block(3)},
-			finalized_height=3)
+		connector = ChainInfoOverrideConnector(
+			**_replacement_connector_arguments([create_node_block(2), create_node_block(3)], finalized_height=3))
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
 		with self.assertRaisesRegex(SymbolRollbackError, 'contains lock events whose pruned state'):
-			asyncio.run(self.puller._repair_from_recorded_finalized_anchor(  # pylint: disable=protected-access
-				sync_state,
-				3,
-				create_block_hash(3),
-				3,
-				node_chain_height=3,
-				node_finalized_height=3,
-				node_finalized_hash=create_block_hash(3)))
+			self._sync_with_connector(connector)
 
 		# Assert:
 		self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
@@ -3380,28 +3411,19 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		sync_state = create_sync_state(
 			last_synced_height=4,
 			last_synced_block_hash=create_block_hash(4))
-		connector = FakeConnector(
-			3,
-			{},
-			block_by_height={height: create_node_block(height) for height in (1, 2, 3)},
-			finalized_height=1)
+		replacement_blocks = [create_node_block(2), create_node_block(3)]
+		connector = ChainInfoOverrideConnector(**_replacement_connector_arguments(replacement_blocks, finalized_height=1))
 		set_symbol_connector(self.puller, connector)
 
-		# Act: a shorter node still has common persisted heights whose hashes need comparison.
-		with patch.object(self.puller, '_repair_from_height', new_callable=AsyncMock, return_value=2) as repair:
-			repair_height = asyncio.run(self.puller._repair_from_recorded_finalized_anchor(  # pylint: disable=protected-access
-				sync_state,
-				1,
-				create_block_hash(1),
-				2,
-				node_chain_height=3,
-				node_finalized_height=1,
-				node_finalized_hash=create_block_hash(1)))
+		database.upsert_sync_state(sync_state)
+
+		# Act: the node's first mismatch lies below its new tip.
+		heights, state = self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertEqual(2, repair_height)
-		repair.assert_awaited_once_with(2, sync_state, 1, True, True)
-		self.assertEqual(['blocks/1', 'blocks/2'], connector.paths)
+		self.assertEqual(([1, 2, 3], 3, bytes.fromhex(replacement_blocks[0]['meta']['hash'])), (
+			heights, state['last_synced_height'], self._fetch_block_hash(database, 2)))
+		self.assertIn('blocks?pageSize=100&offset=1&orderBy=height', connector.paths)
 
 	def test_rollback_verification_rejects_missing_saved_anchor(self):
 		# Arrange:
@@ -3415,15 +3437,11 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		connector = FakeConnector(5, {}, block_by_height={5: create_node_block(5)}, finalized_height=5)
 		set_symbol_connector(self.puller, connector)
 
+		database.upsert_sync_state(sync_state)
+
 		# Act / Assert:
-		with self.assertRaisesRegex(SymbolRollbackError, 'Recorded finalized anchor is missing from local sync state'):
-			asyncio.run(self.puller._repair_from_recorded_finalized_anchor(  # pylint: disable=protected-access
-				sync_state,
-				5,
-				create_block_hash(5),
-				5,
-				node_chain_height=5,
-				node_finalized_height=5))
+		with self.assertRaisesRegex(SymbolRollbackError, 'Legacy Symbol history has no consistent checkpoint'):
+			self._sync_with_connector(connector)
 
 		# Assert:
 		self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
@@ -3432,7 +3450,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def test_finalized_rollback_refreshes_receipt_only_address_and_inflation_mosaic(self):
 		# Arrange:
 		database = self.puller.symbol_db
-		self._seed_blocks(database, [1, 2, 3])
+		self._seed_blocks(database, [1, 2, 3], {2: 'D' * 64})
 		beneficiary = bytes.fromhex(BENEFICIARY_ADDRESS)
 		receipt_address = Network.TESTNET.public_key_to_address(PublicKey('A' * 64)).bytes
 		unrelated_address = bytes.fromhex(RECIPIENT_ADDRESS)
@@ -3473,9 +3491,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		receipts.extend(create_receipt_rows(create_amount_statement_item(2, 13)))
 		database.upsert_receipts_for_height(2, receipts, 0)
 		node_mosaic = create_mosaic_item(NATIVE_MOSAIC_ID)
-		connector = FakeConnector(
-			3,
-			{},
+		connector = ChainInfoOverrideConnector(
+			**_replacement_connector_arguments([create_node_block(2), create_node_block(3)], finalized_height=3),
+			transactions_by_path={transaction_path(2, 3): RuntimeError('forward retry stopped')},
 			mosaics_by_id={NATIVE_MOSAIC_ID: node_mosaic},
 			account_by_address={
 				str(Address(beneficiary)): create_account_item(beneficiary.hex().upper()),
@@ -3483,10 +3501,11 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 					receipt_address.hex().upper(), mosaics=[{'id': NATIVE_MOSAIC_ID, 'amount': '777000000'}])
 			})
 		set_symbol_connector(self.puller, connector)
-		sync_state = create_sync_state(last_synced_height=3, last_synced_block_hash=create_block_hash(3))
+		database.upsert_sync_state(create_checkpoint_sync_state(1, 3))
 
-		# Act:
-		asyncio.run(self.puller._repair_from_height(2, sync_state, 3))  # pylint: disable=protected-access
+		# Act: stop after the repair commits so the repair observations remain visible.
+		with self.assertRaisesRegex(RuntimeError, 'forward retry stopped'):
+			self._sync_with_connector(connector)
 
 		# Assert:
 		cursor = database.connection.cursor()
@@ -3571,44 +3590,21 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		cursor.execute('SELECT to_jsonb(row) FROM symbol_multisig AS row WHERE address = %s', (unrelated_address,))
 		unrelated_multisig_before = cursor.fetchone()[0]
 		old_snapshot = self._fetch_complete_batch_state()
-		replacement_block = create_node_block(2, block_hash='B' * 64, transactions_count=0, total_transactions_count=0)
-		terminal_block = create_node_block(3, previous_hash='B' * 64)
-		later_blocks = [create_node_block(4), create_node_block(5)]
-		new_receipt_statements = {
-			'data': [
-				create_statement_item(2, {
-					'version': 1,
-					'type': ReceiptType.HARVEST_FEE.value,
-					'targetAddress': SIGNER_ADDRESS,
-					'mosaicId': NATIVE_MOSAIC_ID,
-					'amount': '21'
-				}, 'replacement-harvest-fee'),
-				create_amount_statement_item(2, 23, item_id='replacement-inflation')
-			]
-		}
-		connector_args = {
-			'chain_height': 5,
-			'pages': {
-				1: [replacement_block, terminal_block, *later_blocks],
-				2: [terminal_block, *later_blocks]
-			},
-			'block_by_height': {
-				1: create_node_block(1),
-				2: replacement_block,
-				3: terminal_block,
-				4: later_blocks[0],
-				5: later_blocks[1]
-			},
-			'finalized_height': 5,
-			'transactions_by_path': {transaction_path(2, 5): create_transaction_page([])},
-			'statement_pages': {statement_path(2, 5): new_receipt_statements},
-			'mosaics_by_id': {NATIVE_MOSAIC_ID: create_mosaic_item(NATIVE_MOSAIC_ID)}
-		}
-		broken_connector = FakeConnector(
-			**{
-				**connector_args,
-				'account_by_address': {str(Address(old_only_address)): RuntimeError('old-only account unavailable')}
-			})
+		new_statement = create_statement_item(2, {
+			'version': 1,
+			'type': ReceiptType.HARVEST_FEE.value,
+			'targetAddress': SIGNER_ADDRESS,
+			'mosaicId': NATIVE_MOSAIC_ID,
+			'amount': '21'
+		}, 'replacement-receipts')
+		new_statement['statement']['source']['primaryId'] = 0
+		new_statement['statement']['receipts'].extend(create_amount_statement_item(2, 23)['statement']['receipts'])
+		connector_args = _replacement_connector_arguments(
+			[create_node_block(height) for height in range(2, 6)], finalized_height=5, statements=[new_statement])
+		connector_args['mosaics_by_id'] = {NATIVE_MOSAIC_ID: create_mosaic_item(NATIVE_MOSAIC_ID)}
+		broken_connector = ChainInfoOverrideConnector(
+			**connector_args,
+			account_by_address={str(Address(old_only_address)): RuntimeError('old-only account unavailable')})
 
 		# Act: the failed prefetch keeps the old branch, then a retry re-detects and repairs it.
 		with self.assertRaisesRegex(RuntimeError, 'old-only account unavailable'):
@@ -3619,13 +3615,14 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual(3, database.get_sync_state()['last_synced_height'])
 		logger = DatabaseObservingPerformanceLogger(database, self._fetch_complete_batch_state)
 		self.puller._performance_logger = logger  # pylint: disable=protected-access
-		retry_connector = FakeConnector(**connector_args)
+		retry_connector = ChainInfoOverrideConnector(**connector_args)
 
 		# Act:
 		self._sync_with_connector(retry_connector)
 
 		# Assert: replacement receipts and snapshot are published, while unrelated account state is byte-for-byte stable.
-		self.assertEqual(1, retry_connector.paths.count('blocks/5'))
+		# Height five is both the finalized block and replacement tip, so both precommit checks reread it after the resume checks.
+		self.assertEqual(4, retry_connector.paths.count('blocks/5'))
 		self.assertEqual([
 			('harvestFee', 'balanceChange', NATIVE_MOSAIC_ID, 21),
 			('inflation', 'inflation', NATIVE_MOSAIC_ID, 23)
@@ -3692,7 +3689,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 		# Act / Assert: only an explicit not-found multisig response means the row is absent.
 		before_multisig_state = self._capture_preserved_state()
-		null_multisig_connector = FakeConnector(
+		null_multisig_connector = ChainInfoOverrideConnector(
 			**{
 				**connector_args,
 				'multisig_by_address': {address_text: {'multisig': None}}
@@ -3758,14 +3755,14 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		for max_height in (None, 2):
 			with self.subTest(max_height=max_height):
 				# Arrange:
-				before, expected = self._prepare_saved_chain_info_rejection([1], create_checkpoint_sync_state(1, 1))
+				before, _ = self._prepare_saved_chain_info_rejection([1], create_checkpoint_sync_state(1, 1))
 				connector = ChainInfoOverrideConnector(
 					5, {0: [create_node_block(height) for height in range(1, 6)]},
 					finalized_height=5, finalized_fields={'height': '6'})
 
 				# Act / Assert:
 				self._assert_chain_info_rejected_before_writes(
-					connector, max_height, before, expected,
+					connector, max_height, before, before.sync_state,
 					'Node finalized height exceeds node chain height', type(None), None, ['chain/info'])
 
 	def test_public_sync_resumes_after_publishing_zero_height_finality(self):
@@ -3957,12 +3954,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		sync_state = database.get_sync_state()
 		self.assertEqual('healthy', sync_state['status'])
 		self.assertEqual(2, sync_state['chain_height'])
-		self.assertEqual(2, sync_state['finalized_height'])
+		self.assertIsNone(sync_state['finalized_height'])
 		self.assertEqual(2, sync_state['last_synced_height'])
 		self.assertIsNone(sync_state['dirty_state_from_height'])
 
-	def test_public_sync_accepts_postgres_int_max_chain_height_without_forward_sync(self):
-		# Arrange: a stored anchor at the boundary lets the public run avoid a large forward range.
+	def test_public_sync_requires_contiguous_history_at_postgres_int_max_height(self):
+		# Arrange: this height is valid but an isolated row cannot certify a saved prefix.
 		database = self.puller.symbol_db
 		boundary_height = (1 << 31) - 1
 		boundary_block = create_node_block(1)
@@ -3980,15 +3977,13 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			finalized_height=boundary_height)
 
 		# Act:
-		self._sync_with_connector(connector)
+		with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify saved block range'):
+			self._sync_with_connector(connector)
 
 		# Assert:
 		self.assertEqual([boundary_height], self._fetch_block_heights(database))
-		sync_state = database.get_sync_state()
-		self.assertEqual('healthy', sync_state['status'])
-		self.assertEqual(boundary_height, sync_state['chain_height'])
-		self.assertEqual(boundary_height, sync_state['finalized_height'])
-		self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+		self.assertEqual('unhealthy', database.get_sync_state()['status'])
+		self.assertEqual('reconciliation_wait', database.try_get_fork_recovery_state()['stop_reason'])
 
 	def test_public_sync_rejects_invalid_finalization_json_values_before_initial_write(self):
 		for field_name in ('finalizationEpoch', 'finalizationPoint'):
@@ -4062,8 +4057,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual((1 << 31) - 1, sync_state['finalized_epoch'])
 		self.assertEqual((1 << 31) - 1, sync_state['finalized_point'])
 
-	def test_public_sync_uses_calculated_epoch_when_capped_reported_values_exceed_postgres_int(self):
-		# Arrange: node metadata is valid uint32, but capped sync publishes only the calculated epoch.
+	def test_public_sync_keeps_public_epoch_empty_when_capped_reported_values_exceed_postgres_int(self):
+		# Arrange: node metadata is valid uint32, and caps exclude the unrepresentable finalization point.
 		database = self.puller.symbol_db
 		connector = ChainInfoOverrideConnector(
 			3,
@@ -4078,23 +4073,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual([1, 2], self._fetch_block_heights(database))
 		sync_state = database.get_sync_state()
 		self.assertEqual('healthy', sync_state['status'])
-		self.assertEqual(2, sync_state['finalized_epoch'])
+		self.assertIsNone(sync_state['finalized_epoch'])
 		self.assertIsNone(sync_state['finalized_point'])
 
-	def test_public_sync_rejects_calculated_finalization_epoch_over_postgres_int_before_blocks(self):
-		# Arrange:
-		before, expected = self._prepare_empty_chain_info_rejection()
-		connector = FakeConnector(
-			1 << 31, {}, finalized_height=1 << 31,
-			network_properties=create_network_properties(voting_set_grouping='1'))
-
-		# Act / Assert:
-		self._assert_chain_info_rejected_before_writes(
-			connector, (1 << 31) - 1, before, expected,
-			'Invalid capped Symbol finalization epoch', ValueError,
-			('Calculated Symbol finalization epoch exceeds PostgreSQL int range',), ['chain/info', 'network/properties'])
-
-	def test_public_sync_preserves_dirty_state_when_capped_grouping_exceeds_uint64(self):
+	def test_public_sync_preserves_dirty_state_when_cap_blocks_repair_regardless_of_grouping(self):
 		# Arrange:
 		before, expected = self._prepare_saved_chain_info_rejection(
 			[1, 2], create_checkpoint_sync_state(1, 1, chain_height=2, dirty_state_from_height=2, status='repairing'),
@@ -4103,11 +4085,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			2, {}, finalized_height=2,
 			network_properties=create_network_properties(voting_set_grouping=str(1 << 64)))
 
-		# Act / Assert:
-		self._assert_chain_info_rejected_before_writes(
-			connector, 1, before, expected,
-			'Invalid capped Symbol finalization epoch', ValueError,
-			('Symbol chain.votingSetGrouping exceeds uint64',), ['chain/info', 'network/properties'])
+		# Act and Assert:
+		with self.assertRaisesRegex(SymbolRollbackError, 'max_height prevents safe repair of the persisted dirty range'):
+			self._sync_with_connector(connector, max_height=1)
+
+		self._assert_preserved_state(before, expected)
+		self.assertEqual('cap_blocks_dirty_repair', self.puller.symbol_db.try_get_fork_recovery_state()['stop_reason'])
 
 	def test_public_sync_keeps_connection_usable_after_final_publication_sql_error_without_forward_sync(self):
 		# Arrange: the saved block and finalized anchor already match the node.
@@ -4167,15 +4150,13 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			finalized_height=1)
 
 		# Act:
-		with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify saved block range') as exception_context:
+		with self.assertRaisesRegex(SymbolRollbackError, 'Pinned Symbol reconciliation evidence changed'):
 			self._sync_with_connector(connector)
 
 		# Assert:
-		self.assertIsInstance(exception_context.exception.__cause__, ValueError)
-		self.assertIn('previous hash does not match confirmed parent', str(exception_context.exception.__cause__))
 		self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
 		self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
-		self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+		self.assertEqual([], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
 
 	def test_public_sync_rejects_disconnected_branch_before_rollback(self):
 		for finalized_height in (3, 5):
@@ -4209,14 +4190,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 					asyncio.run(self.puller.sync_block_headers())
 
 				# Assert: a valid finalized hash alone does not authorize deletion from the other branch.
-				self.assertIn('Unable to verify node branch through finalized height', str(exception_context.exception))
-				self.assertIsInstance(exception_context.exception.__cause__, ValueError)
-				self.assertIn(f'height {finalized_height}', str(exception_context.exception.__cause__))
+				self.assertIn('Pinned Symbol reconciliation evidence changed', str(exception_context.exception))
 				self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
-				self.assertEqual(1, connector.paths.count(f'blocks/{finalized_height}'))
-				expected_page_paths = ['blocks?pageSize=100&offset=2&orderBy=height'] if 5 == finalized_height else []
-				self.assertEqual(expected_page_paths, [
-					path for path in connector.paths if path.startswith('blocks?pageSize=')])
 
 	def test_public_sync_retries_matching_dirty_tail_with_paginated_finality_evidence(self):
 		for node_height, finalized_height in ((60, 45), (220, 206)):
@@ -4225,22 +4200,28 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				database = self.puller.symbol_db
 				drop_symbol_block_tables_if_present(database)
 				database.create_tables()
-				self._seed_blocks(database, [1, 2, 3, 4, 5])
-				self._seed_rollback_preservation_rows(database, 4)
+				self._seed_blocks(database, [1, 2, 3])
 				database.upsert_sync_state(create_checkpoint_sync_state(
 					3, 3,
 					dirty_state_from_height=4,
 					status='unhealthy'))
 				seed_healthy_refresh_state(database, 'matching-dirty-tail', 5)
-				node_blocks = {height: create_node_block(height) for height in range(1, node_height + 1)}
-				verification_offsets = list(range(5, finalized_height - 1, 100))
+				blocks = [create_node_block(height) for height in range(1, node_height + 1)]
+				transfer = create_node_transaction(4)
+				seal_replacement_blocks(blocks[3:], transactions=[transfer])
+				database.upsert_blocks([create_block_row(block, 100, Network.TESTNET) for block in blocks[3:5]])
+				self._seed_rollback_preservation_rows(database, 4)
+				verification_offsets = [0, *range(3, finalized_height, 100)]
 				forward_offsets = list(range(3, node_height, 100))
+				replacement_offsets = forward_offsets
 				pages = {
-					offset: [node_blocks[height] for height in range(offset + 1, min(offset + 101, node_height + 1))]
+					offset: blocks[offset:offset + MAX_PAGE_SIZE]
 					for offset in set(verification_offsets + forward_offsets)
 				}
-				connector = FakeConnector(
-					node_height, pages, block_by_height=node_blocks, finalized_height=finalized_height)
+				connector = ChainInfoOverrideConnector(
+					node_height, pages, finalized_height=finalized_height,
+					finalized_fields={'hash': blocks[finalized_height - 1]['meta']['hash']},
+					transactions_by_path={transaction_path(4, node_height): create_transaction_page([transfer])})
 				before_sync_state = database.get_sync_state()
 				self.assertEqual(3, before_sync_state['last_synced_height'])
 				self.assertEqual(create_block_hash(3), bytes(before_sync_state['last_synced_block_hash']))
@@ -4257,15 +4238,15 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				self.assertEqual(node_height, sync_state['last_synced_height'])
 				self.assertIsNone(sync_state['dirty_state_from_height'])
 				self.assertEqual('stale', database.get_account_refresh_state()['status'])
-				self.assertEqual(1, connector.paths.count('blocks/4'))
-				self.assertEqual(1, connector.paths.count('blocks/5'))
+				self.assertEqual(2, connector.paths.count('blocks/4'))
+				self.assertEqual(2, connector.paths.count('blocks/5'))
 				self.assertEqual([], [
 					path for path in connector.paths
 					if path.startswith('blocks/') and 6 <= int(path.removeprefix('blocks/')) < finalized_height
 				])
 				self.assertEqual([
 					f'blocks?pageSize=100&offset={offset}&orderBy=height'
-					for offset in verification_offsets + forward_offsets
+					for offset in verification_offsets + replacement_offsets + forward_offsets
 				], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
 
 	def test_public_sync_preserves_branch_when_paginated_finality_evidence_is_invalid(self):
@@ -4287,40 +4268,44 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				node_blocks[4] = create_node_block(4, block_hash='A' * 64)
 				node_blocks[5] = create_node_block(5, previous_hash='A' * 64)
 				pages = {
-					4: [copy.deepcopy(node_blocks[height]) for height in range(5, 105)],
-					104: [copy.deepcopy(node_blocks[height]) for height in range(105, 111)]
+					3: [copy.deepcopy(node_blocks[height]) for height in range(4, 104)],
+					103: [copy.deepcopy(node_blocks[height]) for height in range(104, 111)]
 				}
 				if 'boundary_parent' == invalid_page:
-					pages[104][0]['block']['previousBlockHash'] = 'B' * 64
+					pages[103][0]['block']['previousBlockHash'] = 'B' * 64
 				elif 'finalized_hash' == invalid_page:
-					pages[104][1]['meta']['hash'] = 'C' * 64
+					pages[103][2]['meta']['hash'] = 'C' * 64
 				elif 'missing_height' == invalid_page:
-					pages[104].pop(0)
+					pages[103].pop(0)
 				elif 'duplicate_height' == invalid_page:
-					pages[4][1] = copy.deepcopy(pages[4][0])
+					pages[3][1] = copy.deepcopy(pages[3][0])
 				elif 'out_of_order' == invalid_page:
-					pages[4][1], pages[4][2] = pages[4][2], pages[4][1]
+					pages[3][1], pages[3][2] = pages[3][2], pages[3][1]
 				elif 'short_middle_page' == invalid_page:
-					pages[4].pop()
+					pages[3].pop()
 				elif 'invalid_hash' == invalid_page:
-					pages[4][0]['meta']['hash'] = 'G' * 64
+					pages[3][0]['meta']['hash'] = 'G' * 64
 				elif 'page_fetch_failure' == invalid_page:
-					del pages[104]
+					pages[103] = RuntimeError('block evidence page unavailable')
 				elif 'empty_page' == invalid_page:
-					pages[4] = []
+					pages[3] = []
 				else:
-					pages[4].append(copy.deepcopy(pages[104][0]))
+					pages[3].append(copy.deepcopy(pages[103][0]))
 
 				connector = FakeConnector(110, pages, block_by_height=node_blocks, finalized_height=106)
 				set_symbol_connector(self.puller, connector)
 
 				# Act:
-				with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify node branch through finalized height'):
+				with self.assertRaisesRegex(
+					SymbolRollbackError,
+					'Pinned Symbol reconciliation evidence changed|Unable to verify saved block range|'
+					'Node finalized block hash does not match chain info'
+				):
 					asyncio.run(self.puller.sync_block_headers())
 
 				# Assert: no history, current state, or published generation was changed.
 				self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
-				self.assertFalse(any(path.startswith('blocks?pageSize=100&offset=3&') for path in connector.paths))
+				self.assertEqual([], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
 
 	def test_public_sync_repairs_connected_branch_after_paginated_finality_verification(self):
 		# Arrange: the replacement at four connects through the page boundary to finalized height 106.
@@ -4331,22 +4316,21 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		seed_healthy_refresh_state(database, 'connected-page-branch', 5)
 		before_refresh_state = database.get_account_refresh_state()
 		node_blocks = {height: create_node_block(height) for height in range(1, 111)}
-		node_blocks[4] = create_node_block(4, block_hash='A' * 64)
-		node_blocks[5] = create_node_block(5, previous_hash='A' * 64)
+		seal_replacement_blocks([node_blocks[height] for height in range(4, 111)])
 		pages = {
-			4: [node_blocks[height] for height in range(5, 105)],
-			104: [node_blocks[height] for height in range(105, 111)],
 			3: [node_blocks[height] for height in range(4, 104)],
 			103: [node_blocks[height] for height in range(104, 111)]
 		}
-		connector = FakeConnector(110, pages, block_by_height=node_blocks, finalized_height=106)
+		connector = ChainInfoOverrideConnector(
+			110, pages, block_by_height=node_blocks, finalized_height=106,
+			finalized_fields={'hash': node_blocks[106]['meta']['hash']})
 
 		# Act:
 		self._sync_with_connector(connector)
 
 		# Assert: rollback removed old receipts and invalidated the published account generation.
 		self.assertEqual(list(range(1, 111)), self._fetch_block_heights(database))
-		self.assertEqual(bytes.fromhex('A' * 64), self._fetch_block_hash(database, 4))
+		self.assertEqual(bytes.fromhex(node_blocks[4]['meta']['hash']), self._fetch_block_hash(database, 4))
 		self.assertEqual([], self._fetch_receipts(database))
 		self.assertEqual('healthy', database.get_sync_state()['status'])
 		self.assertEqual(106, database.get_sync_state()['finalized_height'])
@@ -4354,8 +4338,11 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual('healthy', before_refresh_state['status'])
 		self.assertEqual('stale', database.get_account_refresh_state()['status'])
 		self.assertEqual([
-			'blocks?pageSize=100&offset=4&orderBy=height',
-			'blocks?pageSize=100&offset=104&orderBy=height',
+			'blocks?pageSize=100&offset=0&orderBy=height',
+			'blocks?pageSize=100&offset=3&orderBy=height',
+			'blocks?pageSize=100&offset=103&orderBy=height',
+			'blocks?pageSize=100&offset=3&orderBy=height',
+			'blocks?pageSize=100&offset=103&orderBy=height',
 			'blocks?pageSize=100&offset=3&orderBy=height',
 			'blocks?pageSize=100&offset=103&orderBy=height'
 		], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
@@ -4380,15 +4367,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		set_symbol_connector(self.puller, connector)
 
 		# Act:
-		with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify saved block range') as exception_context:
+		with self.assertRaisesRegex(SymbolRollbackError, 'Pinned Symbol reconciliation evidence changed'):
 			asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
-		self.assertIsInstance(exception_context.exception.__cause__, ValueError)
-		self.assertIn('previous hash does not match confirmed parent', str(exception_context.exception.__cause__))
 		self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
-		self.assertEqual(1, connector.paths.count('blocks/2'))
-		self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+		self.assertEqual([], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
 
 	def test_public_sync_rejects_uncheckpointed_dirty_finalized_block_with_unconfirmed_previous_hash(self):
 		# Arrange: a dirty first batch has no checkpoint but still has a verified parent at height one.
@@ -4408,15 +4392,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		set_symbol_connector(self.puller, connector)
 
 		# Act:
-		with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify persisted dirty block range') as exception_context:
+		with self.assertRaisesRegex(SymbolRollbackError, 'Pinned Symbol reconciliation evidence changed'):
 			asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
-		self.assertIsInstance(exception_context.exception.__cause__, ValueError)
-		self.assertIn('previous hash does not match confirmed parent', str(exception_context.exception.__cause__))
 		self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
-		self.assertEqual(1, connector.paths.count('blocks/2'))
-		self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+		self.assertEqual([], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
 
 	def test_public_sync_rejects_recorded_anchor_without_checkpoint_for_clean_or_dirty_state(self):
 		for dirty_state_from_height in (None, 1):
@@ -4456,12 +4437,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		database.upsert_sync_state(create_sync_state(last_synced_height=3))
 		database.upsert_mosaic(create_expected_mosaic_row(create_mosaic_item(mosaic_id=mosaic_id, supply='123'), 2))
 		seed_healthy_refresh_state(database, 'mosaic-lookup', 3)
-		replacement = create_node_block(2, block_hash='B' * 64)
-		terminal = create_node_block(3, previous_hash='B' * 64)
-		connector = FakeConnector(
-			3, {1: [replacement, terminal], 2: [terminal]},
-			block_by_height={1: create_node_block(1), 2: replacement, 3: terminal},
-			finalized_height=3, mosaics_response=[], mosaics_by_id={mosaic_id: lookup_response})
+		connector = ChainInfoOverrideConnector(
+			**_replacement_connector_arguments([create_node_block(2), create_node_block(3)], finalized_height=3),
+			mosaics_response=[], mosaics_by_id={mosaic_id: lookup_response})
 		return mosaic_id, connector
 
 	def test_public_sync_refreshes_rollback_mosaic_missing_from_batch_but_present_by_id(self):
@@ -4544,12 +4522,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual([], database.get_mosaic_ids_updated_from_height(2))
 		self.assertEqual([NATIVE_MOSAIC_ID], database.get_rollback_inflation_mosaic_ids(2))
 		before_state = self._capture_preserved_state()
-		connector = FakeConnector(
-			3,
-			{1: [create_node_block(2, block_hash='B' * 64), create_node_block(3, previous_hash='B' * 64)]},
-			block_by_height={1: create_node_block(1), 2: create_node_block(2, block_hash='B' * 64), 3: create_node_block(3)},
-			mosaics_by_id={},
-			finalized_height=1)
+		connector = ChainInfoOverrideConnector(
+			**_replacement_connector_arguments([create_node_block(2), create_node_block(3)], finalized_height=1))
 
 		# Act:
 		with self.assertRaises(ValueError) as exception_context:
@@ -4563,7 +4537,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual([{'mosaicIds': [NATIVE_MOSAIC_ID]}], [
 			payload for path, payload in connector.post_requests if 'mosaics' == path
 		])
-		self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+		self.assertEqual([], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
 
 	def test_public_sync_fails_closed_when_orphan_artifact_events_have_missing_current_rows(self):
 		# Arrange:
@@ -4595,13 +4569,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		receipts.extend(create_receipt_rows(create_artifact_expiry_statement(
 			2, ReceiptType.MOSAIC_EXPIRED.value, MOSAIC_ID)))
 		database.upsert_receipts_for_height(2, receipts, 0)
-		replacement_block = create_node_block(2, block_hash='B' * 64)
-		terminal_block = create_node_block(3, previous_hash='B' * 64)
-		connector = FakeConnector(
-			3,
-			{1: [replacement_block, terminal_block]},
-			block_by_height={1: create_node_block(1), 2: replacement_block, 3: terminal_block},
-			finalized_height=3)
+		connector = ChainInfoOverrideConnector(
+			**_replacement_connector_arguments([create_node_block(2), create_node_block(3)], finalized_height=3))
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
@@ -4632,13 +4601,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		database = self.puller.symbol_db
 		self._seed_blocks(database, [1, 2, 3], {2: 'D' * 64})
 		database.upsert_sync_state(create_sync_state(last_synced_height=3))
-		replacement_block = create_node_block(2, block_hash='B' * 64)
-		terminal_block = create_node_block(3, previous_hash='B' * 64)
-		connector = FakeConnector(
-			3,
-			{1: [replacement_block, terminal_block]},
-			block_by_height={1: create_node_block(1), 2: replacement_block, 3: terminal_block},
-			finalized_height=3)
+		connector = ChainInfoOverrideConnector(
+			**_replacement_connector_arguments([create_node_block(2), create_node_block(3)], finalized_height=3))
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
@@ -4681,13 +4645,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		])
 		namespace_before = fetch_namespace_state(database.connection)
 		mosaic_before = fetch_mosaic_state(database)
-		replacement_block = create_node_block(2, block_hash='B' * 64)
-		terminal_block = create_node_block(3, previous_hash='B' * 64)
-		connector = FakeConnector(
-			3,
-			{1: [replacement_block, terminal_block]},
-			block_by_height={1: create_node_block(1), 2: replacement_block, 3: terminal_block},
-			finalized_height=3)
+		connector = ChainInfoOverrideConnector(
+			**_replacement_connector_arguments([create_node_block(2), create_node_block(3)], finalized_height=3))
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
@@ -4708,16 +4667,16 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self._seed_blocks(database, [1, 2, 3])
 		invalid_states = (
 			(create_checkpoint_sync_state(2, 1),
-				'Recorded finalized anchor exceeds local saved height'),
+				'Legacy public finalization exceeds the verified saved checkpoint'),
 			(create_sync_state(finalized_height=None, finalized_hash=create_block_hash(1),
 				last_synced_height=1, last_synced_block_hash=create_block_hash(1)),
-				'Recorded finalized anchor hash has no height'))
+				'Legacy Symbol history has no consistent checkpoint'))
 
 		# Act / Assert:
 		for sync_state, expected_error in invalid_states:
 			with self.subTest(error=expected_error):
 				database.upsert_sync_state(sync_state)
-				set_symbol_connector(self.puller, FakeConnector(3, {}, finalized_height=3))
+				set_symbol_connector(self.puller, FakeConnector(3, {0: [create_node_block(height) for height in (1, 2, 3)]}, finalized_height=3))
 				with self.assertRaisesRegex(SymbolRollbackError, expected_error):
 					asyncio.run(self.puller.sync_block_headers())
 				self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
@@ -4740,7 +4699,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
-		with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify latest node finalized block'):
+		with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify saved block range'):
 			asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
@@ -4757,7 +4716,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		set_symbol_connector(self.puller, FakeConnector(3, {}, finalized_height=3))
 
 		# Act / Assert:
-		with patch.object(database, 'upsert_sync_state', side_effect=RuntimeError('health update failed')):
+		with _replace_symbol_database(self.puller, FailingSyncTransactionAndStatusDatabase(database)):
 			with self.assertRaisesRegex(
 				SymbolRollbackError,
 				'Recorded finalized anchor is missing or inconsistent in local database'):
@@ -4774,13 +4733,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self._seed_blocks(database, [1, 2, 3], {2: 'D' * 64})
 		sync_state = create_sync_state(last_synced_height=3, last_synced_block_hash=create_block_hash(3))
 		database.upsert_sync_state(sync_state)
-		replacement_block = create_node_block(2, block_hash='B' * 64)
-		terminal_block = create_node_block(3, previous_hash='B' * 64)
-		connector = FakeConnector(
-			3,
-			{1: [replacement_block, terminal_block]},
-			block_by_height={1: create_node_block(1), 2: replacement_block, 3: terminal_block},
-			finalized_height=3)
+		connector = ChainInfoOverrideConnector(
+			**_replacement_connector_arguments([create_node_block(2), create_node_block(3)], finalized_height=3))
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
@@ -4868,7 +4822,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
-		with self.assertRaisesRegex(SymbolRollbackError, 'Node finalized height is below the recorded finalized height'):
+		with self.assertRaisesRegex(SymbolRollbackError, 'Node finalization cannot justify changing the legacy public checkpoint'):
 			asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
@@ -4889,7 +4843,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
-		with self.assertRaisesRegex(SymbolRollbackError, 'Rollback boundary is at or below recorded finalized height'):
+		with self.assertRaisesRegex(SymbolRollbackError, 'Node finalization does not establish the legacy rollback boundary'):
 			asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
@@ -4899,19 +4853,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def test_public_sync_retries_partial_first_batch_when_dirty_tail_matches_node(self):
 		# Arrange:
 		database = self.puller.symbol_db
-		self._seed_blocks(database, [1, 2], {2: 'D' * 64})
+		blocks = [create_node_block(height) for height in (1, 2, 3)]
+		connector = _create_dirty_replay_connector(blocks, finalized_height=3)
+		database.upsert_blocks([create_block_row(block, 100, Network.TESTNET) for block in blocks[:2]])
 		database.upsert_sync_state(create_uncheckpointed_sync_state(
 			1,
 			status='unhealthy'))
-		blocks = [
-			create_node_block(1),
-			create_node_block(2, block_hash='D' * 64),
-			create_node_block(3, previous_hash='D' * 64)]
-		connector = FakeConnector(
-			3,
-			{0: blocks},
-			block_by_height=dict(enumerate(blocks, 1)),
-			finalized_height=3)
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -4922,7 +4869,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual('healthy', sync_state['status'])
 		self.assertEqual(3, sync_state['last_synced_height'])
 		self.assertIsNone(sync_state['dirty_state_from_height'])
-		self.assertEqual(['blocks/1', 'blocks/2', 'blocks/3'], [
+		self.assertEqual(['blocks/2', 'blocks/1', 'blocks/3', 'blocks/3', 'blocks/1', 'blocks/2'], [
 			path for path in connector.paths if path.startswith('blocks/')])
 
 	def test_public_sync_fails_closed_for_finalized_lock_event_in_dirty_first_batch_fork(self):
@@ -4940,13 +4887,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			signer_address=bytes.fromhex(SIGNER_ADDRESS),
 			target_address=bytes.fromhex(RECIPIENT_ADDRESS),
 			body={})])
-		replacement_block = create_node_block(2, block_hash='B' * 64)
-		terminal_block = create_node_block(3, previous_hash='B' * 64)
-		connector = FakeConnector(
-			3,
-			{1: [replacement_block, terminal_block]},
-			block_by_height={1: create_node_block(1), 2: replacement_block, 3: terminal_block},
-			finalized_height=3)
+		connector = ChainInfoOverrideConnector(
+			**_replacement_connector_arguments([create_node_block(2), create_node_block(3)], finalized_height=3))
 
 		# Act / Assert:
 		with self.assertRaisesRegex(SymbolRollbackError, 'contains lock events whose pruned state'):
@@ -4965,7 +4907,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		block_cases = (
 			(create_node_block(2, block_hash='A' * 64),
 				'Node finalized block hash does not match chain info'),
-			(RuntimeError('dirty finalized block unavailable'), 'Unable to verify latest node finalized block'))
+			(RuntimeError('dirty finalized block unavailable'), 'Unable to verify saved block range'))
 
 		# Act / Assert:
 		for remote_block, expected_error in block_cases:
@@ -4987,7 +4929,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def test_public_sync_preserves_recorded_anchor_when_cap_is_below_anchor_and_uncapped_node_forks(self):
 		# Arrange:
 		database = self.puller.symbol_db
-		self._seed_blocks(database, [1, 2, 3, 4, 5])
+		blocks = [create_node_block(height) for height in range(1, 6)]
+		self._sync_with_connector(FakeConnector(5, {0: blocks}, finalized_height=5))
 		self._seed_rollback_preservation_rows(database, 3)
 		sync_state = create_checkpoint_sync_state(5, 5)
 		database.upsert_sync_state(sync_state)
@@ -4995,7 +4938,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 		# Act: a cap below the recorded finalized anchor fails closed.
 		capped_connector = FakeConnector(5, {}, block_by_height={5: create_node_block(5)}, finalized_height=5)
-		with self.assertRaisesRegex(SymbolRollbackError, 'max_height is below the recorded finalized height'):
+		with self.assertRaisesRegex(ValueError, 'max_height is below the recorded finalized height'):
 			self._sync_with_connector(capped_connector, max_height=2)
 
 		# Act: the uncapped run sees the node's replacement anchor and also preserves history.
@@ -5006,11 +4949,11 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			block_by_height={1: create_node_block(1), 2: create_node_block(2), **fork_blocks},
 			finalized_height=5,
 			finalized_fields={'hash': fork_blocks[5]['meta']['hash']})
-		self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
+		self._assert_preserved_state(before_state, before_state.sync_state)
 		self.assertEqual(create_block_hash(3), self._fetch_block_hash(database, 3))
 		self.assertEqual(create_block_hash(4), self._fetch_block_hash(database, 4))
 		self.assertEqual(create_block_hash(5), self._fetch_block_hash(database, 5))
-		with self.assertRaisesRegex(SymbolRollbackError, 'Recorded finalized anchor hash does not match node block'):
+		with self.assertRaisesRegex(SymbolRollbackError, 'No Symbol common block within the reconciliation search limit'):
 			self._sync_with_connector(forked_connector)
 
 		# Assert:
@@ -5035,9 +4978,11 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			block_by_height={
 				1: create_node_block(1),
 				2: create_node_block(2, block_hash='A' * 64),
+				3: create_node_block(3, previous_hash='A' * 64),
+				4: create_node_block(4),
 				5: create_node_block(5)
 			},
-			finalized_height=5)
+			finalized_height=1)
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
@@ -5098,6 +5043,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		boolean_height_response = create_node_block(height)
 		boolean_height_response['block']['height'] = True
 		invalid_responses.append(('boolean height', boolean_height_response))
+		invalid_metadata_response = create_node_block(height)
+		invalid_metadata_response['meta'] = None
+		invalid_responses.append(('null metadata', invalid_metadata_response))
 		return invalid_responses
 
 	def test_public_sync_rejects_malformed_finalized_anchor_evidence_without_deleting_history(self):
@@ -5113,11 +5061,11 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			with self.subTest(case=case_name):
 				connector = NodeBlockEvidenceConnector(
 					3,
-					{},
-					block_response_overrides={1: malformed_block, 3: create_node_block(3)},
+					{0: [malformed_block], 1: [create_node_block(2), create_node_block(3)]},
+					block_by_height={3: create_node_block(3)},
 					finalized_height=3)
 				set_symbol_connector(self.puller, connector)
-				with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify recorded finalized anchor'):
+				with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify saved block range'):
 					asyncio.run(self.puller.sync_block_headers())
 				self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
 
@@ -5134,12 +5082,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			with self.subTest(case=case_name):
 				connector = NodeBlockEvidenceConnector(
 					3,
-					{},
-					block_response_overrides={
-						1: create_node_block(1),
-						2: malformed_block,
-						3: create_node_block(3)
-					},
+					{0: [create_node_block(1)], 1: [malformed_block, create_node_block(3)]},
+					block_by_height={3: create_node_block(3)},
 					finalized_height=3)
 				set_symbol_connector(self.puller, connector)
 				with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify saved block range'):
@@ -5165,7 +5109,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 					block_response_overrides={1: malformed_block},
 					finalized_height=1)
 				set_symbol_connector(self.puller, connector)
-				with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify latest node finalized block'):
+				with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify saved block range'):
 					asyncio.run(self.puller.sync_block_headers())
 				self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
 
@@ -5212,15 +5156,15 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def test_public_sync_preserves_recorded_anchor_when_node_finality_regresses(self):
 		# Arrange:
 		database = self.puller.symbol_db
-		self._seed_blocks(database, [1, 2, 3, 4, 5])
+		blocks = [create_node_block(height) for height in range(1, 6)]
+		self._sync_with_connector(FakeConnector(5, {0: blocks}, finalized_height=5))
 		self._seed_rollback_preservation_rows(database, 3)
-		database.upsert_sync_state(create_checkpoint_sync_state(5, 5))
 		before_state = self._capture_preserved_state()
 		connector = FakeConnector(5, {}, block_by_height={5: create_node_block(5)}, finalized_height=2)
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
-		with self.assertRaisesRegex(SymbolRollbackError, 'Node finalized height is below the recorded finalized height'):
+		with self.assertRaisesRegex(SymbolRollbackError, 'Node finalized height is below the verified finalized height'):
 			asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
@@ -5236,7 +5180,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			finalized_fields={'hash': fork_blocks[5]['meta']['hash']})
 
 		# Act / Assert:
-		with self.assertRaisesRegex(SymbolRollbackError, 'Recorded finalized anchor hash does not match node block'):
+		with self.assertRaisesRegex(SymbolRollbackError, 'No Symbol common block within the reconciliation search limit'):
 			self._sync_with_connector(forked_connector)
 
 		# Assert: the second failure also retains all rows, the anchor, and the dirty marker.
@@ -5262,7 +5206,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			finalized_height=2)
 
 		# Act / Assert:
-		with self.assertRaisesRegex(SymbolRollbackError, 'Node finalized height is below the recorded finalized height'):
+		with self.assertRaisesRegex(SymbolRollbackError, 'Recorded finalized anchor is missing from local sync state'):
 			self._sync_with_connector(regressed_connector)
 
 		# Assert: the incomplete checkpoint and dirty marker remain unchanged.
@@ -5321,29 +5265,22 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			5,
 			{},
 			block_by_height={height: create_node_block(height) for height in range(1, 6)},
-			finalized_height=5)
+			finalized_height=1)
 		set_symbol_connector(self.puller, matching_connector)
 
 		# Act: the cap moves the checkpoint to two while retaining physical rows three through five.
 		asyncio.run(self.puller.sync_block_headers(max_height=2))
 		checkpoint_state = database.get_sync_state()
 		self.assertEqual(2, checkpoint_state['last_synced_height'])
-		self.assertEqual(2, checkpoint_state['finalized_height'])
-		self.assertEqual(create_block_hash(2), bytes(checkpoint_state['finalized_hash']))
+		self.assertEqual(1, checkpoint_state['finalized_height'])
+		self.assertEqual(create_block_hash(1), bytes(checkpoint_state['finalized_hash']))
 		self.assertEqual([1, 2, 3, 4, 5], self._fetch_block_heights(database))
 
 		# Arrange: the uncapped node now has a fork beginning at three.
-		fork_blocks = create_linked_node_blocks(3, 'CDE')
+		fork_blocks = [create_node_block(height) for height in range(3, 6)]
 		forked_connector = ChainInfoOverrideConnector(
-			5,
-			{
-				2: [fork_blocks[3], fork_blocks[4], fork_blocks[5]],
-				3: [fork_blocks[4], fork_blocks[5]]
-			},
-			block_by_height={1: create_node_block(1), 2: create_node_block(2), **fork_blocks},
-			finalized_height=5,
-			account_by_address={str(Address(orphan_address)): None},
-			finalized_fields={'hash': fork_blocks[5]['meta']['hash']})
+			**_replacement_connector_arguments(fork_blocks, finalized_height=5),
+			account_by_address={str(Address(orphan_address)): None})
 		cursor = database.connection.cursor()
 		cursor.execute('SELECT to_jsonb(row) FROM symbol_accounts AS row WHERE address = %s', (unrelated_address,))
 		unrelated_account_before = cursor.fetchone()[0]
@@ -5359,9 +5296,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 		# Assert: saved rows beyond the checkpoint were checked, repaired, and synchronized from the fork.
 		self.assertEqual([1, 2, 3, 4, 5], self._fetch_block_heights(database))
-		self.assertEqual(bytes.fromhex('C' * 64), self._fetch_block_hash(database, 3))
-		self.assertEqual(bytes.fromhex('D' * 64), self._fetch_block_hash(database, 4))
-		self.assertEqual(bytes.fromhex('E' * 64), self._fetch_block_hash(database, 5))
+		self.assertEqual(
+			[bytes.fromhex(block['meta']['hash']) for block in fork_blocks],
+			[self._fetch_block_hash(database, height) for height in range(3, 6)])
 		self.assertEqual([], self._fetch_receipts(database))
 		cursor.execute('SELECT hash FROM symbol_transactions WHERE height = 3')
 		self.assertEqual([], cursor.fetchall())
@@ -5398,7 +5335,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			5,
 			{},
 			block_by_height={height: create_node_block(height) for height in range(1, 6)},
-			finalized_height=5)
+			finalized_height=1)
 		set_symbol_connector(self.puller, capped_connector)
 		asyncio.run(self.puller.sync_block_headers(max_height=2))
 
@@ -5432,7 +5369,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		seed_healthy_refresh_state(database, 'finality-preservation', 5)
 		database.upsert_sync_state(create_checkpoint_sync_state(1, 5))
 		cap_connector = FakeConnector(
-			5, {}, block_by_height={height: create_node_block(height) for height in range(1, 6)}, finalized_height=5)
+			5, {}, block_by_height={height: create_node_block(height) for height in range(1, 6)}, finalized_height=1)
 		set_symbol_connector(self.puller, cap_connector)
 		asyncio.run(self.puller.sync_block_headers(max_height=2))
 		before_state = self._capture_preserved_state()
@@ -5452,18 +5389,18 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		# Assert: finalized evidence is checked before the earlier fork can delete saved state.
 		self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
 		self.assertEqual([1, 2, 3, 4, 5], self._fetch_block_heights(database))
-		self.assertEqual(1, connector.paths.count('blocks/5'))
+		self.assertEqual(2, connector.paths.count('blocks/5'))
 		self.assertEqual('healthy', database.get_account_refresh_state()['status'])
 		self.assertEqual('finality-preservation', database.get_account_refresh_state()['last_successful_run_id'])
 		self.assertEqual(5, database.get_account_refresh_state()['last_completed_height'])
 
 	def test_public_sync_preserves_physical_history_when_finalized_block_evidence_is_unavailable_or_malformed(self):
 		for case_name, block_response, expected_error in (
-			('request failure', RuntimeError('block lookup failed'), 'Unable to verify latest node finalized block'),
+			('request failure', RuntimeError('block lookup failed'), 'Unable to verify saved block range'),
 			('malformed height', {'block': {'height': 4}, 'meta': {'hash': f'{5:064X}'}},
-				'Unable to verify latest node finalized block'),
+				'Unable to verify saved block range'),
 			('malformed hash', {'block': {'height': 5}, 'meta': {'hash': 'bad'}},
-				'Unable to verify latest node finalized block')
+				'Unable to verify saved block range')
 		):
 			with self.subTest(case_name=case_name):
 				# Arrange:
@@ -5478,7 +5415,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 					5,
 					{},
 					block_by_height={height: create_node_block(height) for height in range(1, 6)},
-					finalized_height=5)
+					finalized_height=1)
 				set_symbol_connector(self.puller, cap_connector)
 				asyncio.run(self.puller.sync_block_headers(max_height=2))
 				before_state = self._capture_preserved_state()
@@ -5506,7 +5443,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def test_public_sync_reconciles_physical_tail_when_uncapped_node_is_shorter_than_saved_tip(self):
 		# Arrange:
 		database = self.puller.symbol_db
-		self._seed_blocks(database, [1, 2, 3, 4, 5])
+		blocks_by_height = {height: create_node_block(height) for height in range(1, 6)}
+		seal_replacement_blocks([blocks_by_height[height] for height in range(3, 6)])
+		database.upsert_blocks([create_block_row(block, 100, Network.TESTNET) for block in blocks_by_height.values()])
 		self._seed_rollback_preservation_rows(database, 5)
 		orphan_address = Network.TESTNET.public_key_to_address(PublicKey('A' * 64)).bytes
 		orphan_account_row, orphan_mosaic_rows = create_account_row(
@@ -5532,15 +5471,14 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			'cosignatory_addresses': [], 'multisig_addresses': [], 'updated_at_height': 1
 		})
 		seed_healthy_refresh_state(database, 'shortening-test', 5)
-		database.upsert_sync_state(create_checkpoint_sync_state(1, 5))
-		capped_connector = FakeConnector(
-			5, {}, block_by_height={height: create_node_block(height) for height in range(1, 6)}, finalized_height=5)
+		database.upsert_sync_state(create_checkpoint_sync_state(1, 5, last_synced_block_hash=bytes.fromhex(blocks_by_height[5]['meta']['hash'])))
+		capped_connector = FakeConnector(5, {}, block_by_height=blocks_by_height, finalized_height=1)
 		set_symbol_connector(self.puller, capped_connector)
 		asyncio.run(self.puller.sync_block_headers(max_height=2))
 		short_connector = FakeConnector(
 			4,
 			{},
-			block_by_height={height: create_node_block(height) for height in range(1, 5)},
+			block_by_height={height: blocks_by_height[height] for height in range(1, 5)},
 			finalized_height=2,
 			account_by_address={str(Address(orphan_address)): None})
 		set_symbol_connector(self.puller, short_connector)
@@ -5577,7 +5515,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual(unrelated_multisig_before, cursor.fetchone()[0])
 		sync_state = database.get_sync_state()
 		self.assertEqual(4, sync_state['last_synced_height'])
-		self.assertEqual(create_block_hash(4), bytes(sync_state['last_synced_block_hash']))
+		self.assertEqual(bytes.fromhex(blocks_by_height[4]['meta']['hash']), bytes(sync_state['last_synced_block_hash']))
 		self.assertEqual('healthy', sync_state['status'])
 		self.assertIsNone(sync_state['dirty_state_from_height'])
 		self.assertEqual('stale', database.get_account_refresh_state()['status'])
@@ -5590,9 +5528,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self._seed_blocks(database, [1, 2, 3, 4, 5])
 		database.upsert_sync_state(create_checkpoint_sync_state(1, 5))
 		cap_connector = FakeConnector(
-			5, {}, block_by_height={height: create_node_block(height) for height in range(1, 6)}, finalized_height=5)
+			5, {}, block_by_height={height: create_node_block(height) for height in range(1, 6)}, finalized_height=1)
 		set_symbol_connector(self.puller, cap_connector)
 		asyncio.run(self.puller.sync_block_headers(max_height=2))
+		self.assertEqual(1, database.try_get_fork_recovery_state()['verified_height'])
 		short_connector = FakeConnector(
 			2, {}, block_by_height={1: create_node_block(1), 2: create_node_block(2)}, finalized_height=2)
 		set_symbol_connector(self.puller, short_connector)
@@ -5607,7 +5546,10 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual(create_block_hash(2), bytes(sync_state['last_synced_block_hash']))
 		self.assertEqual('healthy', sync_state['status'])
 		self.assertIsNone(sync_state['dirty_state_from_height'])
-		self.assertEqual([], [path for path in short_connector.paths if path.startswith('blocks?pageSize=')])
+		self.assertEqual(2, database.try_get_fork_recovery_state()['verified_height'])
+		self.assertEqual(
+			['blocks?pageSize=100&offset=0&orderBy=height'],
+			[path for path in short_connector.paths if path.startswith('blocks?pageSize=')])
 
 	def test_public_sync_checks_finality_beyond_cap_against_uncheckpointed_dirty_physical_tail(self):
 		# Arrange:
@@ -5646,7 +5588,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			block_response['block']['height'] = height
 		connector = NodeBlockEvidenceConnector(
 			3,
-			{},
+			{0: list(block_responses.values())},
 			block_response_overrides=block_responses,
 			finalized_height=3)
 		set_symbol_connector(self.puller, connector)
@@ -5716,7 +5658,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
-		with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify persisted dirty block range'):
+		with self.assertRaisesRegex(SymbolRollbackError, 'Unable to verify saved block range'):
 			asyncio.run(self.puller.sync_block_headers())
 
 		# Assert:
@@ -5725,13 +5667,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_public_sync_replays_uncheckpointed_dirty_tail_when_node_is_shorter(self):
 		# Arrange:
-		database = self._seed_uncheckpointed_dirty_range([1, 2, 3])
+		database = self.puller.symbol_db
 		blocks = [create_node_block(1), create_node_block(2)]
-		connector = FakeConnector(
-			2,
-			{0: blocks},
-			block_by_height={1: blocks[0], 2: blocks[1]},
-			finalized_height=1)
+		connector = _create_dirty_replay_connector(blocks)
+		orphan = create_node_block(3, previous_hash=blocks[-1]['meta']['hash'])
+		database.upsert_blocks([create_block_row(block, 100, Network.TESTNET) for block in [*blocks, orphan]])
+		database.upsert_sync_state(create_uncheckpointed_sync_state(1, status='unhealthy'))
 		set_symbol_connector(self.puller, connector)
 
 		# Act:
@@ -5781,7 +5722,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				# Assert: the node's parent cannot authorize removal of a different or missing saved parent.
 				self.assertIn('Unable to verify retained dirty parent', str(exception_context.exception))
 				self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
-				self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+				self.assertEqual([], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
 
 	def test_public_sync_rejects_unavailable_or_malformed_uncheckpointed_dirty_parent(self):
 		malformed_parent = create_node_block(2)
@@ -5801,13 +5742,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				database.upsert_sync_state(create_uncheckpointed_sync_state(
 					3,
 					status='unhealthy'))
+				dirty_block = create_node_block(3)
+				connector = _create_dirty_replay_connector(
+					[dirty_block], finalized_height=3, transactions=[create_node_transaction(3)],
+					connector_class=NodeBlockEvidenceConnector, block_response_overrides={2: parent_response})
+				database.upsert_blocks([create_block_row(dirty_block, 100, Network.TESTNET)])
 				before_state = self._capture_preserved_state()
-				connector = NodeBlockEvidenceConnector(
-					3,
-					{},
-					block_by_height={3: create_node_block(3)},
-					block_response_overrides={2: parent_response},
-					finalized_height=3)
 				set_symbol_connector(self.puller, connector)
 
 				# Act:
@@ -5815,20 +5755,21 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 					asyncio.run(self.puller.sync_block_headers())
 
 				# Assert:
-				self.assertIn('Unable to verify persisted dirty block range', str(exception_context.exception))
+				self.assertIn('Unable to recheck Symbol repair boundary', str(exception_context.exception))
 				self.assertIsInstance(exception_context.exception.__cause__, RuntimeError if 'unavailable' == case_name else ValueError)
 				self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
-				self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+				self.assertEqual([], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
 
 	def test_public_sync_retries_uncheckpointed_dirty_tail_with_matching_retained_parent(self):
 		# Arrange:
 		database = self.puller.symbol_db
-		self._seed_blocks(database, [1, 2, 3])
+		self._seed_blocks(database, [1, 2])
+		block = create_node_block(3)
+		connector = _create_dirty_replay_connector([block], finalized_height=3)
+		database.upsert_blocks([create_block_row(block, 100, Network.TESTNET)])
 		database.upsert_sync_state(create_uncheckpointed_sync_state(
 			3,
 			status='unhealthy'))
-		blocks = {height: create_node_block(height) for height in (1, 2, 3)}
-		connector = FakeConnector(3, {2: [blocks[3]]}, block_by_height=blocks, finalized_height=3)
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -5866,19 +5807,21 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 				self.assertEqual(2, sync_state['finalized_height'])
 				self.assertEqual(node_height, sync_state['last_synced_height'])
 				self.assertIsNone(sync_state['dirty_state_from_height'])
-				self.assertEqual(1, connector.paths.count('blocks/2'))
-				self.assertEqual(1 if 3 == node_height else 0, connector.paths.count('blocks/3'))
-				self.assertEqual([], [path for path in connector.paths if path.startswith('blocks?pageSize=')])
+				self.assertEqual([f'blocks/{node_height}', f'blocks/{node_height}', 'blocks/2'], [
+					path for path in connector.paths if path.startswith('blocks/')
+				])
+				self.assertEqual(['blocks?pageSize=100&offset=0&orderBy=height'], [
+					path for path in connector.paths if path.startswith('blocks?pageSize=')
+				])
+				self.assertEqual([], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
 
 	def test_public_sync_repairs_uncheckpointed_dirty_tail_with_missing_hash_rows_from_marker(self):
 		# Arrange: the next persisted block exposes a missing height at the dirty boundary.
-		database = self._seed_uncheckpointed_dirty_range([2])
 		blocks = [create_node_block(height) for height in (1, 2, 3)]
-		connector = FakeConnector(
-			3,
-			{0: blocks},
-			block_by_height=dict(enumerate(blocks, 1)),
-			finalized_height=2)
+		connector = ChainInfoOverrideConnector(**_replacement_connector_arguments(blocks, finalized_height=2))
+		database = self.puller.symbol_db
+		database.upsert_blocks([create_block_row(blocks[1], 100, Network.TESTNET)])
+		database.upsert_sync_state(create_uncheckpointed_sync_state(1, status='unhealthy'))
 		set_symbol_connector(self.puller, connector)
 
 		# Act:
@@ -5891,17 +5834,16 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_public_sync_replays_dirty_marker_when_hash_scan_omits_a_saved_tail_row(self):
 		# Arrange: this models a read race where a hash scan misses a row still present in storage.
-		database = self._seed_uncheckpointed_dirty_range([1, 2])
-		blocks = [create_node_block(1), create_node_block(2), create_node_block(3)]
-		connector = FakeConnector(
-			3,
-			{0: blocks, 1: blocks[1:]},
-			block_by_height=dict(enumerate(blocks, 1)),
-			finalized_height=3)
+		database = self.puller.symbol_db
+		blocks = [create_node_block(height) for height in (1, 2, 3)]
+		connector = _create_dirty_replay_connector(blocks, finalized_height=3)
+		database.upsert_blocks([create_block_row(block, 100, Network.TESTNET) for block in blocks[:2]])
+		database.upsert_sync_state(create_uncheckpointed_sync_state(1, status='unhealthy'))
 		set_symbol_connector(self.puller, connector)
 
 		# Act:
-		with patch.object(database, 'get_block_hashes', return_value=iter([(1, create_block_hash(1))])):
+		first_block_hash = bytes.fromhex(blocks[0]['meta']['hash'])
+		with patch.object(database, 'get_block_hashes', return_value=iter([(1, first_block_hash)])):
 			self._sync_with_connector(connector)
 
 		# Assert:
@@ -5912,17 +5854,18 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 	def test_rollback_fetch_failure_keeps_old_branch_for_retry(self):
 		# Arrange:
 		database = self.puller.symbol_db
-		self._seed_blocks(database, [1, 2, 3])
-		sync_state = create_sync_state(last_synced_height=3, last_synced_block_hash=create_block_hash(3))
-		failing_connector = FakeConnector(
-			3,
-			{},
+		self._seed_blocks(database, [1, 2, 3], {2: 'D' * 64})
+		database.upsert_sync_state(create_checkpoint_sync_state(1, 3))
+		fork_blocks = [create_node_block(2), create_node_block(3)]
+		connector_args = _replacement_connector_arguments(fork_blocks, finalized_height=3)
+		failing_connector = ChainInfoOverrideConnector(
+			**connector_args,
 			account_by_address={self._beneficiary_address_text(): RuntimeError('account fetch failed')})
 		set_symbol_connector(self.puller, failing_connector)
 
 		# Act / Assert:
 		with self.assertRaisesRegex(RuntimeError, '^account fetch failed$'):
-			asyncio.run(self.puller._repair_from_height(2, sync_state, 3))  # pylint: disable=protected-access
+			self._sync_with_connector(failing_connector)
 
 		# Assert:
 		self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
@@ -5931,13 +5874,13 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual(1, failed_state['finalized_height'])
 
 		# Act: retry with a complete node response.
-		retry_connector = FakeConnector(3, {}, finalized_height=3)
-		set_symbol_connector(self.puller, retry_connector)
-		asyncio.run(self.puller._repair_from_height(2, sync_state, 3))  # pylint: disable=protected-access
+		retry_connector = ChainInfoOverrideConnector(**connector_args)
+		self._sync_with_connector(retry_connector)
 
 		# Assert:
-		self.assertEqual([1], self._fetch_block_heights(database))
-		self.assertEqual('repairing', database.get_sync_state()['status'])
+		self.assertEqual([1, 2, 3], self._fetch_block_heights(database))
+		self.assertEqual(bytes.fromhex(fork_blocks[0]['meta']['hash']), self._fetch_block_hash(database, 2))
+		self.assertEqual('healthy', database.get_sync_state()['status'])
 
 	def test_rollback_database_failure_rolls_back_deletions_and_keeps_retry_anchor(self):
 		# Arrange:
@@ -5965,7 +5908,8 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_keeps_checkpoint_and_marker_when_new_finalized_block_hash_is_missing(self):
 		# Arrange:
-		connector = FakeConnector(1, {0: [create_node_block(1)]}, finalized_height=1)
+		block = create_node_block(1)
+		connector = _create_dirty_replay_connector([block])
 		database = self.puller.symbol_db
 		with _replace_symbol_database(self.puller, MissingNewFinalizedBlockHashDatabase(database)):
 			# Act / Assert:
@@ -5988,7 +5932,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 		# Assert:
 		self.assertEqual(1, restarted_sync_state['last_synced_height'])
-		self.assertEqual(create_block_hash(1), bytes(restarted_sync_state['last_synced_block_hash']))
+		self.assertEqual(bytes.fromhex(block['meta']['hash']), bytes(restarted_sync_state['last_synced_block_hash']))
 		self.assertIsNone(restarted_sync_state['dirty_state_from_height'])
 
 	def test_sync_block_headers_keeps_previous_watermark_when_next_run_parent_hash_mismatches(self):
@@ -6143,14 +6087,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 	def test_sync_block_headers_resumes_clean_checkpoint_to_max_height_below_node_height(self):
 		# Arrange:
-		database = self.puller.symbol_db
-		self._seed_blocks(database, [1])
-		checkpoint_hash = create_block_hash(1)
-		database.upsert_sync_state(create_checkpoint_sync_state(
-			1, 1,
-			chain_height=1,
-			finalized_hash=checkpoint_hash,
-			last_synced_block_hash=checkpoint_hash))
+		self._sync_with_connector(FakeConnector(1, {0: [create_node_block(1)]}, finalized_height=1))
 		connector = FakeConnector(
 			3,
 			{1: [create_node_block(2)]},
@@ -6165,110 +6102,12 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		self.assertEqual(2, sync_state['chain_height'])
 		self.assertEqual(2, sync_state['last_synced_height'])
 		self.assertEqual(create_block_hash(2), bytes(sync_state['last_synced_block_hash']))
-		self.assertEqual(2, sync_state['finalized_height'])
-		self.assertEqual(create_block_hash(2), bytes(sync_state['finalized_hash']))
+		self.assertEqual(1, sync_state['finalized_height'])
+		self.assertEqual(create_block_hash(1), bytes(sync_state['finalized_hash']))
 		self.assertIsNone(sync_state['dirty_state_from_height'])
 		self.assertIn('blocks?pageSize=100&offset=1&orderBy=height', connector.paths)
 
-	def test_sync_block_headers_caps_finalization_to_max_height(self):
-		# Arrange:
-		connector = FakeConnector(
-			5,
-			{0: [create_node_block(height) for height in range(1, 6)]},
-			finalized_height=5
-		)
-
-		# Act:
-		_, sync_state = self._sync_with_connector(connector, max_height=2)
-
-		# Assert:
-		self.assertEqual(2, sync_state['chain_height'])
-		self.assertEqual(2, sync_state['finalized_height'])
-		self.assertEqual(
-			create_block_hash(2),
-			bytes(sync_state['finalized_hash'])
-		)
-		self.assertEqual(2, sync_state['finalized_epoch'])
-		self.assertIsNone(sync_state['finalized_point'])
-		self.assertEqual(2, sync_state['last_synced_height'])
-
-	def test_sync_block_headers_publishes_core_finalization_epoch_for_capped_heights(self):
-		# Arrange:
-		cases = (
-			(1, 1, '4'),
-			(2, 2, '4'),
-			(4, 2, '4'),
-			(5, 3, '4'),
-			(2, 2, str((1 << 64) - 1))
-		)
-
-		for max_height, expected_epoch, grouping in cases:
-			with self.subTest(max_height=max_height, grouping=grouping):
-				# Arrange:
-				drop_symbol_block_tables_if_present(self.puller.symbol_db)
-				self.puller.symbol_db.create_tables()
-				node_finalized_height = max_height + 1
-				connector = FakeConnector(
-					node_finalized_height,
-					create_multi_batch_block_pages(node_finalized_height),
-					finalized_height=node_finalized_height,
-					network_properties=create_network_properties(voting_set_grouping=grouping))
-
-				# Act:
-				_, sync_state = self._sync_with_connector(connector, max_height=max_height)
-
-				# Assert:
-				self.assertEqual(max_height, sync_state['last_synced_height'])
-				self.assertEqual(max_height, sync_state['finalized_height'])
-				self.assertEqual(
-					create_block_hash(max_height),
-					bytes(sync_state['finalized_hash'])
-				)
-				self.assertEqual(expected_epoch, sync_state['finalized_epoch'])
-				self.assertIsNone(sync_state['finalized_point'])
-				self.assertEqual('healthy', sync_state['status'])
-				self.assertIsNone(sync_state['dirty_state_from_height'])
-
-	def test_sync_block_headers_rejects_missing_or_invalid_grouping_when_finalization_is_capped(self):
-		cases = (
-			('missing', None, KeyError),
-			('zero', '0', ValueError),
-			('malformed', 'not-a-grouping', ValueError),
-			('negative', '-1', ValueError),
-			('null', None, ValueError),
-			('boolean', True, ValueError),
-			('fraction', 1.5, ValueError),
-			('separator', '1_0', ValueError),
-			('uint64 overflow', str(1 << 64), ValueError),
-		)
-		for case_name, grouping, cause_type in cases:
-			with self.subTest(grouping=case_name):
-				# Arrange:
-				network_properties = create_network_properties()
-				if 'missing' == case_name:
-					del network_properties['chain']['votingSetGrouping']
-				else:
-					network_properties['chain']['votingSetGrouping'] = grouping
-				connector = FakeConnector(
-					2,
-					{0: [create_node_block(1)]},
-					finalized_height=2,
-					network_properties=network_properties)
-				puller = create_symbol_puller(self.config_ini, 'testnet', connector=connector)
-
-				# Act:
-				with puller.symbol_db:
-					with self.assertRaises(SymbolRollbackError) as context:
-						asyncio.run(puller.sync_block_headers(max_height=1))
-
-					# Assert:
-					self.assertEqual('Invalid capped Symbol finalization epoch', str(context.exception))
-					self.assertIsInstance(context.exception.__cause__, cause_type)
-					self.assertEqual(['chain/info', 'network/properties'], connector.paths)
-					self.assertIsNone(puller.symbol_db.get_sync_state())
-					self.assertEqual([], self._fetch_block_heights(puller.symbol_db))
-
-	def test_sync_block_headers_calculates_finalization_epoch_at_each_capped_checkpoint(self):
+	def test_sync_block_headers_preserves_publication_at_every_checkpoint_below_raw_finality(self):
 		# Arrange:
 		chain_height = 1002
 		max_height = 1001
@@ -6276,8 +6115,7 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		connector = FakeConnector(
 			chain_height,
 			create_multi_batch_block_pages(chain_height),
-			finalized_height=chain_height,
-			network_properties=create_network_properties(voting_set_grouping='1000'))
+			finalized_height=chain_height)
 		database = self.puller.symbol_db
 		recording_database = RecordingCheckpointDatabase(database)
 
@@ -6287,54 +6125,36 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 
 		# Assert:
 		self.assertEqual(
+			[(first_checkpoint_height, None, None, None), (max_height, None, None, None)],
 			[
-				(first_checkpoint_height, first_checkpoint_height, 2, None),
-				(max_height, max_height, 3, None)
-			],
-			[
-				(
-					state['last_synced_height'],
-					state['finalized_height'],
-					state['finalized_epoch'],
-					state['finalized_point'])
+				(state['last_synced_height'], state['finalized_height'], state['finalized_epoch'], state['finalized_point'])
 				for state in recording_database.published_states
 			])
 		self.assertEqual(max_height, sync_state['last_synced_height'])
-		self.assertEqual(max_height, sync_state['finalized_height'])
-		self.assertEqual(create_block_hash(max_height), bytes(sync_state['finalized_hash']))
-		self.assertEqual(3, sync_state['finalized_epoch'])
-		self.assertIsNone(sync_state['finalized_point'])
+		self.assertIsNone(sync_state['finalized_height'])
+		self.assertIsNone(sync_state['finalized_hash'])
 		self.assertIsNone(sync_state['dirty_state_from_height'])
 
-	def test_sync_block_headers_publishes_capped_epoch_without_new_blocks_on_same_limit_rerun(self):
+	def test_sync_block_headers_preserves_unknown_capped_epoch_while_legacy_migration_waits(self):
 		# Arrange:
 		max_height = 1000
 		self._seed_blocks(self.puller.symbol_db, range(1, max_height + 1))
 		self.puller.symbol_db.upsert_sync_state(create_checkpoint_sync_state(
-			max_height, max_height,
-			chain_height=max_height,
-			finalized_epoch=None,
-			finalized_point=None))
+			max_height, max_height, chain_height=max_height, finalized_epoch=None, finalized_point=None))
 		connector = FakeConnector(
-			1005,
-			{},
-			block_by_height={1000: create_node_block(1000)},
-			finalized_height=1005,
-			network_properties=create_network_properties(voting_set_grouping='1000'))
+			1005, {},
+			block_by_height={height: create_node_block(height) for height in range(901, 1006)},
+			finalized_height=1005)
+		before = self._capture_preserved_state()
 
 		# Act:
-		block_heights, sync_state = self._sync_with_connector(connector, max_height=max_height)
+		with self.assertRaisesRegex(SymbolRollbackError, '^max_height prevents verification of the legacy finalized checkpoint$'):
+			self._sync_with_connector(connector, max_height=max_height)
 
 		# Assert:
-		self.assertEqual(list(range(1, max_height + 1)), block_heights)
-		self.assertEqual(max_height, sync_state['last_synced_height'])
-		self.assertEqual(max_height, sync_state['finalized_height'])
-		self.assertEqual(create_block_hash(max_height), bytes(sync_state['finalized_hash']))
-		self.assertEqual(2, sync_state['finalized_epoch'])
-		self.assertIsNone(sync_state['finalized_point'])
-		self.assertEqual(
-			['chain/info', 'network/properties', f'mosaics/{NATIVE_MOSAIC_ID}', 'blocks/1000'],
-			connector.paths)
+		self._assert_preserved_state(before, {**before.sync_state, 'status': 'unhealthy'})
+		self.assertIsNone(self.puller.symbol_db.try_get_fork_recovery_state()['verified_height'])
+		self.assertEqual([], [path for path in connector.paths if path.startswith('transactions/confirmed?')])
 
 	def test_sync_block_headers_continues_from_existing_sync_state(self):
 		# Arrange:
@@ -6363,8 +6183,9 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 			'chain/info',
 			'network/properties',
 			f'mosaics/{NATIVE_MOSAIC_ID}',
-			'blocks/1',
 			'blocks/2',
+			'blocks?pageSize=100&offset=0&orderBy=height',
+			'blocks?pageSize=100&offset=1&orderBy=height',
 			'blocks?pageSize=100&offset=2&orderBy=height',
 			transaction_path(3, 4),
 			statement_path(3, 4),
@@ -6391,32 +6212,14 @@ class SymbolPullerSyncTest(SymbolPullerTestBase):  # pylint: disable=too-many-pu
 		set_symbol_connector(self.puller, connector)
 
 		# Act / Assert:
-		with self.assertRaisesRegex(SymbolRollbackError, 'max_height is below the recorded finalized height'):
+		with self.assertRaisesRegex(ValueError, 'max_height is below the recorded finalized height'):
 			asyncio.run(self.puller.sync_block_headers(max_height=2))
 
 		# Assert:
-		self._assert_preserved_state(before_state, {**before_state.sync_state, 'status': 'unhealthy'})
+		self._assert_preserved_state(before_state, before_state.sync_state)
+		self.assertEqual([], connector.paths)
 		self.assertEqual([1, 2, 3, 4, 5], self._fetch_block_heights(self.puller.symbol_db))
 		self.assertEqual(create_block_hash(5), self._fetch_block_hash(self.puller.symbol_db, 5))
-
-	def test_sync_block_headers_rejects_missing_capped_finalization_hash(self):
-		# Arrange:
-		connector = FakeConnector(5, {}, finalized_height=5)
-		set_symbol_connector(self.puller, connector)
-		set_sync_block_pages(
-			self.puller,
-			AsyncMock(return_value=(None, None))
-		)
-
-		# Act / Assert:
-		with self.assertRaisesRegex(
-			ValueError,
-			'Unable to determine finalized hash for height 2'
-		):
-			asyncio.run(self.puller.sync_block_headers(max_height=2))
-
-		# Assert:
-		self.assertIsNone(self.puller.symbol_db.get_sync_state())
 
 	def test_get_receipt_rows_by_height_groups_rows_after_reading_all_pages(self):
 		# Arrange:

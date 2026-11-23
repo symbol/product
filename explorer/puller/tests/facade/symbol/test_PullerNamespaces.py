@@ -17,6 +17,7 @@ from .puller_test_utils import (
 	FakeConnector,
 	SymbolPullerTestBase,
 	create_artifact_expiry_statement,
+	create_multi_batch_block_pages,
 	create_node_block,
 	create_node_transaction,
 	create_sync_state,
@@ -65,13 +66,8 @@ class SymbolPullerNamespacesTest(SymbolPullerTestBase):
 
 	def _seed_sync_state_before_height(self, height):
 		previous_height = height - 1
-		self._seed_blocks(self.puller.symbol_db, range(1, height))
-		self.puller.symbol_db.upsert_sync_state(create_sync_state(
-			chain_height=previous_height,
-			finalized_height=previous_height,
-			finalized_hash=bytes.fromhex(f'{previous_height:064X}'),
-			last_synced_height=previous_height,
-			last_synced_block_hash=bytes.fromhex(f'{previous_height:064X}')))
+		self._sync_with_connector(FakeConnector(
+			previous_height, create_multi_batch_block_pages(previous_height), finalized_height=previous_height))
 
 	@staticmethod
 	def _create_namespace_sync_connector(

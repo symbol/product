@@ -3,6 +3,7 @@ import threading
 import time
 from collections import namedtuple
 from contextlib import contextmanager
+from types import MappingProxyType
 
 from common.symbol.ReceiptTypes import RECEIPT_TYPE_LABELS
 from common.symbol.Transaction import MESSAGE_TYPE_LABELS
@@ -14,6 +15,7 @@ from zenlog import log
 
 from puller.model.symbol.Account import ACCOUNT_TYPE_VALUES
 from puller.model.symbol.Block import BLOCK_TYPE_VALUES
+from puller.model.symbol.ForkRecoveryStopReason import ForkRecoveryStopReason
 from puller.model.symbol.Lock import LOCK_HASH_ALGORITHM_LABELS, LOCK_STATUS_LABELS, create_hash_lock_key, create_secret_lock_search_key
 from puller.model.symbol.Metadata import (
 	METADATA_TRANSACTION_TYPE_LABELS,
@@ -46,8 +48,22 @@ RollbackRefreshEntries = namedtuple(
 	defaults=((), (), (), (), (), (), ()))
 
 
+RollbackHashLockEvidence = namedtuple(
+	'RollbackHashLockEvidence', (
+		'keys', 'refund_owner_addresses', 'states', 'prunable_keys', 'has_incomplete_replay', 'pruning_heights', 'receiptless_creations'),
+	defaults=(frozenset(), frozenset(), frozenset(), frozenset(), False, MappingProxyType({}), frozenset()))
+
+
 class AccountRetentionTimeLimit(Exception):
 	"""Indicates that the current bounded retention pass reached its deadline."""
+
+
+class ForkCheckpointConflict(ValueError):
+	"""Indicates that stored history or its writer checkpoint changed after reconciliation."""
+
+
+class ReconciliationStatementError(Exception):
+	"""Indicates a failed PostgreSQL statement in the bounded comparison scope."""
 
 
 SYNC_STATE_COLUMNS = [
@@ -60,6 +76,35 @@ SYNC_STATE_COLUMNS = [
 	'last_synced_height',
 	'last_synced_block_hash',
 	'dirty_state_from_height'
+]
+
+FORK_RECOVERY_COLUMNS = (
+	'verified_height', 'verified_hash', 'verified_epoch', 'verified_point', 'legacy_tip', 'legacy_lock_history',
+	'continuity_height', 'continuity_revision', 'reusable_height', 'reusable_hash', 'resume_height', 'stop_reason',
+	'block_revision', 'progress', 'invalidations', 'legacy_history_height'
+)
+FORK_REPLAY_PROGRESS_KEYS = ('replacement_proof', 'replay_hash_lock_keys', 'replay_hash_lock_proof')
+FORK_RECOVERY_STOP_REASONS = tuple(reason.value for reason in ForkRecoveryStopReason)
+FORK_RECOVERY_DEFINITIONS = [
+	'id int PRIMARY KEY DEFAULT 1 CHECK (id = 1)',
+	'verified_height bigint',
+	'verified_hash bytea',
+	'verified_epoch int',
+	'verified_point int',
+	'legacy_tip bigint',
+	'legacy_lock_history boolean NOT NULL',
+	'legacy_history_height bigint',
+	'continuity_height bigint',
+	'continuity_revision bigint NOT NULL DEFAULT 0',
+	'reusable_height bigint',
+	'reusable_hash bytea',
+	'resume_height bigint',
+	'stop_reason symbol_fork_recovery_stop_reason',
+	'block_revision bigint NOT NULL DEFAULT 0',
+	'progress jsonb',
+	'invalidations int NOT NULL DEFAULT 0',
+	'CHECK ((verified_height IS NULL) = (verified_hash IS NULL))',
+	'CHECK ((reusable_height IS NULL) = (reusable_hash IS NULL))'
 ]
 
 SYMBOL_RECEIPT_TYPE_VALUES = tuple(RECEIPT_TYPE_LABELS.values())
@@ -548,6 +593,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		self._retention_time_budget_seconds = retention_time_budget_seconds
 		self._retention_logger = retention_logger
 		self._workflow_guard = threading.Lock()
+		self._reconciliation_remaining_ms = None
 
 	def _commit(self):
 		started_at = self._read_commit_time()
@@ -600,6 +646,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_enum_type(cursor, 'symbol_lock_hash_algorithm', SYMBOL_LOCK_HASH_ALGORITHM_VALUES)
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
 		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
+		_create_enum_type(cursor, 'symbol_fork_recovery_stop_reason', FORK_RECOVERY_STOP_REASONS)
+		_create_table(cursor, 'symbol_fork_recovery', FORK_RECOVERY_DEFINITIONS)
 		# These definitions initialize new tables; upgrade existing account refresh tables with
 		# puller.workflows.migrate_account_refresh before starting the new Puller.
 		_create_table(cursor, 'symbol_account_refresh_state', SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS)
@@ -697,10 +745,276 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		"""Gets the singleton Symbol sync state."""
 
 		cursor = self.connection.cursor()
-		cursor.execute(f'SELECT {", ".join(SYNC_STATE_COLUMNS)} FROM symbol_sync_state WHERE id = 1')
+		self._execute_reconciliation_statement(cursor, f'SELECT {", ".join(SYNC_STATE_COLUMNS)} FROM symbol_sync_state WHERE id = 1')
 		result = cursor.fetchone()
 
 		return dict(zip(SYNC_STATE_COLUMNS, result)) if result else None
+
+	def get_maximum_finalized_sync_height(self):
+		"""Reads the cap floor on either the current or pre-migration schema."""
+
+		with self._database_transaction() as cursor:
+			cursor.execute("SELECT to_regclass('symbol_sync_state'), to_regclass('symbol_fork_recovery')")
+			sync_table, recovery_table = cursor.fetchone()
+			published_height = verified_height = 0
+			if sync_table is not None:
+				cursor.execute('SELECT finalized_height FROM symbol_sync_state WHERE id = 1')
+				published_height = (cursor.fetchone() or (0,))[0] or 0
+
+			if recovery_table is not None:
+				cursor.execute('SELECT verified_height FROM symbol_fork_recovery WHERE id = 1')
+				verified_height = (cursor.fetchone() or (0,))[0] or 0
+
+		return max(published_height, verified_height)
+
+	def try_get_fork_recovery_state(self):
+		"""Reads the internal recovery state, or returns None if it has no singleton row."""
+
+		with self._database_transaction() as cursor:
+			self._execute_reconciliation_statement(cursor, f'SELECT {", ".join(FORK_RECOVERY_COLUMNS)} FROM symbol_fork_recovery WHERE id = 1')
+			return self._decode_fork_recovery_state(cursor.fetchone())
+
+	@staticmethod
+	def _decode_fork_recovery_state(row):
+		if not row:
+			return None
+
+		recovery = dict(zip(FORK_RECOVERY_COLUMNS, row))
+		for name in ('verified_hash', 'reusable_hash'):
+			value = recovery[name]
+			recovery[name] = bytes(value) if value is not None else None
+
+		if recovery['stop_reason'] is not None:
+			recovery['stop_reason'] = ForkRecoveryStopReason(recovery['stop_reason'])
+
+		progress = recovery['progress'] or {}
+		recovery['admin_progress'] = progress.pop('administrative', None)
+		recovery['progress'] = progress or None
+		return recovery
+
+	def initialize_fork_recovery(self):
+		"""Records a verified genesis boundary for a new DB or a pending legacy migration."""
+
+		with self._database_transaction() as cursor:
+			cursor.execute("""
+				SELECT EXISTS (
+					SELECT 1 FROM pg_catalog.pg_attribute
+					WHERE attrelid = to_regclass('symbol_fork_recovery')
+						AND attname = 'legacy_history_height' AND NOT attisdropped
+				)
+			""")
+			if cursor.fetchone()[0]:
+				cursor.execute('SELECT 1 FROM symbol_fork_recovery WHERE id = 1')
+				if cursor.fetchone():
+					return
+
+		with self._database_transaction() as cursor:
+			# Lock before taking the snapshot, including at repeatable read. The block lock also serializes initializers.
+			cursor.execute("""
+				LOCK TABLE symbol_blocks, symbol_transactions, symbol_transaction_mosaics, symbol_transaction_addresses,
+					symbol_receipts, symbol_hash_locks, symbol_secret_locks IN SHARE ROW EXCLUSIVE MODE
+			""")
+			_create_enum_type(cursor, 'symbol_fork_recovery_stop_reason', FORK_RECOVERY_STOP_REASONS)
+			_create_table(cursor, 'symbol_fork_recovery', FORK_RECOVERY_DEFINITIONS)
+			cursor.execute('ALTER TABLE symbol_fork_recovery ADD COLUMN IF NOT EXISTS legacy_history_height bigint')
+			cursor.execute('SELECT 1 FROM symbol_fork_recovery WHERE id = 1')
+			if cursor.fetchone():
+				# The cutoff cannot be recovered from history written after an earlier migration.
+				return
+
+			cursor.execute("""
+				SELECT GREATEST(
+						(SELECT MAX(height) FROM symbol_blocks),
+						(SELECT MAX(height) FROM symbol_transactions),
+						(SELECT MAX(height) FROM symbol_transaction_mosaics),
+						(SELECT MAX(height) FROM symbol_transaction_addresses),
+						(SELECT MAX(height) FROM symbol_receipts),
+						(SELECT MAX(updated_at_height) FROM symbol_hash_locks),
+						(SELECT MAX(updated_at_height) FROM symbol_secret_locks)
+					),
+					EXISTS (
+						SELECT 1 FROM symbol_sync_state
+						WHERE finalized_height IS NOT NULL OR finalized_hash IS NOT NULL
+							OR last_synced_height IS NOT NULL OR last_synced_block_hash IS NOT NULL
+							OR dirty_state_from_height IS NOT NULL
+					)
+			""")
+			legacy_history_height, has_legacy_checkpoint = cursor.fetchone()
+			if legacy_history_height is not None or has_legacy_checkpoint:
+				cursor.execute("""
+					INSERT INTO symbol_fork_recovery (legacy_tip, legacy_lock_history, legacy_history_height, stop_reason)
+					VALUES (0, true, %s, %s)
+				""", (legacy_history_height, ForkRecoveryStopReason.MIGRATION_PENDING.value))
+				self._execute_update_legacy_tip(cursor)
+			else:
+				cursor.execute("""
+					INSERT INTO symbol_fork_recovery (verified_height, verified_hash, legacy_lock_history, continuity_height)
+					VALUES (0, %s, false, 0)
+				""", (bytes(32),))
+
+			# A database trigger also invalidates evidence if an administrator changes history directly.
+			cursor.execute("""
+				CREATE OR REPLACE FUNCTION symbol_record_block_revision() RETURNS trigger
+				LANGUAGE plpgsql SET search_path FROM CURRENT AS $$
+				BEGIN
+					UPDATE symbol_fork_recovery SET block_revision = pg_catalog.txid_current()
+					WHERE id = 1 AND block_revision != pg_catalog.txid_current();
+					RETURN NULL;
+				END
+				$$
+			""")
+			cursor.execute("""
+				CREATE OR REPLACE TRIGGER symbol_record_block_revision
+				AFTER INSERT OR UPDATE OF height, hash, previous_hash OR DELETE OR TRUNCATE ON symbol_blocks
+				FOR EACH STATEMENT EXECUTE FUNCTION symbol_record_block_revision()
+			""")
+
+	def get_contiguous_block_tip(self):
+		"""Checks the ordered stored heights and parent links from the genesis boundary."""
+
+		with self._database_transaction() as cursor:
+			return self._select_contiguous_block_tip(cursor)
+
+	@staticmethod
+	def _select_contiguous_block_tip(cursor):
+		cursor.execute("""
+			WITH ordered AS (
+				SELECT height, ROW_NUMBER() OVER (ORDER BY height) AS expected_height, previous_hash,
+					LAG(hash, 1, %s) OVER (ORDER BY height) AS expected_previous_hash
+				FROM symbol_blocks
+			)
+			SELECT COALESCE(MIN(expected_height - 1) FILTER (
+				WHERE height != expected_height OR previous_hash != expected_previous_hash
+			), MAX(expected_height), 0)
+			FROM ordered
+		""", (bytes(32),))
+		return cursor.fetchone()[0]
+
+	def _execute_update_legacy_tip(self, cursor):
+		cursor.execute('SELECT block_revision FROM symbol_fork_recovery WHERE id = 1 AND legacy_tip IS NOT NULL')
+		row = cursor.fetchone()
+		if row:
+			revision = row[0]
+			height = self._select_contiguous_block_tip(cursor)
+			# A concurrent history change requires a fresh scan on the next run.
+			cursor.execute("""
+				UPDATE symbol_fork_recovery SET legacy_tip = %s, continuity_revision = %s
+				WHERE id = 1 AND block_revision = %s
+			""", (height, revision, revision))
+
+	def update_fork_reconciliation(self, progress, invalidations, stop_reason, *, recheck_legacy_tip=False):
+		"""Commits comparison progress and the account-refresh gate after a complete evidence page."""
+
+		with self._database_transaction() as cursor:
+			if recheck_legacy_tip:
+				self._execute_update_legacy_tip(cursor)
+
+			self._execute_update_fork_reconciliation(cursor, progress, invalidations, stop_reason)
+
+	def discard_transient_fork_progress(self, expected, progress):
+		"""Discards only the abandoned comparison owned by an unchanged clean checkpoint."""
+
+		try:
+			with self._database_transaction() as cursor:
+				self._execute_lock_fork_checkpoint(cursor, expected)
+				cursor.execute("""
+					UPDATE symbol_fork_recovery SET progress = NULL, stop_reason = NULL
+					WHERE id = 1 AND progress = %(progress)s AND invalidations = %(invalidations)s
+						AND stop_reason = %(stop_reason)s AND legacy_tip IS NULL AND resume_height IS NULL
+						AND NOT (progress ?| %(replay_keys)s::text[])
+						AND EXISTS (SELECT 1 FROM symbol_sync_state WHERE id = 1 AND status = 'healthy')
+				""", {
+					'progress': Json(progress),
+					'invalidations': expected['invalidations'],
+					'stop_reason': ForkRecoveryStopReason.RECONCILIATION_WAIT.value,
+					'replay_keys': list(FORK_REPLAY_PROGRESS_KEYS)
+				})
+				return bool(cursor.rowcount)
+		except ForkCheckpointConflict:
+			return False
+
+	def stop_fork_recovery(self, reason):
+		"""Marks recovery blocked and changes only the public health status."""
+
+		with self._database_transaction() as cursor:
+			cursor.execute('UPDATE symbol_fork_recovery SET stop_reason = %s WHERE id = 1', (reason.value,))
+			cursor.execute("""
+				INSERT INTO symbol_sync_state (id, status) VALUES (1, 'unhealthy')
+				ON CONFLICT (id) DO UPDATE SET status = 'unhealthy', updated_at = CURRENT_TIMESTAMP
+			""")
+
+	def reopen_fork_reconciliation(self, expected, stop_reason, proof):
+		"""Reopens a terminal stop after its history and checkpoint have been verified."""
+
+		with self._database_transaction() as cursor:
+			self._execute_lock_terminal_stop(cursor, expected)
+			self._execute_update_fork_reconciliation(cursor, proof, 0, stop_reason)
+
+	def _execute_update_fork_reconciliation(self, cursor, progress, invalidations, stop_reason):
+		# Repair and normal checkpoints own the durable replay keys. Keep them from the locked row.
+		self._execute_reconciliation_statement(cursor, """
+			UPDATE symbol_fork_recovery SET
+				progress = NULLIF((COALESCE(%(progress)s::jsonb, '{}'::jsonb) - %(replay_keys)s::text[]) || COALESCE((
+					SELECT jsonb_object_agg(key, progress -> key)
+					FROM unnest(%(replay_keys)s::text[]) AS replay(key)
+					WHERE progress ? key
+				), '{}'::jsonb), '{}'::jsonb),
+				invalidations = %(invalidations)s, stop_reason = %(stop_reason)s
+			WHERE id = 1
+		""", {
+			'progress': Json(progress) if progress is not None else None,
+			'replay_keys': list(FORK_REPLAY_PROGRESS_KEYS),
+			'invalidations': invalidations,
+			'stop_reason': stop_reason.value if stop_reason is not None else None
+		})
+
+	def save_fork_admin_proof(self, expected, proof):
+		"""Stores only the administrative proof while the terminal stop is still in force."""
+
+		with self._database_transaction() as cursor:
+			self._execute_lock_terminal_stop(cursor, expected)
+			if proof is None:
+				cursor.execute("UPDATE symbol_fork_recovery SET progress = NULLIF(progress - 'administrative', '{}'::jsonb) WHERE id = 1")
+			else:
+				cursor.execute("""
+					UPDATE symbol_fork_recovery SET progress = COALESCE(progress, '{}'::jsonb) || %s WHERE id = 1
+				""", (Json({'administrative': proof}),))
+
+	@classmethod
+	def _execute_lock_terminal_stop(cls, cursor, expected):
+		cls._execute_lock_fork_checkpoint(cursor, expected)
+		cursor.execute('SELECT stop_reason, invalidations FROM symbol_fork_recovery WHERE id = 1 FOR UPDATE')
+		if (ForkRecoveryStopReason.EVIDENCE_INVALIDATED.value, expected['invalidations']) != cursor.fetchone():
+			raise ValueError('Terminal Symbol recovery stop changed before commit')
+
+	@classmethod
+	def _execute_apply_fork_checkpoint(cls, cursor, recovery, *, should_publish_reusable_tip):
+		stop_reason = recovery['stop_reason']
+		recovery_values = {
+			**recovery, 'stop_reason': stop_reason.value if stop_reason is not None else None,
+			'should_publish_reusable_tip': should_publish_reusable_tip,
+			'progress': Json(recovery['replay_progress']) if recovery.get('replay_progress') else None
+		}
+		cursor.execute(f"""
+			UPDATE symbol_fork_recovery SET
+				verified_height = %(verified_height)s, verified_hash = %(verified_hash)s,
+				verified_epoch = %(verified_epoch)s, verified_point = %(verified_point)s,
+				legacy_tip = NULL, continuity_height = %(continuity_height)s, continuity_revision = block_revision,
+				reusable_height = CASE WHEN %(should_publish_reusable_tip)s THEN %(reusable_height)s ELSE reusable_height END,
+				reusable_hash = CASE WHEN %(should_publish_reusable_tip)s THEN %(reusable_hash)s ELSE reusable_hash END,
+				resume_height = %(resume_height)s, stop_reason = %(stop_reason)s,
+				progress = %(progress)s, invalidations = 0
+			WHERE id = 1
+			RETURNING {', '.join(FORK_RECOVERY_COLUMNS)}
+		""", recovery_values)
+		return cls._decode_fork_recovery_state(cursor.fetchone())
+
+	@staticmethod
+	def _execute_invalidate_reusable_tip(cursor, height=None):
+		cursor.execute("""
+			UPDATE symbol_fork_recovery SET reusable_height = NULL, reusable_hash = NULL
+			WHERE id = 1 AND reusable_height IS NOT NULL AND (%(height)s IS NULL OR %(height)s <= reusable_height)
+		""", {'height': height})
 
 	def upsert_sync_state(self, sync_state):
 		"""Upserts the singleton Symbol sync state."""
@@ -709,15 +1023,64 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			self._execute_upsert_sync_state(cursor, sync_state)
 
 	def checkpoint_sync_state(self, sync_state):
-		"""Publishes one fully written Symbol batch and clears its dirty marker atomically."""
+		"""Publishes a verified synchronization checkpoint and returns its committed recovery state."""
 
+		committed_recovery = None
 		with self._database_transaction() as cursor:
+			recovery = sync_state.get('fork_recovery')
+			if recovery is not None:
+				self._execute_check_fork_checkpoint(cursor, sync_state, recovery)
+				committed_recovery = self._execute_apply_fork_checkpoint(cursor, recovery, should_publish_reusable_tip=True)
+
 			self._execute_upsert_sync_state(cursor, sync_state)
 
-	def mark_sync_write_intent(self, height):
-		"""Persists the earliest height whose batch may start a local write."""
+		return committed_recovery
+
+	@staticmethod
+	def _execute_lock_fork_checkpoint(cursor, recovery):
+		# The workflow lock excludes other Pullers. Re-read the writer's watermark and
+		# evidence in the commit transaction as well, so a stale plan cannot clear a marker.
+		cursor.execute("""
+			SELECT last_synced_height, last_synced_block_hash, dirty_state_from_height
+			FROM symbol_sync_state WHERE id = 1 FOR UPDATE
+		""")
+		height, block_hash, dirty = cursor.fetchone() or (None, None, None)
+		current = (height, bytes(block_hash) if block_hash is not None else None, dirty)
+		if current != recovery['expected_sync']:
+			raise ForkCheckpointConflict('Symbol synchronization checkpoint changed before commit')
+
+		cursor.execute('SELECT block_revision FROM symbol_fork_recovery WHERE id = 1 FOR UPDATE')
+		if cursor.fetchone()[0] != recovery['expected_revision']:
+			raise ForkCheckpointConflict('Stored Symbol block history changed before recovery commit')
+
+	@classmethod
+	def _execute_check_fork_checkpoint(cls, cursor, sync_state, recovery):
+		cls._execute_lock_fork_checkpoint(cursor, recovery)
+		verified_height = recovery['verified_height']
+		next_height = sync_state['last_synced_height'] or 0
+		next_dirty = sync_state['dirty_state_from_height']
+		if verified_height > next_height or (next_dirty is not None and verified_height >= next_dirty):
+			raise ValueError('Verified finalization exceeds clean synchronization range')
+
+		cls._execute_check_block_hash(cursor, next_height, sync_state['last_synced_block_hash'], 'Checkpoint')
+		cls._execute_check_block_hash(cursor, verified_height, recovery['verified_hash'], 'Finalized')
+
+	@staticmethod
+	def _execute_check_block_hash(cursor, height, block_hash, label):
+		if height:
+			cursor.execute('SELECT hash FROM symbol_blocks WHERE height = %s FOR SHARE', (height,))
+			row = cursor.fetchone()
+			if row is None or bytes(row[0]) != block_hash:
+				raise ValueError(f'{label} block hash does not match local database')
+
+	def mark_sync_write_intent(self, height, *, expected_checkpoint=None):
+		"""Persists the earliest write height, optionally guarded by a reconciled checkpoint."""
 
 		with self._database_transaction() as cursor:
+			if expected_checkpoint is not None:
+				self._execute_lock_fork_checkpoint(cursor, expected_checkpoint)
+
+			self._execute_invalidate_reusable_tip(cursor, height)
 			cursor.execute(
 				'''
 				INSERT INTO symbol_sync_state (id, status, dirty_state_from_height)
@@ -733,15 +1096,18 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				(height,))
 
 	def mark_sync_unhealthy(self):
-		"""Updates the failure status after the caller has confirmed a dirty marker."""
+		"""Updates failure status without replacing checkpoints or their markers."""
 
 		with self._database_transaction() as cursor:
-			cursor.execute(
-				'''
-				UPDATE symbol_sync_state
-				SET status = 'unhealthy', updated_at = CURRENT_TIMESTAMP
-				WHERE id = 1
-				''')
+			self._execute_mark_sync_unhealthy(cursor)
+
+	@staticmethod
+	def _execute_mark_sync_unhealthy(cursor):
+		cursor.execute("""
+			UPDATE symbol_sync_state
+			SET status = 'unhealthy', updated_at = CURRENT_TIMESTAMP
+			WHERE id = 1
+		""")
 
 	@staticmethod
 	def _execute_upsert_sync_state(cursor, sync_state):
@@ -799,10 +1165,53 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		try:
 			cursor = self.connection.cursor()
 			yield cursor
+			self._set_reconciliation_statement_timeout(cursor)
 			self._commit()
-		except Exception:
+		except Exception as exception:
 			self.connection.rollback()
+			if self._reconciliation_remaining_ms is not None and isinstance(exception, PsycopgError):
+				raise ReconciliationStatementError() from exception
+
 			raise
+
+	@contextmanager
+	def reconciliation_statements(self, remaining_ms):
+		"""Bounds comparison statements inside the exclusive Symbol workflow."""
+
+		previous_remaining_ms = self._reconciliation_remaining_ms
+		self._reconciliation_remaining_ms = remaining_ms
+		try:
+			yield
+		finally:
+			self._reconciliation_remaining_ms = previous_remaining_ms
+
+	@contextmanager
+	def independent_reconciliation(self):
+		"""Preserves independent SQL timeouts while classifying reconciliation errors."""
+
+		with self.reconciliation_statements(None):
+			try:
+				yield
+			except PsycopgError as exception:
+				raise ReconciliationStatementError() from exception
+
+	def _execute_reconciliation_statement(self, cursor, statement, parameters=()):
+		self._set_reconciliation_statement_timeout(cursor)
+		cursor.execute(statement, parameters)
+
+	def _set_reconciliation_statement_timeout(self, cursor):
+		if self._reconciliation_remaining_ms is None:
+			return
+
+		remaining_ms = self._reconciliation_remaining_ms()
+		if remaining_ms <= 0:
+			raise ReconciliationStatementError()
+
+		cursor.execute("""
+			SELECT pg_catalog.set_config(
+				'statement_timeout', LEAST(%(remaining)s, COALESCE(NULLIF(setting::int, 0), %(remaining)s))::text, true)
+			FROM pg_catalog.pg_settings WHERE name = 'statement_timeout'
+		""", {'remaining': remaining_ms})
 
 	@contextmanager
 	def workflow_lock(self):
@@ -1928,6 +2337,9 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		"""Upserts one account refresh page's current-state rows, snapshot rows, and diagnostic cursor in one transaction."""
 
 		with self._database_transaction() as cursor:
+			if account_entries:
+				self._execute_invalidate_reusable_tip(cursor)
+
 			for entry in account_entries:
 				self._execute_upsert_account_current_state(
 					cursor,
@@ -2063,9 +2475,9 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 	def get_block_hash(self, height):
 		"""Gets a block hash by height."""
 
-		cursor = self.connection.cursor()
-		cursor.execute('SELECT hash FROM symbol_blocks WHERE height = %s', (height,))
-		result = cursor.fetchone()
+		with self._database_transaction() as cursor:
+			self._execute_reconciliation_statement(cursor, 'SELECT hash FROM symbol_blocks WHERE height = %s', (height,))
+			result = cursor.fetchone()
 
 		return result[0] if result else None
 
@@ -2085,11 +2497,21 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 
 		return block_hashes
 
+	def get_block_chain_evidence(self, start_height, end_height):
+		"""Gets the stored hashes and parent links for a bounded comparison page."""
+
+		with self._database_transaction() as cursor:
+			self._execute_reconciliation_statement(cursor, """
+				SELECT height, hash, previous_hash FROM symbol_blocks
+				WHERE height BETWEEN %s AND %s ORDER BY height
+			""", (start_height, end_height))
+			return cursor.fetchall()
+
 	def get_max_block_height(self):
 		"""Gets the highest persisted block height, including an incomplete dirty batch."""
 
 		with self._database_transaction() as cursor:
-			cursor.execute('SELECT MAX(height) FROM symbol_blocks')
+			self._execute_reconciliation_statement(cursor, 'SELECT MAX(height) FROM symbol_blocks')
 			result = cursor.fetchone()
 
 		return result[0] if result else None
@@ -2161,16 +2583,16 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 
 		return {bytes(address): timestamp for address, timestamp in rows}
 
-	def has_rollback_lock_events(self, height):
-		"""Checks whether orphaned history contains lock events whose finalized key may have been pruned."""
+	def try_get_rollback_hash_lock_evidence(  # pylint: disable=too-many-arguments,too-many-locals
+		self, height, common_height, finalized_height, *, replay_end, additional_keys=(), allow_receiptless_creations=False
+	):
+		"""Returns affected keys, refund owners and proven retained state and pruning bounds, or None for incomplete evidence."""
 
 		lock_transaction_types = (
-			TRANSACTION_TYPE_LABELS[TransactionType.AGGREGATE_BONDED.value],
-			TRANSACTION_TYPE_LABELS[TransactionType.HASH_LOCK.value],
-			TRANSACTION_TYPE_LABELS[TransactionType.SECRET_LOCK.value],
-			TRANSACTION_TYPE_LABELS[TransactionType.SECRET_PROOF.value])
+			TransactionType.AGGREGATE_BONDED.value, TransactionType.HASH_LOCK.value,
+			TransactionType.SECRET_LOCK.value, TransactionType.SECRET_PROOF.value)
 		lock_receipt_types = tuple(
-			RECEIPT_TYPE_LABELS[receipt_type.value]
+			receipt_type.value
 			for receipt_type in (
 				ReceiptType.LOCK_HASH_CREATED,
 				ReceiptType.LOCK_HASH_COMPLETED,
@@ -2178,19 +2600,393 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 				ReceiptType.LOCK_SECRET_CREATED,
 				ReceiptType.LOCK_SECRET_COMPLETED,
 				ReceiptType.LOCK_SECRET_EXPIRED))
+		# At Catapult b3222548d6c8, CompletedAggregateObserver uses the aggregate entity hash as the
+		# lock key and credits the lock owner. Neither it nor HashLockObserver includes the key in
+		# its receipt. NotificationPublisher uses a one-based source for each top-level transaction.
+		# Core validates activity against the latest creation at the transaction source. LockInfo::isActive
+		# requires that creation to be unused and unexpired, even when an earlier creation is still stored.
+		# The current row can reflect another proven lifetime of the same key.
+		# LockInfoHistory::prune removes oldest first, so every retained lifetime must reach its end for deletion.
+		# When a matching dirty block is incomplete, canonical events will be refetched and verified before repair.
+		# Normal ingestion stores the original receipt code. Treat a code that cannot be reconciled with its label as unproven.
+		# Decimal strings can contain the sign, padding and between-digit underscores accepted by int().
+		# Receiptless creation candidates can explain a provisional current row. They must be re-proven on the canonical branch.
 		with self._database_transaction() as cursor:
-			cursor.execute(
+			self._execute_reconciliation_statement(
+				cursor,
 				'''
-				SELECT EXISTS (
-					SELECT 1 FROM symbol_transactions WHERE height >= %s AND type_name::text = ANY(%s)
+				WITH retained_replay_keys AS (
+					SELECT UNNEST(%(additional_keys)s::text[]) AS lock_hash
+				), incomplete_replay AS (
+					SELECT 1 FROM symbol_blocks AS b WHERE b.height BETWEEN %(height)s AND %(replay_end)s
+						AND (b.transactions_count, b.total_transactions_count) <> (
+							SELECT COUNT(*) FILTER (WHERE NOT t.is_embedded), COUNT(*)
+							FROM symbol_transactions AS t WHERE t.height = b.height)
+					LIMIT 1
+				), tail_events AS (
+					SELECT id, height, type, type_name, is_embedded, signer_public_key, signer_address, raw_payload, body, hash
+					FROM symbol_transactions
+					WHERE height >= %(height)s AND (
+						type = ANY(%(transaction_types)s) OR type_name::text = ANY(%(transaction_labels)s)
+						OR raw_payload #>> '{transaction,type}' = ANY(%(raw_transaction_types)s))
+				), tail_hash_lock_keys AS (
+					SELECT lock_hash FROM retained_replay_keys
 					UNION ALL
-					SELECT 1 FROM symbol_receipts WHERE height >= %s AND receipt_type::text = ANY(%s)
+					SELECT UPPER(ENCODE(hash, 'hex')) AS lock_hash FROM tail_events
+					WHERE type = %(aggregate_type)s OR type_name::text = %(aggregate_label)s
+						OR raw_payload #>> '{transaction,type}' = %(aggregate_type)s::text
+					UNION ALL
+					SELECT UPPER(lock_key.value)
+					FROM tail_events
+					CROSS JOIN LATERAL (VALUES (body ->> 'hash'), (raw_payload #>> '{transaction,hash}')) AS lock_key(value)
+					WHERE type = %(hash_lock_type)s OR type_name::text = %(hash_lock_label)s
+						OR raw_payload #>> '{transaction,type}' = %(hash_lock_type)s::text
+				), creation_candidates AS (
+					SELECT id, height, type, type_name, is_embedded, signer_public_key, signer_address, raw_payload, body, hash,
+						UPPER(body ->> 'hash') AS lock_hash
+					FROM (
+						SELECT * FROM tail_events
+						UNION ALL
+						SELECT id, height, type, type_name, is_embedded, signer_public_key, signer_address, raw_payload, body, hash
+						FROM symbol_transactions AS earlier
+						WHERE height < %(height)s
+							AND EXISTS (
+								SELECT 1 FROM tail_hash_lock_keys AS k
+								WHERE k.lock_hash IN (UPPER(earlier.body ->> 'hash'), UPPER(earlier.raw_payload #>> '{transaction,hash}')))
+					) AS t
+					WHERE type = %(hash_lock_type)s OR type_name::text = %(hash_lock_label)s
+						OR raw_payload #>> '{transaction,type}' = %(hash_lock_type)s::text
+				), aggregate_candidates AS (
+					SELECT *, UPPER(ENCODE(hash, 'hex')) AS lock_hash
+					FROM (
+						SELECT * FROM tail_events
+						UNION ALL
+						SELECT id, height, type, type_name, is_embedded, signer_public_key, signer_address, raw_payload, body, hash
+						FROM symbol_transactions AS earlier
+						WHERE height < %(height)s AND EXISTS (
+							SELECT 1 FROM tail_hash_lock_keys AS k
+							WHERE k.lock_hash IN (UPPER(ENCODE(earlier.hash, 'hex')), UPPER(earlier.raw_payload #>> '{meta,hash}')))
+					) AS t
+					WHERE type = %(aggregate_type)s OR type_name::text = %(aggregate_label)s
+						OR raw_payload #>> '{transaction,type}' = %(aggregate_type)s::text
+				), aggregates AS (
+					SELECT id, height, signer_address, signer_public_key, raw_payload, hash, lock_hash
+					FROM aggregate_candidates
+					WHERE type = %(aggregate_type)s AND type_name::text = %(aggregate_label)s AND NOT is_embedded
+						AND raw_payload #> '{transaction,type}' = to_jsonb(type) AND NOT ((raw_payload -> 'meta') ? 'aggregateHash')
+						AND octet_length(hash) = 32 AND jsonb_typeof(raw_payload #> '{meta,hash}') = 'string'
+						AND (raw_payload #>> '{meta,hash}') ~ '^[0-9A-Fa-f]{64}$'
+						AND UPPER(raw_payload #>> '{meta,hash}') = lock_hash
+				), proven_hash_locks AS (
+					SELECT id, height, signer_address, signer_public_key, raw_payload, body, lock_hash, hash AS transaction_hash
+					FROM creation_candidates
+					WHERE type = %(hash_lock_type)s AND type_name::text = %(hash_lock_label)s AND NOT is_embedded
+						AND raw_payload #> '{transaction,type}' = to_jsonb(type) AND NOT ((raw_payload -> 'meta') ? 'aggregateHash')
+						AND jsonb_typeof(body -> 'hash') = 'string' AND lock_hash ~ '^[0-9A-F]{64}$'
+						AND jsonb_typeof(raw_payload #> '{transaction,hash}') = 'string'
+						AND (raw_payload #>> '{transaction,hash}') ~ '^[0-9A-Fa-f]{64}$'
+						AND lock_hash = UPPER(raw_payload #>> '{transaction,hash}')
+						AND octet_length(signer_address) = 24
+						AND EXISTS (
+							SELECT 1 FROM symbol_transaction_addresses AS a
+							WHERE a.transaction_id = creation_candidates.id AND a.height = creation_candidates.height
+								AND a.role = 'signer' AND a.address = creation_candidates.signer_address)
+				), unique_lock_sources AS (
+					SELECT t.*, t.raw_payload #> '{meta,index}' AS source_index
+					FROM (
+						SELECT id, height, signer_address, signer_public_key, raw_payload, lock_hash FROM proven_hash_locks
+						UNION ALL
+						SELECT id, height, signer_address, signer_public_key, raw_payload, lock_hash FROM aggregates
+					) AS t
+					WHERE t.raw_payload #>> '{meta,height}' = t.height::text
+						AND (t.raw_payload #>> '{meta,index}') ~ '^[0-9]+$'
+						AND jsonb_typeof(t.raw_payload #> '{meta,index}') = 'number'
+						AND t.raw_payload #> '{meta,index}' < to_jsonb(2147483647)
+						AND 1 = (
+							SELECT COUNT(*) FROM symbol_transactions AS same_source
+							WHERE same_source.height = t.height AND NOT same_source.is_embedded
+								AND same_source.raw_payload #> '{meta,index}' = t.raw_payload #> '{meta,index}')
+				), creation_facts AS (
+					SELECT t.*, lock.body, lock.transaction_hash, m.mosaic_id, m.amount,
+						CASE WHEN lock.body -> 'duration' = t.raw_payload #> '{transaction,duration}'
+							AND (t.raw_payload #>> '{transaction,duration}') ~ '^[0-9]{1,20}$'
+							THEN t.height + (t.raw_payload #>> '{transaction,duration}')::numeric
+						END AS end_height
+					FROM unique_lock_sources AS t
+					JOIN proven_hash_locks AS lock ON lock.id = t.id
+					JOIN symbol_transaction_mosaics AS m ON m.transaction_id = t.id AND m.height = t.height
+						AND m.role = 'hash_lock' AND m.position = 0 AND m.mosaic_id ~ '^[0-7][0-9A-Fa-f]{15}$' AND m.amount > 0
+				), proven_creations AS (
+					SELECT t.*, r.id AS receipt_id
+					FROM creation_facts AS t
+					JOIN symbol_receipts AS r ON r.height = t.height AND r.receipt_type::text = %(hash_created_label)s
+						AND (r.raw_payload -> 'type' = to_jsonb(%(hash_created_type)s)
+							OR REGEXP_REPLACE(REGEXP_REPLACE(r.raw_payload ->> 'type', '(?<=[0-9])_(?=[0-9])', '', 'g'),
+								'^[[:space:]]*[+]?0*|[[:space:]]+$', '', 'g')
+								= %(hash_created_type)s::text)
+						AND r.source_primary_id > 0 AND r.source_secondary_id = 0
+						AND t.source_index = to_jsonb(r.source_primary_id::numeric - 1)
+						AND t.signer_address = r.target_address AND UPPER(t.mosaic_id) = UPPER(r.mosaic_id) AND t.amount = r.amount
+						AND jsonb_typeof(r.raw_payload -> 'targetAddress') = 'string'
+						AND UPPER(r.raw_payload ->> 'targetAddress') = UPPER(ENCODE(r.target_address, 'hex'))
+					WHERE 1 = (
+						SELECT COUNT(*) FROM symbol_receipts AS same_source
+						WHERE same_source.height = r.height AND same_source.receipt_type = r.receipt_type
+							AND same_source.source_primary_id = r.source_primary_id AND same_source.source_secondary_id = 0)
+						AND 1 = (
+							SELECT COUNT(*) FROM symbol_transaction_mosaics AS relation
+							WHERE relation.transaction_id = t.id AND relation.role = 'hash_lock' AND relation.position = 0)
+				), proven_lifetimes AS (
+					SELECT creation.*
+					FROM proven_creations AS creation
+					WHERE creation.end_height > creation.height AND creation.end_height <= %(max_end_height)s
+						AND jsonb_typeof(creation.raw_payload #> '{transaction,signerPublicKey}') = 'string'
+						AND octet_length(creation.signer_public_key) = 32
+						AND UPPER(creation.raw_payload #>> '{transaction,signerPublicKey}') = UPPER(ENCODE(creation.signer_public_key, 'hex'))
+				), receiptless_creations AS (
+					SELECT t.id, t.height, t.lock_hash, t.transaction_hash
+					FROM creation_facts AS t
+					JOIN symbol_blocks AS b ON b.height = t.height
+					WHERE %(allow_receiptless_creations)s AND t.height BETWEEN %(height)s AND %(replay_end)s
+						AND b.receipts_hash = %(zero_hash)s AND b.statements_count = 0
+						AND NOT EXISTS (SELECT 1 FROM symbol_receipts AS r WHERE r.height = t.height)
+						AND octet_length(t.transaction_hash) = 32
+						AND UPPER(t.raw_payload #>> '{meta,hash}') = UPPER(ENCODE(t.transaction_hash, 'hex'))
+						AND octet_length(t.signer_public_key) = 32
+						AND UPPER(t.raw_payload #>> '{transaction,signerPublicKey}') = UPPER(ENCODE(t.signer_public_key, 'hex'))
+						AND jsonb_typeof(t.raw_payload #> '{transaction,mosaicId}') = 'string'
+						AND t.body -> 'mosaicId' = t.raw_payload #> '{transaction,mosaicId}'
+						AND UPPER(t.raw_payload #>> '{transaction,mosaicId}') = UPPER(t.mosaic_id)
+						AND t.amount = CASE WHEN (t.raw_payload #>> '{transaction,amount}') ~ '^[0-9]{1,20}$'
+							THEN (t.raw_payload #>> '{transaction,amount}')::numeric END
+						AND t.end_height > t.height AND t.end_height <= %(max_end_height)s
+						AND 1 = (SELECT COUNT(*) FROM symbol_transaction_mosaics AS relation WHERE relation.transaction_id = t.id)
+						AND NOT EXISTS (
+							SELECT 1 FROM creation_candidates AS earlier WHERE earlier.height < %(height)s
+								AND t.lock_hash IN (earlier.lock_hash, UPPER(earlier.raw_payload #>> '{transaction,hash}')))
+						AND NOT EXISTS (
+							SELECT 1 FROM symbol_hash_locks AS current_lock
+							WHERE current_lock.hash = DECODE(t.lock_hash, 'hex') AND (
+								current_lock.updated_at_height < t.height OR
+								(current_lock.owner_address, UPPER(current_lock.mosaic_id), current_lock.amount,
+									current_lock.end_height, current_lock.status::text) IS DISTINCT FROM
+									(t.signer_address, UPPER(t.mosaic_id), t.amount, t.end_height, 'unused')))
+				), proven_aggregates AS (
+					SELECT t.id, t.height, t.lock_hash, t.source_index, creation.id AS creation_id,
+						creation.signer_address AS owner_address, creation.mosaic_id, creation.amount
+					FROM unique_lock_sources AS t
+					JOIN aggregates AS a ON a.id = t.id
+					CROSS JOIN LATERAL (
+						SELECT * FROM proven_lifetimes AS c
+						WHERE c.lock_hash = t.lock_hash AND (c.height, c.source_index) < (t.height, t.source_index)
+						ORDER BY c.height DESC, c.source_index DESC
+						LIMIT 1
+					) AS creation
+					WHERE octet_length(t.signer_address) = 24
+						AND t.height < creation.end_height
+						AND EXISTS (
+							SELECT 1 FROM symbol_transaction_addresses AS signer
+							WHERE signer.transaction_id = t.id AND signer.height = t.height
+								AND signer.role = 'signer' AND signer.address = t.signer_address)
+						AND NOT EXISTS (
+							SELECT 1 FROM creation_candidates AS candidate
+							LEFT JOIN unique_lock_sources AS source ON source.id = candidate.id
+							LEFT JOIN proven_lifetimes AS lifetime ON lifetime.id = candidate.id
+							WHERE lifetime.id IS NULL AND candidate.height <= t.height
+								AND t.lock_hash IN (candidate.lock_hash, UPPER(candidate.raw_payload #>> '{transaction,hash}'))
+								AND (candidate.height < t.height OR source.source_index IS NULL OR source.source_index <= t.source_index))
+						AND NOT EXISTS (
+							SELECT 1 FROM aggregate_candidates AS previous
+							LEFT JOIN unique_lock_sources AS source ON source.id = previous.id
+							WHERE previous.id <> t.id AND previous.height BETWEEN creation.height AND t.height
+								AND t.lock_hash IN (previous.lock_hash, UPPER(previous.raw_payload #>> '{meta,hash}'))
+								AND (previous.height > creation.height OR source.source_index IS NULL OR source.source_index > creation.source_index)
+								AND (previous.height < t.height OR source.source_index IS NULL OR source.source_index < t.source_index))
+						AND (t.height BETWEEN %(height)s AND %(replay_end)s AND EXISTS (SELECT 1 FROM incomplete_replay)
+							OR NOT EXISTS (
+							SELECT 1 FROM symbol_hash_locks AS current_lock WHERE current_lock.hash = a.hash
+								AND NOT EXISTS (
+									SELECT 1 FROM proven_lifetimes AS current_creation
+									WHERE current_creation.lock_hash = t.lock_hash
+										AND current_lock.owner_address = current_creation.signer_address
+										AND UPPER(current_lock.mosaic_id) = UPPER(current_creation.mosaic_id)
+										AND current_lock.amount = current_creation.amount
+										AND current_lock.end_height = current_creation.end_height)))
+				), proven_completions AS (
+					SELECT r.id AS receipt_id, t.id AS transaction_id, t.height, t.source_index, t.creation_id
+					FROM proven_aggregates AS t
+					JOIN symbol_receipts AS r ON r.height = t.height AND r.receipt_type::text = %(hash_completed_label)s
+						AND (r.raw_payload -> 'type' = to_jsonb(%(hash_completed_type)s)
+							OR REGEXP_REPLACE(REGEXP_REPLACE(r.raw_payload ->> 'type', '(?<=[0-9])_(?=[0-9])', '', 'g'),
+								'^[[:space:]]*[+]?0*|[[:space:]]+$', '', 'g')
+								= %(hash_completed_type)s::text)
+						AND r.source_primary_id > 0 AND r.source_secondary_id = 0
+						AND t.source_index = to_jsonb(r.source_primary_id::numeric - 1)
+						AND t.owner_address = r.target_address AND UPPER(t.mosaic_id) = UPPER(r.mosaic_id) AND t.amount = r.amount
+						AND jsonb_typeof(r.raw_payload -> 'targetAddress') = 'string'
+						AND UPPER(r.raw_payload ->> 'targetAddress') = UPPER(ENCODE(r.target_address, 'hex'))
+					WHERE 1 = (
+						SELECT COUNT(*) FROM symbol_receipts AS same_source
+						WHERE same_source.height = r.height AND same_source.receipt_type = r.receipt_type
+							AND same_source.source_primary_id = r.source_primary_id AND same_source.source_secondary_id = 0)
+				), unproven_reuses AS (
+					SELECT later.lock_hash, later.height, later.source_index
+					FROM (
+						SELECT lock_hash, height, source_index,
+							LAG(id) OVER (PARTITION BY lock_hash ORDER BY height, source_index) AS previous_id
+						FROM proven_lifetimes
+					) AS later
+					JOIN proven_lifetimes AS previous ON previous.id = later.previous_id
+					WHERE later.height < previous.end_height AND NOT EXISTS (
+						SELECT 1 FROM proven_completions AS completion WHERE completion.creation_id = previous.id
+							AND (completion.height, completion.source_index) < (later.height, later.source_index))
+				), proven_receipts AS (
+					SELECT receipt_id AS id FROM proven_creations
+					UNION ALL
+					SELECT receipt_id AS id FROM proven_completions
+				), proven_events AS (
+					SELECT id, lock_hash FROM proven_hash_locks WHERE height >= %(height)s
+					UNION ALL
+					SELECT t.id, t.lock_hash FROM proven_aggregates AS t WHERE t.height >= %(height)s
+						AND NOT EXISTS (
+							SELECT 1 FROM unproven_reuses AS reuse WHERE reuse.lock_hash = t.lock_hash
+								AND (reuse.height, reuse.source_index) < (t.height, t.source_index))
+				), affected_keys AS (
+					SELECT lock_hash FROM proven_events UNION SELECT lock_hash FROM retained_replay_keys
+				), shared_creations AS (
+					SELECT * FROM proven_lifetimes WHERE height <= %(common_height)s
+				), applicable_creations AS (
+					SELECT c.*, EXISTS (
+						SELECT 1 FROM proven_completions AS completion WHERE completion.creation_id = c.id
+							AND completion.height <= %(common_height)s AND completion.height < c.end_height) AS was_used
+					FROM shared_creations AS c
+					JOIN affected_keys AS k ON k.lock_hash = c.lock_hash
+					WHERE NOT EXISTS (
+						SELECT 1 FROM unproven_reuses AS reuse WHERE reuse.lock_hash = c.lock_hash AND reuse.height <= %(common_height)s)
+						AND NOT EXISTS (
+						SELECT 1 FROM aggregate_candidates AS candidate
+						LEFT JOIN unique_lock_sources AS source ON source.id = candidate.id
+						WHERE candidate.height BETWEEN c.height AND %(common_height)s
+							AND c.lock_hash IN (candidate.lock_hash, UPPER(candidate.raw_payload #>> '{meta,hash}'))
+							AND (candidate.height > c.height OR source.source_index IS NULL OR source.source_index > c.source_index)
+							AND NOT EXISTS (
+								SELECT 1 FROM proven_completions AS completion
+								WHERE completion.transaction_id = candidate.id AND completion.creation_id = c.id
+									AND completion.height < c.end_height))
+						AND NOT EXISTS (
+							SELECT 1 FROM creation_candidates AS candidate
+							LEFT JOIN unique_lock_sources AS source ON source.id = candidate.id
+							WHERE candidate.id <> c.id AND candidate.height BETWEEN c.height AND %(common_height)s
+								AND c.lock_hash IN (candidate.lock_hash, UPPER(candidate.raw_payload #>> '{transaction,hash}'))
+								AND (candidate.height > c.height OR source.source_index IS NULL OR source.source_index > c.source_index))
+				), pruning_heights AS (
+					SELECT k.lock_hash, COALESCE((
+						SELECT MAX(c.end_height) FROM shared_creations AS c WHERE c.lock_hash = k.lock_hash
+					), 0) AS finalized_height
+					FROM affected_keys AS k
+					WHERE NOT EXISTS (
+						SELECT 1 FROM creation_candidates AS candidate
+						LEFT JOIN shared_creations AS c ON c.id = candidate.id
+						WHERE candidate.height <= %(common_height)s AND c.id IS NULL
+							AND k.lock_hash IN (candidate.lock_hash, UPPER(candidate.raw_payload #>> '{transaction,hash}')))
+						AND (
+							EXISTS (SELECT 1 FROM applicable_creations AS c WHERE c.lock_hash = k.lock_hash)
+							OR NOT EXISTS (SELECT 1 FROM shared_creations AS c WHERE c.lock_hash = k.lock_hash))
+						AND NOT EXISTS (
+							SELECT 1 FROM aggregate_candidates AS candidate WHERE candidate.height <= %(common_height)s
+								AND k.lock_hash IN (candidate.lock_hash, UPPER(candidate.raw_payload #>> '{meta,hash}'))
+								AND NOT EXISTS (
+									SELECT 1 FROM proven_completions AS completion
+									JOIN shared_creations AS c ON c.id = completion.creation_id
+									WHERE completion.transaction_id = candidate.id AND completion.height < c.end_height))
+						AND NOT EXISTS (
+							SELECT 1 FROM symbol_hash_locks AS current_lock
+							WHERE current_lock.hash = DECODE(k.lock_hash, 'hex') AND NOT EXISTS (
+								SELECT 1 FROM proven_lifetimes AS c WHERE c.lock_hash = k.lock_hash
+									AND c.signer_address = current_lock.owner_address AND UPPER(c.mosaic_id) = UPPER(current_lock.mosaic_id)
+									AND c.amount = current_lock.amount AND c.end_height = current_lock.end_height)
+								AND NOT EXISTS (SELECT 1 FROM receiptless_creations AS c WHERE c.lock_hash = k.lock_hash))
 				)
+				SELECT ARRAY(SELECT lock_hash FROM affected_keys),
+					ARRAY(SELECT DISTINCT owner_address FROM proven_aggregates WHERE height >= %(height)s),
+					(SELECT JSONB_AGG(JSONB_BUILD_ARRAY(lock_hash, ENCODE(signer_address, 'hex'), UPPER(mosaic_id), amount, end_height, was_used))
+						FROM applicable_creations),
+					(SELECT JSONB_OBJECT_AGG(lock_hash, finalized_height) FROM pruning_heights),
+					EXISTS (SELECT 1 FROM incomplete_replay),
+					(SELECT JSONB_AGG(JSONB_BUILD_ARRAY(height, lock_hash, ENCODE(transaction_hash, 'hex'))) FROM receiptless_creations),
+					EXISTS (
+						SELECT 1 FROM tail_events AS t
+						WHERE NOT EXISTS (SELECT 1 FROM proven_events AS proven WHERE proven.id = t.id)
+						UNION ALL
+						SELECT 1 FROM proven_hash_locks AS lock WHERE %(allow_receiptless_creations)s AND lock.height >= %(height)s
+							AND NOT EXISTS (SELECT 1 FROM proven_lifetimes AS c WHERE c.id = lock.id)
+							AND NOT EXISTS (SELECT 1 FROM receiptless_creations AS c WHERE c.id = lock.id)
+						UNION ALL
+						SELECT 1 FROM symbol_receipts AS r WHERE r.height >= %(height)s
+							AND (r.receipt_type::text = ANY(%(receipt_labels)s)
+								OR (r.raw_payload -> 'type' = (%(receipt_codes)s::jsonb -> r.receipt_type::text)
+									OR REGEXP_REPLACE(REGEXP_REPLACE(r.raw_payload ->> 'type', '(?<=[0-9])_(?=[0-9])', '', 'g'),
+										'^[[:space:]]*[+]?0*|[[:space:]]+$', '', 'g')
+										= (%(receipt_codes)s::jsonb ->> r.receipt_type::text)) IS NOT TRUE)
+							AND NOT EXISTS (SELECT 1 FROM proven_receipts AS proven WHERE proven.id = r.id))
 				''',
-				(height, list(lock_transaction_types), height, list(lock_receipt_types)))
-			result = cursor.fetchone()[0]
+				{
+					'height': height,
+					'common_height': common_height,
+					'replay_end': replay_end,
+					'additional_keys': [key.hash.hex().upper() for key in additional_keys],
+					'allow_receiptless_creations': allow_receiptless_creations,
+					'zero_hash': bytes(32),
+					'max_end_height': (1 << 64) - 1,
+					'transaction_types': list(lock_transaction_types),
+					'raw_transaction_types': [str(transaction_type) for transaction_type in lock_transaction_types],
+					'transaction_labels': [TRANSACTION_TYPE_LABELS[transaction_type] for transaction_type in lock_transaction_types],
+					'hash_lock_type': TransactionType.HASH_LOCK.value,
+					'hash_lock_label': TRANSACTION_TYPE_LABELS[TransactionType.HASH_LOCK.value],
+					'aggregate_type': TransactionType.AGGREGATE_BONDED.value,
+					'aggregate_label': TRANSACTION_TYPE_LABELS[TransactionType.AGGREGATE_BONDED.value],
+					'receipt_codes': Json({label: code for code, label in RECEIPT_TYPE_LABELS.items()}),
+					'receipt_labels': [RECEIPT_TYPE_LABELS[receipt_type] for receipt_type in lock_receipt_types],
+					'hash_created_type': ReceiptType.LOCK_HASH_CREATED.value,
+					'hash_created_label': RECEIPT_TYPE_LABELS[ReceiptType.LOCK_HASH_CREATED.value],
+					'hash_completed_type': ReceiptType.LOCK_HASH_COMPLETED.value,
+					'hash_completed_label': RECEIPT_TYPE_LABELS[ReceiptType.LOCK_HASH_COMPLETED.value]
+				})
+			(hash_values, refund_owner_addresses, states, pruning_heights, has_incomplete_replay,
+				receiptless_creations, has_unproven_event) = cursor.fetchone()
 
-		return result
+		if has_unproven_event:
+			return None
+
+		pruning_heights = {create_hash_lock_key(value): end_height for value, end_height in (pruning_heights or {}).items()}
+		return RollbackHashLockEvidence(
+			{create_hash_lock_key(value) for value in hash_values},
+			{bytes(owner) for owner in refund_owner_addresses},
+			{(create_hash_lock_key(value), bytes.fromhex(owner), mosaic_id, amount, end_height, 'used' if was_used else 'unused')
+				for value, owner, mosaic_id, amount, end_height, was_used in states or ()},
+			{key for key, end_height in pruning_heights.items() if end_height <= finalized_height},
+			has_incomplete_replay,
+			MappingProxyType(pruning_heights),
+			frozenset(
+				(height, create_hash_lock_key(key), bytes.fromhex(transaction_hash))
+				for height, key, transaction_hash in receiptless_creations or ()))
+
+	def has_receiptless_lock_history_gap(self, through_height):
+		"""Checks retained transaction coverage required for receiptless Hash Lock creation evidence."""
+
+		with self._database_transaction() as cursor:
+			self._execute_reconciliation_statement(cursor, '''
+				WITH transaction_counts AS (
+					SELECT height, COUNT(*) FILTER (WHERE NOT is_embedded) AS top_level, COUNT(*) AS total
+					FROM symbol_transactions WHERE height <= %(height)s GROUP BY height
+				)
+				SELECT COUNT(*) <> %(height)s OR COALESCE(BOOL_OR(
+					(b.transactions_count, b.total_transactions_count) <> (COALESCE(t.top_level, 0), COALESCE(t.total, 0))
+					OR (b.transactions_count = 0) <> (b.transactions_hash = %(zero_hash)s)), false)
+				FROM symbol_blocks AS b LEFT JOIN transaction_counts AS t USING (height)
+				WHERE b.height BETWEEN 1 AND %(height)s
+			''', {'height': through_height, 'zero_hash': bytes(32)})
+			return cursor.fetchone()[0]
 
 	def has_artifact_state_gaps(self, height):
 		"""Checks whether orphaned artifact events lack current-state keys needed for refresh."""
@@ -2211,7 +3007,8 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			for receipt_type in (ReceiptType.NAMESPACE_EXPIRED, ReceiptType.NAMESPACE_DELETED))
 		mosaic_receipt_types = (RECEIPT_TYPE_LABELS[ReceiptType.MOSAIC_EXPIRED.value],)
 		with self._database_transaction() as cursor:
-			cursor.execute(
+			self._execute_reconciliation_statement(
+				cursor,
 				'''
 				SELECT EXISTS (
 					SELECT 1
@@ -2270,15 +3067,25 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		"""Deletes blocks from the supplied height for rollback repair."""
 
 		with self._database_transaction() as cursor:
+			self._execute_invalidate_reusable_tip(cursor, height)
 			self._delete_rollback_affected_rows_from_height(cursor, height)
 			self._stale_mark_account_refresh_state_if_needed(cursor, height)
 
 	def repair_rollback_from_height(self, height, sync_state, refresh_entries):
-		"""Repairs rollbacked chain and refreshed current state in one transaction."""
+		"""Atomically repairs the chain and current state, returning committed recovery state."""
 
+		committed_recovery = None
 		with self._database_transaction() as cursor:
+			recovery = sync_state.get('fork_recovery')
+			if recovery is not None:
+				if (sync_state['last_synced_height'] or 0) >= height:
+					raise ValueError('Symbol repair checkpoint must precede the deletion range')
+
+				self._execute_check_fork_checkpoint(cursor, sync_state, recovery)
+
+			self._execute_invalidate_reusable_tip(cursor, height)
 			self._delete_rollback_affected_rows_from_height(cursor, height)
-			self._stale_mark_account_refresh_state_if_needed(cursor, height)
+			self._stale_mark_account_refresh_state_if_needed(cursor, sync_state.get('generation_rollback_height', height))
 			self._execute_namespace_entries(cursor, refresh_entries.namespace_entries)
 			self._execute_mosaic_entries(cursor, refresh_entries.mosaic_entries)
 			self._execute_metadata_entries(cursor, refresh_entries.metadata_entries)
@@ -2286,7 +3093,13 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			self._execute_secret_lock_entries(cursor, refresh_entries.secret_lock_entries)
 			self._execute_mosaic_restriction_entries(cursor, refresh_entries.mosaic_restriction_entries)
 			self._execute_rollback_account_entries(cursor, refresh_entries.account_entries)
+			if recovery is not None:
+				# A repair only changes the reusable tip through the deletion range above.
+				committed_recovery = self._execute_apply_fork_checkpoint(cursor, recovery, should_publish_reusable_tip=False)
+
 			self._execute_upsert_sync_state(cursor, sync_state)
+
+		return committed_recovery
 
 	@staticmethod
 	def _delete_rollback_affected_rows_from_height(cursor, height):
@@ -2484,10 +3297,13 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			''',
 			(fork_height,))
 
-	def upsert_blocks(self, blocks):
-		"""Upserts Symbol block rows atomically."""
+	def upsert_blocks(self, blocks, *, expected_checkpoint=None):
+		"""Upserts block rows atomically and returns the written revision when guarded."""
 
 		with self._database_transaction() as cursor:
+			if expected_checkpoint is not None:
+				self._execute_lock_fork_checkpoint(cursor, expected_checkpoint)
+
 			for block in blocks:
 				cursor.execute(
 					'''
@@ -2587,3 +3403,9 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 						updated_at = CURRENT_TIMESTAMP
 					''',
 					block)
+
+			if expected_checkpoint is not None:
+				cursor.execute('SELECT block_revision FROM symbol_fork_recovery WHERE id = 1')
+				return cursor.fetchone()[0]
+
+		return None

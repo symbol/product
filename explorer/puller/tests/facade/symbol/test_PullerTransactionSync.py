@@ -10,15 +10,18 @@ from puller.facade.SymbolPuller import (
 	TRANSACTION_PAGE_FETCH_CONCURRENCY,
 	TransactionCountExpectation
 )
+from tests.test.SymbolBlockCommitmentTestUtils import seal_replacement_blocks
 from tests.test.SymbolDatabaseTestUtils import normalize_sync_state
 from tests.test.SymbolTestConstants import RECIPIENT_ADDRESS, SIGNER_ADDRESS
 
 from .puller_test_utils import (
 	NATIVE_MOSAIC_ID,
+	ChainInfoOverrideConnector,
 	FakeConnector,
 	SymbolPullerTestBase,
 	create_amount_statement_item,
 	create_embedded_node_transaction,
+	create_network_properties,
 	create_node_block,
 	create_node_transaction,
 	create_resolution_statement,
@@ -232,7 +235,7 @@ class FakeTransactionDatabase:
 	def __exit__(self, *_):
 		return None
 
-	def upsert_blocks(self, block_rows):
+	def upsert_blocks(self, block_rows, *, expected_checkpoint=None):  # pylint: disable=unused-argument
 		self.block_calls.append(block_rows)
 
 	def upsert_transactions_for_height(self, height, transaction_rows):
@@ -915,8 +918,8 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 				self.assertEqual({
 					'status': 'healthy',
 					'chain_height': 2,
-					'finalized_height': 1,
-					'finalized_hash': bytes.fromhex(f'{1:064X}'),
+					'finalized_height': None,
+					'finalized_hash': None,
 					'finalized_epoch': None,
 					'finalized_point': None,
 					'last_synced_height': 1,
@@ -952,8 +955,8 @@ class SymbolPullerTransactionSyncTest(SymbolPullerTestBase):
 		self.assertEqual({
 			'status': 'healthy',
 			'chain_height': 2,
-			'finalized_height': 1,
-			'finalized_hash': bytes.fromhex(f'{1:064X}'),
+			'finalized_height': None,
+			'finalized_hash': None,
 			'finalized_epoch': None,
 			'finalized_point': None,
 			'last_synced_height': 1,
@@ -1753,23 +1756,23 @@ class SymbolPullerTransactionAliasResolutionTest(SymbolPullerTestBase):
 			''')
 		self.assertEqual((ALIAS_ADDRESS, ALIAS_ADDRESS), cursor.fetchone())
 
-	def test_sync_block_headers_converges_to_same_resolved_rows_after_sync_state_reset(self):
+	def test_sync_block_headers_converges_to_same_resolved_rows_after_interrupted_checkpoint(self):
 		# Arrange:
-		connector = FakeConnector(
+		transactions = [create_node_transaction(1, recipientAddress=ALIAS_ADDRESS)]
+		address_resolutions = {1: [create_resolution_statement(1, ALIAS_ADDRESS, [_resolution_entry(1, 0, RESOLVED_ADDRESS)])]}
+		blocks = seal_replacement_blocks(
+			[create_node_block(1)], transactions=transactions, addresses_by_height=address_resolutions)
+		network_properties = create_network_properties()
+		network_properties['chain']['enableVerifiableReceipts'] = 'true'
+		connector = ChainInfoOverrideConnector(
 			1,
-			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
-			transactions_by_path={
-				transaction_path(1, 1): create_transaction_page([create_node_transaction(1, recipientAddress=ALIAS_ADDRESS)])
-			},
-			address_resolutions_by_height={
-				1: [create_resolution_statement(1, ALIAS_ADDRESS, [_resolution_entry(1, 0, RESOLVED_ADDRESS)])]
-			})
-		self._sync_with_connector(connector)
+			{0: blocks},
+			finalized_fields={'hash': blocks[0]['meta']['hash']},
+			network_properties=network_properties,
+			transactions_by_path={transaction_path(1, 1): create_transaction_page(transactions)},
+			address_resolutions_by_height=address_resolutions)
+		self._sync_until_interrupted_checkpoint(connector)
 		first_state = self._fetch_transaction_resolution_state()
-		cursor = self.puller.symbol_db.connection.cursor()
-		# Deleting sync state simulates a restart/watermark reset and forces the same height to be re-synced.
-		cursor.execute('DELETE FROM symbol_sync_state')
-		self.puller.symbol_db.connection.commit()
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -1778,7 +1781,10 @@ class SymbolPullerTransactionAliasResolutionTest(SymbolPullerTestBase):
 		self.assertEqual(first_state, self._fetch_transaction_resolution_state())
 		self.assertEqual([
 			resolution_path('address', 1),
-			resolution_path('address', 1)
+			resolution_path('address', 1),
+			resolution_path('mosaic', 1),
+			resolution_path('address', 1),
+			resolution_path('mosaic', 1)
 		], self._resolution_paths(connector))
 
 	def test_sync_block_headers_rejects_address_resolution_without_applicable_entry(self):

@@ -3,7 +3,7 @@ import json
 from enum import Enum
 
 from aiohttp import ClientSession, ClientTimeout, TCPConnector, client_exceptions
-from symbollightapi.model.Exceptions import HttpException, NodeException
+from symbollightapi.model.Exceptions import CorruptDataException, HttpException, NodeException
 from zenlog import log
 
 from puller.facade.async_utils import CONTROL_FLOW_EXCEPTIONS, log_cleanup_failure_safely, select_exception_by_priority
@@ -159,14 +159,18 @@ class SymbolPullerConnector:  # pylint: disable=too-many-instance-attributes
 				async with request as response:
 					try:
 						response_json = await response.json()
-					except (client_exceptions.ContentTypeError, json.decoder.JSONDecodeError) as ex:
+					except (client_exceptions.ContentTypeError, json.decoder.JSONDecodeError, UnicodeDecodeError) as ex:
+						if response.status < 400:
+							raise CorruptDataException('Malformed JSON from Symbol node') from ex
+
 						raise NodeException from ex
 
 					if 400 <= response.status and (404 != response.status or not_found_as_error):
 						error_message = f'HTTP request failed with code {response.status}'
-						for key in ('code', 'message'):
-							if key in response_json:
-								error_message += f'\n{response_json[key]}'
+						if isinstance(response_json, dict):
+							for key in ('code', 'message'):
+								if key in response_json:
+									error_message += f'\n{response_json[key]}'
 
 						raise HttpException(error_message, response.status)
 

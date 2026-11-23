@@ -10,6 +10,7 @@ from symbolchain.symbol.Network import Address
 from puller.model.symbol.Account import create_account_row
 from puller.model.symbol.Lock import create_hash_lock_key, create_hash_lock_row, create_secret_lock_row, create_secret_lock_search_key
 from puller.model.symbol.Receipt import create_receipt_rows
+from tests.test.SymbolBlockCommitmentTestUtils import seal_replacement_blocks
 from tests.test.SymbolDatabaseTestUtils import fetch_normalized_sync_state
 from tests.test.SymbolLockTestUtils import create_expected_secret_lock_row
 from tests.test.SymbolLockTestUtils import create_secret_lock_item as create_secret_lock_item_fixture
@@ -20,6 +21,7 @@ from tests.test.SymbolTestConstants import BENEFICIARY_ADDRESS, RECIPIENT_ADDRES
 
 from ...test.SymbolTransactionTestUtils import create_transaction_entry
 from .puller_test_utils import (
+	ChainInfoOverrideConnector,
 	FakeConnector,
 	SymbolPullerTestBase,
 	create_account_item,
@@ -79,7 +81,7 @@ def create_secret_lock_item(
 		**overrides)
 
 
-class LockConnector(FakeConnector):
+class LockConnector(ChainInfoOverrideConnector):
 	def __init__(self, *args, hash_responses=None, secret_responses=None, **kwargs):
 		if not args:
 			args = (1, {})
@@ -167,7 +169,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 
 	def _seed_complete_batch_state(self):
 		database = self.puller.symbol_db
-		self._seed_blocks(database, [1], {1: 'FF' * 32})
+		self._sync_with_connector(FakeConnector(1, {0: [create_node_block(1)]}, finalized_height=1))
 		database.upsert_transactions_for_height(1, [create_transaction_entry(
 			1,
 			'decoy',
@@ -206,21 +208,15 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		database.replace_secret_locks(
 			secret_key,
 			[create_secret_lock_row(create_secret_lock_item(status=1), 1)])
-		database.upsert_sync_state(create_sync_state(
-			chain_height=0,
-			finalized_height=0,
-			finalized_hash=b'',
-			finalized_epoch=0,
-			finalized_point=0,
-			last_synced_height=0,
-			last_synced_block_hash=b''))
+
+	def _seed_rollback_checkpoint(self):
+		orphaned_hash = '02' * 32
+		self._seed_blocks(self.puller.symbol_db, [1, 2], {2: orphaned_hash})
+		self.puller.symbol_db.upsert_sync_state(create_sync_state(
+			chain_height=2, last_synced_height=2, last_synced_block_hash=bytes.fromhex(orphaned_hash)))
 
 	def _seed_rollback_batch_state(self):
-		self._seed_blocks(self.puller.symbol_db, [1, 2], {2: b'local mismatch'.hex()})
-		self.puller.symbol_db.upsert_sync_state(create_sync_state(
-			chain_height=2,
-			last_synced_height=2,
-			last_synced_block_hash=bytes.fromhex('02' * 32)))
+		self._seed_rollback_checkpoint()
 		namespace_item = create_namespace_item(owner_address=SIGNER_ADDRESS)
 		seed_namespace(self.puller.symbol_db, namespace_item, {NAMESPACE_ROOT_ID: 'original'}, 1)
 		self.puller.symbol_db.upsert_mosaic(create_expected_mosaic_row(create_mosaic_item(supply='1234'), 1))
@@ -236,6 +232,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 	def _assert_sync_failure_preserves_complete_batch_state(self, connector, exception_type, error):
 		# Arrange:
 		self._seed_complete_batch_state()
+		connector.block_by_height[1] = create_node_block(1)
 		expected_state = self._fetch_complete_batch_state()
 
 		# Act / Assert:
@@ -367,21 +364,23 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 	def _assert_sync_rejects_malformed_hash_lock_response(self, response, expected_error):
 		# Arrange:
 		transaction = create_node_transaction(
-			1,
+			2,
 			transaction_hash='01' * 32,
 			type=TransactionType.HASH_LOCK.value,
 			hash=LOCK_HASH,
 			mosaicId=MOSAIC_ID,
 			amount='1234')
 		connector = LockConnector(
-			1,
-			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			2,
+			{1: [create_node_block(2, transactions_count=1, total_transactions_count=1)]},
 			hash_responses={'lock/hash/' + LOCK_HASH: response},
-			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
-			statement_pages={statement_path(1, 1): {'data': []}})
+			transactions_by_path={transaction_path(2, 2): create_transaction_page([transaction])},
+			statement_pages={statement_path(2, 2): {'data': []}})
 
 		# Act / Assert:
 		self._assert_sync_failure_preserves_complete_batch_state(connector, ValueError, expected_error)
+
+		self.assertEqual(['lock/hash/' + LOCK_HASH], [path for path in connector.paths if path.startswith('lock/')])
 
 	def test_sync_block_headers_rejects_non_dict_hash_lock_response(self):
 		self._assert_sync_rejects_malformed_hash_lock_response([], '^Malformed Symbol Hash Lock response$')
@@ -394,7 +393,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 	def _assert_sync_rejects_malformed_secret_lock_response(self, response, expected_error):
 		# Arrange:
 		transaction = create_node_transaction(
-			1,
+			2,
 			transaction_hash='01' * 32,
 			type=TransactionType.SECRET_LOCK.value,
 			secret=SECRET,
@@ -403,11 +402,11 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			amount='1234')
 		path = _secret_search_path(SIGNER_ADDRESS, SECRET)
 		connector = LockConnector(
-			1,
-			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			2,
+			{1: [create_node_block(2, transactions_count=1, total_transactions_count=1)]},
 			secret_responses={path: response},
-			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
-			statement_pages={statement_path(1, 1): {'data': []}})
+			transactions_by_path={transaction_path(2, 2): create_transaction_page([transaction])},
+			statement_pages={statement_path(2, 2): {'data': []}})
 
 		# Act / Assert:
 		self._assert_sync_failure_preserves_complete_batch_state(connector, ValueError, expected_error)
@@ -430,17 +429,17 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 	def _assert_sync_rejects_second_secret_lock_page(self, second_page_response, exception_type, error):
 		# Arrange:
 		transaction = create_node_transaction(
-			1, transaction_hash='01' * 32, type=TransactionType.SECRET_LOCK.value,
+			2, transaction_hash='01' * 32, type=TransactionType.SECRET_LOCK.value,
 			secret=SECRET, hashAlgorithm=1, mosaicId=MOSAIC_ID, amount='1234')
 		page_one = [create_secret_lock_item(composite_hash=f'{index + 1:064X}') for index in range(100)]
 		page_one_path = _secret_search_path(SIGNER_ADDRESS, SECRET)
 		page_two_path = _secret_search_path(SIGNER_ADDRESS, SECRET, 2)
 		connector = LockConnector(
-			1,
-			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			2,
+			{1: [create_node_block(2, transactions_count=1, total_transactions_count=1)]},
 			secret_responses={page_one_path: {'data': page_one}, page_two_path: second_page_response},
-			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
-			statement_pages={statement_path(1, 1): {'data': []}})
+			transactions_by_path={transaction_path(2, 2): create_transaction_page([transaction])},
+			statement_pages={statement_path(2, 2): {'data': []}})
 
 		# Act / Assert:
 		self._assert_sync_failure_preserves_complete_batch_state(connector, exception_type, error)
@@ -798,10 +797,16 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			type=TransactionType.HASH_LOCK.value,
 			hash=LOCK_HASH,
 			mosaicId=MOSAIC_ID,
-			amount='1234')
+			amount='1234',
+			duration='99')
+		hash_transaction['transaction'].pop('recipientAddress')
+		hash_transaction['transaction'].pop('mosaics')
+		blocks = seal_replacement_blocks([create_node_block(1)], transactions=[hash_transaction])
 		return LockConnector(
 			1,
-			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			{0: blocks},
+			block_by_height={1: blocks[0]},
+			finalized_fields={'hash': blocks[0]['meta']['hash']},
 			hash_responses={'lock/hash/' + LOCK_HASH: create_hash_lock_item()},
 			transactions_by_path={transaction_path(1, 1): create_transaction_page([hash_transaction])},
 			statement_pages={statement_path(1, 1): {'data': []}})
@@ -815,10 +820,15 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			secret=SECRET,
 			hashAlgorithm=1,
 			mosaicId=MOSAIC_ID,
-			amount='1234')
+			amount='1234',
+			duration='99')
+		secret_transaction['transaction'].pop('mosaics')
+		blocks = seal_replacement_blocks([create_node_block(1)], transactions=[secret_transaction])
 		return LockConnector(
 			1,
-			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			{0: blocks},
+			block_by_height={1: blocks[0]},
+			finalized_fields={'hash': blocks[0]['meta']['hash']},
 			secret_responses={_secret_search_path(SIGNER_ADDRESS, SECRET): {
 				'data': [create_secret_lock_item()]}},
 			transactions_by_path={transaction_path(1, 1): create_transaction_page([secret_transaction])},
@@ -898,12 +908,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		return hash_locks, secret_locks
 
 	def _seed_finalized_lock_state(self, end_height=2):
-		self._seed_blocks(self.puller.symbol_db, [1, 2])
-		self.puller.symbol_db.upsert_sync_state(create_sync_state(
-			chain_height=2,
-			finalized_height=1,
-			last_synced_height=2,
-			last_synced_block_hash=bytes.fromhex(f'{2:064X}')))
+		self._sync_with_connector(FakeConnector(2, {0: [create_node_block(1), create_node_block(2)]}, finalized_height=1))
 		self.puller.symbol_db.upsert_hash_lock(create_hash_lock_row(create_hash_lock_item(
 			endHeight=str(end_height)), 1))
 		secret_key = create_secret_lock_search_key(
@@ -946,6 +951,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		return LockConnector(
 			chain_height,
 			{},
+			block_by_height={height: create_node_block(height) for height in range(1, chain_height + 1)},
 			finalized_height=finalized_height,
 			hash_responses=hash_responses,
 			secret_responses=secret_responses)
@@ -1070,10 +1076,10 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		self.assertEqual(['lock/hash/' + LOCK_HASH, _secret_search_path(SIGNER_ADDRESS, SECRET)], [
 			path for path in second_connector.paths if path.startswith('lock/')])
 
-	def test_sync_block_headers_keeps_finalized_lock_and_sync_state_when_hash_fetch_fails(self):
+	def test_sync_block_headers_keeps_lock_rows_after_promotion_when_hash_fetch_fails(self):
 		# Arrange:
 		self._seed_finalized_lock_state()
-		original_state = self._fetch_complete_batch_state()
+		original_state = self._capture_preserved_state()
 		connector = self._finalization_connector(
 			hash_responses={'lock/hash/' + LOCK_HASH: RuntimeError('finalized hash fetch failed')},
 			secret_responses={_secret_search_path(SIGNER_ADDRESS, SECRET): {'data': []}})
@@ -1082,12 +1088,16 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		with self.assertRaisesRegex(RuntimeError, '^finalized hash fetch failed$'):
 			self._sync_with_connector(connector)
 
-		self.assertEqual(original_state, self._fetch_complete_batch_state())
+		self._assert_preserved_state(original_state, {
+			**original_state.sync_state, 'finalized_height': 2, 'finalized_hash': bytes.fromhex(f'{2:064X}'),
+			'finalized_epoch': 4, 'finalized_point': 5
+		})
+		self.assertEqual(2, self.puller.symbol_db.try_get_fork_recovery_state()['verified_height'])
 
-	def test_sync_block_headers_keeps_finalized_lock_and_sync_state_when_secret_fetch_fails(self):
+	def test_sync_block_headers_keeps_lock_rows_after_promotion_when_secret_fetch_fails(self):
 		# Arrange:
 		self._seed_finalized_lock_state()
-		original_state = self._fetch_complete_batch_state()
+		original_state = self._capture_preserved_state()
 		connector = self._finalization_connector(
 			hash_responses={'lock/hash/' + LOCK_HASH: create_hash_lock_item()},
 			secret_responses={_secret_search_path(SIGNER_ADDRESS, SECRET): RuntimeError('finalized secret fetch failed')})
@@ -1096,28 +1106,31 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		with self.assertRaisesRegex(RuntimeError, '^finalized secret fetch failed$'):
 			self._sync_with_connector(connector)
 
-		self.assertEqual(original_state, self._fetch_complete_batch_state())
+		self._assert_preserved_state(original_state, {
+			**original_state.sync_state, 'finalized_height': 2, 'finalized_hash': bytes.fromhex(f'{2:064X}'),
+			'finalized_epoch': 4, 'finalized_point': 5
+		})
+		self.assertEqual(2, self.puller.symbol_db.try_get_fork_recovery_state()['verified_height'])
 
 	def test_sync_block_headers_defers_finalization_cleanup_above_max_height_until_a_later_run(self):
 		# Arrange:
 		self._seed_finalized_lock_state(end_height=2)
 		deferred_hash_item = create_hash_lock_item(lock_hash=LOCK_HASH_2, endHeight='3')
 		self.puller.symbol_db.upsert_hash_lock(create_hash_lock_row(deferred_hash_item, 1))
+		before_locks = self._fetch_persisted_lock_state()
 		capped_connector = LockConnector(
 			3,
 			{},
 			block_by_height={2: create_node_block(2)},
-			finalized_height=3,
-			hash_responses={'lock/hash/' + LOCK_HASH: {'code': 'ResourceNotFound', 'message': 'not found'}},
-			secret_responses={_secret_search_path(SIGNER_ADDRESS, SECRET): {'data': []}})
+			finalized_height=3)
 
 		# Act:
 		self._sync_with_connector(capped_connector, max_height=2)
 
 		# Assert:
-		self.assertEqual(([create_hash_lock_row(deferred_hash_item, 1)], []), self._fetch_persisted_lock_state())
-		self.assertEqual(['lock/hash/' + LOCK_HASH, _secret_search_path(SIGNER_ADDRESS, SECRET)], [
-			path for path in capped_connector.paths if path.startswith('lock/')])
+		self.assertEqual(before_locks, self._fetch_persisted_lock_state())
+		self.assertEqual(1, self.puller.symbol_db.try_get_fork_recovery_state()['verified_height'])
+		self.assertEqual([], [path for path in capped_connector.paths if path.startswith('lock/')])
 
 		# Act:
 		uncapped_connector = LockConnector(
@@ -1125,15 +1138,21 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			{2: [create_node_block(3)]},
 			{2: create_node_block(2), 3: create_node_block(3)},
 			finalized_height=3,
-			hash_responses={'lock/hash/' + LOCK_HASH_2: {'code': 'ResourceNotFound', 'message': 'not found'}},
+			hash_responses={
+				'lock/hash/' + LOCK_HASH: {'code': 'ResourceNotFound', 'message': 'not found'},
+				'lock/hash/' + LOCK_HASH_2: {'code': 'ResourceNotFound', 'message': 'not found'}
+			},
+			secret_responses={_secret_search_path(SIGNER_ADDRESS, SECRET): {'data': []}},
 			transactions_by_path={transaction_path(3, 3): create_transaction_page([])},
 			statement_pages={statement_path(3, 3): {'data': []}})
 		self._sync_with_connector(uncapped_connector)
 
 		# Assert:
 		self.assertEqual(([], []), self._fetch_persisted_lock_state())
-		self.assertEqual(['lock/hash/' + LOCK_HASH_2], [
-			path for path in uncapped_connector.paths if path.startswith('lock/')])
+		self.assertEqual([
+			'lock/hash/' + LOCK_HASH, 'lock/hash/' + LOCK_HASH_2, _secret_search_path(SIGNER_ADDRESS, SECRET)
+		], [path for path in uncapped_connector.paths if path.startswith('lock/')])
+		self.assertEqual(3, self.puller.symbol_db.try_get_fork_recovery_state()['verified_height'])
 
 	def test_sync_block_headers_persists_a_hash_lock_without_an_aggregate_bonded_transaction(self):
 		# Arrange:
@@ -1185,10 +1204,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		# Arrange:
 		connector = self._create_hash_lock_sync_connector()
 		expected_lock_state = self._expected_persisted_hash_lock_state()
-		self._sync_with_connector(connector)
-		cursor = self.puller.symbol_db.connection.cursor()
-		cursor.execute('DELETE FROM symbol_sync_state')
-		self.puller.symbol_db.connection.commit()
+		self._sync_until_interrupted_checkpoint(connector)
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -1200,10 +1216,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		# Arrange:
 		connector = self._create_secret_lock_sync_connector()
 		expected_lock_state = self._expected_persisted_secret_lock_state()
-		self._sync_with_connector(connector)
-		cursor = self.puller.symbol_db.connection.cursor()
-		cursor.execute('DELETE FROM symbol_sync_state')
-		self.puller.symbol_db.connection.commit()
+		self._sync_until_interrupted_checkpoint(connector)
 
 		# Act:
 		self._sync_with_connector(connector)
@@ -1756,16 +1769,13 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 	def test_sync_block_headers_refreshes_a_rollback_affected_hash_lock_from_a_current_row_key(self):
 		# Arrange:
 		# The local block 2 hash differs from the node block 2 hash, which triggers rollback repair.
-		self._seed_blocks(self.puller.symbol_db, [1, 2], {2: b'local mismatch'.hex()})
-		self.puller.symbol_db.upsert_sync_state(create_sync_state(
-			chain_height=2,
-			last_synced_height=2,
-			last_synced_block_hash=bytes.fromhex('02' * 32)))
+		self._seed_rollback_checkpoint()
 		self.puller.symbol_db.upsert_hash_lock(create_hash_lock_row(create_hash_lock_item(), 2))
+		replacement_block, = seal_replacement_blocks([create_node_block(2)])
 		connector = LockConnector(
 			2,
-			{1: [create_node_block(2)]},
-			{2: create_node_block(2)},
+			{1: [replacement_block]},
+			{2: replacement_block},
 			hash_responses={'lock/hash/' + LOCK_HASH: create_hash_lock_item(status=1)},
 			transactions_by_path={transaction_path(2, 2): create_transaction_page([])},
 			statement_pages={statement_path(2, 2): {'data': []}})
@@ -1786,7 +1796,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		# Assert:
 		self.assertEqual(([expected_row], []), self._fetch_persisted_lock_state())
 		self.assertEqual([1, 2], self._fetch_block_heights(self.puller.symbol_db))
-		self.assertEqual(bytes.fromhex(f'{2:064X}'), self._fetch_block_hash(self.puller.symbol_db, 2))
+		replacement_hash = bytes.fromhex(replacement_block['meta']['hash'])
+		self.assertEqual(replacement_hash, self._fetch_block_hash(self.puller.symbol_db, 2))
 		self.assertEqual(create_sync_state(
 			chain_height=2,
 			finalized_height=1,
@@ -1794,7 +1805,7 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			finalized_epoch=4,
 			finalized_point=5,
 			last_synced_height=2,
-			last_synced_block_hash=bytes.fromhex(f'{2:064X}')),
+			last_synced_block_hash=replacement_hash),
 			fetch_normalized_sync_state(self.puller.symbol_db))
 		self.assertEqual(['lock/hash/' + LOCK_HASH], [
 			path for path in connector.paths if path.startswith('lock/')
@@ -1803,20 +1814,17 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 	def test_sync_block_headers_refreshes_a_rollback_affected_secret_lock_from_a_current_row_key(self):
 		# Arrange:
 		# The local block 2 hash differs from the node block 2 hash, which triggers rollback repair.
-		self._seed_blocks(self.puller.symbol_db, [1, 2], {2: b'local mismatch'.hex()})
-		self.puller.symbol_db.upsert_sync_state(create_sync_state(
-			chain_height=2,
-			last_synced_height=2,
-			last_synced_block_hash=bytes.fromhex('02' * 32)))
+		self._seed_rollback_checkpoint()
 		secret_key = create_secret_lock_search_key(
 			bytes.fromhex(SIGNER_ADDRESS), bytes.fromhex(RECIPIENT_ADDRESS), bytes.fromhex(SECRET), 'hash160')
 		self.puller.symbol_db.replace_secret_locks(
 			secret_key, [create_secret_lock_row(create_secret_lock_item(), 2)])
 		path = _secret_search_path(SIGNER_ADDRESS, SECRET)
+		replacement_block, = seal_replacement_blocks([create_node_block(2)])
 		connector = LockConnector(
 			2,
-			{1: [create_node_block(2)]},
-			{2: create_node_block(2)},
+			{1: [replacement_block]},
+			{2: replacement_block},
 			secret_responses={path: {'data': [create_secret_lock_item(status=1)]}},
 			transactions_by_path={transaction_path(2, 2): create_transaction_page([])},
 			statement_pages={statement_path(2, 2): {'data': []}})
@@ -1839,7 +1847,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		# Assert:
 		self.assertEqual(([], [expected_row]), self._fetch_persisted_lock_state())
 		self.assertEqual([1, 2], self._fetch_block_heights(self.puller.symbol_db))
-		self.assertEqual(bytes.fromhex(f'{2:064X}'), self._fetch_block_hash(self.puller.symbol_db, 2))
+		replacement_hash = bytes.fromhex(replacement_block['meta']['hash'])
+		self.assertEqual(replacement_hash, self._fetch_block_hash(self.puller.symbol_db, 2))
 		self.assertEqual(create_sync_state(
 			chain_height=2,
 			finalized_height=1,
@@ -1847,17 +1856,13 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			finalized_epoch=4,
 			finalized_point=5,
 			last_synced_height=2,
-			last_synced_block_hash=bytes.fromhex(f'{2:064X}')),
+			last_synced_block_hash=replacement_hash),
 			fetch_normalized_sync_state(self.puller.symbol_db))
 		self.assertEqual([path], [path for path in connector.paths if path.startswith('lock/')])
 
 	def test_sync_block_headers_deletes_fork_only_hash_and_secret_locks_from_current_row_keys(self):  # pylint: disable=too-many-locals
 		# Arrange:
-		self._seed_blocks(self.puller.symbol_db, [1, 2], {2: b'local mismatch'.hex()})
-		self.puller.symbol_db.upsert_sync_state(create_sync_state(
-			chain_height=2,
-			last_synced_height=2,
-			last_synced_block_hash=bytes.fromhex('02' * 32)))
+		self._seed_rollback_checkpoint()
 		survivor_hash_item = create_hash_lock_item()
 		fork_hash_item = create_hash_lock_item(lock_hash=LOCK_HASH_2)
 		self.puller.symbol_db.upsert_hash_lock(create_hash_lock_row(survivor_hash_item, 1))
@@ -1879,10 +1884,11 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			fork_secret_key, [create_secret_lock_row(fork_secret_item, 2)])
 		fork_hash_path = 'lock/hash/' + LOCK_HASH_2
 		fork_secret_path = _secret_search_path(other_owner, fork_secret)
+		replacement_block, = seal_replacement_blocks([create_node_block(2)])
 		connector = LockConnector(
 			2,
-			{1: [create_node_block(2)]},
-			{2: create_node_block(2)},
+			{1: [replacement_block]},
+			{2: replacement_block},
 			hash_responses={fork_hash_path: {'code': 'ResourceNotFound', 'message': 'not found'}},
 			secret_responses={fork_secret_path: {'data': []}},
 			transactions_by_path={transaction_path(2, 2): create_transaction_page([])},
@@ -1912,7 +1918,8 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		self.assertEqual([fork_hash_path, fork_secret_path], [
 			path for path in connector.paths if path.startswith('lock/')])
 		self.assertEqual([1, 2], self._fetch_block_heights(self.puller.symbol_db))
-		self.assertEqual(bytes.fromhex(f'{2:064X}'), self._fetch_block_hash(self.puller.symbol_db, 2))
+		replacement_hash = bytes.fromhex(replacement_block['meta']['hash'])
+		self.assertEqual(replacement_hash, self._fetch_block_hash(self.puller.symbol_db, 2))
 		self.assertEqual(create_sync_state(
 			chain_height=2,
 			finalized_height=1,
@@ -1920,17 +1927,18 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			finalized_epoch=4,
 			finalized_point=5,
 			last_synced_height=2,
-			last_synced_block_hash=bytes.fromhex(f'{2:064X}')),
+			last_synced_block_hash=replacement_hash),
 			fetch_normalized_sync_state(self.puller.symbol_db))
 
 	def test_sync_block_headers_keeps_all_rollback_state_unchanged_when_hash_lock_replacement_fetch_fails(self):
 		# Arrange:
 		self._seed_rollback_batch_state()
 		original_state = self._capture_preserved_state()
+		replacement_block, = seal_replacement_blocks([create_node_block(2)])
 		connector = LockConnector(
 			2,
-			{1: [create_node_block(2)]},
-			{2: create_node_block(2)},
+			{1: [replacement_block]},
+			{2: replacement_block},
 			hash_responses={'lock/hash/' + LOCK_HASH: RuntimeError('rollback lock fetch failed')})
 
 		# Act / Assert:
@@ -1947,10 +1955,11 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 		self._seed_rollback_batch_state()
 		original_state = self._capture_preserved_state()
 		secret_path = _secret_search_path(SIGNER_ADDRESS, SECRET)
+		replacement_block, = seal_replacement_blocks([create_node_block(2)])
 		connector = LockConnector(
 			2,
-			{1: [create_node_block(2)]},
-			{2: create_node_block(2)},
+			{1: [replacement_block]},
+			{2: replacement_block},
 			hash_responses={'lock/hash/' + LOCK_HASH: create_hash_lock_item()},
 			secret_responses={secret_path: RuntimeError('rollback secret lock fetch failed')})
 
@@ -1966,27 +1975,29 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 	def test_sync_block_headers_does_not_partially_write_when_lock_fetch_fails(self):
 		# Arrange:
 		transaction = create_node_transaction(
-			1,
+			2,
 			transaction_hash='01' * 32,
 			type=TransactionType.HASH_LOCK.value,
 			hash=LOCK_HASH,
 			mosaicId=MOSAIC_ID,
 			amount='1234')
 		connector = LockConnector(
-			1,
-			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			2,
+			{1: [create_node_block(2, transactions_count=1, total_transactions_count=1)]},
 			hash_responses={'lock/hash/' + LOCK_HASH: RuntimeError('lock fetch failed')},
-			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
-			statement_pages={statement_path(1, 1): {'data': []}})
+			transactions_by_path={transaction_path(2, 2): create_transaction_page([transaction])},
+			statement_pages={statement_path(2, 2): {'data': []}})
 
 		# Act / Assert:
 		self._assert_sync_failure_preserves_complete_batch_state(
 			connector, RuntimeError, '^lock fetch failed$')
 
+		self.assertEqual(['lock/hash/' + LOCK_HASH], [path for path in connector.paths if path.startswith('lock/')])
+
 	def test_sync_block_headers_does_not_partially_write_when_secret_lock_fetch_fails(self):
 		# Arrange:
 		transaction = create_node_transaction(
-			1,
+			2,
 			transaction_hash='01' * 32,
 			type=TransactionType.SECRET_LOCK.value,
 			secret=SECRET,
@@ -1995,32 +2006,34 @@ class SymbolPullerLocksTest(SymbolPullerTestBase):
 			amount='1234')
 		path = _secret_search_path(SIGNER_ADDRESS, SECRET)
 		connector = LockConnector(
-			1,
-			{0: [create_node_block(1, transactions_count=1, total_transactions_count=1)]},
+			2,
+			{1: [create_node_block(2, transactions_count=1, total_transactions_count=1)]},
 			secret_responses={path: RuntimeError('secret lock fetch failed')},
-			transactions_by_path={transaction_path(1, 1): create_transaction_page([transaction])},
-			statement_pages={statement_path(1, 1): {'data': []}})
+			transactions_by_path={transaction_path(2, 2): create_transaction_page([transaction])},
+			statement_pages={statement_path(2, 2): {'data': []}})
 
 		# Act / Assert:
 		self._assert_sync_failure_preserves_complete_batch_state(
 			connector, RuntimeError, '^secret lock fetch failed$')
 
+		self.assertEqual([path], [request_path for request_path in connector.paths if request_path.startswith('lock/')])
+
 	def test_sync_block_headers_does_not_write_a_successful_hash_lock_when_a_later_secret_lock_fetch_fails(self):
 		# Arrange:
 		hash_transaction = create_node_transaction(
-			1, transaction_hash='01' * 32, type=TransactionType.HASH_LOCK.value,
+			2, transaction_hash='01' * 32, type=TransactionType.HASH_LOCK.value,
 			hash=LOCK_HASH, mosaicId=MOSAIC_ID, amount='1234')
 		secret_transaction = create_node_transaction(
-			1, transaction_hash='02' * 32, type=TransactionType.SECRET_LOCK.value,
+			2, transaction_hash='02' * 32, type=TransactionType.SECRET_LOCK.value,
 			secret=SECRET, hashAlgorithm=1, mosaicId=MOSAIC_ID, amount='1234')
 		secret_path = _secret_search_path(SIGNER_ADDRESS, SECRET)
 		connector = LockConnector(
-			1,
-			{0: [create_node_block(1, transactions_count=2, total_transactions_count=2)]},
+			2,
+			{1: [create_node_block(2, transactions_count=2, total_transactions_count=2)]},
 			hash_responses={'lock/hash/' + LOCK_HASH: create_hash_lock_item()},
 			secret_responses={secret_path: RuntimeError('secret lock fetch failed')},
-			transactions_by_path={transaction_path(1, 1): create_transaction_page([hash_transaction, secret_transaction])},
-			statement_pages={statement_path(1, 1): {'data': []}})
+			transactions_by_path={transaction_path(2, 2): create_transaction_page([hash_transaction, secret_transaction])},
+			statement_pages={statement_path(2, 2): {'data': []}})
 
 		# Act / Assert:
 		self._assert_sync_failure_preserves_complete_batch_state(
