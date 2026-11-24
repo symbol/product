@@ -734,6 +734,26 @@ def test_preserves_saved_messages(message_type, type_id):
 	assert [{'message': {'type': type_id, 'payload': 'FF'}}] == record.payload
 
 
+def test_keeps_saved_message_first():
+	# Arrange:
+	transaction = _create_confirmed_transaction(body={
+		'version': 1,
+		'signature': 'CD' * 64,
+		'message': '01424F4459',
+		'mosaics': [{'id': 'FEDCBA9876543210', 'amount': '999'}],
+		'customField': 'value',
+	})
+
+	# Act:
+	record = create_confirmed_record(transaction, (), NATIVE_MOSAIC_INFO)
+
+	# Assert:
+	assert [
+		{'message': {'type': 0, 'payload': '4869'}},
+		{'customField': 'value'},
+	] == record.payload
+
+
 @pytest.mark.parametrize('message_payload,expected_payload', [
 	(None, []),
 	('', [{'message': {'type': 0, 'payload': ''}}]),

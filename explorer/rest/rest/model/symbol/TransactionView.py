@@ -75,18 +75,19 @@ def create_confirmed_record(transaction, mosaics, native_mosaic_info):  # pylint
 		version = body_map['version']
 		signature = None if is_embedded else body_map['signature']
 		payload_map = dict(body_map)
+		payload = []
 
 		if transaction_type == TransactionType.TRANSFER:
 			# Dedicated columns and resolved mosaic relations own confirmed transfer display.
 			payload_map.pop('message', None)
 			payload_map.pop('mosaics', None)
-		payload, _ = create_transaction_payload(payload_map, transaction_type)
+			if message_payload is not None:
+				payload.append({'message': {
+					'type': MESSAGE_TYPE_ID_MAP.get(message_type),
+					'payload': message_payload,
+				}})
 
-		if transaction_type == TransactionType.TRANSFER and message_payload is not None:
-			payload.insert(0, {'message': {
-				'type': MESSAGE_TYPE_ID_MAP.get(message_type),
-				'payload': message_payload,
-			}})
+		payload.extend(create_transaction_payload(payload_map, transaction_type)[0])
 
 		return TransactionViewRecord(
 			transaction_hash=None if is_embedded else bytes(transaction_hash).hex().upper(),
@@ -169,12 +170,15 @@ def create_transaction_payload(transaction_map, transaction_type):
 def resolve_transaction_mosaics(mosaics, mosaic_divisibility_map):
 	"""Attaches current resolved IDs and divisibilities to pending transaction mosaics."""
 
-	resolved_mosaics = []
-	for mosaic in mosaics:
-		resolved_id, divisibility = mosaic_divisibility_map.get(mosaic.mosaic_id, (mosaic.mosaic_id, None))
-		resolved_mosaics.append(TransactionMosaicRecord(resolved_id, mosaic.amount, divisibility))
-
-	return tuple(resolved_mosaics)
+	return tuple(
+		TransactionMosaicRecord(
+			resolved_id,
+			mosaic.amount,
+			divisibility,
+		)
+		for mosaic in mosaics
+		for resolved_id, divisibility in (mosaic_divisibility_map.get(mosaic.mosaic_id, (mosaic.mosaic_id, None)),)
+	)
 
 
 def _format_payload_addresses(payload_map, transaction_type):

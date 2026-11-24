@@ -27,6 +27,8 @@ from .DatabaseConnection import DatabaseConnectionPool
 from .SymbolDatabaseCommon import SymbolDataUnavailable, bytes_or_none, is_non_public_state, try_get_readable_height
 from .SymbolTransactionDetail import SymbolTransactionDetailMixin
 
+AGGREGATE_TYPE_IDS = tuple(transaction_type.value for transaction_type in AGGREGATE_TYPES)
+
 BLOCK_COLUMNS = '''
 	height,
 	hash,
@@ -389,8 +391,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 				if not transaction_rows:
 					return []
 
-				aggregate_type_ids = tuple(transaction_type.value for transaction_type in AGGREGATE_TYPES)
-				aggregate_hashes = [bytes(row[1]) for row in transaction_rows if not row[2] and row[6] in aggregate_type_ids]
+				aggregate_hashes = [bytes(row[1]) for row in transaction_rows if not row[2] and row[6] in AGGREGATE_TYPE_IDS]
 				embedded_transaction_rows = self._fetch_embedded_transactions(cursor, aggregate_hashes)
 
 				all_rows_by_id_map = {row[0]: row for row in (*transaction_rows, *embedded_transaction_rows)}
@@ -1101,6 +1102,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 		for row in transaction_mosaic_rows:
 			if row[3] != 'transfer':
 				continue
+
 			normalized_id = normalize_mosaic_id(row[1])
 			divisibility = (
 				self.native_mosaic_info.divisibility
@@ -1236,8 +1238,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 			if record.transaction_type in AGGREGATE_TYPES:
 				aggregate_hashes.add(record.transaction_hash)
 
-			for mosaic in record.mosaics:
-				mosaic_ids_map[mosaic.mosaic_id] = None
+			mosaic_ids_map.update({mosaic.mosaic_id: None for mosaic in record.mosaics})
 
 		mosaic_divisibility_map = self.get_mosaic_divisibility(list(mosaic_ids_map), self.native_mosaic_info)
 
