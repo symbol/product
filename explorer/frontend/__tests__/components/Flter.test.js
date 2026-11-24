@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import Filter from '@/app/components/Filter';
-import { TRANSACTION_TYPE } from '@/app/constants';
 import * as utils from '@/app/utils';
+import { TRANSACTION_TYPE } from '@/variant/transaction/transaction-types';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 jest.mock('@/app/utils', () => {
@@ -341,8 +341,8 @@ describe('Filter', () => {
 			const shouldUseSearch = false;
 			const filterToPress = 'filter_type';
 			const expectedTextList = [
-				`transactionType_${TRANSACTION_TYPE.TRANSFER}`,
-				`transactionType_${TRANSACTION_TYPE.NAMESPACE_REGISTRATION}`
+				'transactionType_transfer',
+				'transactionType_namespaceRegistration'
 			];
 			const searchResponse = null;
 

@@ -12,9 +12,10 @@ import {
 } from '../test-utils/page';
 import * as StatsService from '@/app/api/stats';
 import * as TransactionService from '@/app/api/transactions';
-import { STORAGE_KEY, TRANSACTION_TYPE } from '@/app/constants';
+import { STORAGE_KEY } from '@/app/constants';
 import TransactionList, { getServerSideProps } from '@/app/pages/transactions';
 import { truncateString } from '@/app/utils';
+import { TRANSACTION_TYPE } from '@/variant/transaction/transaction-types';
 import { render } from '@testing-library/react';
 
 // Mocks
@@ -60,7 +61,7 @@ const SCREEN_TEXT = {
 	tableFieldRecipient: 'table_field_recipient',
 	tableFieldValue: 'table_field_value',
 	tableFieldFee: 'table_field_fee',
-	typeTransfer: 'transactionType_TRANSFER'
+	typeTransfer: 'transactionType_transfer'
 };
 
 const mockedChartText = 'Mocked React ApexCharts';

@@ -58,7 +58,7 @@ export default defineConfig([
 	{
 		// Disallow direct import of the specific variant in the common code. 
 		// Instead, allow only the active (current) variant import via '@/variant/*'.
-		files: ['api/**', 'components/**', 'config/**', 'constants/**', 'contexts/**', 'contract/**', 'pages/**', 'utils/**'],
+		files: ['api/**', 'components/**', 'config/**', 'constants/**', 'contexts/**', 'contract/**', 'lib/**', 'pages/**', 'utils/**'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				patterns: [{

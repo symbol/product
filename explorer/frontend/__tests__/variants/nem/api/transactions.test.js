@@ -35,8 +35,9 @@ import {
 import { transactionListConfirmed } from '../../../../__fixtures__/local/transaction-list-confirmed';
 import { transactionListUnconfirmed } from '../../../../__fixtures__/local/transaction-list-unconfirmed';
 import { error404Response, runApiRequestTests, runApiResultTests } from '../../../test-utils/api';
-import { TRANSACTION_DIRECTION, TRANSACTION_GROUP, TRANSACTION_TYPE } from '@/app/constants';
+import { TRANSACTION_DIRECTION, TRANSACTION_GROUP } from '@/app/constants';
 import { fetchTransactionInfo, fetchTransactionPage } from '@/app/variants/nem/api/transactions';
+import { TRANSACTION_TYPE } from '@/app/variants/nem/transaction/transaction-types';
 
 // Mocks
 

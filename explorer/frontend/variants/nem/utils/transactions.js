@@ -1,5 +1,6 @@
 import { NEM_MESSAGE_TYPE, NEM_TRANSACTION_GROUP } from '../constants';
-import { MESSAGE_TYPE, TRANSACTION_TYPE } from '@/app/constants';
+import { TRANSACTION_TYPE } from '../transaction/transaction-types';
+import { MESSAGE_TYPE } from '@/app/constants';
 import { decodeTransactionMessage } from '@/app/utils/common';
 
 /**

@@ -26,7 +26,7 @@ import ValueTransactionDirection from '@/app/components/ValueTransactionDirectio
 import ValueTransactionHash from '@/app/components/ValueTransactionHash';
 import ValueTransactionType from '@/app/components/ValueTransactionType';
 import config from '@/app/config';
-import { STORAGE_KEY, TRANSACTION_TYPE } from '@/app/constants';
+import { STORAGE_KEY } from '@/app/constants';
 import styles from '@/app/styles/pages/AccountInfo.module.scss';
 import {
 	formatHarvestedBlockCSV,
@@ -38,6 +38,7 @@ import {
 	useUserCurrencyAmount
 } from '@/app/utils';
 import { accountInfoPageConfig } from '@/variant/config/account-info-page-config';
+import { TRANSACTION_TYPE } from '@/variant/transaction/transaction-types';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';

@@ -100,6 +100,7 @@ export const requiredAssets = [
 		names: [
 			'account-multisig.svg',
 			'aggregate.svg',
+			'default.svg',
 			'key.svg',
 			'mosaic-creation.svg',
 			'mosaic.svg',

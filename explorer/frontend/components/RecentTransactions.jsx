@@ -6,12 +6,13 @@ import ValueTransactionHash from './ValueTransactionHash';
 import { TRANSACTION_GROUP } from '@/app/constants';
 import styles from '@/app/styles/components/RecentTransactions.module.scss';
 import { createAssetURL } from '@/app/utils';
+import { getTransactionTypeInfo } from '@/variant/transaction/transaction-types';
 import { isTransactionAwaitingSignatures } from '@/variant/utils/transactions';
 import { useTranslation } from 'next-i18next';
 
 const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, blockTime }) => {
 	const { t } = useTranslation();
-	const typeText = t(`transactionType_${type}`);
+	const typeText = t(getTransactionTypeInfo(type).localeKey);
 	const labelSenderText = t('table_field_sender');
 	const isUnconfirmed = group !== TRANSACTION_GROUP.CONFIRMED;
 	const isAwaitingSignatures = isTransactionAwaitingSignatures({ type, group });

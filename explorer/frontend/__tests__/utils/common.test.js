@@ -450,7 +450,7 @@ describe('utils/common', () => {
 			const dataRow = transactionPageResult.data.find(item =>
 				item.hash === '455DEFE751CBD146A094F4717219E6687ED49A838D028D95E4C5F52938E0B285');
 			const expectedResult = {
-				translated_table_field_type: 'translated_transactionType_TRANSFER',
+				translated_table_field_type: 'translated_transactionType_transfer',
 				translated_table_field_sender: 'NBFQ6XFBKB3DHJCFDKCMJI5MZ53HFQ56AKDLY4JK',
 				translated_table_field_recipient: 'NBAPJNCPMLPRB3L76GCMO42XRAG4WKYFWMDULIKM',
 				translated_table_field_amount: 196.998614,

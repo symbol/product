@@ -7,9 +7,10 @@ import ValueAccount from '@/app/components/ValueAccount';
 import ValueMosaic from '@/app/components/ValueMosaic';
 import ValueNamespace from '@/app/components/ValueNamespace';
 import ValueTransactionType from '@/app/components/ValueTransactionType';
-import { KEY_LINK_ACTION, MESSAGE_TYPE, SUPPLY_CHANGE_ACTION, TRANSACTION_TYPE } from '@/app/constants';
+import { KEY_LINK_ACTION, MESSAGE_TYPE, SUPPLY_CHANGE_ACTION } from '@/app/constants';
 import styles from '@/app/styles/components/TransactionGraphic.module.scss';
 import { createAssetURL } from '@/app/utils';
+import { TRANSACTION_TYPE } from '@/variant/transaction/transaction-types';
 import { useTranslation } from 'next-i18next';
 
 const TransactionGraphic = ({ transactions }) => {
@@ -19,7 +20,7 @@ const TransactionGraphic = ({ transactions }) => {
 		switch (transactionType) {
 		case TRANSACTION_TYPE.TRANSFER:
 			return t('field_recipient');
-		case TRANSACTION_TYPE.MOSAIC_CREATION:
+		case TRANSACTION_TYPE.MOSAIC_DEFINITION:
 		case TRANSACTION_TYPE.NAMESPACE_REGISTRATION:
 			return t('field_sink');
 		case TRANSACTION_TYPE.MOSAIC_SUPPLY_CHANGE:

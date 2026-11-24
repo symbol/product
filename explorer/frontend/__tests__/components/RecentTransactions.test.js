@@ -1,7 +1,8 @@
 import '@testing-library/jest-dom';
 import { itVariant } from '../test-utils/variants';
 import RecentTransactions from '@/app/components/RecentTransactions';
-import { TRANSACTION_GROUP, TRANSACTION_TYPE } from '@/app/constants';
+import { TRANSACTION_GROUP } from '@/app/constants';
+import { TRANSACTION_TYPE } from '@/variant/transaction/transaction-types';
 import { render, screen } from '@testing-library/react';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en.json';
@@ -44,7 +45,7 @@ describe('components/RecentTransactions', () => {
 		runUnconfirmedTest(TRANSACTION_TYPE.MULTISIG, 'label_awaitingCosignatures', /value_transactionConfirmationTime/);
 	});
 
-	it('shows no pending status for confirmed transactions', () => {
+	itVariant('nem')('shows no pending status for confirmed transactions', () => {
 		// Arrange:
 		const data = [{ ...baseTransaction, type: TRANSACTION_TYPE.MULTISIG, group: TRANSACTION_GROUP.CONFIRMED }];
 

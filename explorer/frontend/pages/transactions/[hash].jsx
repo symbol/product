@@ -12,9 +12,10 @@ import ValueCopy from '@/app/components/ValueCopy';
 import ValueLabel from '@/app/components/ValueLabel';
 import ValueMosaic from '@/app/components/ValueMosaic';
 import ValueTransactionType from '@/app/components/ValueTransactionType';
-import { STORAGE_KEY, TRANSACTION_GROUP, TRANSACTION_TYPE } from '@/app/constants';
+import { STORAGE_KEY, TRANSACTION_GROUP, TRANSACTION_KIND } from '@/app/constants';
 import styles from '@/app/styles/pages/TransactionInfo.module.scss';
 import { nullableValueToText, numberToShortString, truncateDecimals, useStorage, useUserCurrencyAmount } from '@/app/utils';
+import { getTransactionTypeInfo } from '@/variant/transaction/transaction-types';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -41,10 +42,12 @@ const TransactionInfo = ({ transactionInfo }) => {
 	const [userCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'USD');
 	const amountInUserCurrency = useUserCurrencyAmount(fetchPriceByDate, transactionInfo.amount, userCurrency, transactionInfo.timestamp);
 	const amountInUserCurrencyText = numberToShortString(truncateDecimals(amountInUserCurrency, 2));
-	const isAccountStateChangeSectionShown =
-		transactionInfo.type === TRANSACTION_TYPE.TRANSFER || transactionInfo.type === TRANSACTION_TYPE.MULTISIG;
-	const isSignaturesSectionShown = transactionInfo.type === TRANSACTION_TYPE.MULTISIG;
-	const isFeesBreakdownSectionShown = transactionInfo.type === TRANSACTION_TYPE.MULTISIG;
+	const { kind, localeKey } = getTransactionTypeInfo(transactionInfo.type);
+	const isTransfer = kind === TRANSACTION_KIND.TRANSFER;
+	const isAggregate = kind === TRANSACTION_KIND.AGGREGATE;
+	const isAccountStateChangeSectionShown = isTransfer || isAggregate;
+	const isSignaturesSectionShown = isAggregate;
+	const isFeesBreakdownSectionShown = isAggregate;
 
 	const accountStateTableColumns = [
 		{
@@ -112,7 +115,7 @@ const TransactionInfo = ({ transactionInfo }) => {
 	return (
 		<div className={styles.wrapper}>
 			<Head>
-				<title>{t('page_transactionInfo', { type: transactionInfo.type })}</title>
+				<title>{t('page_transactionInfo', { type: t(localeKey) })}</title>
 			</Head>
 			<div className="layout-section-row">
 				<Section title={t('section_transaction')} className={styles.firstSection} cardClassName={styles.firstSectionCard}>

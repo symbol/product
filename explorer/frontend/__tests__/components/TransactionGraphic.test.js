@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import TransactionGraphic from '@/app/components/TransactionGraphic';
-import { MESSAGE_TYPE, TRANSACTION_TYPE } from '@/app/constants';
+import { MESSAGE_TYPE } from '@/app/constants';
+import { TRANSACTION_TYPE } from '@/variant/transaction/transaction-types';
 import { render, screen } from '@testing-library/react';
 
 describe('components/TransactionGraphic', () => {

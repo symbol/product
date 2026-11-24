@@ -1,7 +1,8 @@
 import { NEM_TRANSACTION_GROUP } from '../constants';
+import { TRANSACTION_TYPE } from '../transaction/transaction-types';
 import { formatTransferMessage } from '../utils/transactions';
 import config from '@/app/config';
-import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTION_DIRECTION, TRANSACTION_TYPE } from '@/app/constants';
+import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTION_DIRECTION } from '@/app/constants';
 import { truncateDecimals } from '@/app/utils/common';
 import {
 	createApiUrl,
@@ -124,7 +125,7 @@ const transactionFromDTO = (data, filter = {}) => {
 	switch (data.transactionType) {
 	case TRANSACTION_TYPE.TRANSFER:
 		return formatTransferTransaction(data, filter);
-	case TRANSACTION_TYPE.MOSAIC_CREATION:
+	case TRANSACTION_TYPE.MOSAIC_DEFINITION:
 		return formatMosaicDefinition(data, filter);
 	case TRANSACTION_TYPE.MOSAIC_SUPPLY_CHANGE:
 		return formatMosaicSupplyChange(data, filter);

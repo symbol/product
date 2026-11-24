@@ -15,7 +15,7 @@ import ValueList from '@/app/components/ValueList';
 import ValueMosaic from '@/app/components/ValueMosaic';
 import ValueTransactionHash from '@/app/components/ValueTransactionHash';
 import ValueTransactionType from '@/app/components/ValueTransactionType';
-import { STORAGE_KEY, TRANSACTION_TYPE } from '@/app/constants';
+import { STORAGE_KEY } from '@/app/constants';
 import styles from '@/app/styles/pages/TransactionList.module.scss';
 import {
 	formatTransactionCSV,
@@ -26,6 +26,7 @@ import {
 	usePagination,
 	useStorage
 } from '@/app/utils';
+import { TRANSACTION_TYPE } from '@/variant/transaction/transaction-types';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';

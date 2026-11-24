@@ -64,7 +64,7 @@ const SCREEN_TEXT = {
 	labelUnconfirmed: 'label_unconfirmed',
 	labelSend: 'label_send',
 	labelReceive: 'label_receive',
-	typeTransfer: 'transactionType_TRANSFER',
+	typeTransfer: 'transactionType_transfer',
 	tableFieldAddress: 'table_field_address',
 	tableFieldAction: 'table_field_action',
 	tableFieldMosaic: 'table_field_mosaic',
@@ -239,6 +239,7 @@ describe('TransactionInfo', () => {
 				},
 				{
 					description: 'renders the account state change section when the transaction is multisig',
+					variants: ['nem'],
 					config: { transactionInfo: multisigConfirmedTransaction },
 					expected: {
 						texts: [SCREEN_TEXT.sectionAccountStateChange]
@@ -263,6 +264,7 @@ describe('TransactionInfo', () => {
 			const signaturesCases = [
 				{
 					description: 'renders the cosignatory signature rows when the transaction is multisig',
+					variants: ['nem'],
 					config: { transactionInfo: multisigConfirmedTransaction },
 					expected: {
 						texts: [
@@ -293,6 +295,7 @@ describe('TransactionInfo', () => {
 			const feesBreakdownCases = [
 				{
 					description: 'renders the fee rows when the transaction is multisig',
+					variants: ['nem'],
 					config: { transactionInfo: multisigConfirmedTransaction },
 					expected: {
 						texts: [
