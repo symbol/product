@@ -57,7 +57,7 @@ export class AccountService {
 		const [tokenInfos, multisigInfo, namespaces] = await promiseAllSettled([
 			this.#api.token.fetchTokenInfos(networkProperties, accountOwnedTokenIds),
 			this.fetchMultisigInfo(networkProperties, address),
-			this.#api.namespace.fetchAccountNamespaces(networkProperties, address)
+			this.#api.namespace.fetchAccountNamespaces(networkProperties, address, { pageSize: 100 })
 		]);
 		const isMultisigRequestSucceeded = multisigInfo.status === 'fulfilled';
 
@@ -76,7 +76,7 @@ export class AccountService {
 				nodePublicKey: node ? node.publicKey : null,
 				vrfPublicKey: vrf ? vrf.publicKey : null
 			},
-			namespaces: namespaces.value,
+			namespaces: namespaces.value?.data,
 			isMultisig: isMultisigRequestSucceeded && multisigInfo.value.cosignatories.length > 0,
 			cosignatories: isMultisigRequestSucceeded ? multisigInfo.value.cosignatories : [],
 			multisigAddresses: isMultisigRequestSucceeded ? multisigInfo.value.multisigAddresses : [],

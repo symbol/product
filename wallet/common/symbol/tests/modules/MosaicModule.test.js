@@ -323,8 +323,8 @@ describe('MosaicModule', () => {
 		const runFetchAccountMosaicsTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
-				const accountTokens = Object.values(tokenInfos);
-				api.token.fetchCreatedTokens.mockResolvedValue(accountTokens);
+				const accountTokenPage = { data: Object.values(tokenInfos), nextCursor: null };
+				api.token.fetchCreatedTokens.mockResolvedValue(accountTokenPage);
 
 				// Act:
 				const result = await mosaicModule.fetchAccountMosaics(config.address, config.searchCriteria);
@@ -335,7 +335,7 @@ describe('MosaicModule', () => {
 					expected.address,
 					config.searchCriteria
 				);
-				expect(result).toBe(accountTokens);
+				expect(result).toBe(accountTokenPage);
 			});
 		};
 
@@ -347,7 +347,7 @@ describe('MosaicModule', () => {
 			},
 			{
 				description: 'fetches the mosaics created by a given account with search criteria',
-				config: { address: holderAccount.address, searchCriteria: { pageNumber: 2, pageSize: 10 } },
+				config: { address: holderAccount.address, searchCriteria: { cursor: '2', pageSize: 10 } },
 				expected: { address: holderAccount.address }
 			}
 		];
@@ -361,14 +361,15 @@ describe('MosaicModule', () => {
 		const runFetchMosaicOwnersTest = (description, config) => {
 			it(description, async () => {
 				// Arrange:
-				api.token.fetchTokenOwners.mockResolvedValue(tokenOwners);
+				const tokenOwnerPage = { data: tokenOwners, nextCursor: null };
+				api.token.fetchTokenOwners.mockResolvedValue(tokenOwnerPage);
 
 				// Act:
 				const result = await mosaicModule.fetchMosaicOwners(token.id, config.searchCriteria);
 
 				// Assert:
 				expect(api.token.fetchTokenOwners).toHaveBeenCalledWith(networkProperties, token.id, config.searchCriteria);
-				expect(result).toBe(tokenOwners);
+				expect(result).toBe(tokenOwnerPage);
 			});
 		};
 
@@ -379,7 +380,7 @@ describe('MosaicModule', () => {
 			},
 			{
 				description: 'forwards the search criteria to the api layer',
-				config: { searchCriteria: { pageNumber: 2, pageSize: 10 } }
+				config: { searchCriteria: { cursor: '2', pageSize: 10 } }
 			}
 		];
 

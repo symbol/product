@@ -37,7 +37,7 @@ import {
 	useStorage,
 	useUserCurrencyAmount
 } from '@/app/utils';
-import { pageConfig } from '@/app/variants/page-config';
+import { accountInfoPageConfig } from '@/variant/config/account-info-page-config';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -397,7 +397,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 						label: t('section_harvested'),
 						content: (
 							<div className="layout-flex-col">
-								{pageConfig.account.showEmptyBlockFilter ? (
+								{accountInfoPageConfig.isEmptyBlockFilterVisible ? (
 									<div className="layout-flex-row-mobile-col">
 										<Filter
 											data={harvestedBlockFilterConfig}

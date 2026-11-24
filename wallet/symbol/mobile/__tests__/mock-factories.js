@@ -40,3 +40,22 @@ export const createKnownTokensConfigMock = (tokenInfoMap, chainName = 'symbol', 
 		}
 	};
 };
+
+/**
+ * Creates mock for a paged fetch function. Pass the result to `jest.fn(...)`.
+ * The mock reads the cursor from its last argument and returns the next cursor until the pages run out.
+ * @param {{[pageNumber: number]: object[]}} pages - Items per page number, starting from 1.
+ * @returns {function(...*): Promise<{ data: object[], nextCursor: string|null }>} The fetch function.
+ */
+export const createPagedFetchMock = pages => async (...args) => {
+	const searchCriteria = args.at(-1);
+	const { cursor } = searchCriteria;
+	const pageNumber = cursor === null ? 1 : Number(cursor);
+	const nextPageNumber = pageNumber + 1;
+	const isNextPageAvailable = pages[nextPageNumber] !== undefined;
+
+	return {
+		data: pages[pageNumber] ?? [],
+		nextCursor: isNextPageAvailable ? String(nextPageNumber) : null
+	};
+};

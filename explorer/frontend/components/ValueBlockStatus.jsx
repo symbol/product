@@ -1,7 +1,7 @@
 import StatusIcon from './StatusIcon';
 import ValueLabel from './ValueLabel';
 import { BLOCK_STATUS } from '@/app/constants';
-import { utils } from '@/app/variants/utils';
+import { getBlockStatus } from '@/variant/utils/blocks';
 import { useTranslation } from 'next-i18next';
 
 const statusLabelKeys = {
@@ -24,7 +24,7 @@ const statusLabelKeys = {
  */
 const ValueBlockStatus = ({ block, chainStatus, isIconHidden, isIconOnly, colorVariant, className }) => {
 	const { t } = useTranslation();
-	const status = utils.blocks.getBlockStatus(block, chainStatus);
+	const status = getBlockStatus(block, chainStatus);
 	const label = t(statusLabelKeys[status]);
 
 	if (isIconOnly)

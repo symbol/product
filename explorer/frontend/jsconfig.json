@@ -13,7 +13,8 @@
 			"@/app/utils": ["utils"],
 			"@/app/utils/*": ["utils/*"],
 			"@/app/variants/*": ["variants/*"],
-			"@/app/active-variant/*": ["variants/nem/*"]
+			"@/contract/*": ["contract/*"],
+			"@/variant/*": ["variants/nem/*"]
 		}
 	},
 	"exclude": ["**/node_modules/*", "**/build/*", "**/scripts/*"]

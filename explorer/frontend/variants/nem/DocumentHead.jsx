@@ -1,6 +1,7 @@
-// Variant-specific document <head> content (favicon, web manifest, meta and fonts). Rendered
-// inside next/document's <Head> via the registry. Assets are served from the nem public
-// subdirectory (`public/nem/...`).
+/**
+ * Renders the NEM document head tags: favicon, web manifest, meta and fonts.
+ * @returns {JSX.Element} the head tags.
+ */
 export const DocumentHead = () => (
 	<>
 		<meta charSet="utf-8" />

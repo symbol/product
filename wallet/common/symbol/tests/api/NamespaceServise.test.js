@@ -30,7 +30,10 @@ describe('NamespaceService', () => {
 			mockMakeRequest.mockResolvedValueOnce({ data: [] });
 			const expectedNamespaces = [];
 			mockMakeRequest.mockResolvedValueOnce(namespaceNamesResponse);
-			const expectedResult = expectedNamespaces.map(namespaceDTO => namespaceFromDTO(namespaceDTO, namespaceNames));
+			const expectedResult = {
+				data: expectedNamespaces.map(namespaceDTO => namespaceFromDTO(namespaceDTO, namespaceNames)),
+				nextCursor: null
+			};
 			const expectedUrl = createSearchUrl(networkProperties.nodeUrl, '/namespaces', searchCriteria, {
 				ownerAddress: address
 			});

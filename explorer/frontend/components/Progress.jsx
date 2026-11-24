@@ -1,6 +1,6 @@
 import Field from './Field';
 import styles from '@/app/styles/components/Progress.module.scss';
-import { styleVariables } from '@/app/variants/styles';
+import styleVariables from '@/variant/styles/variables.json';
 
 const colorMap = {
 	default: styleVariables.colorProgressDefault,

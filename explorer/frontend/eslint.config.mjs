@@ -56,6 +56,26 @@ export default defineConfig([
 		languageOptions: { globals: { ...globals.jest } }
 	},
 	{
+		// Disallow direct import of the specific variant in the common code. 
+		// Instead, allow only the active (current) variant import via '@/variant/*'.
+		files: ['api/**', 'components/**', 'config/**', 'constants/**', 'contexts/**', 'contract/**', 'pages/**', 'utils/**'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				patterns: [{
+					group: [
+						'@/app/variants/**',
+						'!@/app/variants/active',
+						'**/variants/nem',
+						'**/variants/nem/**',
+						'**/variants/symbol',
+						'**/variants/symbol/**'
+					],
+					message: 'Common code must import variant code through "@/variant/...".'
+				}]
+			}]
+		}
+	},
+	{
 		// ESM config file: the shared .mjs import needs its extension
 		files: ['eslint.config.mjs'],
 		rules: {

@@ -1,3 +1,7 @@
+/**
+ * Renders the Symbol document head tags: favicon, web manifest, meta and fonts.
+ * @returns {JSX.Element} the head tags.
+ */
 export const DocumentHead = () => (
 	<>
 		<meta charSet="utf-8" />

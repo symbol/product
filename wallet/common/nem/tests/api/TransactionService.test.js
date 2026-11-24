@@ -14,8 +14,11 @@ const NODE_URL = networkProperties.nodeUrl;
 const ADDRESS = currentAccount.address;
 const TRANSACTION_HASH = outgoingTransferDTO.meta.hash.data;
 
-const transfersUrl = (direction, pageNumber = 1, pageSize = 15) =>
-	`${NODE_URL}/account/transfers/${direction}?address=${ADDRESS}&pageNumber=${pageNumber}&pageSize=${pageSize}`;
+const transfersUrl = (direction, cursor = null) => {
+	const cursorQuery = cursor === null ? '' : `&id=${cursor}`;
+
+	return `${NODE_URL}/account/transfers/${direction}?address=${ADDRESS}&pageSize=15${cursorQuery}`;
+};
 const unconfirmedTransactionsUrl = `${NODE_URL}/account/unconfirmedTransactions?address=${ADDRESS}`;
 const definitionPageUrl = namespaceId => `${NODE_URL}/namespace/mosaic/definition/page?namespace=${namespaceId}&pageSize=100`;
 const transactionGetUrl = hash => `${NODE_URL}/transaction/get?hash=${hash}`;
@@ -51,7 +54,7 @@ describe('api/TransactionService', () => {
 				await runApiServiceTest({
 					requestMap: config.requestMap,
 					call: api => api.transaction.fetchAccountTransactions(networkProperties, currentAccount, config.searchCriteria),
-					expected: expected.transactions
+					expected: { data: expected.transactions, nextCursor: expected.nextCursor ?? null }
 				});
 			});
 		};
@@ -66,7 +69,15 @@ describe('api/TransactionService', () => {
 						[definitionPageUrl('test')]: { data: [{ mosaic: mosaicDefinitionDTO }] }
 					}
 				},
-				expected: { transactions: walletTransactions }
+				expected: { transactions: walletTransactions, nextCursor: String(transactionDTOs.at(-1).meta.id) }
+			},
+			{
+				description: 'fetches the page after the transaction id carried by the cursor',
+				config: {
+					searchCriteria: { cursor: String(outgoingTransferDTO.meta.id) },
+					requestMap: { [transfersUrl('all', outgoingTransferDTO.meta.id)]: { data: [incomingTransferDTO] } }
+				},
+				expected: { transactions: [incomingTransfer] }
 			},
 			{
 				description: 'fetches unconfirmed transactions from the unconfirmed endpoint',

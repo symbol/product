@@ -4,6 +4,8 @@ import {
 	getUnresolvedIdsFromSymbolTransactions,
 	getUnresolvedIdsFromTransactionDTOs,
 	isAggregateTransactionDTO,
+	nextCursorFromPageNumber,
+	pageNumberFromCursor,
 	promiseAllSettled,
 	symbolTransactionFromPayload,
 	transactionFromDTO,
@@ -15,6 +17,10 @@ import { ApiError, NotFoundError } from 'wallet-common-core';
 /** @typedef {import('../types/Token').TokenInfo} TokenInfo */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/SearchCriteria').TransactionSearchCriteria} TransactionSearchCriteria */
+/**
+ * @template T
+ * @typedef {import('../types/SearchCriteria').Page<T>} Page
+ */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../types/Transaction').SignedTransaction} SignedTransaction */
 /** @typedef {import('wallet-common-core').TransactionBundle} TransactionBundle */
@@ -33,10 +39,11 @@ export class TransactionService {
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {PublicAccount} account - Requested account.
 	 * @param {TransactionSearchCriteria} [searchCriteria] - Search criteria.
-	 * @returns {Promise<Transaction[]>} - The account transactions.
+	 * @returns {Promise<Page<Transaction>>} - The page of account transactions.
 	 */
 	fetchAccountTransactions = async (networkProperties, account, searchCriteria = {}) => {
-		const { pageNumber = 1, pageSize = 15, group = TransactionGroup.CONFIRMED, order = 'desc', filter = {} } = searchCriteria;
+		const { cursor = null, pageSize = 15, group = TransactionGroup.CONFIRMED, order = 'desc', filter = {} } = searchCriteria;
+		const pageNumber = pageNumberFromCursor(cursor);
 		const baseSearchCriteria = {
 			pageNumber,
 			pageSize,
@@ -88,7 +95,9 @@ export class TransactionService {
 				? aggregateDetailedDTOs.find(detailedDTO => detailedDTO.meta.hash === transactionDTO.meta.hash)
 				: transactionDTO);
 
-		return this.resolveTransactionDTOs(networkProperties, transactionsWithAggregate, account);
+		const data = await this.resolveTransactionDTOs(networkProperties, transactionsWithAggregate, account);
+
+		return { data, nextCursor: nextCursorFromPageNumber(pageNumber, transactions.length, pageSize) };
 	};
 
 	/**

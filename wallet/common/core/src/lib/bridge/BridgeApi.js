@@ -19,16 +19,16 @@ export class BridgeApi {
 		return this.#makeBridgeGetRequest('/');
 	}
 
-	async fetchRequests(mode, address, { pageSize, pageNumber } = {}) {
+	async fetchRequests(mode, address, { pageSize, cursor } = {}) {
 		const path = `/${mode}/requests/${address}`;
         
-		return this.#makeBridgePageRequest(path, pageSize, pageNumber);
+		return this.#makeBridgePageRequest(path, pageSize, cursor);
 	}
 
-	async fetchErrors(mode, address, { pageSize, pageNumber } = {}) {
+	async fetchErrors(mode, address, { pageSize, cursor } = {}) {
 		const path = `/${mode}/errors/${address}`;
         
-		return this.#makeBridgePageRequest(path, pageSize, pageNumber);
+		return this.#makeBridgePageRequest(path, pageSize, cursor);
 	}
 
 	async estimateRequest(mode, amount, recipientAddress) {
@@ -61,10 +61,15 @@ export class BridgeApi {
 		return this.makeRequest(url);
 	};
 
-	#makeBridgePageRequest = async (path, pageSize = 15, pageNumber = 1) => {
-		return this.#makeBridgeGetRequest(path, {
+	#makeBridgePageRequest = async (path, pageSize = 15, cursor = null) => {
+		const firstPageNumber = 1;
+		const pageNumber = cursor === null ? firstPageNumber : Number(cursor);
+		const data = await this.#makeBridgeGetRequest(path, {
 			count: pageSize,
 			offset: (pageNumber - 1) * pageSize
 		});
+		const isNextPageAvailable = data.length >= pageSize;
+
+		return { data, nextCursor: isNextPageAvailable ? String(pageNumber + 1) : null };
 	};
 }

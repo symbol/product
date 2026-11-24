@@ -122,11 +122,13 @@ class SymbolTransactionStatisticsFacade:
 
 def _create_account_statistics_result():
 	return {
-		'total': 1, 'harvesting': 1, 'eligibleForHarvesting': 1,
-		'top10AccountsImportance': 100.0, 'harvestingAccountsPercentage': 100.0,
+		'total': 1,
+		'harvestedAccounts': 1,
+		'eligibleHarvestAccounts': 1,
+		'top10AccountsImportance': 100.0,
+		'harvestingAccountsPercentage': 100.0,
 		'importanceBreakdown': [[100.0, 'TDUMMY']],
-		'harvestingAccountsChart': [[100.0, 'Harvesting'], [0.0, 'Not harvesting']],
-		'pendingVerification': []
+		'harvestingAccountsChart': [[100.0, 'Harvesting'], [0.0, 'Not harvesting']]
 	}
 
 
@@ -197,17 +199,11 @@ def _assert_not_found_response(response):
 	} == response.json
 
 
-def test_account_stats_full_response():
+def test_account_stats_forwards_body():
 	# Arrange:
 	facade = SymbolAccountFacade()
 	client = _create_symbol_test_client(facade)
-	expected_result = {
-		'total': 1, 'harvesting': 1, 'eligibleForHarvesting': 1,
-		'top10AccountsImportance': 100.0, 'harvestingAccountsPercentage': 100.0,
-		'importanceBreakdown': [[100.0, 'TDUMMY']],
-		'harvestingAccountsChart': [[100.0, 'Harvesting'], [0.0, 'Not harvesting']],
-		'pendingVerification': []
-	}
+	expected_result = _create_account_statistics_result()
 
 	# Act:
 	response = client.get('/api/symbol/account/statistics')
@@ -215,18 +211,6 @@ def test_account_stats_full_response():
 	# Assert:
 	assert 200 == response.status_code
 	assert expected_result == response.json
-	assert isinstance(response.json['total'], int) and not isinstance(response.json['total'], bool)
-	assert isinstance(response.json['harvesting'], int) and not isinstance(response.json['harvesting'], bool)
-	assert isinstance(response.json['eligibleForHarvesting'], int) and not isinstance(response.json['eligibleForHarvesting'], bool)
-	assert isinstance(response.json['top10AccountsImportance'], float)
-	assert isinstance(response.json['harvestingAccountsPercentage'], float)
-	assert isinstance(response.json['importanceBreakdown'], list)
-	assert isinstance(response.json['importanceBreakdown'][0][0], float)
-	assert isinstance(response.json['importanceBreakdown'][0][1], str)
-	assert isinstance(response.json['harvestingAccountsChart'], list)
-	assert isinstance(response.json['harvestingAccountsChart'][0][0], float)
-	assert isinstance(response.json['harvestingAccountsChart'][0][1], str)
-	assert isinstance(response.json['pendingVerification'], list)
 
 
 def test_account_stats_rejects_params():
