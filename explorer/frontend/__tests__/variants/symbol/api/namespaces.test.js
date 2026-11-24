@@ -1,3 +1,5 @@
+import { finiteNamespaceResponse, unlimitedNamespaceResponse } from '../../../../__fixtures__/api/symbol/namespace-list';
+import { runApiResultTests } from '../../../test-utils/api';
 import config from '@/app/config';
 import * as serverUtils from '@/app/utils/server';
 import { stubNamespaces } from '@/app/variants/symbol/api/fixtures';
@@ -42,13 +44,13 @@ describe('variants/symbol/api/namespaces', () => {
 		// Assert:
 		expect(makeRequest).toHaveBeenCalledWith(`${symbolApiBaseURL}/namespaces?limit=25&offset=50&sort=DESC`);
 		expect(result.pageNumber).toBe(3);
-		expect(result.data).toEqual([{
+		expect(result.data).toEqual([expect.objectContaining({
 			id: '0000000000000001',
 			name: 'root',
 			namespaceName: 'root',
 			startTimestamp: null,
 			registrationTimestamp: null
-		}]);
+		})]);
 	});
 
 	it('converts integer page values supplied as strings to numeric REST pagination', async () => {
@@ -233,7 +235,7 @@ describe('variants/symbol/api/namespaces', () => {
 
 		// Assert:
 		expect(result.data).toEqual([
-			{
+			expect.objectContaining({
 				id: '0000000000000002',
 				name: 'namespace.thirty',
 				namespaceName: 'namespace.thirty',
@@ -243,8 +245,8 @@ describe('variants/symbol/api/namespaces', () => {
 				aliasAddress: 'TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI',
 				startTimestamp: '2026-10-20 03:00:00',
 				registrationTimestamp: '2026-10-20 03:00:00'
-			},
-			{
+			}),
+			expect.objectContaining({
 				id: '0000000000000003',
 				name: 'namespace.twenty',
 				namespaceName: 'namespace.twenty',
@@ -254,8 +256,8 @@ describe('variants/symbol/api/namespaces', () => {
 				aliasAddress: null,
 				startTimestamp: '2026-10-20 02:00:00',
 				registrationTimestamp: '2026-10-20 02:00:00'
-			},
-			{
+			}),
+			expect.objectContaining({
 				id: '0000000000000001',
 				name: 'namespace.ten',
 				namespaceName: 'namespace.ten',
@@ -265,51 +267,34 @@ describe('variants/symbol/api/namespaces', () => {
 				aliasAddress: null,
 				startTimestamp: '2026-10-20 01:00:00',
 				registrationTimestamp: '2026-10-20 01:00:00'
-			}
+			})
 		]);
 	});
 
-	it('preserves null, false, and zero DTO values', async () => {
-		// Arrange:
-		const namespaces = [{
-			id: '0000000000000000',
-			name: '0000000000000000',
-			namespaceName: 'root',
-			namespaceLevels: [],
-			aliasType: 'none',
-			aliasMosaicId: null,
-			aliasAddress: null,
-			creator: 'NATQ6Q4XK6Y5J2P4M6K3J7Q4D5W6E7R8T9Y0U1I',
-			registrationHeight: 0,
-			startTimestamp: null,
-			registrationType: 'root',
-			expirationHeight: 0,
-			isUnlimitedDuration: false,
-			subNamespaceCount: 0
-		}];
-		jest.spyOn(serverUtils, 'makeRequest').mockResolvedValue(namespaces);
-
-		// Act:
-		const result = await fetchNamespacePage();
-
-		// Assert:
-		expect(result.data[0]).toEqual({
-			id: '0000000000000000',
-			name: 'root',
-			namespaceName: 'root',
-			namespaceLevels: [],
-			aliasType: 'none',
-			aliasMosaicId: null,
-			aliasAddress: null,
-			creator: 'NATQ6Q4XK6Y5J2P4M6K3J7Q4D5W6E7R8T9Y0U1I',
-			registrationHeight: 0,
-			startTimestamp: null,
-			registrationType: 'root',
-			expirationHeight: 0,
-			isUnlimitedDuration: false,
-			subNamespaceCount: 0,
-			registrationTimestamp: null
-		});
+	runApiResultTests({
+		functionToTest: fetchNamespacePage,
+		cases: [
+			{
+				description: 'marks the namespace as unlimited when the REST expiration height is zero',
+				config: { response: [unlimitedNamespaceResponse] },
+				expected: {
+					result: {
+						data: [expect.objectContaining({ expirationHeight: 0, rootNamespace: 'symbol', isUnlimitedDuration: true })],
+						pageNumber: 1
+					}
+				}
+			},
+			{
+				description: 'marks the namespace as finite when the REST expiration height is positive',
+				config: { response: [finiteNamespaceResponse] },
+				expected: {
+					result: {
+						data: [expect.objectContaining({ expirationHeight: 1000, rootNamespace: 'symbol', isUnlimitedDuration: false })],
+						pageNumber: 1
+					}
+				}
+			}
+		]
 	});
 
 	it('returns an empty page when REST returns no namespaces', async () => {

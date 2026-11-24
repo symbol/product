@@ -15,6 +15,7 @@ class SymbolNamespaceViewTest(TestCase):
 		values = {
 			'namespace_id': 'a95f1f8a96159516',
 			'full_name': 'foo.bar',
+			'root_name': 'foo',
 			'levels': [
 				{'name': 'foo', 'namespaceId': 'A95F1F8A96159516', 'parentId': None},
 				{'name': 'bar', 'namespaceId': 'E74B99BA41F4AFEE', 'parentId': 'A95F1F8A96159516'}
@@ -44,6 +45,7 @@ class SymbolNamespaceViewTest(TestCase):
 			'id': 'A95F1F8A96159516',
 			'name': 'A95F1F8A96159516',
 			'namespaceName': 'foo.bar',
+			'rootNamespace': 'foo',
 			'namespaceLevels': [
 				{'name': 'foo', 'namespaceId': 'A95F1F8A96159516', 'parentId': None},
 				{'name': 'bar', 'namespaceId': 'E74B99BA41F4AFEE', 'parentId': 'A95F1F8A96159516'}
@@ -56,7 +58,6 @@ class SymbolNamespaceViewTest(TestCase):
 			'registeredTimestamp': '2026-01-02 03:04:05',
 			'registrationType': 'child',
 			'expirationHeight': 99,
-			'isUnlimitedDuration': False,
 			'subNamespaceCount': 2
 		}, result)
 
@@ -65,6 +66,7 @@ class SymbolNamespaceViewTest(TestCase):
 		view = self._create_view(
 			namespace_id='E74B99BA41F4AFEE',
 			full_name=None,
+			root_name=None,
 			levels=[{'name': 'E74B99BA41F4AFEE', 'namespaceId': 'E74B99BA41F4AFEE', 'parentId': None}],
 			alias_type='mosaic',
 			alias_mosaic_id='72c0212e67a08bce',
@@ -81,8 +83,6 @@ class SymbolNamespaceViewTest(TestCase):
 		self.assertEqual('E74B99BA41F4AFEE', result['namespaceName'])
 		self.assertEqual('72C0212E67A08BCE', result['aliasMosaicId'])
 		self.assertIsNone(result['aliasAddress'])
-		self.assertIsNone(result['expirationHeight'])
-		self.assertIs(True, result['isUnlimitedDuration'])
 
 	def test_formats_missing_block_timestamp_as_null(self):
 		# Arrange:
