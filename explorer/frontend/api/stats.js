@@ -1,6 +1,4 @@
-import { api } from '@/app/variants/api';
-
-export const {
+export {
 	fetchAccountStats,
 	fetchTransactionChart,
 	fetchTransactionStats,
@@ -8,4 +6,4 @@ export const {
 	fetchNodeStats,
 	fetchMarketData,
 	fetchPriceByDate
-} = api.stats;
+} from '@/variant/api/stats';

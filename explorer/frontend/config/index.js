@@ -1,4 +1,4 @@
-import { variantConfig } from '@/app/variants/configs';
+import { envConfig as variantEnvConfig } from '@/variant/config/env-config';
 
 // Environment variable naming scheme (see README "Environment Variables"):
 //   NEXT_PUBLIC_NAME      build-time, client-visible, common
@@ -6,11 +6,11 @@ import { variantConfig } from '@/app/variants/configs';
 //   NAME                  runtime, server-only, common
 //   PUBLIC_<VARIANT>_NAME runtime, client-visible, variant-scoped
 //   <VARIANT>_NAME        runtime, server-only, variant-scoped
-// `@/app/config` is the single entry point. It merges the active variant's config onto the
+// `@/app/config` is the single entry point. It merges the active variant's env config onto the
 // common config and serializes only PUBLIC_*/NEXT_PUBLIC_* keys into window.appConfig.
 
 const serverAppConfig = {
-	...variantConfig,
+	...variantEnvConfig,
 	PUBLIC_API_BASE_URL: process.env.PUBLIC_API_BASE_URL,
 	PUBLIC_REQUEST_TIMEOUT: Number(process.env.PUBLIC_REQUEST_TIMEOUT),
 	PUBLIC_HARVESTING_ACTIVE_WINDOW_DAYS: Number(process.env.PUBLIC_HARVESTING_ACTIVE_WINDOW_DAYS),
