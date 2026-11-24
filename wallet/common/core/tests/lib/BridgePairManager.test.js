@@ -103,7 +103,7 @@ const createNativeController = (overrides = {}) => ({
 	networkProperties: symbolNetworkProperties,
 	currentAccount: symbolCurrentAccount,
 	isWalletReady: true,
-	fetchAccountTransactions: jest.fn(async () => []),
+	fetchAccountTransactions: jest.fn(async () => ({ data: [], nextCursor: null })),
 	walletSdk: symbolSdk,
 	...overrides
 });
@@ -114,7 +114,7 @@ const createWrappedController = (overrides = {}) => ({
 	networkProperties: ethereumNetworkProperties,
 	currentAccount: ethereumCurrentAccount,
 	isWalletReady: true,
-	fetchAccountTransactions: jest.fn(async () => []),
+	fetchAccountTransactions: jest.fn(async () => ({ data: [], nextCursor: null })),
 	walletSdk: ethereumSdk,
 	...overrides
 });
@@ -167,7 +167,8 @@ const createLoadedManager = async (overrides = {}) => {
 };
 
 // Helper – constructs the URL the BridgeApi builds for paginated GET requests
-const buildPageUrl = (mode, group, address, { pageSize = 15, pageNumber = 1 } = {}) => {
+const buildPageUrl = (mode, group, address, { pageSize = 15, cursor = null } = {}) => {
+	const pageNumber = cursor === null ? 1 : Number(cursor);
 	const count = pageSize;
 	const offset = (pageNumber - 1) * pageSize;
 	return `${BRIDGE_URL}/${mode}/${group}/${address}?count=${count}&offset=${offset}`;
@@ -561,7 +562,7 @@ describe('bridge/BridgePairManager', () => {
 			await mocks.manager.load();
 
 			// Act & Assert:
-			await expect(mocks.manager.fetchRequests({ pageSize: 5, pageNumber: 1 }))
+			await expect(mocks.manager.fetchRequests({ pageSize: 5 }))
 				.rejects.toThrow('Failed to fetch bridge requests. No current account selected');
 		});
 
@@ -570,7 +571,7 @@ describe('bridge/BridgePairManager', () => {
 			const { manager } = createManager();
 
 			// Act & Assert:
-			await expect(manager.fetchRequests({ pageSize: 5, pageNumber: 1 }))
+			await expect(manager.fetchRequests({ pageSize: 5 }))
 				.rejects.toThrow('Failed to fetch bridge requests. No bridge config fetched');
 		});
 
@@ -589,7 +590,7 @@ describe('bridge/BridgePairManager', () => {
 				const queryAddress = config.mode === 'wrap' ? SYMBOL_ACCOUNT_ADDRESS : ETHEREUM_ACCOUNT_ADDRESS;
 				const expectedUrl = buildPageUrl(config.mode, 'requests', queryAddress, config.searchCriteria);
 				expect(mocks.makeRequest).toHaveBeenLastCalledWith(expectedUrl);
-				expect(result).toStrictEqual(expected.result);
+				expect(result).toStrictEqual({ data: expected.result, nextCursor: null });
 			});
 		};
 
@@ -630,7 +631,7 @@ describe('bridge/BridgePairManager', () => {
 				description: 'fetches and maps wrap requests with correct chain and token info',
 				config: {
 					mode: 'wrap',
-					searchCriteria: { pageSize: 5, pageNumber: 1 },
+					searchCriteria: { pageSize: 5 },
 					dtoResponse: [wrapRequestDto]
 				},
 				expected: {
@@ -672,7 +673,7 @@ describe('bridge/BridgePairManager', () => {
 				description: 'fetches and maps unwrap requests with reversed chain and token info',
 				config: {
 					mode: 'unwrap',
-					searchCriteria: { pageSize: 3, pageNumber: 2 },
+					searchCriteria: { pageSize: 3, cursor: '2' },
 					dtoResponse: [unwrapRequestDto]
 				},
 				expected: {
@@ -714,7 +715,7 @@ describe('bridge/BridgePairManager', () => {
 				description: 'maps request with null payout transaction when payoutTransactionHash is absent',
 				config: {
 					mode: 'wrap',
-					searchCriteria: { pageSize: 5, pageNumber: 1 },
+					searchCriteria: { pageSize: 5 },
 					dtoResponse: [
 						{
 							...wrapRequestDto,
@@ -772,7 +773,7 @@ describe('bridge/BridgePairManager', () => {
 			await mocks.manager.load();
 
 			// Act & Assert:
-			await expect(mocks.manager.fetchErrors({ pageSize: 5, pageNumber: 1 }))
+			await expect(mocks.manager.fetchErrors({ pageSize: 5 }))
 				.rejects.toThrow('Failed to fetch errors. No current account selected');
 		});
 
@@ -781,7 +782,7 @@ describe('bridge/BridgePairManager', () => {
 			const { manager } = createManager();
 
 			// Act & Assert:
-			await expect(manager.fetchErrors({ pageSize: 5, pageNumber: 1 }))
+			await expect(manager.fetchErrors({ pageSize: 5 }))
 				.rejects.toThrow('Failed to fetch errors. No bridge config fetched');
 		});
 
@@ -800,7 +801,7 @@ describe('bridge/BridgePairManager', () => {
 				const queryAddress = config.mode === 'wrap' ? SYMBOL_ACCOUNT_ADDRESS : ETHEREUM_ACCOUNT_ADDRESS;
 				const expectedUrl = buildPageUrl(config.mode, 'errors', queryAddress, config.searchCriteria);
 				expect(mocks.makeRequest).toHaveBeenLastCalledWith(expectedUrl);
-				expect(result).toStrictEqual(expected.result);
+				expect(result).toStrictEqual({ data: expected.result, nextCursor: null });
 			});
 		};
 
@@ -809,7 +810,7 @@ describe('bridge/BridgePairManager', () => {
 				description: 'fetches and maps wrap errors with correct chain info and normalized hash',
 				config: {
 					mode: 'wrap',
-					searchCriteria: { pageSize: 5, pageNumber: 1 },
+					searchCriteria: { pageSize: 5 },
 					dtoResponse: [
 						{
 							errorMessage: 'Insufficient bridge liquidity',
@@ -844,7 +845,7 @@ describe('bridge/BridgePairManager', () => {
 				description: 'fetches and maps unwrap errors with reversed chains and normalized addresses',
 				config: {
 					mode: 'unwrap',
-					searchCriteria: { pageSize: 3, pageNumber: 1 },
+					searchCriteria: { pageSize: 3 },
 					dtoResponse: [
 						{
 							errorMessage: 'Bridge timeout',
@@ -890,7 +891,7 @@ describe('bridge/BridgePairManager', () => {
 			const { manager } = createManager();
 
 			// Act & Assert:
-			await expect(manager.fetchSentRequests({ pageSize: 5, pageNumber: 1 }))
+			await expect(manager.fetchSentRequests({ pageSize: 5 }))
 				.rejects.toThrow('Failed to fetch sent requests. No bridge config fetched');
 		});
 
@@ -907,16 +908,15 @@ describe('bridge/BridgePairManager', () => {
 					timestamp: 1750000000
 				}
 			];
-			mocks.nativeWalletController.fetchAccountTransactions.mockResolvedValueOnce(transactions);
+			mocks.nativeWalletController.fetchAccountTransactions.mockResolvedValueOnce({ data: transactions, nextCursor: null });
 
 			// Act:
-			const result = await mocks.manager.fetchSentRequests({ pageSize: 5, pageNumber: 1 });
+			const result = await mocks.manager.fetchSentRequests({ pageSize: 5 });
 
 			// Assert:
 			expect(mocks.nativeWalletController.fetchAccountTransactions).toHaveBeenCalledWith({
 				to: bridgeAddress,
-				pageSize: 5,
-				pageNumber: 1
+				pageSize: 5
 			});
 			expect(result).toHaveLength(1);
 			expect(result[0]).toMatchObject({
@@ -947,16 +947,15 @@ describe('bridge/BridgePairManager', () => {
 					timestamp: 1750001000
 				}
 			];
-			mocks.wrappedWalletController.fetchAccountTransactions.mockResolvedValueOnce(transactions);
+			mocks.wrappedWalletController.fetchAccountTransactions.mockResolvedValueOnce({ data: transactions, nextCursor: null });
 
 			// Act:
-			const result = await mocks.manager.fetchSentRequests({ pageSize: 3, pageNumber: 1 });
+			const result = await mocks.manager.fetchSentRequests({ pageSize: 3 });
 
 			// Assert:
 			expect(mocks.wrappedWalletController.fetchAccountTransactions).toHaveBeenCalledWith({
 				to: bridgeAddress,
-				pageSize: 3,
-				pageNumber: 1
+				pageSize: 3
 			});
 			expect(result).toHaveLength(1);
 			expect(result[0]).toMatchObject({
@@ -1001,10 +1000,10 @@ describe('bridge/BridgePairManager', () => {
 					timestamp: 300
 				}
 			];
-			mocks.nativeWalletController.fetchAccountTransactions.mockResolvedValueOnce(transactions);
+			mocks.nativeWalletController.fetchAccountTransactions.mockResolvedValueOnce({ data: transactions, nextCursor: null });
 
 			// Act:
-			const result = await mocks.manager.fetchSentRequests({ pageSize: 10, pageNumber: 1 });
+			const result = await mocks.manager.fetchSentRequests({ pageSize: 10 });
 
 			// Assert:
 			expect(result).toHaveLength(1);
@@ -1026,10 +1025,10 @@ describe('bridge/BridgePairManager', () => {
 					tokens: [token]
 				}
 			];
-			mocks.nativeWalletController.fetchAccountTransactions.mockResolvedValueOnce(transactions);
+			mocks.nativeWalletController.fetchAccountTransactions.mockResolvedValueOnce({ data: transactions, nextCursor: null });
 
 			// Act:
-			const result = await mocks.manager.fetchSentRequests({ pageSize: 5, pageNumber: 1 });
+			const result = await mocks.manager.fetchSentRequests({ pageSize: 5 });
 
 			// Assert:
 			expect(result[0].requestTransaction.token).toStrictEqual(token);
@@ -1075,8 +1074,8 @@ describe('bridge/BridgePairManager', () => {
 				requestTransaction: { hash: 'HASH_D', timestamp: 4000 }
 			};
 
-			jest.spyOn(manager, 'fetchRequests').mockResolvedValue([requestA, requestB]);
-			jest.spyOn(manager, 'fetchErrors').mockResolvedValue([errorA]);
+			jest.spyOn(manager, 'fetchRequests').mockResolvedValue({ data: [requestA, requestB], nextCursor: null });
+			jest.spyOn(manager, 'fetchErrors').mockResolvedValue({ data: [errorA], nextCursor: null });
 			jest.spyOn(manager, 'fetchSentRequests').mockResolvedValue([pendingC, pendingD]);
 
 			// Act:
@@ -1095,17 +1094,17 @@ describe('bridge/BridgePairManager', () => {
 		it('passes count as pageSize to all sub-fetch calls', async () => {
 			// Arrange:
 			const { manager } = await createLoadedManager();
-			const fetchRequestsSpy = jest.spyOn(manager, 'fetchRequests').mockResolvedValue([]);
-			const fetchErrorsSpy = jest.spyOn(manager, 'fetchErrors').mockResolvedValue([]);
+			const fetchRequestsSpy = jest.spyOn(manager, 'fetchRequests').mockResolvedValue({ data: [], nextCursor: null });
+			const fetchErrorsSpy = jest.spyOn(manager, 'fetchErrors').mockResolvedValue({ data: [], nextCursor: null });
 			const fetchSentRequestsSpy = jest.spyOn(manager, 'fetchSentRequests').mockResolvedValue([]);
 
 			// Act:
 			await manager.fetchRecentHistory(7);
 
 			// Assert:
-			expect(fetchRequestsSpy).toHaveBeenCalledWith({ pageSize: 7, pageNumber: 1 });
-			expect(fetchErrorsSpy).toHaveBeenCalledWith({ pageSize: 7, pageNumber: 1 });
-			expect(fetchSentRequestsSpy).toHaveBeenCalledWith({ pageSize: 7, pageNumber: 1 });
+			expect(fetchRequestsSpy).toHaveBeenCalledWith({ pageSize: 7 });
+			expect(fetchErrorsSpy).toHaveBeenCalledWith({ pageSize: 7 });
+			expect(fetchSentRequestsSpy).toHaveBeenCalledWith({ pageSize: 7 });
 		});
 	});
 

@@ -1,5 +1,12 @@
 import { HarvestingStatus } from '../constants';
-import { addressFromRaw, createSearchUrl, networkTimestampToUnix, networkTypeToIdentifier } from '../utils';
+import {
+	addressFromRaw,
+	createSearchUrl,
+	networkTimestampToUnix,
+	networkTypeToIdentifier,
+	nextCursorFromPageNumber,
+	pageNumberFromCursor
+} from '../utils';
 import { NotFoundError, absoluteToRelativeAmount, safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
@@ -8,6 +15,10 @@ import { NotFoundError, absoluteToRelativeAmount, safeOperationWithRelativeAmoun
 /** @typedef {import('../types/Harvesting').HarvestedBlock} HarvestedBlock */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/SearchCriteria').HarvestedBlockSearchCriteria} HarvestedBlockSearchCriteria */
+/**
+ * @template T
+ * @typedef {import('../types/SearchCriteria').Page<T>} Page
+ */
 
 export class HarvestingService {
 	#api;
@@ -108,20 +119,20 @@ export class HarvestingService {
 
 		let isLastPage = false;
 		let isEndBlockFound = false;
-		let pageNumber = 1;
+		let cursor = null;
 		let harvestedBlocks = [];
 
 		while (!isLastPage && !isEndBlockFound) {
 			// eslint-disable-next-line no-await-in-loop
 			const harvestedBlocksPage = await this.fetchHarvestedBlocks(networkProperties, address, {
-				pageNumber,
+				cursor,
 				pageSize: 100
 			});
-			const filteredPerDayPage = harvestedBlocksPage.filter(block => block.height >= heightMonthAgo);
-			isLastPage = harvestedBlocksPage.length === 0;
-			isEndBlockFound = filteredPerDayPage.length !== harvestedBlocksPage.length;
+			const filteredPerDayPage = harvestedBlocksPage.data.filter(block => block.height >= heightMonthAgo);
+			isLastPage = harvestedBlocksPage.nextCursor === null;
+			isEndBlockFound = filteredPerDayPage.length !== harvestedBlocksPage.data.length;
 			harvestedBlocks.push(...filteredPerDayPage);
-			pageNumber++;
+			cursor = harvestedBlocksPage.nextCursor;
 		}
 
 		if (!harvestedBlocks.length) {
@@ -154,18 +165,19 @@ export class HarvestingService {
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string} address - Requested account address.
 	 * @param {HarvestedBlockSearchCriteria} [searchCriteria] - Pagination params.
-	 * @returns {Promise<HarvestedBlock[]>} - The harvested blocks.
+	 * @returns {Promise<Page<HarvestedBlock>>} - The page of harvested blocks.
 	 */
-	fetchHarvestedBlocks = async (networkProperties, address, searchCriteria) => {
+	fetchHarvestedBlocks = async (networkProperties, address, searchCriteria = {}) => {
+		const { cursor = null, pageSize = 15, order } = searchCriteria;
+		const pageNumber = pageNumberFromCursor(cursor);
 		const { divisibility } = networkProperties.networkCurrency;
 		const receiptType = 8515;
-		const endpoint = createSearchUrl(networkProperties.nodeUrl, '/statements/transaction', searchCriteria, {
+		const endpoint = createSearchUrl(networkProperties.nodeUrl, '/statements/transaction', { pageNumber, pageSize, order }, {
 			receiptType,
 			targetAddress: address
 		});
 		const response = await this.#makeRequest(endpoint);
-
-		return response.data.map(el => ({
+		const data = response.data.map(el => ({
 			height: el.statement.height,
 			timestamp: networkTimestampToUnix(el.meta.timestamp, networkProperties.epochAdjustment),
 			amount: absoluteToRelativeAmount(
@@ -174,6 +186,8 @@ export class HarvestingService {
 				divisibility
 			)
 		}));
+
+		return { data, nextCursor: nextCursorFromPageNumber(pageNumber, response.data.length, pageSize) };
 	};
 
 	/**
