@@ -1,5 +1,12 @@
 import { Api } from '../../src/api';
-import { mosaicDefinitionDTO, ownedMosaicDTOs, subNamespaceMosaicDefinitionDTO } from '../__fixtures__/api/token-dtos';
+import {
+	mosaicDefinitionDTO,
+	mutableMosaicDefinitionDTO,
+	mutableMosaicSupplyDTO,
+	ownedMosaicDTOs,
+	ownedMosaicDefinitionDTOs,
+	subNamespaceMosaicDefinitionDTO
+} from '../__fixtures__/api/token-dtos';
 import { networkProperties } from '../__fixtures__/local/network';
 import { accountTokens, tokenInfos } from '../__fixtures__/local/token';
 import { walletStorageAccounts } from '../__fixtures__/local/wallet';
@@ -12,11 +19,14 @@ const NODE_URL = networkProperties.nodeUrl;
 const ADDRESS = walletStorageAccounts.testnet[0].address;
 const TOKEN_ID = 'test.token';
 const SUB_NAMESPACE_TOKEN_ID = 'makoto.metals.silver';
+const MUTABLE_TOKEN_ID = 'test.mutable';
 
 // A mosaic definition page response groups its mosaics under a `mosaic` wrapper.
 const definitionPageUrl = namespaceId => `${NODE_URL}/namespace/mosaic/definition/page?namespace=${namespaceId}&pageSize=100`;
+const mutableTokenSupplyUrl = `${NODE_URL}/mosaic/supply?mosaicId=test:mutable`;
 const testTokenDefinitionPage = { data: [{ mosaic: mosaicDefinitionDTO }] };
 const silverDefinitionPage = { data: [{ mosaic: subNamespaceMosaicDefinitionDTO }] };
+const mutableTokenDefinitionPage = { data: [{ mosaic: mutableMosaicDefinitionDTO }] };
 
 describe('api/TokenService', () => {
 	describe('fetchTokenInfos', () => {
@@ -49,6 +59,17 @@ describe('api/TokenService', () => {
 				description: 'omits tokens whose definition page is not found',
 				config: { tokenIds: [TOKEN_ID], requestMap: { [definitionPageUrl('test')]: new NotFoundError('Namespace not found') } },
 				expected: { tokenInfos: {} }
+			},
+			{
+				description: 'resolves the current supply of a supply-mutable token',
+				config: {
+					tokenIds: [MUTABLE_TOKEN_ID],
+					requestMap: {
+						[definitionPageUrl('test')]: mutableTokenDefinitionPage,
+						[mutableTokenSupplyUrl]: mutableMosaicSupplyDTO
+					}
+				},
+				expected: { tokenInfos: { [MUTABLE_TOKEN_ID]: tokenInfos[MUTABLE_TOKEN_ID] } }
 			}
 		];
 
@@ -80,13 +101,10 @@ describe('api/TokenService', () => {
 
 	describe('fetchAccountTokens', () => {
 		it('resolves owned tokens against their definitions and seeds the native currency', async () => {
-			// Arrange: nem.xem has no on-chain definition (seeded from the network currency) and unknown.mosaic
-			// has no definition at all, so their definition pages are empty.
+			// Arrange:
 			const requestMap = {
 				[`${NODE_URL}/account/mosaic/owned?address=${ADDRESS}`]: { data: ownedMosaicDTOs },
-				[definitionPageUrl('nem')]: { data: [] },
-				[definitionPageUrl('test')]: testTokenDefinitionPage,
-				[definitionPageUrl('unknown')]: { data: [] }
+				[`${NODE_URL}/account/mosaic/owned/definition?address=${ADDRESS}`]: { data: ownedMosaicDefinitionDTOs }
 			};
 
 			// Act & Assert:

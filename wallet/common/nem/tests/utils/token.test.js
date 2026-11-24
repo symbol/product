@@ -2,8 +2,10 @@ import { getTokenAmount, tokenIdFromRaw, tokenIdToRaw, tokenInfoFromDTO, tokenLi
 import { mosaicDefinitionDTO, ownedMosaicDTOs } from '../__fixtures__/api/token-dtos';
 import { networkProperties } from '../__fixtures__/local/network';
 import { accountTokens, tokenInfos } from '../__fixtures__/local/token';
+import { accounts } from '../__fixtures__/local/wallet';
 
-const { networkCurrency } = networkProperties;
+const { networkCurrency, networkIdentifier } = networkProperties;
+const { alice } = accounts;
 const tokenInfosWithNative = { ...tokenInfos, [networkCurrency.id]: networkCurrency };
 const tokenList = [
 	{ id: 'nem.xem', amount: '10.5' },
@@ -143,7 +145,7 @@ describe('utils/token', () => {
 		const runTokenInfoFromDTOTest = (description, config, expected) => {
 			it(description, () => {
 				// Act:
-				const result = tokenInfoFromDTO(config.mosaicDefinitionDTO);
+				const result = tokenInfoFromDTO(config.mosaicDefinitionDTO, networkIdentifier);
 
 				// Assert:
 				expect(result).toStrictEqual(expected.tokenInfo);
@@ -160,6 +162,7 @@ describe('utils/token', () => {
 				description: 'uses default values when the definition has no properties',
 				config: {
 					mosaicDefinitionDTO: {
+						creator: alice.publicKey,
 						id: { namespaceId: 'foo', name: 'bar' },
 						properties: []
 					}
@@ -169,6 +172,7 @@ describe('utils/token', () => {
 						id: 'foo.bar',
 						name: 'foo.bar',
 						divisibility: 0,
+						creator: alice.address,
 						supply: 0,
 						isSupplyMutable: false,
 						isTransferable: true

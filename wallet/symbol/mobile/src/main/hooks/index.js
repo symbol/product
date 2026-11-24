@@ -4,7 +4,6 @@ export * from './useDebounce';
 export * from './useDualColorTransition';
 export * from './useEventCallback';
 export * from './useInit';
-export * from './useLoading';
 export * from './useMultisigAccountList';
 export * from './usePagination';
 export * from './usePasscode';
