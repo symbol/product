@@ -97,17 +97,6 @@ export const requiredAssets = [
 	},
 	{
 		folder: 'images/transaction',
-		names: [
-			'account-multisig.svg',
-			'aggregate.svg',
-			'default.svg',
-			'key.svg',
-			'lock.svg',
-			'mosaic-creation.svg',
-			'mosaic.svg',
-			'namespace.svg',
-			'pending.svg',
-			'transfer.svg'
-		]
+		names: ['default.svg']
 	}
 ];

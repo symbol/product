@@ -56,7 +56,7 @@ const transactionTypeInfos = {
 	[TRANSACTION_TYPE.MOSAIC_DEFINITION]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_mosaicDefinition',
-		icon: 'mosaic-creation'
+		icon: 'mosaic'
 	},
 	[TRANSACTION_TYPE.MOSAIC_SUPPLY_CHANGE]: {
 		kind: TRANSACTION_KIND.OTHER,
@@ -66,12 +66,12 @@ const transactionTypeInfos = {
 	[TRANSACTION_TYPE.MOSAIC_SUPPLY_REVOCATION]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_mosaicSupplyRevocation',
-		icon: 'mosaic'
+		icon: 'revert'
 	},
 	[TRANSACTION_TYPE.MULTISIG_ACCOUNT_MODIFICATION]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_multisigAccountModification',
-		icon: 'account-multisig'
+		icon: 'multisig'
 	},
 	[TRANSACTION_TYPE.AGGREGATE_COMPLETE]: {
 		kind: TRANSACTION_KIND.AGGREGATE,
@@ -86,32 +86,32 @@ const transactionTypeInfos = {
 	[TRANSACTION_TYPE.HASH_LOCK]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_hashLock',
-		icon: 'default'
+		icon: 'lock'
 	},
 	[TRANSACTION_TYPE.SECRET_LOCK]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_secretLock',
-		icon: 'default'
+		icon: 'lock'
 	},
 	[TRANSACTION_TYPE.SECRET_PROOF]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_secretProof',
-		icon: 'default'
+		icon: 'lock'
 	},
 	[TRANSACTION_TYPE.ACCOUNT_ADDRESS_RESTRICTION]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_accountAddressRestriction',
-		icon: 'default'
+		icon: 'restriction'
 	},
 	[TRANSACTION_TYPE.ACCOUNT_MOSAIC_RESTRICTION]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_accountMosaicRestriction',
-		icon: 'default'
+		icon: 'restriction'
 	},
 	[TRANSACTION_TYPE.ACCOUNT_OPERATION_RESTRICTION]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_accountOperationRestriction',
-		icon: 'default'
+		icon: 'restriction'
 	},
 	[TRANSACTION_TYPE.ACCOUNT_KEY_LINK]: {
 		kind: TRANSACTION_KIND.OTHER,
@@ -121,27 +121,27 @@ const transactionTypeInfos = {
 	[TRANSACTION_TYPE.MOSAIC_ADDRESS_RESTRICTION]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_mosaicAddressRestriction',
-		icon: 'default'
+		icon: 'restriction'
 	},
 	[TRANSACTION_TYPE.MOSAIC_GLOBAL_RESTRICTION]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_mosaicGlobalRestriction',
-		icon: 'default'
+		icon: 'restriction'
 	},
 	[TRANSACTION_TYPE.ACCOUNT_METADATA]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_accountMetadata',
-		icon: 'default'
+		icon: 'metadata'
 	},
 	[TRANSACTION_TYPE.MOSAIC_METADATA]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_mosaicMetadata',
-		icon: 'default'
+		icon: 'metadata'
 	},
 	[TRANSACTION_TYPE.NAMESPACE_METADATA]: {
 		kind: TRANSACTION_KIND.OTHER,
 		localeKey: 'transactionType_namespaceMetadata',
-		icon: 'default'
+		icon: 'metadata'
 	},
 	[TRANSACTION_TYPE.VRF_KEY_LINK]: {
 		kind: TRANSACTION_KIND.OTHER,

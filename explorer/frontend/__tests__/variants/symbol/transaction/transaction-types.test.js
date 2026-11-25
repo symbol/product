@@ -65,7 +65,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_mosaicDefinition',
-						icon: 'mosaic-creation'
+						icon: 'mosaic'
 					}
 				}
 			},
@@ -87,7 +87,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_mosaicSupplyRevocation',
-						icon: 'mosaic'
+						icon: 'revert'
 					}
 				}
 			},
@@ -98,7 +98,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_multisigAccountModification',
-						icon: 'account-multisig'
+						icon: 'multisig'
 					}
 				}
 			},
@@ -131,7 +131,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_hashLock',
-						icon: 'default'
+						icon: 'lock'
 					}
 				}
 			},
@@ -142,7 +142,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_secretLock',
-						icon: 'default'
+						icon: 'lock'
 					}
 				}
 			},
@@ -153,7 +153,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_secretProof',
-						icon: 'default'
+						icon: 'lock'
 					}
 				}
 			},
@@ -164,7 +164,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_accountAddressRestriction',
-						icon: 'default'
+						icon: 'restriction'
 					}
 				}
 			},
@@ -175,7 +175,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_accountMosaicRestriction',
-						icon: 'default'
+						icon: 'restriction'
 					}
 				}
 			},
@@ -186,7 +186,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_accountOperationRestriction',
-						icon: 'default'
+						icon: 'restriction'
 					}
 				}
 			},
@@ -208,7 +208,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_mosaicAddressRestriction',
-						icon: 'default'
+						icon: 'restriction'
 					}
 				}
 			},
@@ -219,7 +219,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_mosaicGlobalRestriction',
-						icon: 'default'
+						icon: 'restriction'
 					}
 				}
 			},
@@ -230,7 +230,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_accountMetadata',
-						icon: 'default'
+						icon: 'metadata'
 					}
 				}
 			},
@@ -241,7 +241,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_mosaicMetadata',
-						icon: 'default'
+						icon: 'metadata'
 					}
 				}
 			},
@@ -252,7 +252,7 @@ describe('variants/symbol/transaction/transaction-types', () => {
 					info: {
 						kind: 'other',
 						localeKey: 'transactionType_namespaceMetadata',
-						icon: 'default'
+						icon: 'metadata'
 					}
 				}
 			},
