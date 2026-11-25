@@ -78,6 +78,7 @@
 /**
  * Transaction info page config.
  * @typedef {object} TransactionInfoPageConfig
+ * @property {boolean} isFeesBreakdownSectionVisible - Whether the fees breakdown section is shown for an aggregate transaction.
  * @property {Record<string, TransactionBodyConfig>} transactions - Body config per transaction type.
  */
 

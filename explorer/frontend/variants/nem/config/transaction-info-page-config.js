@@ -17,6 +17,7 @@ const rentalFeeBodyFields = [
 
 /** @type {TransactionInfoPageConfig} */
 export const transactionInfoPageConfig = {
+	isFeesBreakdownSectionVisible: true,
 	transactions: {
 		[TRANSACTION_TYPE.TRANSFER]: {
 			graphic: {

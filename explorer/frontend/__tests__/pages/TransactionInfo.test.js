@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import { aggregateBondedConfirmedTransaction } from '../../__fixtures__/local/symbol/transaction';
 import {
 	accountKeyLinkConfirmedTransaction,
 	multisigConfirmedTransaction,
@@ -76,7 +77,6 @@ const mockedMosaicPrice = 2;
 const timestampTitleText = `${SCREEN_TEXT.fieldTimestampUTC}::title:${SCREEN_TEXT.fieldTimestamp}`;
 const amountInUserCurrencyFieldText = `${SCREEN_TEXT.fieldAmountInUserCurrency}::currency:USD`;
 const expectedUserCurrencyAmountText = `~${transferConfirmedTransaction.amount * mockedMosaicPrice}`;
-const cosignerSignature = multisigConfirmedTransaction.signatures[0];
 const unknownTransactionType = 'UNKNOWN';
 const unknownTypeConfirmedTransaction = {
 	...transferConfirmedTransaction,
@@ -88,6 +88,14 @@ const unknownTypeConfirmedTransaction = {
 		}
 	]
 };
+
+// NEM specific constants
+
+const nemCosignerSignature = multisigConfirmedTransaction.signatures[0];
+
+// Symbol specific constants
+
+const symbolCosignerSignature = aggregateBondedConfirmedTransaction.signatures[0];
 
 // Tests
 
@@ -274,6 +282,14 @@ describe('TransactionInfo', () => {
 					}
 				},
 				{
+					description: 'renders the account state change section when the transaction is an aggregate',
+					variants: ['symbol'],
+					config: { transactionInfo: aggregateBondedConfirmedTransaction },
+					expected: {
+						texts: [SCREEN_TEXT.sectionAccountStateChange]
+					}
+				},
+				{
 					description: 'does not render the account state change section when the transaction is an account key link',
 					config: { transactionInfo: accountKeyLinkConfirmedTransaction },
 					expected: {
@@ -299,8 +315,22 @@ describe('TransactionInfo', () => {
 							SCREEN_TEXT.sectionSignatures,
 							SCREEN_TEXT.tableFieldSigner,
 							SCREEN_TEXT.tableFieldSignature,
-							cosignerSignature.signer,
-							cosignerSignature.signature
+							nemCosignerSignature.signer,
+							nemCosignerSignature.signature
+						]
+					}
+				},
+				{
+					description: 'renders the cosignatory signature rows when the transaction is an aggregate',
+					variants: ['symbol'],
+					config: { transactionInfo: aggregateBondedConfirmedTransaction },
+					expected: {
+						texts: [
+							SCREEN_TEXT.sectionSignatures,
+							SCREEN_TEXT.tableFieldSigner,
+							SCREEN_TEXT.tableFieldSignature,
+							symbolCosignerSignature.signer,
+							symbolCosignerSignature.signature
 						]
 					}
 				},
@@ -339,6 +369,17 @@ describe('TransactionInfo', () => {
 							'0.15 XEM': 2,
 							'0.4 XEM': 2
 						}
+					}
+				},
+				{
+					description: 'does not render the fees breakdown section when the transaction is an aggregate',
+					variants: ['symbol'],
+					config: { transactionInfo: aggregateBondedConfirmedTransaction },
+					expected: {
+						hiddenTexts: [
+							SCREEN_TEXT.sectionFeesBreakdown,
+							SCREEN_TEXT.fieldTotalFee
+						]
 					}
 				},
 				{

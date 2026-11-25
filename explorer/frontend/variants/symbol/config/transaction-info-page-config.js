@@ -51,6 +51,7 @@ const metadataBodyFields = [
 
 /** @type {TransactionInfoPageConfig} */
 export const transactionInfoPageConfig = {
+	isFeesBreakdownSectionVisible: false,
 	transactions: {
 		[TRANSACTION_TYPE.TRANSFER]: {
 			graphic: recipientGraphic,

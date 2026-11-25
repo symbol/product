@@ -51,7 +51,7 @@ const TransactionInfo = ({ transactionInfo }) => {
 	const isAggregate = kind === TRANSACTION_KIND.AGGREGATE;
 	const isAccountStateChangeSectionShown = isTransfer || isAggregate;
 	const isSignaturesSectionShown = isAggregate;
-	const isFeesBreakdownSectionShown = isAggregate;
+	const isFeesBreakdownSectionShown = isAggregate && transactionInfoPageConfig.isFeesBreakdownSectionVisible;
 
 	const accountStateTableColumns = [
 		{
