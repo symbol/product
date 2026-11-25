@@ -71,6 +71,11 @@ LOCK_RECIPIENT = bytes.fromhex(ADDRESS3)
 RESTRICTION_HASH = bytes.fromhex('F1' * 32)
 RESTRICTION_HASH_2 = bytes.fromhex('F2' * 32)
 RESTRICTION_MOSAIC_ID = '72C0212E67A08BCE'
+ACCOUNT_REFRESH_HEIGHT_INDEX = (
+	'idx_symbol_account_refresh_accounts_address_height_desc',
+	'CREATE INDEX idx_symbol_account_refresh_accounts_address_height_desc ON public.symbol_account_refresh_accounts '
+	'USING btree (refresh_run_id, address_height DESC NULLS LAST, address)'
+)
 
 
 def _expected_account_refresh_state(**overrides):
@@ -2408,6 +2413,7 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_account_list_ranks_address',
 			'idx_symbol_account_mosaics_address',
 			'idx_symbol_account_mosaics_mosaic',
+			'idx_symbol_account_refresh_accounts_address_height_desc',
 			'idx_symbol_account_refresh_accounts_address_text',
 			'idx_symbol_account_refresh_accounts_importance_desc',
 			'idx_symbol_account_refresh_accounts_search_order',
@@ -2422,6 +2428,52 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_accounts_importance_desc'
 		], [row[0] for row in cursor.fetchall()])
 		self._assert_rank_primary_key_valid(cursor)
+
+	def test_create_tables_creates_account_refresh_height_index_with_expected_definition(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([ACCOUNT_REFRESH_HEIGHT_INDEX], self._fetch_account_refresh_height_index(database))
+
+	def test_create_tables_adds_missing_account_refresh_height_index(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('DROP INDEX public.idx_symbol_account_refresh_accounts_address_height_desc')
+		database.connection.commit()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([ACCOUNT_REFRESH_HEIGHT_INDEX], self._fetch_account_refresh_height_index(database))
+
+	def test_create_tables_preserves_account_refresh_height_index_when_run_again(self):
+		# Arrange:
+		database = self._create_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([ACCOUNT_REFRESH_HEIGHT_INDEX], self._fetch_account_refresh_height_index(database))
+
+	@staticmethod
+	def _fetch_account_refresh_height_index(database):
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT indexname, indexdef
+			FROM pg_indexes
+			WHERE schemaname = 'public' AND indexname = %s
+			''',
+			(ACCOUNT_REFRESH_HEIGHT_INDEX[0],))
+
+		return cursor.fetchall()
 
 	def test_create_tables_preserves_legacy_index_and_published_data(self):
 		# Arrange:
