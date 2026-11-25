@@ -637,6 +637,10 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_table(cursor, 'symbol_transaction_addresses', SYMBOL_TRANSACTION_ADDRESS_DEFINITIONS)
 		_create_table(cursor, 'symbol_receipts', SYMBOL_RECEIPT_DEFINITIONS)
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_height_desc ON symbol_blocks(height DESC)')
+		cursor.execute('''
+			CREATE INDEX IF NOT EXISTS idx_symbol_blocks_tx_statistics_cover
+			ON symbol_blocks(height) INCLUDE (timestamp, transactions_count, total_transactions_count)
+		''')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_timestamp ON symbol_blocks(timestamp)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_signer_address ON symbol_blocks(signer_address)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_importance_desc ON symbol_accounts(importance DESC)')

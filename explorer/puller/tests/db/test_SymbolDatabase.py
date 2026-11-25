@@ -71,6 +71,11 @@ LOCK_RECIPIENT = bytes.fromhex(ADDRESS3)
 RESTRICTION_HASH = bytes.fromhex('F1' * 32)
 RESTRICTION_HASH_2 = bytes.fromhex('F2' * 32)
 RESTRICTION_MOSAIC_ID = '72C0212E67A08BCE'
+BLOCK_TRANSACTION_STATISTICS_INDEX = (
+	'idx_symbol_blocks_tx_statistics_cover',
+	'CREATE INDEX idx_symbol_blocks_tx_statistics_cover ON public.symbol_blocks USING btree (height) '
+	'INCLUDE ("timestamp", transactions_count, total_transactions_count)'
+)
 
 
 def _expected_account_refresh_state(**overrides):
@@ -3386,6 +3391,20 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			('symbol_sync_state_status', 'unhealthy')
 		], enum_values)
 
+	@staticmethod
+	def _fetch_block_transaction_statistics_index(database):
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT indexname, indexdef
+			FROM pg_indexes
+			WHERE schemaname = 'public'
+				AND indexname = 'idx_symbol_blocks_tx_statistics_cover'
+			'''
+		)
+
+		return cursor.fetchall()
+
 	def test_create_tables_creates_symbol_block_indexes(self):
 		# Arrange:
 		database = self._create_uninitialized_database()
@@ -3408,6 +3427,40 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertIn('idx_symbol_blocks_height_desc', indexes)
 		self.assertIn('idx_symbol_blocks_signer_address', indexes)
 		self.assertIn('idx_symbol_blocks_timestamp', indexes)
+		self.assertIn('idx_symbol_blocks_tx_statistics_cover', indexes)
+
+	def test_create_tables_creates_block_transaction_statistics_index_with_expected_definition(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([BLOCK_TRANSACTION_STATISTICS_INDEX], self._fetch_block_transaction_statistics_index(database))
+
+	def test_create_tables_adds_missing_block_transaction_statistics_index(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('DROP INDEX idx_symbol_blocks_tx_statistics_cover')
+		database.connection.commit()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([BLOCK_TRANSACTION_STATISTICS_INDEX], self._fetch_block_transaction_statistics_index(database))
+
+	def test_create_tables_preserves_block_transaction_statistics_index_when_run_again(self):
+		# Arrange:
+		database = self._create_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([BLOCK_TRANSACTION_STATISTICS_INDEX], self._fetch_block_transaction_statistics_index(database))
 
 	def test_create_tables_creates_symbol_receipt_indexes(self):
 		# Arrange:
