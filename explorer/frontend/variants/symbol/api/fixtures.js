@@ -2,7 +2,6 @@
 // Static stub data for the Symbol variant, which has no backend yet. These fixtures let the
 // shared pages render (block cubes, tables, lists, charts) for visual/QA work without any network
 // or node calls. The shapes mirror the mapped nem api output; the values are illustrative only.
-import { SYMBOL_TRANSACTION_GROUP } from '../constants';
 import { REWARD_TYPE } from '@/app/constants';
 
 const harvester = 'NDE6Y5WNLHID5KRYN3AVNQ7U52XDXLQPHLXHV3OE';
@@ -49,30 +48,6 @@ export const stubBlocks = [
 export const stubHarvestedBlocks = stubBlocks
 	.filter(block => block.harvester === harvester)
 	.map(block => ({ height: block.height, timestamp: block.timestamp, amount: block.totalFee, type: REWARD_TYPE.HARVESTING }));
-
-const transfer = (hash, sender, recipient, amount, timestamp, height) => ({
-	type: 'TRANSFER', group: SYMBOL_TRANSACTION_GROUP.CONFIRMED, hash, timestamp, deadline: timestamp, signer: sender, sender, recipient,
-	account: sender, direction: null, height, signature: 'D5C0D2CADA5DD4113A66307C9B34BF110162591D69DDF4315071BF600257A563',
-	fee: 0.1, amount, value: [{ id: 'symbol.xym', name: 'symbol.xym', amount }],
-	body: [{ type: 'TRANSFER', sender, recipient, mosaics: [{ id: 'symbol.xym', name: 'symbol.xym', amount }], message: null }]
-});
-
-export const stubTransactions = [
-	transfer('ABADF5216044C97E4EFDECB12F1387F2FC6AEE810E07CDCD7C39CB266B931F88', 'NAHJICE3OGYPQFRWGDEEG6POMSIPB7I6STY55PFZ', 'NDABPHWFPH7KL5FADCW66V4GYLVXHKYQIPWL4G2B', 20979, '2026-06-16 08:05:48', 4695085),
-	transfer('19DFA7AAD61024CCB564C41239CA865221A8984EE970FBDA0F492B09E4C70691', 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P', 'NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW', 13200, '2026-06-16 08:03:25', 4695083),
-	transfer('1D204FC80A4E5F1A319CC56EF1A9BE60B443A78F601AF83DAA7ACA7737E916E6', 'NALICE7GX3PF3WAOWVLXFOQ4ZMOBP7GUMNB2RCYQ', 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV', 5000000, '2026-06-16 08:01:55', 4695081),
-	{
-		type: 'MULTISIG_ACCOUNT_MODIFICATION', group: SYMBOL_TRANSACTION_GROUP.CONFIRMED, hash: '65E744B4F720A7B7ADBA413B6C4FCF38BDA1ED4124F1AEBEE5893B0D1D176C97',
-		timestamp: '2026-06-16 07:59:10', deadline: '2026-06-16 07:59:10', signer: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P',
-		sender: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P', recipient: null, account: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P',
-		direction: null, height: 4695079, signature: '65E744B4F720A7B7ADBA413B6C4FCF38BDA1ED4124F1AEBEE5893B0D1D176C97',
-		fee: 0.34, amount: 0, value: [],
-		body: [{
-			type: 'MULTISIG_ACCOUNT_MODIFICATION', sender: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P', targetAccount: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P',
-			cosignatoryAdditions: ['NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY'], cosignatoryDeletions: [], minCosignatories: 1
-		}]
-	}
-];
 
 export const stubAccounts = [
 	{

@@ -24,10 +24,9 @@ export const transactionPageResult = {
 				{
 					type: 'MULTISIG_ACCOUNT_MODIFICATION',
 					sender: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P',
-					targetAccount: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P',
-					cosignatoryAdditions: ['NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY', 'NCYP7E7S67LB4G4Y4RJWE7REFBZI4EXJ73MRKIWW'],
-					cosignatoryDeletions: ['NALICEXDMHEAVGSWHLSXDMUMCCHTBJLPKPI63IFY', 'NCOSIGIMCITYNRE7XUR77OREOYFLPAILCNUYLTPD'],
-					minCosignatories: 0
+					minCosignatories: 0,
+					addressAdditions: ['NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY', 'NCYP7E7S67LB4G4Y4RJWE7REFBZI4EXJ73MRKIWW'],
+					addressDeletions: ['NALICEXDMHEAVGSWHLSXDMUMCCHTBJLPKPI63IFY', 'NCOSIGIMCITYNRE7XUR77OREOYFLPAILCNUYLTPD']
 				}
 			]
 		},
@@ -54,10 +53,9 @@ export const transactionPageResult = {
 				{
 					type: 'ACCOUNT_KEY_LINK',
 					sender: 'NALICE7GX3PF3WAOWVLXFOQ4ZMOBP7GUMNB2RCYQ',
-					targetAccount: 'NALICE7GX3PF3WAOWVLXFOQ4ZMOBP7GUMNB2RCYQ',
-					keyLinkAction: 1,
+					linkAction: 'link',
 					linkedPublicKey: '64F0C867C52E8D3F7FE478854DBB197646D06041CC16B56595C03A217AF6564B',
-					linkedAddress: 'NA6N267O7JIRQY5WQTM4IFUFRMOUJDB5OAOQ777N'
+					linkedAccountAddress: 'NA6N267O7JIRQY5WQTM4IFUFRMOUJDB5OAOQ777N'
 				}
 			]
 		},
@@ -84,15 +82,14 @@ export const transactionPageResult = {
 				{
 					type: 'MULTISIG_ACCOUNT_MODIFICATION',
 					sender: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P',
-					targetAccount: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P',
-					cosignatoryAdditions: [
+					minCosignatories: 0,
+					addressAdditions: [
 						'NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY',
 						'NALICEXDMHEAVGSWHLSXDMUMCCHTBJLPKPI63IFY',
 						'NCOSIGIMCITYNRE7XUR77OREOYFLPAILCNUYLTPD',
 						'NCYP7E7S67LB4G4Y4RJWE7REFBZI4EXJ73MRKIWW'
 					],
-					cosignatoryDeletions: [],
-					minCosignatories: 0
+					addressDeletions: []
 				}
 			]
 		},
@@ -119,12 +116,8 @@ export const transactionPageResult = {
 				{
 					type: 'MOSAIC_SUPPLY_CHANGE',
 					sender: 'NBGADJBTGICFNUHHTSJ5GVAUY5BS7GMWVMGRY2IT',
-					targetMosaic: {
-						name: 'restaurant.restaurant',
-						id: 'restaurant.restaurant'
-					},
-					delta: 999999,
-					supplyAction: 1
+					mosaicId: 'restaurant.restaurant',
+					delta: 999999
 				}
 			]
 		},
@@ -157,11 +150,8 @@ export const transactionPageResult = {
 				{
 					type: 'NAMESPACE_REGISTRATION',
 					sender: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
-					recipient: 'NAMESPACEWH4MKFMBCVFERDPOOP4FK7MTBXDPZZA',
-					namespace: {
-						name: 'holo',
-						id: 'holo'
-					},
+					namespaceId: 'holo',
+					rentalFeeSink: 'NAMESPACEWH4MKFMBCVFERDPOOP4FK7MTBXDPZZA',
 					rentalFee: 100
 				}
 			]
@@ -195,11 +185,8 @@ export const transactionPageResult = {
 				{
 					type: 'MOSAIC_DEFINITION',
 					sender: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
-					recipient: 'NBMOSAICOD4F54EE5CDMR23CCBGOAM2XSIUX6TRS',
-					mosaic: {
-						name: 'holo.watacoin',
-						id: 'holo.watacoin'
-					},
+					mosaicId: 'holo.watacoin',
+					rentalFeeSink: 'NBMOSAICOD4F54EE5CDMR23CCBGOAM2XSIUX6TRS',
 					rentalFee: 10
 				}
 			]
@@ -233,11 +220,8 @@ export const transactionPageResult = {
 				{
 					type: 'NAMESPACE_REGISTRATION',
 					sender: 'NCLT5BCPEVF5EZOS3OJOCL4DWSTJM4EFFF7A5MPG',
-					recipient: 'NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW',
-					namespace: {
-						name: 'holo',
-						id: 'holo'
-					},
+					namespaceId: 'holo',
+					rentalFeeSink: 'NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW',
 					rentalFee: 100
 				}
 			],
@@ -291,10 +275,9 @@ export const transactionPageResult = {
 				{
 					type: 'MULTISIG_ACCOUNT_MODIFICATION',
 					sender: 'NCLT5BCPEVF5EZOS3OJOCL4DWSTJM4EFFF7A5MPG',
-					targetAccount: 'NCLT5BCPEVF5EZOS3OJOCL4DWSTJM4EFFF7A5MPG',
-					cosignatoryAdditions: ['NDK3QVT3N42HFL6NMGTRGFRJE74NP2KSNZH26EDT'],
-					cosignatoryDeletions: [],
-					minCosignatories: 1
+					minCosignatories: 1,
+					addressAdditions: ['NDK3QVT3N42HFL6NMGTRGFRJE74NP2KSNZH26EDT'],
+					addressDeletions: []
 				}
 			],
 			signatures: [

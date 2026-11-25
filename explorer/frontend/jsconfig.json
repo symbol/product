@@ -7,6 +7,7 @@
 			"@/app/config": ["config/index.js"],
 			"@/app/constants": ["constants/index.js"],
 			"@/app/contexts/*": ["contexts/*"],
+			"@/app/lib/*": ["lib/*"],
 			"@/app/pages/*": ["pages/*"],
 			"@/app/public/*": ["public/*"],
 			"@/app/styles/*": ["styles/*"],

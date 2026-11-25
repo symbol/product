@@ -1,4 +1,5 @@
 import { TRANSACTION_CHART_TYPE } from '@/app/constants';
+import { getTransactionTypeInfo } from '@/variant/transaction/transaction-types';
 
 /**
  * Checks if the value is numeric.
@@ -240,7 +241,7 @@ export const getRootNamespaceName = namespaceName => namespaceName.split('.')[0]
  */
 export const formatTransactionCSV = (row, translate) => {
 	return {
-		[translate('table_field_type')]: translate(`transactionType_${row.type}`),
+		[translate('table_field_type')]: translate(getTransactionTypeInfo(row.type).localeKey),
 		[translate('table_field_sender')]: row.sender,
 		[translate('table_field_recipient')]: row.recipient,
 		[translate('table_field_amount')]: row.amount,

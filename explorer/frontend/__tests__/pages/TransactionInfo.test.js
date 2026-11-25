@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import { aggregateBondedConfirmedTransaction } from '../../__fixtures__/local/symbol/transaction';
 import {
 	accountKeyLinkConfirmedTransaction,
 	multisigConfirmedTransaction,
@@ -64,7 +65,7 @@ const SCREEN_TEXT = {
 	labelUnconfirmed: 'label_unconfirmed',
 	labelSend: 'label_send',
 	labelReceive: 'label_receive',
-	typeTransfer: 'transactionType_TRANSFER',
+	typeTransfer: 'transactionType_transfer',
 	tableFieldAddress: 'table_field_address',
 	tableFieldAction: 'table_field_action',
 	tableFieldMosaic: 'table_field_mosaic',
@@ -76,7 +77,25 @@ const mockedMosaicPrice = 2;
 const timestampTitleText = `${SCREEN_TEXT.fieldTimestampUTC}::title:${SCREEN_TEXT.fieldTimestamp}`;
 const amountInUserCurrencyFieldText = `${SCREEN_TEXT.fieldAmountInUserCurrency}::currency:USD`;
 const expectedUserCurrencyAmountText = `~${transferConfirmedTransaction.amount * mockedMosaicPrice}`;
-const cosignerSignature = multisigConfirmedTransaction.signatures[0];
+const unknownTransactionType = 'UNKNOWN';
+const unknownTypeConfirmedTransaction = {
+	...transferConfirmedTransaction,
+	type: unknownTransactionType,
+	body: [
+		{
+			...transferConfirmedTransaction.body[0],
+			type: unknownTransactionType
+		}
+	]
+};
+
+// NEM specific constants
+
+const nemCosignerSignature = multisigConfirmedTransaction.signatures[0];
+
+// Symbol specific constants
+
+const symbolCosignerSignature = aggregateBondedConfirmedTransaction.signatures[0];
 
 // Tests
 
@@ -215,6 +234,23 @@ describe('TransactionInfo', () => {
 						// The account state change table repeats the recipient address.
 						textOccurrences: { [transferConfirmedTransaction.recipient]: 2 }
 					}
+				},
+				{
+					description: 'renders the sender and does not render the target and the fields when the transaction type is unknown',
+					config: { transactionInfo: unknownTypeConfirmedTransaction },
+					expected: {
+						texts: [
+							SCREEN_TEXT.sectionTransactionBody,
+							SCREEN_TEXT.fieldSender
+						],
+						hiddenTexts: [
+							SCREEN_TEXT.fieldRecipient,
+							unknownTypeConfirmedTransaction.recipient,
+							SCREEN_TEXT.fieldMosaics,
+							SCREEN_TEXT.fieldMessage,
+							unknownTypeConfirmedTransaction.body[0].message.text
+						]
+					}
 				}
 			];
 
@@ -239,7 +275,16 @@ describe('TransactionInfo', () => {
 				},
 				{
 					description: 'renders the account state change section when the transaction is multisig',
+					variants: ['nem'],
 					config: { transactionInfo: multisigConfirmedTransaction },
+					expected: {
+						texts: [SCREEN_TEXT.sectionAccountStateChange]
+					}
+				},
+				{
+					description: 'renders the account state change section when the transaction is an aggregate',
+					variants: ['symbol'],
+					config: { transactionInfo: aggregateBondedConfirmedTransaction },
 					expected: {
 						texts: [SCREEN_TEXT.sectionAccountStateChange]
 					}
@@ -263,14 +308,29 @@ describe('TransactionInfo', () => {
 			const signaturesCases = [
 				{
 					description: 'renders the cosignatory signature rows when the transaction is multisig',
+					variants: ['nem'],
 					config: { transactionInfo: multisigConfirmedTransaction },
 					expected: {
 						texts: [
 							SCREEN_TEXT.sectionSignatures,
 							SCREEN_TEXT.tableFieldSigner,
 							SCREEN_TEXT.tableFieldSignature,
-							cosignerSignature.signer,
-							cosignerSignature.signature
+							nemCosignerSignature.signer,
+							nemCosignerSignature.signature
+						]
+					}
+				},
+				{
+					description: 'renders the cosignatory signature rows when the transaction is an aggregate',
+					variants: ['symbol'],
+					config: { transactionInfo: aggregateBondedConfirmedTransaction },
+					expected: {
+						texts: [
+							SCREEN_TEXT.sectionSignatures,
+							SCREEN_TEXT.tableFieldSigner,
+							SCREEN_TEXT.tableFieldSignature,
+							symbolCosignerSignature.signer,
+							symbolCosignerSignature.signature
 						]
 					}
 				},
@@ -293,6 +353,7 @@ describe('TransactionInfo', () => {
 			const feesBreakdownCases = [
 				{
 					description: 'renders the fee rows when the transaction is multisig',
+					variants: ['nem'],
 					config: { transactionInfo: multisigConfirmedTransaction },
 					expected: {
 						texts: [
@@ -308,6 +369,17 @@ describe('TransactionInfo', () => {
 							'0.15 XEM': 2,
 							'0.4 XEM': 2
 						}
+					}
+				},
+				{
+					description: 'does not render the fees breakdown section when the transaction is an aggregate',
+					variants: ['symbol'],
+					config: { transactionInfo: aggregateBondedConfirmedTransaction },
+					expected: {
+						hiddenTexts: [
+							SCREEN_TEXT.sectionFeesBreakdown,
+							SCREEN_TEXT.fieldTotalFee
+						]
 					}
 				},
 				{

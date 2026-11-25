@@ -2,6 +2,7 @@
 
 /**
  * Required list of configs expected for each variant.
+ * Component, pages and other customization configs.
  * @type {RequiredModule[]}
  */
 export const requiredConfigs = [
@@ -19,5 +20,15 @@ export const requiredConfigs = [
 		path: 'config/home-page-config',
 		exportName: 'homePageConfig',
 		typeName: 'HomePageConfig'
+	},
+	{
+		path: 'config/transaction-info-page-config',
+		exportName: 'transactionInfoPageConfig',
+		typeName: 'TransactionInfoPageConfig'
+	},
+	{
+		path: 'config/value-message-config',
+		exportName: 'valueMessageConfig',
+		typeName: 'ValueMessageConfig'
 	}
 ];

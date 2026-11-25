@@ -6,6 +6,8 @@ import styles from '@/app/styles/components/ValueMosaic.module.scss';
 import { createAssetURL, createPageHref, handleNavigationItemClick, numberToString } from '@/app/utils';
 import Link from 'next/link';
 
+const EMPTY_AMOUNT_TEXT = '-';
+
 const ValueMosaic = ({
 	mosaicName,
 	mosaicId,
@@ -28,6 +30,8 @@ const ValueMosaic = ({
 		[ACCOUNT_STATE_CHANGE_ACTION.SEND]: styles.outgoing
 	};
 	const directionStyle = directionStyleMap[direction];
+	const isMediumSize = size === 'md';
+	const isAmountMissing = amount === null;
 	const isAmountExist = !isNaN(amount) && amount !== null;
 	const [integer, decimal] = isAmountExist ? amount.toString().split('.') : ['-'];
 	const finalMosaicId = isNative ? config.PUBLIC_NATIVE_MOSAIC_ID : mosaicId;
@@ -46,7 +50,10 @@ const ValueMosaic = ({
 		handleNavigationItemClick(e, onClick, finalMosaicId, isNavigationDisabled);
 	};
 
-	return size === 'md' ? (
+	if (isAmountMissing && !isMediumSize)
+		return <div className={className}>{EMPTY_AMOUNT_TEXT}</div>;
+
+	return isMediumSize ? (
 		<Link
 			className={`${styles.valueMosaic} ${styles.containerMd} ${className}`}
 			href={createPageHref('mosaics', finalMosaicId)}

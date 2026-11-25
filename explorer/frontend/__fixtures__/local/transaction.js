@@ -533,11 +533,8 @@ export const mosaicDefinitionConfirmedTransaction = {
 		{
 			type: 'MOSAIC_DEFINITION',
 			sender: 'TBONKWCOWBZYZB2I5JD3LSDBQVBYHB757VN3SKPP',
-			recipient: 'TBMOSAICOD4F54EE5CDMR23CCBGOAM2XSJBR5OLC',
-			mosaic: {
-				name: 'my_namespace.token_1790078483',
-				id: 'my_namespace.token_1790078483'
-			},
+			mosaicId: 'my_namespace.token_1790078483',
+			rentalFeeSink: 'TBMOSAICOD4F54EE5CDMR23CCBGOAM2XSJBR5OLC',
 			rentalFee: 10
 		}
 	],
@@ -567,12 +564,8 @@ export const mosaicSupplyChangeConfirmedTransaction = {
 		{
 			type: 'MOSAIC_SUPPLY_CHANGE',
 			sender: 'TBONKWCOWBZYZB2I5JD3LSDBQVBYHB757VN3SKPP',
-			targetMosaic: {
-				name: 'my_namespace.token_1784016991',
-				id: 'my_namespace.token_1784016991'
-			},
-			delta: 500,
-			supplyAction: 1
+			mosaicId: 'my_namespace.token_1784016991',
+			delta: 500
 		}
 	],
 	size: 180,
@@ -607,11 +600,8 @@ export const namespaceRegistrationConfirmedTransaction = {
 		{
 			type: 'NAMESPACE_REGISTRATION',
 			sender: 'TBONKWCOWBZYZB2I5JD3LSDBQVBYHB757VN3SKPP',
-			recipient: 'TAMESPACEWH4MKFMBCVFERDPOOP4FK7MTDJEYP35',
-			namespace: {
-				name: 'ns_1790079005',
-				id: 'ns_1790079005'
-			},
+			namespaceId: 'ns_1790079005',
+			rentalFeeSink: 'TAMESPACEWH4MKFMBCVFERDPOOP4FK7MTDJEYP35',
 			rentalFee: 100
 		}
 	],
@@ -641,13 +631,12 @@ export const multisigAccountModificationConfirmedTransaction = {
 		{
 			type: 'MULTISIG_ACCOUNT_MODIFICATION',
 			sender: 'TBLXIOUO4EP5YR74HYXS3BFBGONZBUHP3NIS2HJ6',
-			targetAccount: 'TBLXIOUO4EP5YR74HYXS3BFBGONZBUHP3NIS2HJ6',
-			cosignatoryAdditions: [
+			minCosignatories: 1,
+			addressAdditions: [
 				'TAWOQNIMCCFO6MT7JLLFER746HKBBUVU7KQUSDJX',
 				'TC7BQFXISQEOPN2PCPPPOM3V4R3XDPNVEHEQLID4'
 			],
-			cosignatoryDeletions: [],
-			minCosignatories: 1
+			addressDeletions: []
 		}
 	],
 	size: 228,
@@ -676,10 +665,9 @@ export const accountKeyLinkConfirmedTransaction = {
 		{
 			type: 'ACCOUNT_KEY_LINK',
 			sender: 'TDGHJE2WWCC74PLTUVCEMWZJ23SLIXNTAQI5VXCQ',
-			targetAccount: 'TDGHJE2WWCC74PLTUVCEMWZJ23SLIXNTAQI5VXCQ',
-			keyLinkAction: 1,
+			linkAction: 'link',
 			linkedPublicKey: 'FE68F61CF3B6B4E533F5CF2E01D782B736CDF1EE20871F00A4C37D023F72A149',
-			linkedAddress: 'TCWCU7VAL62QSQDOEOGW5AZ3IFVEAWRFX5DYCO5K'
+			linkedAccountAddress: 'TCWCU7VAL62QSQDOEOGW5AZ3IFVEAWRFX5DYCO5K'
 		}
 	],
 	size: 168,
@@ -809,11 +797,8 @@ export const multisigNamespaceRegistrationConfirmedTransaction = {
 		{
 			type: 'NAMESPACE_REGISTRATION',
 			sender: 'TAXKL5K3OYZDRG7IPYULEPMUW7BBPIQ5LC5S3VFI',
-			recipient: 'TAMESPACEWH4MKFMBCVFERDPOOP4FK7MTDJEYP35',
-			namespace: {
-				name: 'aaaadd',
-				id: 'aaaadd'
-			},
+			namespaceId: 'aaaadd',
+			rentalFeeSink: 'TAMESPACEWH4MKFMBCVFERDPOOP4FK7MTDJEYP35',
 			rentalFee: 100
 		}
 	],
@@ -869,10 +854,9 @@ export const multisigMultisigAccountModificationConfirmedTransaction = {
 		{
 			type: 'MULTISIG_ACCOUNT_MODIFICATION',
 			sender: 'TBLXIOUO4EP5YR74HYXS3BFBGONZBUHP3NIS2HJ6',
-			targetAccount: 'TBLXIOUO4EP5YR74HYXS3BFBGONZBUHP3NIS2HJ6',
-			cosignatoryAdditions: [],
-			cosignatoryDeletions: ['TAWOQNIMCCFO6MT7JLLFER746HKBBUVU7KQUSDJX'],
-			minCosignatories: -1
+			minCosignatories: -1,
+			addressAdditions: [],
+			addressDeletions: ['TAWOQNIMCCFO6MT7JLLFER746HKBBUVU7KQUSDJX']
 		}
 	],
 	size: 252,

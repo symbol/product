@@ -3,6 +3,7 @@
 .valueLabel {
 	display: flex;
 	flex-direction: row;
+	flex-shrink: 0;
 	gap: $spacing-base / 2;
 	align-items: center;
 	width: fit-content;

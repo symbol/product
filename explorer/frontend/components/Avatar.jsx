@@ -74,6 +74,14 @@ const TransactionAvatar = ({ type }) => {
 	);
 };
 
+const LockAvatar = () => {
+	return (
+		<div className={styles.imageContainerTransactionType}>
+			<CustomImage src={createAssetURL('/images/transaction/lock.svg')} className={styles.imageTransactionType} alt="Lock" />
+		</div>
+	);
+};
+
 const Avatar = ({ size, type, value, dot }) => {
 	const sizeStyleMap = {
 		sm: styles.containerSm,
@@ -99,6 +107,8 @@ const Avatar = ({ size, type, value, dot }) => {
 			<NodeAvatar />
 		) : type === 'namespace' ? (
 			<NamespaceAvatar namespaceId={value} />
+		) : type === 'lock' ? (
+			<LockAvatar />
 		) : null;
 
 	return (

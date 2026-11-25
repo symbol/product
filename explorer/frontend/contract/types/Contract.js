@@ -10,7 +10,7 @@
  * Required module with several named exports to be defined per variant - API module, utils module, etc.
  * @typedef {object} RequiredModuleExports
  * @property {string} path - Module path without extension.
- * @property {string[]} exportNames - Named exports (function names).
+ * @property {string[]} exportNames - Named exports.
  */
 
 export {};

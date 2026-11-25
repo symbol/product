@@ -7,13 +7,14 @@ import ValueTimestamp from './ValueTimestamp';
 import ValueTransactionHash from './ValueTransactionHash';
 import styles from '@/app/styles/components/ItemTransactionMobile.module.scss';
 import { createAssetURL, createPageHref } from '@/app/utils';
+import { getTransactionTypeInfo } from '@/variant/transaction/transaction-types';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 
 const ItemTransactionMobile = ({ data, isTimestampShown }) => {
 	const { hash, sender, recipient, value, type, timestamp, direction } = data;
 	const { t } = useTranslation();
-	const typeText = t(`transactionType_${type}`);
+	const typeText = t(getTransactionTypeInfo(type).localeKey);
 
 	return (
 		<div className={styles.itemTransactionMobile}>
