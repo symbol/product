@@ -1,7 +1,7 @@
 /**
  * @typedef {object} RequiredAssetFolder
  * @property {string} folder - Folder path inside the variant public folder.
- * @property {string[]} names - Image file names with extension.
+ * @property {string[]} names - Image file names array (with extension).
  */
 
 const STATUS_ICON_NAMES = [
@@ -102,6 +102,7 @@ export const requiredAssets = [
 			'aggregate.svg',
 			'default.svg',
 			'key.svg',
+			'lock.svg',
 			'mosaic-creation.svg',
 			'mosaic.svg',
 			'namespace.svg',

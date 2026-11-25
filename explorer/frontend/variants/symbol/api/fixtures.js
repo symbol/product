@@ -54,7 +54,9 @@ const transfer = (hash, sender, recipient, amount, timestamp, height) => ({
 	type: 'TRANSFER', group: SYMBOL_TRANSACTION_GROUP.CONFIRMED, hash, timestamp, deadline: timestamp, signer: sender, sender, recipient,
 	account: sender, direction: null, height, signature: 'D5C0D2CADA5DD4113A66307C9B34BF110162591D69DDF4315071BF600257A563',
 	fee: 0.1, amount, value: [{ id: 'symbol.xym', name: 'symbol.xym', amount }],
-	body: [{ type: 'TRANSFER', sender, recipient, mosaics: [{ id: 'symbol.xym', name: 'symbol.xym', amount }], message: null }]
+	body: [{
+		type: 'TRANSFER', sender, recipient, mosaics: [{ id: 'symbol.xym', name: 'symbol.xym', amount }]
+	}]
 });
 
 export const stubTransactions = [
@@ -68,8 +70,8 @@ export const stubTransactions = [
 		direction: null, height: 4695079, signature: '65E744B4F720A7B7ADBA413B6C4FCF38BDA1ED4124F1AEBEE5893B0D1D176C97',
 		fee: 0.34, amount: 0, value: [],
 		body: [{
-			type: 'MULTISIG_ACCOUNT_MODIFICATION', sender: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P', targetAccount: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P',
-			cosignatoryAdditions: ['NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY'], cosignatoryDeletions: [], minCosignatories: 1
+			type: 'MULTISIG_ACCOUNT_MODIFICATION', sender: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P', recipient: null,
+			minApprovalDelta: 1, minRemovalDelta: 1, addressAdditions: ['NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY'], addressDeletions: []
 		}]
 	}
 ];

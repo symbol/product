@@ -1,9 +1,8 @@
-import { NEM_TRANSACTION_GROUP } from '../constants';
+import { NEM_MESSAGE_TYPE, NEM_TRANSACTION_GROUP } from '../constants';
 import { TRANSACTION_TYPE } from '../transaction/transaction-types';
-import { formatTransferMessage } from '../utils/transactions';
 import config from '@/app/config';
-import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTION_DIRECTION } from '@/app/constants';
-import { truncateDecimals } from '@/app/utils/common';
+import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_DIRECTION } from '@/app/constants';
+import { decodeTransactionMessage, truncateDecimals } from '@/app/utils/common';
 import {
 	createApiUrl,
 	createPage,
@@ -18,6 +17,33 @@ import {
  * @property {Array} data - the page data, an array of objects
  * @property {number} pageNumber The page number
  */
+
+const RAW_MESSAGE_PREFIX = 'fe';
+
+const MESSAGE_TYPE_CODE = {
+	PLAIN: 1,
+	ENCRYPTED: 2
+};
+
+const SUPPLY_CHANGE_ACTION = {
+	INCREASE: 1,
+	DECREASE: 2
+};
+
+const KEY_LINK_ACTION = {
+	LINK: 1,
+	UNLINK: 2
+};
+
+const COSIGNATORY_MODIFICATION_ACTION = {
+	ADDITION: 1,
+	REMOVAL: 2
+};
+
+const linkActionMap = {
+	[KEY_LINK_ACTION.LINK]: 'link',
+	[KEY_LINK_ACTION.UNLINK]: 'unlink'
+};
 
 /**
  * Fetches the transaction page.
@@ -176,8 +202,22 @@ const formatBaseTransaction = (data, filter) => {
 	};
 };
 
+const formatTransferMessage = message => {
+	if (!message?.payload)
+		return null;
+
+	const { type, payload } = message;
+
+	if (type === MESSAGE_TYPE_CODE.ENCRYPTED)
+		return { type: NEM_MESSAGE_TYPE.ENCRYPTED, text: payload };
+
+	if (payload.toLowerCase().startsWith(RAW_MESSAGE_PREFIX))
+		return { type: NEM_MESSAGE_TYPE.RAW, text: payload.slice(RAW_MESSAGE_PREFIX.length) };
+
+	return { type: NEM_MESSAGE_TYPE.PLAIN, text: decodeTransactionMessage(payload) };
+};
+
 const extractTransferTransactionValue = value => {
-	let message = null;
 	const hasOwn = (item, key) => Object.prototype.hasOwnProperty.call(item, key);
 	const mosaics = value
 		.filter(item => hasOwn(item, 'amount') && hasOwn(item, 'namespace'))
@@ -186,11 +226,7 @@ const extractTransferTransactionValue = value => {
 			name: item.namespace,
 			amount: item.amount
 		}));
-
-	const rawMessage = value.find(item => hasOwn(item, 'message'))?.message;
-
-	if (rawMessage?.payload)
-		message = formatTransferMessage(rawMessage.type, rawMessage.payload);
+	const message = formatTransferMessage(value.find(item => hasOwn(item, 'message'))?.message);
 
 	return {
 		mosaics,
@@ -241,11 +277,8 @@ const formatMosaicDefinition = (data, filter) => {
 			{
 				type: data.transactionType,
 				sender: data.fromAddress,
-				recipient: data.toAddress,
-				mosaic: {
-					name: mosaicName,
-					id: mosaicName
-				},
+				mosaicId: mosaicName,
+				rentalFeeSink: data.toAddress,
 				rentalFee
 			}
 		]
@@ -255,7 +288,7 @@ const formatMosaicDefinition = (data, filter) => {
 const formatMosaicSupplyChange = (data, filter) => {
 	const mosaicName = data.value[0].namespaceName;
 	const { delta } = data.value[0];
-	const supplyAction = data.value[0].supplyType;
+	const isDecrease = data.value[0].supplyType === SUPPLY_CHANGE_ACTION.DECREASE;
 
 	return {
 		...formatBaseTransaction(data, filter),
@@ -263,12 +296,8 @@ const formatMosaicSupplyChange = (data, filter) => {
 			{
 				type: data.transactionType,
 				sender: data.fromAddress,
-				targetMosaic: {
-					name: mosaicName,
-					id: mosaicName
-				},
-				delta,
-				supplyAction
+				mosaicId: mosaicName,
+				delta: isDecrease ? -delta : delta
 			}
 		]
 	};
@@ -292,11 +321,8 @@ const formatNamespaceRegistration = (data, filter) => {
 			{
 				type: data.transactionType,
 				sender: data.fromAddress,
-				recipient: data.toAddress,
-				namespace: {
-					name: namespaceName,
-					id: namespaceName
-				},
+				namespaceId: namespaceName,
+				rentalFeeSink: data.toAddress,
 				rentalFee
 			}
 		]
@@ -306,10 +332,10 @@ const formatNamespaceRegistration = (data, filter) => {
 const formatMultisigAccountModification = (data, filter) => {
 	const { minCosignatories } = data.value[0];
 	const { modifications } = data.value[0];
-	const cosignatoryAdditions = modifications
+	const addressAdditions = modifications
 		.filter(item => item.modificationType === COSIGNATORY_MODIFICATION_ACTION.ADDITION)
 		.map(item => item.cosignatoryAccount);
-	const cosignatoryDeletions = modifications
+	const addressDeletions = modifications
 		.filter(item => item.modificationType === COSIGNATORY_MODIFICATION_ACTION.REMOVAL)
 		.map(item => item.cosignatoryAccount);
 
@@ -319,19 +345,18 @@ const formatMultisigAccountModification = (data, filter) => {
 			{
 				type: data.transactionType,
 				sender: data.fromAddress,
-				targetAccount: data.fromAddress,
-				cosignatoryAdditions,
-				cosignatoryDeletions,
-				minCosignatories
+				minCosignatories,
+				addressAdditions,
+				addressDeletions
 			}
 		]
 	};
 };
 
 const formatAccountKeyLink = (data, filter) => {
-	const keyLinkAction = data.value[0].mode;
+	const linkAction = linkActionMap[data.value[0].mode];
 	const linkedPublicKey = data.value[0].remoteAccount;
-	const linkedAddress = data.value[0].remoteAddress;
+	const linkedAccountAddress = data.value[0].remoteAddress;
 
 	return {
 		...formatBaseTransaction(data, filter),
@@ -339,10 +364,9 @@ const formatAccountKeyLink = (data, filter) => {
 			{
 				type: data.transactionType,
 				sender: data.fromAddress,
-				targetAccount: data.fromAddress,
-				keyLinkAction,
+				linkAction,
 				linkedPublicKey,
-				linkedAddress
+				linkedAccountAddress
 			}
 		]
 	};

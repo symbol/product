@@ -16,6 +16,13 @@
 	height: 27rem;
 }
 
+.transactionBody {
+	display: flex;
+	flex-direction: column;
+	gap: $spacing-base * 3;
+	width: 100%;
+}
+
 @media #{$screen-mobile} {
 	.firstSection {
 		max-width: 100%;

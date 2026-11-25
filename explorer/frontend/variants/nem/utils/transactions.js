@@ -1,28 +1,5 @@
-import { NEM_MESSAGE_TYPE, NEM_TRANSACTION_GROUP } from '../constants';
+import { NEM_TRANSACTION_GROUP } from '../constants';
 import { TRANSACTION_TYPE } from '../transaction/transaction-types';
-import { MESSAGE_TYPE } from '@/app/constants';
-import { decodeTransactionMessage } from '@/app/utils/common';
-
-/**
- * Formats a NEM transfer message for display.
- * @param {number} messageType - NEM transfer message type.
- * @param {string} payload - Raw message payload hex string.
- * @returns {{ type: string, text: string }|null} Formatted message (type is a MESSAGE_TYPE value).
- */
-export const formatTransferMessage = (messageType, payload) => {
-	if (!payload)
-		return null;
-
-	if (messageType !== NEM_MESSAGE_TYPE.PLAIN)
-		return { type: MESSAGE_TYPE.ENCRYPTED, text: payload };
-
-	const normalizedPayload = payload.toLowerCase();
-
-	if (normalizedPayload.startsWith('fe'))
-		return { type: MESSAGE_TYPE.RAW, text: `HEX: ${payload.slice(2)}` };
-
-	return { type: MESSAGE_TYPE.PLAIN, text: decodeTransactionMessage(payload) };
-};
 
 /**
  * Checks whether a transaction is waiting for cosignatures before it can confirm. A NEM multisig

@@ -4,7 +4,9 @@ import Avatar from '@/app/components/Avatar';
 import Field from '@/app/components/Field';
 import FieldTimestamp from '@/app/components/FieldTimestamp';
 import Section from '@/app/components/Section';
+import Separator from '@/app/components/Separator';
 import Table from '@/app/components/Table';
+import TransactionBodyFields from '@/app/components/TransactionBodyFields';
 import TransactionGraphic from '@/app/components/TransactionGraphic';
 import ValueAccount from '@/app/components/ValueAccount';
 import ValueBlockHeight from '@/app/components/ValueBlockHeight';
@@ -13,8 +15,10 @@ import ValueLabel from '@/app/components/ValueLabel';
 import ValueMosaic from '@/app/components/ValueMosaic';
 import ValueTransactionType from '@/app/components/ValueTransactionType';
 import { STORAGE_KEY, TRANSACTION_GROUP, TRANSACTION_KIND } from '@/app/constants';
+import { UNKNOWN_TRANSACTION_BODY_CONFIG } from '@/app/lib/transaction/common-transaction-body';
 import styles from '@/app/styles/pages/TransactionInfo.module.scss';
 import { nullableValueToText, numberToShortString, truncateDecimals, useStorage, useUserCurrencyAmount } from '@/app/utils';
+import { transactionInfoPageConfig } from '@/variant/config/transaction-info-page-config';
 import { getTransactionTypeInfo } from '@/variant/transaction/transaction-types';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
@@ -170,7 +174,20 @@ const TransactionInfo = ({ transactionInfo }) => {
 				</Section>
 			</div>
 			<Section title={t('section_transactionBody')}>
-				<TransactionGraphic transactions={transactionInfo.body} />
+				<div className={styles.transactionBody}>
+					{transactionInfo.body.map((transaction, index) => {
+						const { graphic, bodyFields } = transactionInfoPageConfig.transactions[transaction.type]
+							?? UNKNOWN_TRANSACTION_BODY_CONFIG;
+
+						return (
+							<div className="layout-flex-row-mobile-col" key={index}>
+								<TransactionGraphic transaction={transaction} target={graphic.target} />
+								<Separator />
+								<TransactionBodyFields transaction={transaction} fields={bodyFields} />
+							</div>
+						);
+					})}
+				</div>
 			</Section>
 			{isAccountStateChangeSectionShown && (
 				<Section title={t('section_accountStateChange')}>
