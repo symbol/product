@@ -1,12 +1,14 @@
-from datetime import datetime
+from contextlib import contextmanager
 from unittest import TestCase
+from unittest.mock import Mock
 
 from common.symbol.NativeMosaic import NativeMosaicInfo
 from psycopg2 import Error as PsycopgError
 from symbolchain.sc import TransactionType
 
-from rest.db.SymbolDatabase import SymbolDatabase, SymbolMosaicAliasNotFound, TransactionQuery, TransactionRecord
-from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable, TransactionMosaicRecord
+from rest.db.SymbolDatabase import SymbolDatabase, SymbolMosaicAliasNotFound, TransactionQuery
+from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
+from rest.model.symbol.TransactionView import TransactionViewRecord
 
 from ..test.SymbolBlockTestUtils import create_symbol_block, create_symbol_sync_state
 from ..test.SymbolDatabaseTestUtils import (
@@ -29,25 +31,170 @@ from ..test.SymbolTransactionTestUtils import (
 NATIVE_MOSAIC_INFO = NativeMosaicInfo('72C0212E67A08BCE', 6)
 
 
-class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-public-methods
-	def test_get_transactions_orders_rows_by_height_and_id_and_hides_above_watermark(self):
+class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-public-methods, too-many-lines
+	def test_returns_complete_embedded_transactions(self):
+		# Arrange:
+		mosaic_id = '1234567890ABCDEF'
+		aggregate_hash = bytes.fromhex('AA' * 32)
+		transactions = [
+			create_symbol_transaction(1, 10, type=TransactionType.AGGREGATE_COMPLETE.value, hash=aggregate_hash),
+			create_symbol_transaction(
+				1, 1, is_embedded=True, aggregate_hash=aggregate_hash,
+				mosaic_rows=[{'mosaic_id': mosaic_id, 'amount': 100, 'role': 'transfer', 'position': 0}]),
+			create_symbol_transaction(
+				1, 0, is_embedded=True, aggregate_hash=aggregate_hash,
+				mosaic_rows=[{'mosaic_id': mosaic_id, 'amount': 200, 'role': 'transfer', 'position': 0}]),
+		]
+		# Act:
+		results = _query_symbol_transactions(
+			transactions, create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+			TransactionQuery(transaction_types=(TransactionType.AGGREGATE_COMPLETE.value,)),
+			[create_symbol_mosaic(mosaic_id, 2)])
+
+		# Assert:
+		self.assertEqual(1, len(results))
+		result = results[0]
+		self.assertIsInstance(result, TransactionViewRecord)
+		self.assertEqual('AA' * 32, result.transaction_hash)
+		children = result.embedded_transactions
+		self.assertEqual([0, 1], [transaction.embedded_index for transaction in children])
+		self.assertTrue(all(isinstance(child, TransactionViewRecord) for child in children))
+		self.assertEqual([((mosaic_id, 200, 2, None),), ((mosaic_id, 100, 2, None),)], [transaction.mosaics for transaction in children])
+
+	def test_returns_selected_transfer_mosaics_in_position_order(self):
+		# Arrange:
+		first_mosaic_id = '1234567890ABCDEF'
+		second_mosaic_id = '234567890ABCDEF1'
+		transactions = [
+			create_symbol_transaction(1, 1, mosaic_rows=[
+				{'mosaic_id': second_mosaic_id, 'amount': 200, 'role': 'transfer', 'position': 1},
+				{'mosaic_id': first_mosaic_id, 'amount': 100, 'role': 'transfer', 'position': 0},
+				{'mosaic_id': '34567890ABCDEF12', 'amount': 300, 'role': 'hash_lock', 'position': 2},
+				{'mosaic_id': '4567890ABCDEF123', 'amount': 400, 'role': 'metadata_target', 'position': 3},
+			]),
+			create_symbol_transaction(1, 2),
+			create_symbol_mosaic_transfer(1, 3, '567890ABCDEF1234', 500),
+		]
+		sync_state = create_symbol_sync_state(last_synced_height=1, finalized_height=1)
+
+		with _transaction_mosaic_database(transactions, [
+			create_symbol_mosaic(first_mosaic_id, 2),
+			create_symbol_mosaic(second_mosaic_id, 3),
+		]) as (database, cursor, transaction_ids):
+			selected_id, empty_id, _ = transaction_ids
+			cursor.execute(
+				'UPDATE symbol_mosaics SET alias_names = %s::jsonb WHERE mosaic_id = %s',
+				('["alpha", "beta"]', first_mosaic_id))
+
+			# Act:
+			mosaics_map = database._fetch_transaction_mosaics(  # pylint: disable=protected-access
+				cursor, [selected_id, empty_id], sync_state)
+
+		# Assert:
+		self.assertEqual({selected_id: [(first_mosaic_id, 100, 2, 'alpha'), (second_mosaic_id, 200, 3, None)], empty_id: []}, mosaics_map)
+
+	def test_raises_when_selected_mosaic_metadata_is_unsafe(self):
+		# Arrange:
+		transactions = [create_symbol_mosaic_transfer(1, 1, '1234567890ABCDEF', 100)]
+		with _transaction_mosaic_database(transactions) as (database, cursor, transaction_ids):
+			for status in ('healthy', 'repairing'):
+				with self.subTest(status=status):
+					sync_state = create_symbol_sync_state(
+						last_synced_height=1, finalized_height=1, status=status,
+						dirty_state_from_height=2 if status == 'healthy' else None)
+
+					# Act + Assert:
+					with self.assertRaisesRegex(SymbolDataUnavailable, 'mosaic display depends on current state'):
+						database._fetch_transaction_mosaics(cursor, transaction_ids, sync_state)  # pylint: disable=protected-access
+
+	def test_returns_empty_list_without_aggregate_hashes(self):
+		# Arrange:
+		cursor = Mock()
+
+		# Act:
+		result = SymbolDatabase._fetch_embedded_transactions(cursor, [])  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([], result)
+		cursor.execute.assert_not_called()
+
+	def test_uses_configured_native_divisibility_instead_of_saved_metadata(self):
+		for saved_divisibility in (3, None):
+			with self.subTest(saved_divisibility=saved_divisibility):
+				# Arrange:
+				transactions = [create_symbol_mosaic_transfer(1, 1, NATIVE_MOSAIC_INFO.id, 12345678)]
+				mosaics = [create_symbol_mosaic(NATIVE_MOSAIC_INFO.id, saved_divisibility)] if saved_divisibility is not None else []
+				with _transaction_mosaic_database(transactions, mosaics, NATIVE_MOSAIC_INFO) as (database, cursor, transaction_ids):
+					# Act:
+					result = database._fetch_transaction_mosaics(  # pylint: disable=protected-access
+						cursor, transaction_ids, create_symbol_sync_state(last_synced_height=1, finalized_height=1))
+
+				# Assert:
+				self.assertEqual({transaction_ids[0]: [(NATIVE_MOSAIC_INFO.id, 12345678, NATIVE_MOSAIC_INFO.divisibility, None)]}, result)
+
+	def test_returns_native_mosaic_without_current_metadata_during_repair(self):
+		# Arrange:
+		transactions = [create_symbol_mosaic_transfer(1, 1, NATIVE_MOSAIC_INFO.id, 1000000)]
+		with _transaction_mosaic_database(transactions, native_mosaic_info=NATIVE_MOSAIC_INFO) as (database, cursor, transaction_ids):
+			# Act:
+			result = database._fetch_transaction_mosaics(  # pylint: disable=protected-access
+				cursor, transaction_ids, create_safe_repairing_sync_state())
+
+		# Assert:
+		self.assertEqual({transaction_ids[0]: [(NATIVE_MOSAIC_INFO.id, 1000000, 6, None)]}, result)
+
+	def test_returns_selected_parent_children_in_index_order(self):
+		# Arrange:
+		parent_hash = bytes.fromhex('AA' * 32)
+		transactions = [
+			create_symbol_transaction(4, 10, type=TransactionType.AGGREGATE_COMPLETE.value, hash=parent_hash),
+			create_symbol_transaction(4, 1, is_embedded=True, aggregate_hash=parent_hash),
+			create_symbol_transaction(4, 0, is_embedded=True, aggregate_hash=parent_hash),
+			create_symbol_transaction(4, 0, is_embedded=True, aggregate_hash=bytes.fromhex('BB' * 32)),
+		]
+		with symbol_test_database(blocks=[create_symbol_block(4)]) as (_, database):
+			database.upsert_transactions_for_height(4, transactions)
+			with database.connection.cursor() as cursor:
+				# Act:
+				result = SymbolDatabase._fetch_embedded_transactions(cursor, [parent_hash])  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual([(parent_hash, 0, 4), (parent_hash, 1, 4)], [(bytes(row[3]), row[4], row[5]) for row in result])
+
+	def test_get_transactions_orders_rows_by_height_and_id(self):
 		# Arrange:
 		transactions = [
-			create_symbol_transaction(4, 1),
-			create_symbol_transaction(4, 2),
-			create_symbol_transaction(3, 3),
-			create_symbol_transaction(5, 4)
+			create_symbol_transaction(1, 1),
+			create_symbol_transaction(2, 2),
+			create_symbol_transaction(2, 3)
 		]
 
 		# Act:
 		result = _query_symbol_transactions(
 			transactions,
-			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			create_symbol_sync_state(last_synced_height=2, finalized_height=1),
 			TransactionQuery(limit=10))
 
 		# Assert:
-		self.assertEqual([(4, 2), (4, 1), (3, 3)], [
-			(transaction.height, bytes(transaction.hash)[-1]) for transaction in result])
+		self.assertEqual([
+			(2, (3).to_bytes(32, 'big').hex().upper()),
+			(2, (2).to_bytes(32, 'big').hex().upper()),
+			(1, (1).to_bytes(32, 'big').hex().upper())
+		], [(transaction.height, transaction.transaction_hash) for transaction in result])
+
+	def test_get_transactions_hides_rows_above_watermark(self):
+		# Arrange:
+		transactions = [create_symbol_transaction(2, 1), create_symbol_transaction(3, 2)]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=2, finalized_height=1),
+			TransactionQuery(limit=10))
+
+		# Assert:
+		self.assertEqual([(2, (1).to_bytes(32, 'big').hex().upper())], [
+			(transaction.height, transaction.transaction_hash) for transaction in result])
 
 	def test_get_transactions_applies_limit_to_the_ordered_page(self):
 		# Arrange:
@@ -61,22 +208,10 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 
 		# Assert:
 		self.assertEqual([
-			TransactionRecord(
-				3,
-				(3).to_bytes(32, 'big'),
-				False,
-				None,
-				None,
-				4,
-				TransactionType.TRANSFER.value,
-				TRANSACTION_SIGNER_ADDRESS,
-				TRANSACTION_RECIPIENT_ADDRESS,
-				4,
-				datetime(2026, 1, 1, 0, 0, 4),
-				None,
-				None,
-				())
-		], [_normalize_transaction_binary_fields(record) for record in result])
+			((3).to_bytes(32, 'big').hex().upper(), TransactionType.TRANSFER.value, None),
+		], [
+			(transaction.transaction_hash, transaction.transaction_type.value, transaction.embedded_index)
+			for transaction in result])
 
 	def test_get_transactions_applies_offset_after_filtering_above_watermark_rows(self):
 		# Arrange:
@@ -90,22 +225,10 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 
 		# Assert:
 		self.assertEqual([
-			TransactionRecord(
-				1,
-				(1).to_bytes(32, 'big'),
-				False,
-				None,
-				None,
-				4,
-				TransactionType.TRANSFER.value,
-				TRANSACTION_SIGNER_ADDRESS,
-				TRANSACTION_RECIPIENT_ADDRESS,
-				4,
-				datetime(2026, 1, 1, 0, 0, 4),
-				None,
-				None,
-				())
-		], [_normalize_transaction_binary_fields(record) for record in result])
+			((1).to_bytes(32, 'big').hex().upper(), TransactionType.TRANSFER.value, None),
+		], [
+			(transaction.transaction_hash, transaction.transaction_type.value, transaction.embedded_index)
+			for transaction in result])
 
 	def test_get_transactions_returns_empty_for_height_above_clean_watermark(self):
 		# Arrange + Act:
@@ -142,37 +265,11 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 
 		# Assert:
 		self.assertEqual([
-			TransactionRecord(
-				2,
-				bytes.fromhex('AA' * 32),
-				False,
-				None,
-				None,
-				4,
-				TransactionType.AGGREGATE_COMPLETE.value,
-				TRANSACTION_SIGNER_ADDRESS,
-				TRANSACTION_RECIPIENT_ADDRESS,
-				4,
-				datetime(2026, 1, 1, 0, 0, 4),
-				None,
-				None,
-				()),
-			TransactionRecord(
-				1,
-				(1).to_bytes(32, 'big'),
-				False,
-				None,
-				None,
-				4,
-				TransactionType.TRANSFER.value,
-				TRANSACTION_SIGNER_ADDRESS,
-				TRANSACTION_RECIPIENT_ADDRESS,
-				4,
-				datetime(2026, 1, 1, 0, 0, 4),
-				None,
-				None,
-				(TransactionMosaicRecord(mosaic_id, 12345, 'transfer', 0, 2, []),))
-		], [_normalize_transaction_binary_fields(record) for record in result])
+			('AA' * 32, TransactionType.AGGREGATE_COMPLETE.value, None),
+			((1).to_bytes(32, 'big').hex().upper(), TransactionType.TRANSFER.value, None),
+		], [
+			(transaction.transaction_hash, transaction.transaction_type.value, transaction.embedded_index)
+			for transaction in result])
 
 	def test_get_transactions_combines_type_signer_and_recipient_filters_with_and(self):
 		# Arrange:
@@ -196,22 +293,10 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 
 		# Assert:
 		self.assertEqual([
-			TransactionRecord(
-				1,
-				(1).to_bytes(32, 'big'),
-				False,
-				None,
-				None,
-				4,
-				TransactionType.TRANSFER.value,
-				TRANSACTION_SIGNER_ADDRESS,
-				TRANSACTION_RECIPIENT_ADDRESS,
-				4,
-				datetime(2026, 1, 1, 0, 0, 4),
-				None,
-				None,
-				())
-		], [_normalize_transaction_binary_fields(record) for record in result])
+			((1).to_bytes(32, 'big').hex().upper(), TransactionType.TRANSFER.value, None),
+		], [
+			(transaction.transaction_hash, transaction.transaction_type.value, transaction.embedded_index)
+			for transaction in result])
 
 	def test_get_transactions_sender_address_matches_only_signer_column(self):
 		# Arrange:
@@ -244,7 +329,7 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			TransactionQuery(sender_address=sender_address))
 
 		# Assert:
-		self.assertEqual([1], [bytes(record.hash)[-1] for record in result])
+		self.assertEqual([1], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
 
 	def test_get_transactions_combines_sender_address_signer_public_key_and_recipient_with_and(self):
 		# Arrange:
@@ -287,7 +372,7 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 				recipient_address=recipient_address))
 
 		# Assert:
-		self.assertEqual([1], [bytes(record.hash)[-1] for record in result])
+		self.assertEqual([1], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
 
 	def test_get_transactions_combines_sender_address_height_type_and_mosaic_filters_with_and(self):
 		# Arrange:
@@ -326,9 +411,9 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			[create_symbol_mosaic(mosaic_id, 2), create_symbol_mosaic(other_mosaic_id, 2)])
 
 		# Assert:
-		self.assertEqual([1], [bytes(record.hash)[-1] for record in result])
+		self.assertEqual([1], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
 
-	def test_get_transactions_sender_address_embedded_selection_does_not_promote_child_to_parent(self):
+	def test_get_transactions_sender_address_does_not_promote_child_to_parent(self):
 		# Arrange:
 		sender_address = bytes.fromhex('03' * 24)
 		parent_hash = bytes.fromhex('AA' * 32)
@@ -342,24 +427,15 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			aggregate_hash=parent_hash,
 			address_rows=[{'address': sender_address, 'role': 'signer'}])
 		transactions = [parent, child]
-		expected_child_identity = [(2, None, parent_hash, 0, True)]
 
-		# Act + Assert:
-		for query, expected in (
-			(TransactionQuery(sender_address=sender_address), []),
-			(TransactionQuery(sender_address=sender_address, include_embedded=False), []),
-			(TransactionQuery(sender_address=sender_address, include_embedded=True), expected_child_identity)
-		):
-			with self.subTest(query=query):
-				result = _query_symbol_transactions(
-					transactions,
-					create_symbol_sync_state(last_synced_height=4, finalized_height=3),
-					query)
-				self.assertEqual(expected, [
-					(record.transaction_id, bytes(record.hash) if record.hash is not None else None,
-						bytes(record.aggregate_hash) if record.aggregate_hash is not None else None,
-						record.embedded_index, record.is_embedded)
-					for record in result])
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(sender_address=sender_address))
+
+		# Assert:
+		self.assertEqual([], result)
 
 	def test_get_transactions_sender_address_filters_before_pagination_and_hides_above_watermark(self):
 		# Arrange:
@@ -383,9 +459,9 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 		# Assert:
 		self.assertEqual(
 			[(2, 4), (1, 4), (6, 3)],
-			[(bytes(record.hash)[-1], record.height) for record in result])
+			[(bytes.fromhex(transaction.transaction_hash)[-1], transaction.height) for transaction in result])
 
-	def test_get_transactions_includes_embedded_rows_when_requested(self):
+	def test_get_transactions_returns_embedded_rows_only_inside_their_parent(self):
 		# Arrange:
 		parent_hash = bytes.fromhex('AA' * 32)
 		transactions = [
@@ -402,22 +478,21 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 		result = _query_symbol_transactions(
 			transactions,
 			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
-			TransactionQuery(include_embedded=True))
+			TransactionQuery())
 
 		# Assert:
 		self.assertEqual([
-			(3, True, TransactionType.TRANSFER.value, None, parent_hash, 1),
-			(2, True, TransactionType.TRANSFER.value, None, parent_hash, 0),
-			(1, False, TransactionType.AGGREGATE_COMPLETE.value, parent_hash, None, None)
+			(TransactionType.AGGREGATE_COMPLETE.value, parent_hash.hex().upper(), None, None)
 		], [
 			(
-				transaction.transaction_id,
-				transaction.is_embedded,
-				transaction.transaction_type,
-				bytes(transaction.hash) if transaction.hash is not None else None,
-				bytes(transaction.aggregate_hash) if transaction.aggregate_hash is not None else None,
+				transaction.transaction_type.value,
+				transaction.transaction_hash,
+				transaction.aggregate_hash,
 				transaction.embedded_index)
 			for transaction in result])
+
+		children = result[0].embedded_transactions
+		self.assertEqual([0, 1], [child.embedded_index for child in children])
 
 	def test_get_transactions_requires_address_and_transfer_mosaic_on_the_same_transaction_row(self):
 		# Arrange:
@@ -456,29 +531,24 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
 			TransactionQuery(
 				address=participant_address,
-				transfer_mosaic_id=transfer_mosaic_id,
-				include_embedded=True),
+				transfer_mosaic_id=transfer_mosaic_id),
 			[create_symbol_mosaic(transfer_mosaic_id, 2), create_symbol_mosaic(other_mosaic_id, 0)])
 
 		# Assert:
-		self.assertEqual([(False, bytes.fromhex('00' * 31 + '01'), None, None)], [
-			(transaction.is_embedded, bytes(transaction.hash) if transaction.hash is not None else None,
+		self.assertEqual([(False, (1).to_bytes(32, 'big').hex().upper(), None, None)], [
+			((transaction.aggregate_hash is not None), transaction.transaction_hash,
 				transaction.aggregate_hash, transaction.embedded_index)
 			for transaction in result])
-		self.assertEqual([(transfer_mosaic_id, 'transfer', 10)], [
-			(mosaic.mosaic_id, mosaic.role, mosaic.amount)
-			for transaction in result
-			for mosaic in transaction.mosaics])
+		self.assertEqual([[(transfer_mosaic_id, 10, 2, None)]], [list(transaction.mosaics) for transaction in result])
 
-	def test_get_transactions_address_searches_each_row_role_without_parent_promotion_or_role_duplicates(self):
+	def test_get_transactions_address_matches_participant_roles_without_duplicates_or_embedded_rows(self):
 		# Arrange:
 		participant_address = bytes.fromhex('04' * 24)
 		parent = create_symbol_transaction(4, 10, type=TransactionType.AGGREGATE_COMPLETE.value)
 		parent['hash'] = bytes.fromhex('AA' * 32)
-		child0 = create_symbol_transaction(
+		participant = create_symbol_transaction(
 			4,
-			0,
-			is_embedded=True,
+			2,
 			address_rows=[
 				{'address': participant_address, 'role': 'cosignatory'},
 				{'address': participant_address, 'role': 'target'}
@@ -490,49 +560,13 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			address_rows=[{'address': participant_address, 'role': 'cosignatory'}])
 
 		# Act:
-		embedded_result = _query_symbol_transactions(
-			[parent, child0, child1],
-			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
-			TransactionQuery(address=participant_address, include_embedded=True))
-		top_level_result = _query_symbol_transactions(
-			[parent, child0, child1],
+		result = _query_symbol_transactions(
+			[parent, participant, child1],
 			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
 			TransactionQuery(address=participant_address))
 
 		# Assert:
-		self.assertEqual([
-			TransactionRecord(
-				3,
-				None,
-				True,
-				bytes.fromhex('AA' * 32),
-				1,
-				4,
-				TransactionType.TRANSFER.value,
-				TRANSACTION_SIGNER_ADDRESS,
-				TRANSACTION_RECIPIENT_ADDRESS,
-				None,
-				datetime(2026, 1, 1, 0, 0, 4),
-				None,
-				None,
-				()),
-			TransactionRecord(
-				2,
-				None,
-				True,
-				bytes.fromhex('AA' * 32),
-				0,
-				4,
-				TransactionType.TRANSFER.value,
-				TRANSACTION_SIGNER_ADDRESS,
-				TRANSACTION_RECIPIENT_ADDRESS,
-				None,
-				datetime(2026, 1, 1, 0, 0, 4),
-				None,
-				None,
-				())
-		], [_normalize_transaction_binary_fields(record) for record in embedded_result])
-		self.assertEqual([], top_level_result)
+		self.assertEqual([(2).to_bytes(32, 'big').hex().upper()], [transaction.transaction_hash for transaction in result])
 
 	def test_get_transactions_transfer_mosaic_search_excludes_metadata_target_and_uses_saved_resolution(self):
 		# Arrange:
@@ -556,11 +590,10 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			TransactionQuery(transfer_mosaic_id=resolved_mosaic_id))
 
 		# Assert:
-		self.assertEqual([False], [transaction.is_embedded for transaction in result])
-		self.assertEqual([(resolved_mosaic_id, 'transfer', 12345)], [
-			(mosaic.mosaic_id, mosaic.role, mosaic.amount) for mosaic in result[0].mosaics])
+		self.assertEqual([False], [(transaction.aggregate_hash is not None) for transaction in result])
+		self.assertEqual(((resolved_mosaic_id, 12345, None, None),), result[0].mosaics)
 
-	def test_get_transactions_reads_saved_mosaic_divisibility_and_returns_null_for_missing_state(self):
+	def test_returns_mosaic_amounts_and_saved_divisibility(self):
 		# Arrange:
 		transactions = [create_symbol_transaction(
 			4,
@@ -580,11 +613,11 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			mosaics)
 
 		# Assert:
-		self.assertEqual([
-			('1234567890ABCDEF', 2, []),
-			('FEDCBA9876543210', 0, []),
-			('ABCDEF0123456789', None, None)
-		], [(mosaic.mosaic_id, mosaic.divisibility, mosaic.alias_names) for mosaic in result[0].mosaics])
+		self.assertEqual((
+			('1234567890ABCDEF', 12345, 2, None),
+			('FEDCBA9876543210', 5, 0, None),
+			('ABCDEF0123456789', 54321, None, None),
+		), result[0].mosaics)
 
 	def test_get_transactions_reads_height_below_dirty_boundary(self):
 		# Arrange:
@@ -600,7 +633,7 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 		# Assert:
 		self.assertEqual([2], [transaction.height for transaction in result])
 
-	def test_get_transactions_raises_data_unavailable_above_dirty_boundary(self):
+	def test_get_transactions_raises_data_unavailable_at_dirty_boundary(self):
 		# Arrange:
 		transactions = [create_symbol_transaction(2, 1), create_symbol_transaction(3, 2)]
 		sync_state = create_symbol_sync_state(
@@ -612,7 +645,7 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 		with self.assertRaisesRegex(SymbolDataUnavailable, 'requested height is above the readable height'):
 			_query_symbol_transactions(transactions, sync_state, TransactionQuery(height=3))
 
-	def test_get_transactions_raises_data_unavailable_when_page_crosses_dirty_boundary(self):
+	def test_get_transactions_rejects_unbounded_query_when_state_is_dirty(self):
 		# Arrange:
 		transactions = [create_symbol_transaction(2, 1), create_symbol_transaction(3, 2)]
 		sync_state = create_symbol_sync_state(
@@ -661,31 +694,21 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 		with self.assertRaises(SymbolDataUnavailable):
 			_query_symbol_transactions(transactions, sync_state, TransactionQuery(height=2))
 
-	def test_get_transactions_allows_native_mosaic_without_current_state_during_repair(self):
-		# Arrange:
-		transaction = create_symbol_mosaic_transfer(2, 1, NATIVE_MOSAIC_INFO.id, 123)
-		with symbol_test_database(create_safe_repairing_sync_state(), [create_symbol_block(2)]) as (
-			db_config, puller_database):
-			puller_database.upsert_transactions_for_height(2, [transaction])
-			puller_database.upsert_mosaic(create_symbol_mosaic(NATIVE_MOSAIC_INFO.id, 3))
-			alias_names_json = '["repairing-native-name"]'
-			with puller_database.connection.cursor() as cursor:
-				cursor.execute(
-					'UPDATE symbol_mosaics SET alias_names = %s::jsonb WHERE mosaic_id = %s',
-					(alias_names_json, NATIVE_MOSAIC_INFO.id))
-			puller_database.connection.commit()
-			database = SymbolDatabase(db_config, NATIVE_MOSAIC_INFO)
-			try:
-				# Act:
-				result = database.get_transactions(TransactionQuery(height=2))
-			finally:
-				database.close()
+	def test_get_transactions_uses_configured_native_divisibility_during_repair(self):
+		for saved_divisibility in (3, None):
+			with self.subTest(saved_divisibility=saved_divisibility):
+				# Arrange:
+				transaction = create_symbol_mosaic_transfer(2, 1, NATIVE_MOSAIC_INFO.id, 123)
+				mosaics = [create_symbol_mosaic(NATIVE_MOSAIC_INFO.id, saved_divisibility)] if saved_divisibility is not None else []
 
-		# Assert:
-		self.assertEqual(1, len(result))
-		self.assertEqual(
-			(NATIVE_MOSAIC_INFO.id, None, None),
-			(result[0].mosaics[0].mosaic_id, result[0].mosaics[0].divisibility, result[0].mosaics[0].alias_names))
+				# Act:
+				result = _query_symbol_transactions(
+					[transaction], create_safe_repairing_sync_state(), TransactionQuery(height=2), mosaics)
+
+				# Assert:
+				self.assertEqual(1, len(result))
+				self.assertEqual(((NATIVE_MOSAIC_INFO.id, 123, NATIVE_MOSAIC_INFO.divisibility, None),), result[0].mosaics)
+				self.assertEqual(0.000002, result[0].fee)
 
 	def test_get_transactions_raises_data_unavailable_when_top_level_effective_fee_is_missing(self):
 		# Arrange:
@@ -700,36 +723,38 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 
 	def test_get_transactions_uses_one_snapshot_for_sync_state_page_and_mosaic_state(self):
 		# Arrange:
-		transaction = create_symbol_transaction(
+		parent = create_symbol_transaction(1, 10, type=TransactionType.AGGREGATE_COMPLETE.value, hash=bytes.fromhex('AA' * 32))
+		child = create_symbol_transaction(
 			1,
-			1,
+			0,
+			is_embedded=True,
 			mosaic_rows=[{'mosaic_id': '1234567890ABCDEF', 'amount': 123, 'role': 'transfer', 'position': 0}])
 		with symbol_test_database(
 			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
 			[create_symbol_block(1)],
 			[create_symbol_mosaic('1234567890ABCDEF', 2)]) as (db_config, puller_database):
-			puller_database.upsert_transactions_for_height(1, [transaction])
+			puller_database.upsert_transactions_for_height(1, [parent, child])
 			with puller_database.connection.cursor() as cursor:
 				cursor.execute(
 					"UPDATE symbol_mosaics SET alias_names = '[\"before\"]'::jsonb WHERE mosaic_id = %s",
 					('1234567890ABCDEF',))
 			puller_database.connection.commit()
 
-			database = PausingAfterSyncStateReadSymbolDatabase(db_config)
+			database = PausingAfterSyncStateReadSymbolDatabase(db_config, NATIVE_MOSAIC_INFO)
 			try:
 				# Act:
 				result = read_during_database_snapshot(
 					database,
-					lambda: database.get_transactions(TransactionQuery(address=TRANSACTION_SIGNER_ADDRESS)),
+					lambda: database.get_transactions(TransactionQuery(
+						address=TRANSACTION_SIGNER_ADDRESS, transaction_types=(TransactionType.AGGREGATE_COMPLETE.value,))),
 					lambda: _update_transaction_snapshot(puller_database))
 			finally:
 				database.close()
 
 		# Assert:
 		self.assertEqual(1, len(result))
-		self.assertEqual(1, result[0].effective_fee)
-		self.assertEqual(123, result[0].mosaics[0].amount)
-		self.assertEqual(['before'], result[0].mosaics[0].alias_names)
+		self.assertEqual(0.000001, result[0].fee)
+		self.assertEqual((('1234567890ABCDEF', 123, 2, 'before'),), result[0].embedded_transactions[0].mosaics)
 
 	def test_get_transactions_reports_current_mosaic_state_read_failure_and_recovers_connection(self):
 		# Arrange:
@@ -768,7 +793,7 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 
 		# Assert:
 		self.assertEqual(1, len(result))
-		self.assertEqual('1234567890ABCDEF', result[0].mosaics[0].mosaic_id)
+		self.assertEqual((('1234567890ABCDEF', 123, 2, None),), result[0].mosaics)
 
 
 class SymbolDatabaseTransactionAliasTest(TestCase):
@@ -789,22 +814,10 @@ class SymbolDatabaseTransactionAliasTest(TestCase):
 
 		# Assert: only the current link's transfer at the requested historical height is returned.
 		self.assertEqual([
-			TransactionRecord(
-				1,
-				(1).to_bytes(32, 'big'),
-				False,
-				None,
-				None,
-				1,
-				TransactionType.TRANSFER.value,
-				TRANSACTION_SIGNER_ADDRESS,
-				TRANSACTION_RECIPIENT_ADDRESS,
-				1,
-				datetime(2026, 1, 1, 0, 0, 1),
-				None,
-				None,
-				(TransactionMosaicRecord('72C0212E67A08BCE', 11, 'transfer', 0, 6, []),))
-		], [_normalize_transaction_binary_fields(record) for record in result])
+			((1).to_bytes(32, 'big').hex().upper(), TransactionType.TRANSFER.value, None),
+		], [
+			(transaction.transaction_hash, transaction.transaction_type.value, transaction.embedded_index)
+			for transaction in result])
 
 	def test_get_transactions_keeps_namespace_and_transaction_rows_in_one_snapshot(self):
 		# Arrange: both links have transfers; a concurrent commit changes the link and amount.
@@ -826,39 +839,39 @@ class SymbolDatabaseTransactionAliasTest(TestCase):
 				puller_database.connection.commit()
 
 			# Act:
-			with PausingAfterSyncStateReadSymbolDatabase(db_config) as database:
+			with PausingAfterSyncStateReadSymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 				result = read_during_database_snapshot(
 					database,
 					lambda: database.get_transactions(TransactionQuery(transfer_mosaic_id=alias_id)),
 					update_alias_snapshot)
-			with SymbolDatabase(db_config) as database:
+			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 				next_result = database.get_transactions(TransactionQuery(transfer_mosaic_id=alias_id))
 
 		# Assert: first read sees old link and amount; next read sees the commit.
-		self.assertEqual([(mosaic_a, 11, 1)], [
-			(row.mosaics[0].mosaic_id, row.mosaics[0].amount, bytes(row.hash)[-1]) for row in result])
-		self.assertEqual([(mosaic_b, 999, 2)], [
-			(row.mosaics[0].mosaic_id, row.mosaics[0].amount, bytes(row.hash)[-1]) for row in next_result])
+		self.assertEqual([(mosaic_a, 11, None, None, 1)], [
+			(*transaction.mosaics[0], bytes.fromhex(transaction.transaction_hash)[-1]) for transaction in result])
+		self.assertEqual([(mosaic_b, 999, None, None, 2)], [
+			(*transaction.mosaics[0], bytes.fromhex(transaction.transaction_hash)[-1]) for transaction in next_result])
 
-	def test_get_transactions_uses_saved_alias_target_without_revalidating_format(self):
+	def test_uses_saved_mosaic_target_without_resolving_it_as_an_alias(self):
 		# Arrange:
-		for saved_target, transaction_target in (('invalid', 'INVALID'), ('887e5db6bb0b21f5', '887E5DB6BB0B21F5')):
-			with self.subTest(saved_target=saved_target):
-				with symbol_test_database(
-					create_symbol_sync_state(last_synced_height=1, finalized_height=1),
-					[create_symbol_block(1)]) as (db_config, puller_database):
-					puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id=saved_target), [])
-					puller_database.upsert_transactions_for_height(1, [
-						create_symbol_mosaic_transfer(1, 1, transaction_target, 10),
-						create_symbol_mosaic_transfer(1, 2, '1234567890ABCDEF', 20)])
+		saved_target = '887e5db6bb0b21f5'
+		transaction_target = '887E5DB6BB0B21F5'
+		with symbol_test_database(
+			create_symbol_sync_state(last_synced_height=1, finalized_height=1),
+			[create_symbol_block(1)]) as (db_config, puller_database):
+			puller_database.upsert_namespace(create_symbol_namespace(alias_mosaic_id=saved_target), [])
+			puller_database.upsert_transactions_for_height(1, [
+				create_symbol_mosaic_transfer(1, 1, transaction_target, 10),
+				create_symbol_mosaic_transfer(1, 2, '1234567890ABCDEF', 20)])
 
-					# Act:
-					with SymbolDatabase(db_config) as database:
-						result = database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
+			# Act:
+			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
+				result = database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
 
-					# Assert:
-					self.assertEqual([(transaction_target, 10)], [
-						(row.mosaics[0].mosaic_id, row.mosaics[0].amount) for row in result])
+			# Assert:
+			self.assertEqual([(transaction_target, 10, None, None)], [
+				transaction.mosaics[0] for transaction in result])
 
 	def test_get_transactions_accepts_saved_zero_start_height_without_revalidating_lifetime_shape(self):
 		# Arrange: start height zero is retained as a node-derived value and remains active at latest height 3.
@@ -867,7 +880,7 @@ class SymbolDatabaseTransactionAliasTest(TestCase):
 			puller_database.upsert_namespace(create_symbol_namespace(start_height=0, end_height=None), [])
 
 			# Act:
-			with SymbolDatabase(db_config) as database:
+			with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 				result = database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
 
 		# Assert:
@@ -881,7 +894,7 @@ class SymbolDatabaseTransactionAliasTest(TestCase):
 
 			# Act + Assert:
 			with self.assertRaisesRegex(SymbolMosaicAliasNotFound, 'not currently linked'):
-				with SymbolDatabase(db_config) as database:
+				with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 					database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
 
 	def test_get_transactions_returns_not_found_for_null_alias_target(self):
@@ -892,7 +905,7 @@ class SymbolDatabaseTransactionAliasTest(TestCase):
 
 			# Act + Assert:
 			with self.assertRaisesRegex(SymbolMosaicAliasNotFound, 'not currently linked'):
-				with SymbolDatabase(db_config) as database:
+				with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 					database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
 
 	def test_get_transactions_rejects_not_yet_active_alias(self):
@@ -903,7 +916,7 @@ class SymbolDatabaseTransactionAliasTest(TestCase):
 
 			# Act + Assert:
 			with self.assertRaisesRegex(SymbolMosaicAliasNotFound, 'not currently linked'):
-				with SymbolDatabase(db_config) as database:
+				with SymbolDatabase(db_config, NATIVE_MOSAIC_INFO) as database:
 					database.get_transactions(TransactionQuery(height=1, transfer_mosaic_id='887E5DB6BB0B21F5'))
 
 	def test_get_transactions_normalizes_saved_lowercase_mosaic_target(self):
@@ -919,17 +932,19 @@ class SymbolDatabaseTransactionAliasTest(TestCase):
 				result = database.get_transactions(TransactionQuery(transfer_mosaic_id='887E5DB6BB0B21F5'))
 
 		# Assert:
-		self.assertEqual([(NATIVE_MOSAIC_INFO.id, 10)], [(row.mosaics[0].mosaic_id, row.mosaics[0].amount) for row in result])
+		self.assertEqual([(NATIVE_MOSAIC_INFO.id, 10, 6, None)], [transaction.mosaics[0] for transaction in result])
 
 
-def _normalize_transaction_binary_fields(record):
-	"""Normalizes PostgreSQL bytea memoryviews for value-based record comparisons."""
-
-	return record._replace(
-		hash=bytes(record.hash) if record.hash is not None else None,
-		aggregate_hash=bytes(record.aggregate_hash) if record.aggregate_hash is not None else None,
-		signer_address=bytes(record.signer_address),
-		recipient_address=bytes(record.recipient_address) if record.recipient_address is not None else None)
+@contextmanager
+def _transaction_mosaic_database(transactions, mosaics=(), native_mosaic_info=None):
+	# Arrange:
+	with symbol_test_database(blocks=[create_symbol_block(1)], mosaics=mosaics) as (db_config, puller_database):
+		puller_database.upsert_transactions_for_height(1, transactions)
+		with puller_database.connection.cursor() as cursor:
+			cursor.execute('SELECT id FROM symbol_transactions ORDER BY id')
+			transaction_ids = [row[0] for row in cursor.fetchall()]
+			with SymbolDatabase(db_config, native_mosaic_info) as database:
+				yield database, cursor, transaction_ids
 
 
 def _query_symbol_transactions(transactions, sync_state, query, mosaics=None):
@@ -956,6 +971,6 @@ def _update_transaction_snapshot(puller_database):
 			'AND role = %s::symbol_transaction_address_role',
 			(bytes.fromhex('FF' * 24), TRANSACTION_SIGNER_ADDRESS, 'signer'))
 		cursor.execute(
-			"UPDATE symbol_mosaics SET alias_names = '[\"after\"]'::jsonb WHERE mosaic_id = %s",
+			"UPDATE symbol_mosaics SET divisibility = 3, alias_names = '[\"after\"]'::jsonb WHERE mosaic_id = %s",
 			('1234567890ABCDEF',))
 	puller_database.connection.commit()
