@@ -10,8 +10,9 @@ export const blockWithTransactionsResponse = {
 	previousHash: '651559728532BF10BEDE36F86883A59F68E329CB86AB97AE90BD482C26D7E7FA',
 	statementCount: 2,
 	timestamp: '2026-10-06 12:35:58',
-	totalFee: 0.0312,
-	transactionCount: 1
+	totalFees: 0.0312,
+	totalTransactions: 1,
+	topLevelTransactions: 1
 };
 
 export const emptyBlockResponse = {
@@ -26,8 +27,9 @@ export const emptyBlockResponse = {
 	previousHash: '828658CA46766B37917E8421DB51037138B514CD4FDC44F1B0456D25BA854F74',
 	statementCount: 1,
 	timestamp: '2026-10-06 12:46:13',
-	totalFee: 0,
-	transactionCount: 0
+	totalFees: 0,
+	totalTransactions: 0,
+	topLevelTransactions: 0
 };
 
 export const blockListResponse = [

@@ -97,8 +97,8 @@ const blockListItemFromDTO = data => ({
 	hash: data.hash,
 	harvester: data.harvester,
 	difficulty: ((data.difficulty / Math.pow(10, 14)) * 100).toFixed(2),
-	totalFee: data.totalFee,
-	transactionCount: data.transactionCount,
+	totalFee: data.totalFees,
+	transactionCount: data.totalTransactions,
 	statementCount: data.statementCount,
 	blockReward: data.blockReward ?? 0
 });
