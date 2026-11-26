@@ -663,6 +663,11 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 			ON symbol_transactions(type, height DESC, id DESC)
 		''')
 		cursor.execute('''
+			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_top_level_type_height
+			ON symbol_transactions(type, height DESC, id DESC)
+			WHERE is_embedded = false
+		''')
+		cursor.execute('''
 			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_signer_height
 			ON symbol_transactions(signer_public_key, height DESC, id DESC)
 		''')

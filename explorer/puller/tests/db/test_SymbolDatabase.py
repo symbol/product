@@ -71,6 +71,11 @@ LOCK_RECIPIENT = bytes.fromhex(ADDRESS3)
 RESTRICTION_HASH = bytes.fromhex('F1' * 32)
 RESTRICTION_HASH_2 = bytes.fromhex('F2' * 32)
 RESTRICTION_MOSAIC_ID = '72C0212E67A08BCE'
+TRANSACTION_TOP_LEVEL_TYPE_INDEX = (
+	'idx_symbol_transactions_top_level_type_height',
+	'CREATE INDEX idx_symbol_transactions_top_level_type_height ON public.symbol_transactions USING btree '
+	'(type, height DESC, id DESC) WHERE (is_embedded = false)'
+)
 ACCOUNT_REFRESH_HEIGHT_INDEX = (
 	'idx_symbol_account_refresh_accounts_address_height_desc',
 	'CREATE INDEX idx_symbol_account_refresh_accounts_address_height_desc ON public.symbol_account_refresh_accounts '
@@ -3801,8 +3806,44 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			'idx_symbol_transactions_signer_address',
 			'idx_symbol_transactions_signer_height',
 			'idx_symbol_transactions_timestamp',
+			'idx_symbol_transactions_top_level_type_height',
 			'idx_symbol_transactions_type_height'
 		], indexes)
+
+	@staticmethod
+	def _fetch_transaction_top_level_type_index(cursor):
+		cursor.execute(
+			'''
+			SELECT indexname, indexdef
+			FROM pg_indexes
+			WHERE schemaname = 'public'
+				AND indexname = 'idx_symbol_transactions_top_level_type_height'
+			''')
+		return cursor.fetchall()
+
+	def test_create_tables_adds_missing_transaction_top_level_type_index(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('DROP INDEX idx_symbol_transactions_top_level_type_height')
+		database.connection.commit()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([TRANSACTION_TOP_LEVEL_TYPE_INDEX], self._fetch_transaction_top_level_type_index(cursor))
+
+	def test_create_tables_preserves_transaction_top_level_type_index_when_run_again(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([TRANSACTION_TOP_LEVEL_TYPE_INDEX], self._fetch_transaction_top_level_type_index(cursor))
 
 	def test_create_tables_creates_transaction_height_indexes_with_expected_definitions(self):
 		# Arrange:
@@ -3916,7 +3957,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 			SELECT indexname, indexdef
 			FROM pg_indexes
 			WHERE schemaname = 'public'
-				AND indexname IN ('idx_symbol_transactions_height_desc', 'idx_symbol_transactions_list_sequence_desc')
+				AND indexname IN (
+					'idx_symbol_transactions_height_desc',
+					'idx_symbol_transactions_list_sequence_desc',
+					'idx_symbol_transactions_top_level_type_height'
+				)
 			ORDER BY indexname
 			'''
 		)
@@ -3932,7 +3977,8 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 				'idx_symbol_transactions_list_sequence_desc',
 				'CREATE INDEX idx_symbol_transactions_list_sequence_desc ON public.symbol_transactions USING btree '
 				'(list_sequence DESC) WHERE (is_embedded = false)'
-			)
+			),
+			TRANSACTION_TOP_LEVEL_TYPE_INDEX
 		], indexes)
 
 	def test_create_tables_creates_symbol_transaction_list_sequence(self):
