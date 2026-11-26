@@ -2,9 +2,10 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
+import configparser
 
 import pytest
-from symbolchain.CryptoTypes import PrivateKey
+from symbolchain.CryptoTypes import PrivateKey, PublicKey
 from symbolchain.sc import LinkAction, TransactionFactory, TransactionType
 from symbolchain.symbol.KeyPair import KeyPair
 from symbolchain.symbol.VotingKeysGenerator import VotingKeysGenerator
@@ -302,3 +303,35 @@ async def test_cannot_renew_voting_keys_when_max_keys_are_active(server, caplog)
 
 			# no transaction is created
 			assert not (Path(output_directory) / 'renew_voting_keys_transaction.dat').exists()
+
+
+async def test_can_renew_voting_keys_for_configured_multisig_signer(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	transaction_signer_public_key = PublicKey('F357F779799EAE88B400D45E7C3C232391CFD79EFEAA05BC38868356CBE0A4D3')
+
+	with tempfile.TemporaryDirectory() as output_directory:
+		with tempfile.TemporaryDirectory() as package_directory:
+			await _prepare_output_directory(Path(package_directory), Path(output_directory), NodeFeatures.VOTER, server.make_url(''))
+			config_filepath = prepare_shoestring_configuration(
+				package_directory,
+				NodeFeatures.VOTER,
+				server.make_url(''),
+				transaction_signer_public_key=transaction_signer_public_key)
+
+			parser = configparser.ConfigParser()
+			parser.read(config_filepath)
+			parser['transaction']['minCosignaturesCount'] = '2'
+			with open(config_filepath, 'wt', encoding='utf8') as outfile:
+				parser.write(outfile)
+
+			# Act:
+			await main([
+				'renew-voting-keys',
+				'--config', str(config_filepath),
+				'--directory', output_directory
+			])
+
+			# Assert:
+			transaction = _read_transaction(output_directory)
+			assert transaction_signer_public_key == PublicKey(transaction.signer_public_key.bytes)
+			assert transaction_signer_public_key == PublicKey(transaction.transactions[0].signer_public_key.bytes)
