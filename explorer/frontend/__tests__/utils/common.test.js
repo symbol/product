@@ -1,9 +1,11 @@
 import { accountHarvestedBlockPageResult, accountPageResult } from '../test-utils/accounts';
 import { blockPageResult } from '../test-utils/blocks';
+import { mockUserTimezone } from '../test-utils/timezone';
 import { transactionPageResult } from '../test-utils/transactions';
 import {
 	arrayToText,
 	createExpirationLabel,
+	dateToLocalDate,
 	decodeTransactionMessage,
 	formatAccountCSV,
 	formatBlockCSV,
@@ -21,12 +23,6 @@ import {
 	truncateDecimals,
 	truncateString
 } from '@/app/utils/common';
-
-beforeEach(() => {
-	Date.prototype.getTimezoneOffset = function () {
-		return 160;
-	};
-});
 
 describe('utils/common', () => {
 	describe('formatDate', () => {
@@ -97,10 +93,95 @@ describe('utils/common', () => {
 				hasSeconds: true,
 				type: 'local'
 			};
-			const expectedResult = 'translated_month_jun 6, 2024 • 22:21:01';
+			const expectedResult = 'translated_month_jun 7, 2024 • 01:01:01';
 
 			// Act + Assert:
 			runFormatDateTest(timestamp, config, expectedResult);
+		});
+
+		describe('in UTC-5 timezone', () => {
+			let restoreTimezone;
+
+			beforeEach(() => {
+				restoreTimezone = mockUserTimezone(300);
+			});
+
+			afterEach(() => {
+				restoreTimezone();
+			});
+
+			it('formats REST timestamp in UTC', () => {
+				runFormatDateTest(
+					'2024-06-07 01:01:01',
+					{ hasTime: true, hasSeconds: true },
+					'translated_month_jun 7, 2024 • 01:01:01'
+				);
+			});
+
+			it('formats REST timestamp in local timezone', () => {
+				runFormatDateTest(
+					'2024-06-07 01:01:01',
+					{ hasTime: true, hasSeconds: true, type: 'local' },
+					'translated_month_jun 6, 2024 • 20:01:01'
+				);
+			});
+
+			it('formats date with timezone designator in UTC', () => {
+				runFormatDateTest(
+					'2024-06-07T03:01:01+02:00',
+					{ hasTime: true, hasSeconds: true },
+					'translated_month_jun 7, 2024 • 01:01:01'
+				);
+			});
+
+			it('formats chart date in UTC', () => {
+				runFormatDateTest('2024-06-07', undefined, 'translated_month_jun 7, 2024');
+			});
+		});
+	});
+
+	describe('dateToLocalDate', () => {
+		let restoreTimezone;
+
+		beforeEach(() => {
+			// REST timestamps are UTC, so the local timezone must not affect them.
+			restoreTimezone = mockUserTimezone(-540);
+		});
+
+		afterEach(() => {
+			restoreTimezone();
+		});
+
+		const runDateToLocalDateTest = (date, expectedResult) => {
+			// Act:
+			const result = dateToLocalDate(date);
+
+			// Assert:
+			expect(result.toISOString()).toBe(expectedResult);
+		};
+
+		it('parses REST timestamp as UTC', () => {
+			runDateToLocalDateTest('2024-07-15 10:00:00', '2024-07-15T10:00:00.000Z');
+		});
+
+		it('parses REST timestamp without seconds as UTC', () => {
+			runDateToLocalDateTest('2024-07-15 10:00', '2024-07-15T10:00:00.000Z');
+		});
+
+		it('parses timezone-less ISO timestamp with milliseconds as UTC', () => {
+			runDateToLocalDateTest('2024-07-15T10:00:00.123', '2024-07-15T10:00:00.123Z');
+		});
+
+		it('parses ISO date with timezone designator as is', () => {
+			runDateToLocalDateTest('2024-07-15T10:00:00+02:00', '2024-07-15T08:00:00.000Z');
+		});
+
+		it('parses RFC 1123 date as is', () => {
+			runDateToLocalDateTest('Wed, 06 Mar 2024 04:58:02 GMT', '2024-03-06T04:58:02.000Z');
+		});
+
+		it('converts Date object to equal date', () => {
+			runDateToLocalDateTest(new Date('2024-07-15T10:00:00Z'), '2024-07-15T10:00:00.000Z');
 		});
 	});
 
