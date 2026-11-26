@@ -27,10 +27,7 @@ msgstr ""
 msgid "argument-help-config"
 msgstr ""
 
-#: shoestring/commands/health.py:75
-#: shoestring/commands/renew_certificates.py:39
-#: shoestring/commands/renew_voting_keys.py:113
-#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:149
+#: shoestring/internal/DirectoryResolver.py:28
 msgid "argument-help-directory"
 msgstr ""
 
@@ -136,6 +133,10 @@ msgstr ""
 
 #: shoestring/commands/signer.py:94
 msgid "argument-help-signer-save"
+msgstr ""
+
+#: shoestring/internal/DirectoryResolver.py:18
+msgid "directory-error-home-not-absolute"
 msgstr ""
 
 #: shoestring/internal/FileDownloader.py:40
@@ -904,4 +905,3 @@ msgstr ""
 #: shoestring/wizard/screens/welcome.py:39
 msgid "wizard-welcome-upgrade"
 msgstr ""
-
