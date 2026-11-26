@@ -254,6 +254,8 @@ ACCOUNT_REFRESH_INDEXES = [
 	'ON symbol_account_refresh_accounts(refresh_run_id, account_search_order ASC, address)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_address_text '
 	'ON symbol_account_refresh_accounts(refresh_run_id, address_text)',
+	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_accounts_address_height_desc '
+	'ON symbol_account_refresh_accounts(refresh_run_id, address_height DESC NULLS LAST, address)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_mosaics_mosaic_amount_desc '
 	'ON symbol_account_refresh_mosaics(refresh_run_id, mosaic_id, amount DESC, address)',
 	'CREATE INDEX IF NOT EXISTS idx_symbol_account_refresh_mosaics_address '
