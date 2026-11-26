@@ -593,6 +593,170 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 		self.assertEqual([False], [(transaction.aggregate_hash is not None) for transaction in result])
 		self.assertEqual(((resolved_mosaic_id, 12345, None, None),), result[0].mosaics)
 
+	def test_get_transactions_address_orders_matches_by_height_and_id(self):
+		# Arrange:
+		participant_address = bytes.fromhex('04' * 24)
+		participant_row = {'address': participant_address, 'role': 'cosignatory'}
+		transactions = [
+			create_symbol_transaction(4, 1, address_rows=[participant_row]),
+			create_symbol_transaction(3, 2, address_rows=[participant_row]),
+			create_symbol_transaction(4, 3, address_rows=[participant_row]),
+			create_symbol_transaction(4, 4)
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(address=participant_address))
+
+		# Assert:
+		self.assertEqual([3, 1, 2], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
+
+	def test_get_transactions_address_counts_transaction_with_several_roles_once_before_offset(self):
+		# Arrange:
+		participant_address = bytes.fromhex('04' * 24)
+		participant_row = {'address': participant_address, 'role': 'cosignatory'}
+		transactions = [
+			create_symbol_transaction(4, 1, address_rows=[participant_row, {'address': participant_address, 'role': 'target'}]),
+			create_symbol_transaction(3, 2, address_rows=[participant_row]),
+			create_symbol_transaction(2, 3, address_rows=[participant_row]),
+			create_symbol_transaction(4, 4)
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(address=participant_address, limit=1, offset=1))
+
+		# Assert:
+		self.assertEqual([2], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
+
+	def test_get_transactions_address_hides_relation_rows_above_watermark(self):
+		# Arrange:
+		participant_address = bytes.fromhex('04' * 24)
+		participant_row = {'address': participant_address, 'role': 'cosignatory'}
+		transactions = [
+			create_symbol_transaction(5, 1, address_rows=[participant_row]),
+			create_symbol_transaction(4, 2, address_rows=[participant_row]),
+			create_symbol_transaction(4, 3)
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(address=participant_address, limit=1))
+
+		# Assert:
+		self.assertEqual([2], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
+
+	def test_get_transactions_transfer_mosaic_orders_matches_by_height_and_id(self):
+		# Arrange:
+		mosaic_id = '1234567890ABCDEF'
+		other_mosaic_id = '234567890ABCDEF0'
+		mosaic_row = {'mosaic_id': mosaic_id, 'amount': 1, 'role': 'transfer', 'position': 0}
+		transactions = [
+			create_symbol_transaction(4, 1, mosaic_rows=[mosaic_row]),
+			create_symbol_transaction(3, 2, mosaic_rows=[mosaic_row]),
+			create_symbol_transaction(4, 3, mosaic_rows=[mosaic_row]),
+			create_symbol_transaction(4, 4, mosaic_rows=[{**mosaic_row, 'mosaic_id': other_mosaic_id}])
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(transfer_mosaic_id=mosaic_id),
+			[create_symbol_mosaic(mosaic_id, 2), create_symbol_mosaic(other_mosaic_id, 2)])
+
+		# Assert:
+		self.assertEqual([3, 1, 2], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
+
+	def test_get_transactions_transfer_mosaic_counts_transfer_listing_it_twice_once_before_offset(self):
+		# Arrange:
+		mosaic_id = '1234567890ABCDEF'
+		other_mosaic_id = '234567890ABCDEF0'
+		mosaic_row = {'mosaic_id': mosaic_id, 'amount': 1, 'role': 'transfer', 'position': 0}
+		transactions = [
+			create_symbol_transaction(4, 1, mosaic_rows=[mosaic_row, {**mosaic_row, 'position': 1}]),
+			create_symbol_transaction(3, 2, mosaic_rows=[mosaic_row]),
+			create_symbol_transaction(2, 3, mosaic_rows=[mosaic_row]),
+			create_symbol_transaction(4, 4, mosaic_rows=[{**mosaic_row, 'mosaic_id': other_mosaic_id}])
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(transfer_mosaic_id=mosaic_id, limit=1, offset=1),
+			[create_symbol_mosaic(mosaic_id, 2), create_symbol_mosaic(other_mosaic_id, 2)])
+
+		# Assert:
+		self.assertEqual([2], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
+
+	def test_get_transactions_transfer_mosaic_hides_relation_rows_above_watermark(self):
+		# Arrange:
+		mosaic_id = '1234567890ABCDEF'
+		other_mosaic_id = '234567890ABCDEF0'
+		mosaic_row = {'mosaic_id': mosaic_id, 'amount': 1, 'role': 'transfer', 'position': 0}
+		transactions = [
+			create_symbol_transaction(5, 1, mosaic_rows=[mosaic_row]),
+			create_symbol_transaction(4, 2, mosaic_rows=[mosaic_row]),
+			create_symbol_transaction(4, 3, mosaic_rows=[{**mosaic_row, 'mosaic_id': other_mosaic_id}])
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(transfer_mosaic_id=mosaic_id, limit=1),
+			[create_symbol_mosaic(mosaic_id, 2), create_symbol_mosaic(other_mosaic_id, 2)])
+
+		# Assert:
+		self.assertEqual([2], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
+
+	def test_get_transactions_transfer_mosaic_does_not_list_embedded_transfers(self):
+		# Arrange:
+		mosaic_id = '1234567890ABCDEF'
+		mosaic_row = {'mosaic_id': mosaic_id, 'amount': 1, 'role': 'transfer', 'position': 0}
+		parent_hash = bytes.fromhex('AA' * 32)
+		transactions = [
+			create_symbol_transaction(4, 1, type=TransactionType.AGGREGATE_COMPLETE.value, hash=parent_hash),
+			create_symbol_transaction(4, 0, is_embedded=True, aggregate_hash=parent_hash, mosaic_rows=[mosaic_row]),
+			create_symbol_transaction(4, 2, mosaic_rows=[mosaic_row])
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(transfer_mosaic_id=mosaic_id),
+			[create_symbol_mosaic(mosaic_id, 2)])
+
+		# Assert:
+		self.assertEqual(['02'], [(transaction.transaction_hash or '')[-2:] for transaction in result])
+
+	def test_get_transactions_combines_address_and_height_filters_with_and(self):
+		# Arrange:
+		participant_address = bytes.fromhex('04' * 24)
+		participant_row = {'address': participant_address, 'role': 'cosignatory'}
+		transactions = [
+			create_symbol_transaction(4, 1, address_rows=[participant_row]),
+			create_symbol_transaction(3, 2, address_rows=[participant_row]),
+			create_symbol_transaction(4, 3)
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=4, finalized_height=3),
+			TransactionQuery(address=participant_address, height=4))
+
+		# Assert:
+		self.assertEqual([1], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
+
 	def test_returns_mosaic_amounts_and_saved_divisibility(self):
 		# Arrange:
 		transactions = [create_symbol_transaction(
