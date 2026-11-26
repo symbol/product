@@ -831,20 +831,7 @@ def test_transactions_default_empty():
 	assert 200 == response.status_code
 	assert [] == response.json
 	assert TransactionQuery() == facade.transactions_query
-	assert facade.transactions_query.include_embedded is False
 	assert facade.transactions_query.sender_address is None
-
-
-def test_transactions_embedded_false():
-	# Arrange:
-	facade = SymbolBlockFacade()
-
-	# Act:
-	response = _create_symbol_test_client(facade).get('/api/symbol/transactions?embedded=FALSE')
-
-	# Assert:
-	assert 200 == response.status_code
-	assert facade.transactions_query.include_embedded is False
 
 
 def test_transactions_parsed_filters():
@@ -859,7 +846,7 @@ def test_transactions_parsed_filters():
 		'/api/symbol/transactions?limit=%20%2B001&offset=%20000&height=%20%2B0001'
 		'&transactionTypes=TRANSFER,AGGREGATE_COMPLETE'
 		f'&senderAddress={sender_address}&signerPublicKey={public_key}&recipientAddress={mainnet_address}'
-		'&mosaic=72c0212e67a08bce&embedded=TrUe&order=desc')
+		'&mosaic=72c0212e67a08bce&order=desc')
 
 	# Assert:
 	assert 200 == response.status_code
@@ -872,7 +859,6 @@ def test_transactions_parsed_filters():
 		signer_public_key=bytes.fromhex(public_key),
 		recipient_address=bytes.fromhex('682F0A4E106CBC9224DF7AC5E2C6A9D5252E70CB6517D829'),
 		transfer_mosaic_id='72C0212E67A08BCE',
-		include_embedded=True,
 		sender_address=sender_address.bytes) == facade.transactions_query
 
 
@@ -890,20 +876,19 @@ def test_transactions_parse_sender_address_into_query_bytes():  # pylint: disabl
 	assert TransactionQuery(sender_address=sender_address.bytes) == facade.transactions_query
 
 
-def test_transactions_address_embedded():
+def test_transactions_address_filters():
 	# Arrange:
 	facade = SymbolBlockFacade()
 	address = Network.NETWORKS[0].public_key_to_address(PublicKey('11' * 32))
 
 	# Act:
 	response = _create_symbol_test_client(facade).get(
-		f'/api/symbol/transactions?address={address}&transactionTypes=TRANSFER&embedded=TRUE')
+		f'/api/symbol/transactions?address={address}&transactionTypes=TRANSFER')
 
 	# Assert:
 	assert 200 == response.status_code
 	assert bytes.fromhex('68FD35818960C7B18B72F49A5598FA9F712A354DB3BF4C77') == facade.transactions_query.address
 	assert (TransactionType.TRANSFER.value,) == facade.transactions_query.transaction_types
-	assert facade.transactions_query.include_embedded is True
 
 
 def test_duplicate_type_name_is_allowed():
@@ -1055,7 +1040,7 @@ def test_transactions_scalar_duplicates():
 	# Act + Assert:
 	for parameter in (
 		'limit', 'offset', 'height', 'address', 'senderAddress', 'signerPublicKey', 'recipientAddress',
-		'mosaic', 'embedded', 'order', 'transactionTypes'
+		'mosaic', 'order', 'transactionTypes'
 	):
 		response = client.get(f'/api/symbol/transactions?{parameter}=1&{parameter}=1')
 		_assert_bad_request_response(response, f'{parameter} must not be repeated')
@@ -1202,19 +1187,17 @@ def test_mosaic_unresolved_404():
 	_assert_not_found_response(response)
 
 
-def test_embedded_rejects_invalid_values():
+@pytest.mark.parametrize('value', ['true', 'false'])
+def test_rejects_embedded_parameter(value):
 	# Arrange:
 	facade = SymbolBlockFacade()
-	client = _create_symbol_test_client(facade)
-	values = ('1', '0', '', ' true', 'true ')
 
 	# Act:
-	responses = [(value, client.get(f'/api/symbol/transactions?embedded={value}')) for value in values]
+	response = _create_symbol_test_client(facade).get(f'/api/symbol/transactions?embedded={value}')
 
 	# Assert:
-	for value, response in responses:
-		_assert_bad_request_response(response, 'embedded must be true or false')
-		assert None is facade.transactions_query, value
+	_assert_bad_request_response(response, 'Unsupported query parameter: embedded')
+	assert None is facade.transactions_query
 
 
 def test_order_rejects_invalid_values():

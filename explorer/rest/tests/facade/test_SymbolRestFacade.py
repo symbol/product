@@ -23,7 +23,7 @@ from rest.db.SymbolDatabase import (
 )
 from rest.db.SymbolDatabaseCommon import SymbolDataUnavailable
 from rest.facade.SymbolRestFacade import SymbolRestFacade
-from rest.model.symbol.TransactionView import SymbolTransactionView
+from rest.model.symbol.TransactionView import TransactionMosaicRecord, TransactionViewRecord, create_unconfirmed_record
 
 from ..test.SymbolHealthTestUtils import create_symbol_health
 from ..test.SymbolUnconfirmedTransactionTestUtils import get_unconfirmed_transaction
@@ -355,6 +355,34 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		# Assert:
 		self.assertIs(query, symbol_db.query)
 		self.assertEqual([], result)
+
+	def test_can_format_confirmed_transaction_records(self):
+		# Arrange:
+		query = TransactionQuery()
+		embedded = TransactionViewRecord(
+			transaction_hash=None, aggregate_hash='AB' * 32, embedded_index=0,
+			transaction_type=TransactionType.TRANSFER,
+			from_address='TCEUGLPCMO5Y72EEISSNUKGTMCN5RO4PVYMK5FI', to_address=None,
+			payload=[], mosaics=(TransactionMosaicRecord('1234567890ABCDEF', 123, 2),), deadline=None,
+			signature=None, size=None, version=1, height=1, timestamp=datetime(2026, 1, 1))
+		transaction = embedded._replace(
+			transaction_hash='AB' * 32, aggregate_hash=None, embedded_index=None,
+			transaction_type=TransactionType.AGGREGATE_COMPLETE, fee=0.15,
+			deadline=datetime(2026, 1, 2), size=176, signature='CD' * 64, mosaics=(), embedded_transactions=(embedded,))
+		symbol_db = TransactionSymbolDatabase([transaction])
+		facade = _create_facade_with_database(symbol_db)
+
+		# Act:
+		result = facade.get_transactions(query)
+
+		# Assert:
+		self.assertIs(query, symbol_db.query)
+		self.assertEqual('AB' * 32, result[0]['transactionHash'])
+		self.assertEqual(0.15, result[0]['fee'])
+		self.assertEqual('CD' * 64, result[0]['signature'])
+		self.assertEqual(
+			[{'id': '1234567890ABCDEF', 'name': '1234567890ABCDEF', 'amount': 1.23}],
+			result[0]['embeddedTransactions'][0]['value'])
 
 	def test_get_transaction_statistics_formats_contract_fields(self):
 		"""Verifies that summary record fields map to the public statistics response."""
@@ -781,13 +809,11 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 	def test_can_get_unconfirmed_transactions(self):
 		# Arrange:
 		transactions = [get_unconfirmed_transaction(TransactionType.TRANSFER)]
-
-		view = create_autospec(SymbolTransactionView, instance=True, spec_set=True)
-		view.to_dict.return_value = {'transactionType': 'TRANSFER', 'value': []}
-
+		record = create_unconfirmed_record(transactions[0], Network.TESTNET)._replace(
+			transaction_hash='FE' * 32,
+			mosaics=(TransactionMosaicRecord(NATIVE_MOSAIC_INFO.id, 123000000, 6),))
 		symbol_db = create_autospec(SymbolDatabase, instance=True, spec_set=True)
-		symbol_db.get_unconfirmed_transactions.return_value = [view]
-
+		symbol_db.get_unconfirmed_transactions.return_value = [record]
 		facade = _create_facade_with_database(symbol_db)
 		facade.symbol_connector.get_unconfirmed_transactions = create_autospec(
 			facade.symbol_connector.get_unconfirmed_transactions, return_value=transactions)
@@ -796,7 +822,9 @@ class SymbolRestFacadeTest(TestCase):  # pylint: disable=too-many-public-methods
 		result = asyncio.run(facade.get_unconfirmed_transactions())
 
 		# Assert:
-		self.assertEqual([{'transactionType': 'TRANSFER', 'value': []}], result)
+		self.assertEqual(1, len(result))
+		self.assertEqual('FE' * 32, result[0]['transactionHash'])
+		self.assertEqual('TRANSFER', result[0]['transactionType'])
+		self.assertEqual([{'id': NATIVE_MOSAIC_INFO.id, 'name': NATIVE_MOSAIC_INFO.id, 'amount': 123}], result[0]['value'])
 		facade.symbol_connector.get_unconfirmed_transactions.assert_awaited_once_with()
 		symbol_db.get_unconfirmed_transactions.assert_called_once_with(transactions, Network.TESTNET)
-		view.to_dict.assert_called_once_with()
