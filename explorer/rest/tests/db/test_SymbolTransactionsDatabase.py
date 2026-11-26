@@ -736,7 +736,9 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			[create_symbol_mosaic(mosaic_id, 2)])
 
 		# Assert:
-		self.assertEqual(['02'], [(transaction.transaction_hash or '')[-2:] for transaction in result])
+		self.assertEqual([((2).to_bytes(32, 'big').hex().upper(), None, None)], [
+			(transaction.transaction_hash, transaction.aggregate_hash, transaction.embedded_index)
+			for transaction in result])
 
 	def test_get_transactions_combines_address_and_height_filters_with_and(self):
 		# Arrange:
