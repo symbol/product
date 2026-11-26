@@ -673,6 +673,11 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		''')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transactions_signer_address ON symbol_transactions(signer_address)')
 		cursor.execute('''
+			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_top_level_signer_address_height
+			ON symbol_transactions(signer_address, height DESC, id DESC)
+			WHERE is_embedded = false
+		''')
+		cursor.execute('''
 			CREATE INDEX IF NOT EXISTS idx_symbol_transactions_recipient_height
 			ON symbol_transactions(recipient_address, height DESC, id DESC)
 		''')
