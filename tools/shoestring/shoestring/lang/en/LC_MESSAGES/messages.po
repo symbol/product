@@ -30,7 +30,7 @@ msgstr "path to main private key PEM file"
 #: shoestring/commands/import_harvesters.py:97 shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:38
-#: shoestring/commands/renew_voting_keys.py:112
+#: shoestring/commands/renew_voting_keys.py:122
 #: shoestring/commands/reset_data.py:86 shoestring/commands/setup.py:147
 #: shoestring/commands/signer.py:92
 msgid "argument-help-config"
@@ -38,7 +38,7 @@ msgstr "path to shoestring configuration file"
 
 #: shoestring/commands/health.py:75
 #: shoestring/commands/renew_certificates.py:39
-#: shoestring/commands/renew_voting_keys.py:113
+#: shoestring/commands/renew_voting_keys.py:123
 #: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:149
 msgid "argument-help-directory"
 msgstr "installation directory (default: {default_path})"
@@ -115,6 +115,12 @@ msgstr "renews CA certificate too"
 msgid "argument-help-renew-certificates-retain-node-key"
 msgstr "retain node key"
 
+#: shoestring/commands/renew_voting_keys.py:124
+msgid "argument-help-renew-voting-keys-compact"
+msgstr ""
+"compacts and renumbers active voting key files starting at 1; this option"
+" requires a client restart before the current voting keys expire"
+
 #: shoestring/commands/reset_data.py:88
 msgid "argument-help-reset-data-purge-harvesters"
 msgstr "purge harvesters.dat file"
@@ -177,7 +183,7 @@ msgstr "copying FILE {source_path} into {destination_path}"
 msgid "general-copying-tree"
 msgstr "copying TREE {source_path} to {destination_path}"
 
-#: shoestring/commands/renew_voting_keys.py:46
+#: shoestring/commands/renew_voting_keys.py:53
 #: shoestring/internal/Preparer.py:415
 msgid "general-created-aggregate-transaction"
 msgstr "created aggregate transaction with hash {transaction_hash}"
@@ -438,19 +444,19 @@ msgstr "private key: {private_key}"
 msgid "pemview-show-public-key"
 msgstr " public key: {public_key}"
 
-#: shoestring/commands/renew_voting_keys.py:89
+#: shoestring/commands/renew_voting_keys.py:96
 msgid "renew-voting-keys-maximum-already-registered"
 msgstr "maximum number of voting keys are already registered for this account"
 
-#: shoestring/commands/renew_voting_keys.py:85
+#: shoestring/commands/renew_voting_keys.py:92
 msgid "renew-voting-keys-no-voting-keys-found"
 msgstr "voting is enabled, but no existing voting key files were found"
 
-#: shoestring/commands/renew_voting_keys.py:72
+#: shoestring/commands/renew_voting_keys.py:79
 msgid "renew-voting-keys-not-voting"
 msgstr "node is not configured for voting, aborting"
 
-#: shoestring/commands/renew_voting_keys.py:58
+#: shoestring/commands/renew_voting_keys.py:65
 msgid "renew-voting-keys-removing-expired-voting-keys"
 msgstr "removing expired voting keys: {filepath}"
 
