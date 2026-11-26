@@ -81,6 +81,11 @@ ACCOUNT_REFRESH_HEIGHT_INDEX = (
 	'CREATE INDEX idx_symbol_account_refresh_accounts_address_height_desc ON public.symbol_account_refresh_accounts '
 	'USING btree (refresh_run_id, address_height DESC NULLS LAST, address)'
 )
+BLOCK_BENEFICIARY_INDEX = (
+	'idx_symbol_blocks_beneficiary_timestamp_cover',
+	'CREATE INDEX idx_symbol_blocks_beneficiary_timestamp_cover ON public.symbol_blocks USING btree '
+	'(beneficiary_address, "timestamp") INCLUDE (height)'
+)
 
 
 def _expected_account_refresh_state(**overrides):
@@ -3462,9 +3467,52 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		)
 		indexes = [result[0] for result in cursor.fetchall()]
 
+		self.assertIn('idx_symbol_blocks_beneficiary_timestamp_cover', indexes)
 		self.assertIn('idx_symbol_blocks_height_desc', indexes)
 		self.assertIn('idx_symbol_blocks_signer_address', indexes)
 		self.assertIn('idx_symbol_blocks_timestamp', indexes)
+
+	@staticmethod
+	def _fetch_block_beneficiary_index(database):
+		cursor = database.connection.cursor()
+		cursor.execute(
+			"SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' AND indexname = %s",
+			(BLOCK_BENEFICIARY_INDEX[0],))
+
+		return cursor.fetchall()
+
+	def test_create_tables_creates_block_beneficiary_index_with_expected_definition(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([BLOCK_BENEFICIARY_INDEX], self._fetch_block_beneficiary_index(database))
+
+	def test_create_tables_adds_missing_block_beneficiary_index(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('DROP INDEX idx_symbol_blocks_beneficiary_timestamp_cover')
+		database.connection.commit()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([BLOCK_BENEFICIARY_INDEX], self._fetch_block_beneficiary_index(database))
+
+	def test_create_tables_preserves_block_beneficiary_index_when_run_again(self):
+		# Arrange:
+		database = self._create_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([BLOCK_BENEFICIARY_INDEX], self._fetch_block_beneficiary_index(database))
 
 	def test_create_tables_creates_symbol_receipt_indexes(self):
 		# Arrange:

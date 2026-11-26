@@ -641,6 +641,10 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_height_desc ON symbol_blocks(height DESC)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_timestamp ON symbol_blocks(timestamp)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_blocks_signer_address ON symbol_blocks(signer_address)')
+		cursor.execute('''
+			CREATE INDEX IF NOT EXISTS idx_symbol_blocks_beneficiary_timestamp_cover
+			ON symbol_blocks(beneficiary_address, timestamp) INCLUDE (height)
+		''')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_importance_desc ON symbol_accounts(importance DESC)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_address_height ON symbol_accounts(address_height)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_accounts_harvesting ON symbol_accounts(is_harvesting_active)')
