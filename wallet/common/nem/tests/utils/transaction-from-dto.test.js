@@ -16,6 +16,7 @@ import {
 	namespaceRegistrationDTO,
 	outgoingTransferDTO,
 	subNamespaceRegistrationDTO,
+	unconfirmedMultisigTransferDTO,
 	unconfirmedTransferDTO
 } from '../__fixtures__/api/transaction-dtos';
 import { networkProperties } from '../__fixtures__/local/network';
@@ -37,6 +38,7 @@ import {
 	namespaceRegistration,
 	outgoingTransfer,
 	subNamespaceRegistration,
+	unconfirmedMultisigTransfer,
 	unconfirmedTransfer
 } from '../__fixtures__/local/transactions';
 import { currentAccount } from '../__fixtures__/local/wallet';
@@ -52,6 +54,7 @@ const transactionFromDTOCases = [
 	{ name: 'multisig transfer', transactionDTO: multisigTransferDTO, expected: multisigTransfer },
 	{ name: 'importance transfer', transactionDTO: importanceTransferDTO, expected: importanceTransfer },
 	{ name: 'unconfirmed transfer', transactionDTO: unconfirmedTransferDTO, expected: unconfirmedTransfer },
+	{ name: 'unconfirmed multisig transfer', transactionDTO: unconfirmedMultisigTransferDTO, expected: unconfirmedMultisigTransfer },
 	{ name: 'multisig account modification', transactionDTO: multisigModificationDTO, expected: multisigModification },
 	{ name: 'cosignature', transactionDTO: cosignatureDTO, expected: cosignature },
 	{ name: 'namespace registration (root)', transactionDTO: namespaceRegistrationDTO, expected: namespaceRegistration },

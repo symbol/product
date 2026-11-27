@@ -1,6 +1,15 @@
-import { TransactionAnnounceGroup, TransactionBundleType, TransactionGroup } from '../constants';
 import {
+	AnnounceResultCode,
+	TransactionAnnounceGroup,
+	TransactionBundleType,
+	TransactionGroup,
+	TransactionType
+} from '../constants';
+import {
+	addressFromPublicKey,
+	calculateTransactionDTOHash,
 	getUnresolvedIdsFromTransactionDTOs,
+	normalizeTransactionHash,
 	transactionFromDTO
 } from '../utils';
 import { ApiError, NotFoundError } from 'wallet-common-core';
@@ -14,6 +23,7 @@ import { ApiError, NotFoundError } from 'wallet-common-core';
  * @typedef {import('../types/SearchCriteria').Page<T>} Page
  */
 
+
 export class TransactionService {
 	#api;
 	#makeRequest;
@@ -22,6 +32,67 @@ export class TransactionService {
 		this.#api = options.api;
 		this.#makeRequest = options.makeRequest;
 	}
+
+	/**
+	 * Fetches an account transaction DTO by hash from the unconfirmed transactions and the latest confirmed page.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} address - The address of the account whose transactions are searched.
+	 * @param {string} hash - The transaction hash.
+	 * @returns {Promise<object>} The transaction DTO.
+	 * @throws {NotFoundError} If neither of them holds the transaction.
+	 */
+	#fetchAccountTransactionDTO = async (networkProperties, address, hash) => {
+		// The /transaction/get endpoint is unreliable.
+		// It fails on unconfirmed transactions, and only works for confirmed ones 
+		// when the node happens to have the hash cached.
+		// Search account lists instead.
+		const { nodeUrl, networkIdentifier } = networkProperties;
+		const pageSize = 100;
+		
+		const getTransactionDTOHashes = (transactionDTO, networkIdentifier) => [
+			transactionDTO.meta?.hash?.data ?? calculateTransactionDTOHash(transactionDTO, networkIdentifier),
+			transactionDTO.meta?.innerHash?.data,
+			transactionDTO.meta?.data
+		].filter(Boolean).map(normalizeTransactionHash);
+		const isRequestedTransactionDTO = transactionDTO =>
+			getTransactionDTOHashes(transactionDTO, networkIdentifier).includes(normalizeTransactionHash(hash));
+
+		const unconfirmedResponse = await this.#makeRequest(`${nodeUrl}/account/unconfirmedTransactions?address=${address}`);
+		const unconfirmedTransactionDTO = (unconfirmedResponse.data || []).find(isRequestedTransactionDTO);
+
+		if (unconfirmedTransactionDTO)
+			return unconfirmedTransactionDTO;
+
+		const confirmedResponse = await this.#makeRequest(`${nodeUrl}/account/transfers/all?address=${address}&pageSize=${pageSize}`);
+		const confirmedTransactionDTO = (confirmedResponse.data || []).find(isRequestedTransactionDTO);
+
+		if (!confirmedTransactionDTO)
+			throw new NotFoundError(`Transaction ${hash} not found`);
+
+		return confirmedTransactionDTO;
+	};
+
+	/**
+	 * Fetches the group of a transaction DTO. A multisig transaction is partial until it has the minimum approval.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {object} transactionDTO - The transaction DTO.
+	 * @returns {Promise<string>} The transaction group.
+	 */
+	#fetchTransactionGroup = async (networkProperties, transactionDTO) => {
+		const { meta, transaction } = transactionDTO;
+
+		if (meta?.height)
+			return TransactionGroup.CONFIRMED;
+
+		if (transaction.type !== TransactionType.MULTISIG)
+			return TransactionGroup.UNCONFIRMED;
+
+		const multisigAddress = addressFromPublicKey(transaction.otherTrans.signer, networkProperties.networkIdentifier);
+		const { minApproval } = await this.#api.account.fetchMultisigInfo(networkProperties, multisigAddress);
+		const signatureCount = 1 + transaction.signatures.length;
+
+		return signatureCount < minApproval ? TransactionGroup.PARTIAL : TransactionGroup.UNCONFIRMED;
+	};
 
 	/**
 	 * Fetches transactions for an account.
@@ -34,16 +105,16 @@ export class TransactionService {
 		const { group = TransactionGroup.CONFIRMED, filter, cursor = null, pageSize = 15 } = searchCriteria;
 		const { address } = currentAccount;
 
-		if (group === TransactionGroup.PARTIAL)
-			return { data: [], nextCursor: null };
-
 		let transactionDTOs;
 		let nextCursor = null;
 
-		if (group === TransactionGroup.UNCONFIRMED) {
+		if (group === TransactionGroup.UNCONFIRMED || group === TransactionGroup.PARTIAL) {
 			const url = `${networkProperties.nodeUrl}/account/unconfirmedTransactions?address=${address}`;
 			const response = await this.#makeRequest(url);
-			transactionDTOs = response.data || [];
+			const unconfirmedTransactionDTOs = response.data || [];
+			const groups = await Promise.all(unconfirmedTransactionDTOs.map(transactionDTO =>
+				this.#fetchTransactionGroup(networkProperties, transactionDTO)));
+			transactionDTOs = unconfirmedTransactionDTOs.filter((transactionDTO, index) => groups[index] === group);
 		} else {
 			const endpoint = filter?.direction === 'outgoing'
 				? '/account/transfers/outgoing'
@@ -75,8 +146,7 @@ export class TransactionService {
 	 * @returns {Promise<Transaction>} The transaction.
 	 */
 	fetchAccountTransaction = async (networkProperties, currentAccount, hash) => {
-		const url = `${networkProperties.nodeUrl}/transaction/get?hash=${hash}`;
-		const transactionDTO = await this.#makeRequest(url);
+		const transactionDTO = await this.#fetchAccountTransactionDTO(networkProperties, currentAccount.address, hash);
 		const transactions = await this.resolveTransactionDTOs(
 			networkProperties,
 			[transactionDTO],
@@ -90,19 +160,13 @@ export class TransactionService {
 	 * Fetches the confirmation status of a transaction.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {string} hash - The transaction hash.
-	 * @returns {Promise<{ group: string }>} The transaction group (confirmed or unconfirmed).
+	 * @param {PublicAccount} currentAccount - The account whose transactions are searched.
+	 * @returns {Promise<{ group: string }>} The transaction group (confirmed, unconfirmed or partial).
 	 */
-	fetchTransactionStatus = async (networkProperties, hash) => {
-		try {
-			await this.#makeRequest(`${networkProperties.nodeUrl}/transaction/get?hash=${hash}`);
+	fetchTransactionStatus = async (networkProperties, hash, currentAccount) => {
+		const transactionDTO = await this.#fetchAccountTransactionDTO(networkProperties, currentAccount.address, hash);
 
-			return { group: TransactionGroup.CONFIRMED };
-		} catch (error) {
-			if (error instanceof NotFoundError)
-				return { group: TransactionGroup.UNCONFIRMED };
-
-			throw error;
-		}
+		return { group: await this.#fetchTransactionGroup(networkProperties, transactionDTO) };
 	};
 
 	/**
@@ -156,13 +220,18 @@ export class TransactionService {
 		};
 		const endpoint = endpointMap[group] ?? endpointMap[TransactionAnnounceGroup.DEFAULT];
 		try {
-			return await this.#makeRequest(`${nodeUrl}${endpoint}`, {
+			const result = await this.#makeRequest(`${nodeUrl}${endpoint}`, {
 				method: 'POST',
 				body: JSON.stringify(signedTransaction.dto),
 				headers: {
 					'Content-Type': 'application/json'
 				}
 			});
+
+			if (!Object.values(AnnounceResultCode).includes(result.code))
+				throw new Error(result.message);
+
+			return result;
 		} catch (error) {
 			throw new ApiError(`Failed to announce transaction: ${error.message}`);
 		}

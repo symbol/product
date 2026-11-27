@@ -1,7 +1,14 @@
 import { addressFromPublicKey } from './account';
 import { createTransactionFee } from './fee';
 import { getMosaicProperty, getTokenAmount, tokenIdFromRaw, tokenListFromDTO } from './token';
-import { decodePlainMessage, getMessageKind, isIncomingTransaction, isOutgoingTransaction, nemTimestampToDate } from './transaction';
+import {
+	calculateTransactionDTOHash,
+	decodePlainMessage,
+	getMessageKind,
+	isIncomingTransaction,
+	isOutgoingTransaction,
+	nemTimestampToDate
+} from './transaction';
 import {
 	LinkActionMessage,
 	MessageType,
@@ -105,8 +112,6 @@ const levyFromDTO = levy => {
  * @returns {Transaction} The transaction object.
  */
 export const transactionFromDTO = (transactionDTO, config) => {
-	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
-
 	switch (transactionDTO.transaction?.type ?? transactionDTO.type) {
 	case TransactionType.TRANSFER:
 		return transferTransactionFromDTO(transactionDTO, config);
@@ -126,7 +131,7 @@ export const transactionFromDTO = (transactionDTO, config) => {
 		return mosaicSupplyChangeTransactionFromDTO(transactionDTO, config);
 	}
 
-	return baseTransaction;
+	return baseTransactionFromDTO(transactionDTO, config);
 };
 
 const baseTransactionFromDTO = (transactionDTO, config) => {
@@ -149,7 +154,7 @@ const baseTransactionFromDTO = (transactionDTO, config) => {
 		timestamp: formatTimestamp(transaction.timeStamp),
 		deadline: deadlineFromDTO(transaction.timeStamp, transaction.deadline),
 		height: meta?.height ?? null,
-		hash: meta?.hash?.data ?? null,
+		hash: meta?.hash?.data ?? calculateTransactionDTOHash(transactionDTO, networkProperties.networkIdentifier),
 		fee: transaction.fee != null
 			? createTransactionFee(
 				networkProperties,
@@ -193,9 +198,10 @@ const transferTransactionFromDTO = (transactionDTO, config) => {
 };
 
 const multisigTransactionFromDTO = (transactionDTO, config) => {
-	const { transaction } = transactionDTO;
+	const { transaction, meta } = transactionDTO;
 	const { networkProperties } = config;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
+	const innerTransactionHash = meta?.innerHash?.data ?? meta?.data ?? null;
 
 	// The wrapped transaction is provided as otherTrans.
 	const innerTransactionDTO = transaction.otherTrans
@@ -213,12 +219,15 @@ const multisigTransactionFromDTO = (transactionDTO, config) => {
 
 	return {
 		...baseTransaction,
+		innerTransactionHash,
+		multisigAddress: innerTransaction?.signerAddress ?? null,
 		innerTransaction,
 		innerTransactions: innerTransaction ? [innerTransaction] : [],
 		recipientAddress: innerTransaction?.recipientAddress || null,
 		tokens: innerTransaction?.tokens || [],
 		amount: innerTransaction?.amount ?? '0',
 		cosignatures,
+		receivedCosignatures: cosignatures.map(cosignature => cosignature.signerAddress),
 		message: innerTransaction?.message || null
 	};
 };

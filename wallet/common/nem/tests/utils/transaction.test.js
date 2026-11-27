@@ -8,8 +8,8 @@ import {
 	encryptMessage,
 	getMessageKind,
 	isIncomingTransaction,
-	isMultisigTransaction,
 	isOutgoingTransaction,
+	isTransactionAwaitingSignatureByAccount,
 	nemTimestampToDate,
 	normalizeTransactionHash,
 	signTransaction,
@@ -35,6 +35,18 @@ const SIGNED_TRANSFER_HASH = '7DC799D4B3EBE14C5525EF3CCC94EF11AF9F8D73F8A28DE723
 
 const signerAccount = walletStorageAccounts.testnet[0];
 const recipientAccount = walletStorageAccounts.testnet[1];
+const initiatorAccount = walletStorageAccounts.testnet[2];
+const cosignatoryAccount = walletStorageAccounts.testnet[3];
+const multisigAccount = walletStorageAccounts.testnet[4];
+
+// A pending multisig transaction started by the initiator for the multisig account, with no cosignatures yet.
+const pendingMultisigTransaction = {
+	type: TransactionType.MULTISIG,
+	signerAddress: initiatorAccount.address,
+	multisigAddress: multisigAccount.address,
+	receivedCosignatures: []
+};
+const cosignatoryOptions = { multisigAddresses: [multisigAccount.address] };
 
 // A transfer descriptor signed across the signing tests. The signer public key is derived during signing.
 const signableTransfer = {
@@ -110,31 +122,55 @@ describe('utils/transaction', () => {
 		});
 	});
 
-	describe('isMultisigTransaction', () => {
-		const runIsMultisigTransactionTest = (description, config, expected) => {
+	describe('isTransactionAwaitingSignatureByAccount', () => {
+		const runIsTransactionAwaitingSignatureByAccountTest = (description, config, expected) => {
 			it(description, () => {
 				// Act:
-				const result = isMultisigTransaction(config.transaction);
+				const result = isTransactionAwaitingSignatureByAccount(config.transaction, config.currentAccount, config.options);
 
 				// Assert:
 				expect(result).toBe(expected.result);
 			});
 		};
 
-		const isMultisigTransactionTests = [
+		const isTransactionAwaitingSignatureByAccountTests = [
 			{
-				description: 'returns true for a multisig transaction',
-				config: { transaction: { type: TransactionType.MULTISIG } },
+				description: 'returns true for a cosignatory who has not signed yet',
+				config: { transaction: pendingMultisigTransaction, currentAccount: cosignatoryAccount, options: cosignatoryOptions },
 				expected: { result: true }
 			},
 			{
+				description: 'returns false for the cosignatory who started the transaction',
+				config: { transaction: pendingMultisigTransaction, currentAccount: initiatorAccount, options: cosignatoryOptions },
+				expected: { result: false }
+			},
+			{
+				description: 'returns false for a cosignatory who already cosigned',
+				config: {
+					transaction: { ...pendingMultisigTransaction, receivedCosignatures: [cosignatoryAccount.address] },
+					currentAccount: cosignatoryAccount,
+					options: cosignatoryOptions
+				},
+				expected: { result: false }
+			},
+			{
+				description: 'returns false for an account that is not a cosignatory of the multisig account',
+				config: { transaction: pendingMultisigTransaction, currentAccount: recipientAccount, options: { multisigAddresses: [] } },
+				expected: { result: false }
+			},
+			{
 				description: 'returns false for a non-multisig transaction',
-				config: { transaction: { type: TransactionType.TRANSFER } },
+				config: {
+					transaction: { type: TransactionType.TRANSFER },
+					currentAccount: cosignatoryAccount,
+					options: cosignatoryOptions
+				},
 				expected: { result: false }
 			}
 		];
 
-		isMultisigTransactionTests.forEach(test => runIsMultisigTransactionTest(test.description, test.config, test.expected));
+		isTransactionAwaitingSignatureByAccountTests.forEach(test =>
+			runIsTransactionAwaitingSignatureByAccountTest(test.description, test.config, test.expected));
 	});
 
 	describe('isOutgoingTransaction', () => {
@@ -313,15 +349,13 @@ describe('utils/transaction', () => {
 		it('builds a cosignature whose timestamp and deadline are derived from the network time', () => {
 			// Arrange:
 			const transaction = {
-				networkIdentifier: networkProperties.networkIdentifier,
-				hash: MULTISIG_HASH,
-				multisigAccountAddress: recipientAccount.address,
-				networkTime: NETWORK_TIME
+				innerTransactionHash: MULTISIG_HASH,
+				multisigAddress: recipientAccount.address
 			};
 			const { adjusted } = createDeadline(NETWORK_TIME);
 
 			// Act:
-			const result = cosignTransaction(transaction, signerAccount.privateKey);
+			const result = cosignTransaction(networkProperties, transaction, signerAccount.privateKey);
 			// dto.data is the non-verifiable announce body, so deserialize it as a non-verifiable cosignature.
 			const cosignature = models.NonVerifiableCosignatureV1.deserialize(utils.hexToUint8(result.dto.data));
 
@@ -338,13 +372,13 @@ describe('utils/transaction', () => {
 			});
 		});
 
-		it('throws when the hash or multisig account address is missing', () => {
+		it('throws when the inner transaction hash or multisig address is missing', () => {
 			// Arrange:
-			const transaction = { networkIdentifier: networkProperties.networkIdentifier, networkTime: NETWORK_TIME };
+			const transaction = {};
 
 			// Act & Assert:
-			expect(() => cosignTransaction(transaction, signerAccount.privateKey))
-				.toThrow('cosignTransaction requires hash and multisigAccountAddress on the transaction object');
+			expect(() => cosignTransaction(networkProperties, transaction, signerAccount.privateKey))
+				.toThrow('cosignTransaction requires innerTransactionHash and multisigAddress on the transaction object');
 		});
 	});
 });

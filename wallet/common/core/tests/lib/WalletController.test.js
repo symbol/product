@@ -662,7 +662,7 @@ describe('WalletController', () => {
 				controllerMethodArguments: ['hash-123'],
 				apiNamespaceName: 'transaction',
 				apiMethodName: 'fetchTransactionStatus',
-				createApiMethodArgs: wc => [wc.networkProperties, 'hash-123']
+				createApiMethodArgs: wc => [wc.networkProperties, 'hash-123', wc.currentAccount]
 			},
 			{
 				controllerMethodName: 'fetchAccountTransaction',
@@ -779,7 +779,7 @@ describe('WalletController', () => {
 				controllerMethodArguments: ['transaction'],
 				keystoreMethodName: 'cosignTransaction',
 				createKeystoreMethodArgs: walletController =>
-					['transaction', walletController.currentAccount]
+					[walletController.networkProperties, 'transaction', walletController.currentAccount]
 			},
 			{
 				controllerMethodName: 'encryptMessage',

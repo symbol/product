@@ -54,6 +54,12 @@ export const TransactionAnnounceGroup = {
 	COSIGNATURE: 'cosignature'
 };
 
+/** NEM NIS announce result codes that mean the node accepted the transaction. */
+export const AnnounceResultCode = {
+	NEUTRAL: 0,
+	SUCCESS: 1
+};
+
 export const { MessageKind } = constants;
 
 /** NEM protocol transaction message type codes. */

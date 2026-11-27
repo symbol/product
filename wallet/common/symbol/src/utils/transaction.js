@@ -407,11 +407,12 @@ export const signTransaction = (networkIdentifier, transaction, privateKey, cosi
 
 /**
  * Cosigns a partial transaction with a private key.
+ * @param {NetworkProperties} networkProperties - Network properties.
  * @param {Transaction|SignedTransaction|CosignedTransaction} transaction - The transaction object.
  * @param {string} privateKey - The cosigner account private key.
  * @returns {CosignedTransaction} The cosigned transaction.
  */
-export const cosignTransaction = (transaction, privateKey) => {
+export const cosignTransaction = (networkProperties, transaction, privateKey) => {
 	const keyPair = new SymbolFacade.KeyPair(new PrivateKey(privateKey));
 	const hash256 = new Hash256(transaction.hash);
 	const signature = SymbolFacade.cosignTransactionHash(keyPair, hash256, true);

@@ -1,3 +1,4 @@
+import { transactionDTOToNem } from './transaction-dto-to-nem';
 import { transactionToNem } from './transaction-to-nem';
 import {
 	MessageKind,
@@ -17,6 +18,7 @@ import { SdkError, TransactionBundle } from 'wallet-common-core';
 /** @typedef {import('../types/Transaction').CosignedTransaction} CosignedTransaction */
 /** @typedef {import('../types/Transaction').Deadline} Deadline */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
+/** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 
 /**
  * Converts a NEM timestamp (seconds since the NEM epoch) to a Unix timestamp in milliseconds.
@@ -56,11 +58,41 @@ export const normalizeTransactionHash = hash => {
 };
 
 /**
- * Returns true if the transaction is a NEM multisig wrapper (type 4100).
- * @param {Transaction | object} transaction - The transaction or NEM transaction object.
- * @returns {boolean} A boolean indicating whether the transaction is a multisig transaction.
+ * Calculates the hash of a transaction DTO, for the transactions the node returns without a hash.
+ * @param {object} transactionDTO - The transaction DTO.
+ * @param {string} networkIdentifier - The network identifier.
+ * @returns {string|null} The transaction hash, or null for an unsupported transaction type.
  */
-export const isMultisigTransaction = transaction => transaction.type === TransactionType.MULTISIG;
+export const calculateTransactionDTOHash = (transactionDTO, networkIdentifier) => {
+	const nemTransaction = transactionDTOToNem(transactionDTO, networkIdentifier);
+
+	if (!nemTransaction)
+		return null;
+
+	const facade = new NemFacade(networkIdentifier);
+
+	return facade.hashTransaction(nemTransaction).toString().toLowerCase();
+};
+
+/**
+ * Checks whether a multisig transaction is still awaiting the account's signature.
+ * @param {Transaction} transaction - The transaction object.
+ * @param {{ address: string }} currentAccount - The account to check.
+ * @param {object} [options] - Signature check options.
+ * @param {string[]} [options.multisigAddresses=[]] - Addresses of the multisig accounts the checked account cosigns.
+ * @returns {boolean} A boolean indicating whether the transaction is awaiting a signature by the account.
+ */
+export const isTransactionAwaitingSignatureByAccount = (transaction, currentAccount, options = {}) => {
+	const { multisigAddresses = [] } = options;
+
+	if (transaction.type !== TransactionType.MULTISIG || !multisigAddresses.includes(transaction.multisigAddress))
+		return false;
+
+	const isSignedByAccount = transaction.signerAddress === currentAccount.address;
+	const hasAccountCosignature = transaction.receivedCosignatures.includes(currentAccount.address);
+
+	return !isSignedByAccount && !hasAccountCosignature;
+};
 
 /**
  * Returns true if the transaction was sent by the given account.
@@ -208,16 +240,17 @@ export const signTransactionBundle = (networkIdentifier, transactionBundle, priv
  * Creates and signs a NEM multisig cosignature transaction.
  * A NEM cosignature is itself a transaction (NEM Technical Reference §4.3.2), so its deadline is created
  * from the network time at cosign time (via createDeadline).
- * @param {object} transaction - The transaction to cosign. Must contain `hash`, `multisigAccountAddress`,
- * `networkIdentifier`, and `networkTime`.
+ * @param {NetworkProperties} networkProperties - Network properties.
+ * @param {object} transaction - The transaction to cosign. Must contain `innerTransactionHash` and `multisigAddress`.
  * @param {string} privateKey - The cosigner's private key.
  * @returns {CosignedTransaction} The cosigned transaction.
  */
-export const cosignTransaction = (transaction, privateKey) => {
-	const { networkIdentifier = 'mainnet', hash, multisigAccountAddress, networkTime } = transaction;
+export const cosignTransaction = (networkProperties, transaction, privateKey) => {
+	const { networkIdentifier, networkTime } = networkProperties;
+	const { innerTransactionHash, multisigAddress } = transaction;
 
-	if (!hash || !multisigAccountAddress)
-		throw new SdkError('cosignTransaction requires hash and multisigAccountAddress on the transaction object');
+	if (!innerTransactionHash || !multisigAddress)
+		throw new SdkError('cosignTransaction requires innerTransactionHash and multisigAddress on the transaction object');
 
 	const facade = new NemFacade(networkIdentifier);
 	const keyPair = new NemFacade.KeyPair(new PrivateKey(privateKey));
@@ -228,8 +261,8 @@ export const cosignTransaction = (transaction, privateKey) => {
 		signerPublicKey: keyPair.publicKey.toString(),
 		timestamp: adjusted.timestamp,
 		deadline: adjusted.deadline,
-		multisigAccountAddress,
-		otherTransactionHash: hash
+		multisigAccountAddress: multisigAddress,
+		otherTransactionHash: innerTransactionHash
 	};
 	const fee = calculateTransactionFee(facade.transactionFactory.create({ ...cosignatureDescriptor, fee: 0n }));
 	const cosignatureTransaction = facade.transactionFactory.create({ ...cosignatureDescriptor, fee });

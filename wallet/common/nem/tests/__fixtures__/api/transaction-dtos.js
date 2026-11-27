@@ -2,7 +2,8 @@ import { accounts } from '../local/wallet';
 
 // NEM NIS transaction DTOs as returned by /account/transfers/* and /transaction/get.
 // Confirmed transactions are wrapped in a { meta, transaction } pair; unconfirmed transactions
-// omit the meta. Each transaction type is defined as a named constant for readability and then
+// carry no meta hash (a pending multisig transaction carries only its inner transaction hash in
+// meta.data). Each transaction type is defined as a named constant for readability and then
 // collected into `transactionDTOs`, index-aligned with the expected `walletTransactions` fixture.
 
 const { alice, bob, carol } = accounts;
@@ -79,7 +80,7 @@ export const encryptedTransferDTO = {
 
 // Multisig transaction (type 4100) wrapping an inner XEM transfer (otherTrans) with one cosignature.
 export const multisigTransferDTO = {
-	meta: { height: 4368994, id: 115, hash: { data: 'ee33ff' } },
+	meta: { height: 4368994, id: 115, hash: { data: 'ee33ff' }, innerHash: { data: 'ee33f1' } },
 	transaction: {
 		timeStamp: 254452400,
 		fee: 150000,
@@ -138,6 +139,31 @@ export const unconfirmedTransferDTO = {
 		deadline: 254456200,
 		version: -1744830462,
 		signer: alice.publicKey
+	}
+};
+
+// Unconfirmed multisig transaction (type 4100) started by bob for the multisig account carol, with no
+// cosignatures yet. The node gives a pending multisig transaction only its inner transaction hash (meta.data).
+export const unconfirmedMultisigTransferDTO = {
+	meta: { data: 'ab12cd' },
+	transaction: {
+		timeStamp: 254452700,
+		fee: 150000,
+		type: 4100,
+		deadline: 254456300,
+		version: -1744830462,
+		signer: bob.publicKey,
+		otherTrans: {
+			timeStamp: 254452700,
+			amount: 1000000,
+			fee: 50000,
+			recipient: alice.address,
+			type: 257,
+			deadline: 254456300,
+			version: -1744830462,
+			signer: carol.publicKey
+		},
+		signatures: []
 	}
 };
 
@@ -287,7 +313,7 @@ export const mosaicSupplyChangeDTO = {
 // Multisig transaction (type 4100) wrapping a non-transfer inner transaction (an importance transfer)
 // with no cosignatures yet. Confirms the embedded path of the newly-mapped inner types.
 export const multisigImportanceTransferDTO = {
-	meta: { height: 4369003, id: 124, hash: { data: 'def012' } },
+	meta: { height: 4369003, id: 124, hash: { data: 'def012' }, innerHash: { data: 'def013' } },
 	transaction: {
 		timeStamp: 254453400,
 		fee: 150000,
@@ -330,7 +356,7 @@ export const mixedMosaicTransferDTO = {
 
 // Multisig transaction wrapping XEM sent as the nem:xem mosaic with a 2.0 multiplier.
 export const multisigNativeMosaicTransferDTO = {
-	meta: { height: 4369007, id: 128, hash: { data: 'aa0004' } },
+	meta: { height: 4369007, id: 128, hash: { data: 'aa0004' }, innerHash: { data: 'aa0005' } },
 	transaction: {
 		timeStamp: 254453800,
 		fee: 150000,
@@ -361,6 +387,7 @@ export const transactionDTOs = [
 	multisigTransferDTO,
 	importanceTransferDTO,
 	unconfirmedTransferDTO,
+	unconfirmedMultisigTransferDTO,
 	multisigModificationDTO,
 	cosignatureDTO,
 	namespaceRegistrationDTO,

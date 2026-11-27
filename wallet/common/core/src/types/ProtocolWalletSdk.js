@@ -23,6 +23,7 @@
 
 /**
  * @callback CosignTransactionFn
+ * @param {NetworkProperties} networkProperties - The network properties.
  * @param {Transaction} transaction - The transaction object.
  * @param {string} privateKey - The cosigner account private key.
  * @returns {CosignedTransaction} The cosigned transaction.
