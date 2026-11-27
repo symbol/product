@@ -633,6 +633,44 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 		# Assert:
 		self.assertEqual([2], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
 
+	def test_get_transactions_address_lists_transaction_where_another_address_has_an_earlier_role(self):
+		# Arrange:
+		participant_address = bytes.fromhex('04' * 24)
+		signer_row = {'address': bytes.fromhex('05' * 24), 'role': 'signer'}
+		transactions = [
+			create_symbol_transaction(3, 1, address_rows=[signer_row, {'address': participant_address, 'role': 'recipient'}]),
+			create_symbol_transaction(2, 2, address_rows=[signer_row])
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=3, finalized_height=3),
+			TransactionQuery(address=participant_address))
+
+		# Assert:
+		self.assertEqual([1], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
+
+	def test_get_transactions_transfer_mosaic_lists_transfer_where_another_mosaic_comes_first(self):
+		# Arrange:
+		mosaic_id = '1234567890ABCDEF'
+		other_mosaic_id = '234567890ABCDEF0'
+		other_mosaic_row = {'mosaic_id': other_mosaic_id, 'amount': 1, 'role': 'transfer', 'position': 0}
+		transactions = [
+			create_symbol_transaction(3, 1, mosaic_rows=[other_mosaic_row, {**other_mosaic_row, 'mosaic_id': mosaic_id, 'position': 1}]),
+			create_symbol_transaction(2, 2, mosaic_rows=[other_mosaic_row])
+		]
+
+		# Act:
+		result = _query_symbol_transactions(
+			transactions,
+			create_symbol_sync_state(last_synced_height=3, finalized_height=3),
+			TransactionQuery(transfer_mosaic_id=mosaic_id),
+			[create_symbol_mosaic(mosaic_id, 2), create_symbol_mosaic(other_mosaic_id, 2)])
+
+		# Assert:
+		self.assertEqual([1], [bytes.fromhex(transaction.transaction_hash)[-1] for transaction in result])
+
 	def test_get_transactions_address_hides_relation_rows_above_watermark(self):
 		# Arrange:
 		participant_address = bytes.fromhex('04' * 24)
