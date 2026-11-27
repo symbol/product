@@ -81,6 +81,16 @@ ACCOUNT_REFRESH_HEIGHT_INDEX = (
 	'CREATE INDEX idx_symbol_account_refresh_accounts_address_height_desc ON public.symbol_account_refresh_accounts '
 	'USING btree (refresh_run_id, address_height DESC NULLS LAST, address)'
 )
+TRANSACTION_ADDRESS_LIST_ORDER_INDEX = (
+	'idx_symbol_transaction_addresses_address_list_order',
+	'CREATE INDEX idx_symbol_transaction_addresses_address_list_order ON public.symbol_transaction_addresses USING btree '
+	'(address, height DESC, transaction_id DESC)'
+)
+TRANSACTION_MOSAIC_LIST_ORDER_INDEX = (
+	'idx_symbol_transaction_mosaics_mosaic_role_list_order',
+	'CREATE INDEX idx_symbol_transaction_mosaics_mosaic_role_list_order ON public.symbol_transaction_mosaics USING btree '
+	'(mosaic_id, role, height DESC, transaction_id DESC)'
+)
 
 
 def _expected_account_refresh_state(**overrides):
@@ -3794,11 +3804,11 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		indexes = [result[0] for result in cursor.fetchall()]
 
 		self.assertEqual([
-			'idx_symbol_transaction_addresses_address_height',
+			'idx_symbol_transaction_addresses_address_list_order',
 			'idx_symbol_transaction_addresses_height',
 			'idx_symbol_transaction_mosaics_height',
 			'idx_symbol_transaction_mosaics_mosaic_height',
-			'idx_symbol_transaction_mosaics_mosaic_role_height',
+			'idx_symbol_transaction_mosaics_mosaic_role_list_order',
 			'idx_symbol_transactions_height_all',
 			'idx_symbol_transactions_height_desc',
 			'idx_symbol_transactions_list_sequence_desc',
@@ -3844,6 +3854,50 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 
 		# Assert:
 		self.assertEqual([TRANSACTION_TOP_LEVEL_TYPE_INDEX], self._fetch_transaction_top_level_type_index(cursor))
+
+	@staticmethod
+	def _fetch_transaction_relation_list_order_indexes(cursor):
+		cursor.execute(
+			'''
+			SELECT indexname, indexdef
+			FROM pg_indexes
+			WHERE schemaname = 'public'
+				AND indexname IN (
+					'idx_symbol_transaction_addresses_address_list_order',
+					'idx_symbol_transaction_mosaics_mosaic_role_list_order'
+				)
+			ORDER BY indexname
+			''')
+		return cursor.fetchall()
+
+	def test_create_tables_adds_missing_transaction_relation_list_order_indexes(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('DROP INDEX idx_symbol_transaction_addresses_address_list_order')
+		cursor.execute('DROP INDEX idx_symbol_transaction_mosaics_mosaic_role_list_order')
+		database.connection.commit()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual(
+			[TRANSACTION_ADDRESS_LIST_ORDER_INDEX, TRANSACTION_MOSAIC_LIST_ORDER_INDEX],
+			self._fetch_transaction_relation_list_order_indexes(cursor))
+
+	def test_create_tables_preserves_transaction_relation_list_order_indexes_when_run_again(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual(
+			[TRANSACTION_ADDRESS_LIST_ORDER_INDEX, TRANSACTION_MOSAIC_LIST_ORDER_INDEX],
+			self._fetch_transaction_relation_list_order_indexes(cursor))
 
 	def test_create_tables_creates_transaction_height_indexes_with_expected_definitions(self):
 		# Arrange:
