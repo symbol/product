@@ -132,6 +132,8 @@ export const multisigTransfer = {
 	fee: createFee('0.15'),
 	signerAddress: bob.address,
 	signerPublicKey: bob.publicKey,
+	innerTransactionHash: 'ee33f1',
+	multisigAddress: carol.address,
 	innerTransaction: {
 		type: 257,
 		signerAddress: carol.address,
@@ -171,6 +173,7 @@ export const multisigTransfer = {
 		signature: 'abcdef',
 		signerAddress: bob.address
 	}],
+	receivedCosignatures: [bob.address],
 	message: null
 };
 
@@ -193,7 +196,7 @@ export const importanceTransfer = {
 	linkedAccountAddress: bob.address
 };
 
-// Unconfirmed transfer: no meta, so height and hash are null.
+// Unconfirmed transfer: no meta, so height is null and the hash is calculated from the transaction.
 export const unconfirmedTransfer = {
 	type: 257,
 	timestamp: 1682040185000,
@@ -202,7 +205,7 @@ export const unconfirmedTransfer = {
 		adjusted: { timestamp: 254452600, deadline: 254456200 }
 	},
 	height: null,
-	hash: null,
+	hash: '3addec6ef78cc0726647bb47306863d240a058382b992a31c5b433ec721e4ded',
 	fee: createFee('0.1'),
 	signerAddress: alice.address,
 	signerPublicKey: alice.publicKey,
@@ -214,6 +217,41 @@ export const unconfirmedTransfer = {
 		divisibility: 6
 	}],
 	amount: '-3'
+};
+
+// Unconfirmed multisig transfer: the node gives only the inner transaction hash, so the hash of the
+// multisig transaction itself is calculated from the transaction.
+const unconfirmedMultisigInner = {
+	type: 257,
+	signerAddress: carol.address,
+	signerPublicKey: carol.publicKey,
+	recipientAddress: alice.address,
+	tokens: [{ ...networkCurrency, amount: '1' }],
+	amount: '1'
+};
+
+export const unconfirmedMultisigTransfer = {
+	type: 4100,
+	timestamp: 1682040285000,
+	deadline: {
+		timestamp: 1682043885000,
+		adjusted: { timestamp: 254452700, deadline: 254456300 }
+	},
+	height: null,
+	hash: 'b12c2276c570fbf85702f791521fead7a3005b05c071fe9b33c633f3706288e0',
+	fee: createFee('0.15'),
+	signerAddress: bob.address,
+	signerPublicKey: bob.publicKey,
+	innerTransactionHash: 'ab12cd',
+	multisigAddress: carol.address,
+	innerTransaction: unconfirmedMultisigInner,
+	innerTransactions: [unconfirmedMultisigInner],
+	recipientAddress: alice.address,
+	tokens: [{ ...networkCurrency, amount: '1' }],
+	amount: '1',
+	cosignatures: [],
+	receivedCosignatures: [],
+	message: null
 };
 
 // Multisig account modification: cosignatory changes split into added and removed public keys with
@@ -388,12 +426,15 @@ export const multisigImportanceTransfer = {
 	fee: createFee('0.15'),
 	signerAddress: bob.address,
 	signerPublicKey: bob.publicKey,
+	innerTransactionHash: 'def013',
+	multisigAddress: alice.address,
 	innerTransaction: multisigImportanceInner,
 	innerTransactions: [multisigImportanceInner],
 	recipientAddress: null,
 	tokens: [],
 	amount: '0',
 	cosignatures: [],
+	receivedCosignatures: [],
 	message: null
 };
 
@@ -439,12 +480,15 @@ export const multisigNativeMosaicTransfer = {
 	fee: createFee('0.15'),
 	signerAddress: bob.address,
 	signerPublicKey: bob.publicKey,
+	innerTransactionHash: 'aa0005',
+	multisigAddress: carol.address,
 	innerTransaction: multisigNativeMosaicInner,
 	innerTransactions: [multisigNativeMosaicInner],
 	recipientAddress: alice.address,
 	tokens: [{ ...networkCurrency, amount: '2' }],
 	amount: '2',
 	cosignatures: [],
+	receivedCosignatures: [],
 	message: null
 };
 
@@ -456,6 +500,7 @@ export const walletTransactions = [
 	multisigTransfer,
 	importanceTransfer,
 	unconfirmedTransfer,
+	unconfirmedMultisigTransfer,
 	multisigModification,
 	cosignature,
 	namespaceRegistration,

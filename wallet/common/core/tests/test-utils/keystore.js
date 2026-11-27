@@ -92,9 +92,9 @@ export const runBaseSoftwareKeystoreTest = Keystore => {
 		},
 		{
 			methodName: 'cosignTransaction',
-			args: ['transaction', 'account'],
+			args: [{ networkIdentifier: 'testnet' }, 'transaction', 'account'],
 			expectedSdkMethodName: 'cosignTransaction',
-			expectedSdkMethodArgs: ['transaction'],
+			expectedSdkMethodArgs: [{ networkIdentifier: 'testnet' }, 'transaction'],
 			expectedResult: 'cosigned-transaction'
 		},
 		{

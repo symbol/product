@@ -1,10 +1,24 @@
 import { Api } from '../../src/api';
 import { TransactionAnnounceGroup, TransactionBundleType, TransactionGroup } from '../../src/constants';
+import { multisigAccountResponse } from '../__fixtures__/api/account-dtos';
 import { mosaicDefinitionDTO } from '../__fixtures__/api/token-dtos';
-import { incomingTransferDTO, outgoingTransferDTO, transactionDTOs, unconfirmedTransferDTO } from '../__fixtures__/api/transaction-dtos';
+import {
+	incomingTransferDTO,
+	multisigTransferDTO,
+	outgoingTransferDTO,
+	transactionDTOs,
+	unconfirmedMultisigTransferDTO,
+	unconfirmedTransferDTO
+} from '../__fixtures__/api/transaction-dtos';
 import { networkProperties } from '../__fixtures__/local/network';
-import { incomingTransfer, outgoingTransfer, unconfirmedTransfer, walletTransactions } from '../__fixtures__/local/transactions';
-import { currentAccount } from '../__fixtures__/local/wallet';
+import {
+	incomingTransfer,
+	outgoingTransfer,
+	unconfirmedMultisigTransfer,
+	unconfirmedTransfer,
+	walletTransactions
+} from '../__fixtures__/local/transactions';
+import { accounts, currentAccount } from '../__fixtures__/local/wallet';
 import { createMakeRequestMock, runApiServiceTest } from '../test-utils';
 import { ApiError, NotFoundError } from 'wallet-common-core';
 
@@ -12,7 +26,10 @@ import { ApiError, NotFoundError } from 'wallet-common-core';
 
 const NODE_URL = networkProperties.nodeUrl;
 const ADDRESS = currentAccount.address;
+const MULTISIG_ADDRESS = accounts.carol.address;
 const TRANSACTION_HASH = outgoingTransferDTO.meta.hash.data;
+const INNER_TRANSACTION_HASH = unconfirmedMultisigTransferDTO.meta.data;
+const UNKNOWN_TRANSACTION_HASH = 'ffffff';
 
 const transfersUrl = (direction, cursor = null) => {
 	const cursorQuery = cursor === null ? '' : `&id=${cursor}`;
@@ -20,11 +37,21 @@ const transfersUrl = (direction, cursor = null) => {
 	return `${NODE_URL}/account/transfers/${direction}?address=${ADDRESS}&pageSize=15${cursorQuery}`;
 };
 const unconfirmedTransactionsUrl = `${NODE_URL}/account/unconfirmedTransactions?address=${ADDRESS}`;
+const latestConfirmedPageUrl = `${NODE_URL}/account/transfers/all?address=${ADDRESS}&pageSize=100`;
+const multisigAccountUrl = `${NODE_URL}/account/get?address=${MULTISIG_ADDRESS}`;
 const definitionPageUrl = namespaceId => `${NODE_URL}/namespace/mosaic/definition/page?namespace=${namespaceId}&pageSize=100`;
-const transactionGetUrl = hash => `${NODE_URL}/transaction/get?hash=${hash}`;
 const announceUrl = `${NODE_URL}/transaction/announce`;
 
 // Fixtures
+
+// The /account/get response of the multisig account (carol) that requires the given number of signatures.
+const createMultisigAccountResponse = minApproval => ({
+	...multisigAccountResponse,
+	account: {
+		...multisigAccountResponse.account,
+		multisigInfo: { cosignatoriesCount: 2, minCosignatories: minApproval }
+	}
+});
 
 // A signed transaction ready to announce: its dto is the { data, signature } payload NIS expects.
 const signedTransaction = {
@@ -45,6 +72,12 @@ const announceResponse = {
 	message: 'SUCCESS',
 	transactionHash: { data: signedTransaction.hash.toLowerCase() }
 };
+
+// The NemAnnounceResult returned when the node already knows the transaction.
+const neutralAnnounceResponse = { ...announceResponse, code: 0, message: 'NEUTRAL' };
+
+// The NemAnnounceResult returned when the node rejects the transaction.
+const failureAnnounceResponse = { ...announceResponse, code: 5, message: 'FAILURE_INSUFFICIENT_BALANCE' };
 
 describe('api/TransactionService', () => {
 	describe('fetchAccountTransactions', () => {
@@ -104,9 +137,37 @@ describe('api/TransactionService', () => {
 				expected: { transactions: [incomingTransfer] }
 			},
 			{
-				description: 'returns an empty list for the partial group without making a request',
-				config: { searchCriteria: { group: TransactionGroup.PARTIAL }, requestMap: {} },
-				expected: { transactions: [] }
+				description: 'returns pending multisig transactions awaiting cosignatures in the partial group',
+				config: {
+					searchCriteria: { group: TransactionGroup.PARTIAL },
+					requestMap: {
+						[unconfirmedTransactionsUrl]: { data: [unconfirmedTransferDTO, unconfirmedMultisigTransferDTO] },
+						[multisigAccountUrl]: createMultisigAccountResponse(2)
+					}
+				},
+				expected: { transactions: [unconfirmedMultisigTransfer] }
+			},
+			{
+				description: 'keeps pending multisig transactions awaiting cosignatures out of the unconfirmed group',
+				config: {
+					searchCriteria: { group: TransactionGroup.UNCONFIRMED },
+					requestMap: {
+						[unconfirmedTransactionsUrl]: { data: [unconfirmedTransferDTO, unconfirmedMultisigTransferDTO] },
+						[multisigAccountUrl]: createMultisigAccountResponse(2)
+					}
+				},
+				expected: { transactions: [unconfirmedTransfer] }
+			},
+			{
+				description: 'returns fully signed pending multisig transactions in the unconfirmed group',
+				config: {
+					searchCriteria: { group: TransactionGroup.UNCONFIRMED },
+					requestMap: {
+						[unconfirmedTransactionsUrl]: { data: [unconfirmedTransferDTO, unconfirmedMultisigTransferDTO] },
+						[multisigAccountUrl]: createMultisigAccountResponse(1)
+					}
+				},
+				expected: { transactions: [unconfirmedTransfer, unconfirmedMultisigTransfer] }
 			},
 			{
 				description: 'returns an empty list when the node reports no transactions',
@@ -124,7 +185,10 @@ describe('api/TransactionService', () => {
 	describe('fetchAccountTransaction', () => {
 		it('fetches a single transaction by hash and maps it', async () => {
 			// Arrange:
-			const requestMap = { [transactionGetUrl(TRANSACTION_HASH)]: outgoingTransferDTO };
+			const requestMap = {
+				[unconfirmedTransactionsUrl]: { data: [] },
+				[latestConfirmedPageUrl]: { data: [outgoingTransferDTO] }
+			};
 
 			// Act & Assert:
 			await runApiServiceTest({
@@ -132,6 +196,31 @@ describe('api/TransactionService', () => {
 				call: api => api.transaction.fetchAccountTransaction(networkProperties, currentAccount, TRANSACTION_HASH),
 				expected: outgoingTransfer
 			});
+		});
+
+		it('returns a pending multisig transaction found by its inner transaction hash', async () => {
+			// Arrange:
+			const requestMap = { [unconfirmedTransactionsUrl]: { data: [unconfirmedMultisigTransferDTO] } };
+
+			// Act & Assert:
+			await runApiServiceTest({
+				requestMap,
+				call: api => api.transaction.fetchAccountTransaction(networkProperties, currentAccount, INNER_TRANSACTION_HASH),
+				expected: unconfirmedMultisigTransfer
+			});
+		});
+
+		it('rejects with a NotFoundError when the account has no such transaction', async () => {
+			// Arrange:
+			const makeRequest = createMakeRequestMock({
+				[unconfirmedTransactionsUrl]: { data: [] },
+				[latestConfirmedPageUrl]: { data: [outgoingTransferDTO] }
+			});
+			const api = new Api({ makeRequest });
+
+			// Act & Assert:
+			await expect(api.transaction.fetchAccountTransaction(networkProperties, currentAccount, UNKNOWN_TRANSACTION_HASH))
+				.rejects.toBeInstanceOf(NotFoundError);
 		});
 	});
 
@@ -141,7 +230,7 @@ describe('api/TransactionService', () => {
 				// Act & Assert:
 				await runApiServiceTest({
 					requestMap: config.requestMap,
-					call: api => api.transaction.fetchTransactionStatus(networkProperties, TRANSACTION_HASH),
+					call: api => api.transaction.fetchTransactionStatus(networkProperties, config.hash, currentAccount),
 					expected: expected.status
 				});
 			});
@@ -149,26 +238,83 @@ describe('api/TransactionService', () => {
 
 		const fetchTransactionStatusTests = [
 			{
-				description: 'reports a confirmed transaction when the node returns it',
-				config: { requestMap: { [transactionGetUrl(TRANSACTION_HASH)]: outgoingTransferDTO } },
+				description: 'reports a pending transfer found by its calculated hash as unconfirmed',
+				config: {
+					hash: unconfirmedTransfer.hash,
+					requestMap: { [unconfirmedTransactionsUrl]: { data: [unconfirmedTransferDTO] } }
+				},
+				expected: { status: { group: TransactionGroup.UNCONFIRMED } }
+			},
+			{
+				description: 'reports a pending multisig transaction awaiting cosignatures as partial',
+				config: {
+					hash: INNER_TRANSACTION_HASH,
+					requestMap: {
+						[unconfirmedTransactionsUrl]: { data: [unconfirmedMultisigTransferDTO] },
+						[multisigAccountUrl]: createMultisigAccountResponse(2)
+					}
+				},
+				expected: { status: { group: TransactionGroup.PARTIAL } }
+			},
+			{
+				description: 'reports a pending multisig transaction found by its calculated hash as partial',
+				config: {
+					hash: unconfirmedMultisigTransfer.hash,
+					requestMap: {
+						[unconfirmedTransactionsUrl]: { data: [unconfirmedMultisigTransferDTO] },
+						[multisigAccountUrl]: createMultisigAccountResponse(2)
+					}
+				},
+				expected: { status: { group: TransactionGroup.PARTIAL } }
+			},
+			{
+				description: 'reports a fully signed pending multisig transaction as unconfirmed',
+				config: {
+					hash: INNER_TRANSACTION_HASH,
+					requestMap: {
+						[unconfirmedTransactionsUrl]: { data: [unconfirmedMultisigTransferDTO] },
+						[multisigAccountUrl]: createMultisigAccountResponse(1)
+					}
+				},
+				expected: { status: { group: TransactionGroup.UNCONFIRMED } }
+			},
+			{
+				description: 'reports a transaction found by its hash on the latest confirmed page as confirmed',
+				config: {
+					hash: TRANSACTION_HASH,
+					requestMap: {
+						[unconfirmedTransactionsUrl]: { data: [] },
+						[latestConfirmedPageUrl]: { data: [outgoingTransferDTO] }
+					}
+				},
 				expected: { status: { group: TransactionGroup.CONFIRMED } }
 			},
 			{
-				description: 'reports an unconfirmed transaction when the node returns a 404',
-				config: { requestMap: { [transactionGetUrl(TRANSACTION_HASH)]: new NotFoundError('Transaction not found') } },
-				expected: { status: { group: TransactionGroup.UNCONFIRMED } }
+				description: 'reports a transaction found by its inner transaction hash on the latest confirmed page as confirmed',
+				config: {
+					hash: multisigTransferDTO.meta.innerHash.data,
+					requestMap: {
+						[unconfirmedTransactionsUrl]: { data: [] },
+						[latestConfirmedPageUrl]: { data: [multisigTransferDTO] }
+					}
+				},
+				expected: { status: { group: TransactionGroup.CONFIRMED } }
 			}
 		];
 
 		fetchTransactionStatusTests.forEach(test => runFetchTransactionStatusTest(test.description, test.config, test.expected));
 
-		it('rethrows errors that are not a not-found', async () => {
+		it('rejects with a NotFoundError when the account has no such transaction', async () => {
 			// Arrange:
-			const makeRequest = createMakeRequestMock({ [transactionGetUrl(TRANSACTION_HASH)]: new Error('Node unreachable') });
+			const makeRequest = createMakeRequestMock({
+				[unconfirmedTransactionsUrl]: { data: [unconfirmedTransferDTO] },
+				[latestConfirmedPageUrl]: { data: [outgoingTransferDTO] }
+			});
 			const api = new Api({ makeRequest });
 
 			// Act & Assert:
-			await expect(api.transaction.fetchTransactionStatus(networkProperties, TRANSACTION_HASH)).rejects.toThrow('Node unreachable');
+			await expect(api.transaction.fetchTransactionStatus(networkProperties, UNKNOWN_TRANSACTION_HASH, currentAccount))
+				.rejects.toBeInstanceOf(NotFoundError);
 		});
 	});
 
@@ -198,6 +344,25 @@ describe('api/TransactionService', () => {
 		];
 
 		announceTransactionTests.forEach(test => runAnnounceTransactionTest(test.description, test.config, test.expected));
+
+		it('returns the node result when the node already knows the transaction', async () => {
+			// Act & Assert:
+			await runApiServiceTest({
+				requestMap: { [announceUrl]: neutralAnnounceResponse },
+				call: api => api.transaction.announceTransaction(networkProperties, signedTransaction),
+				expected: neutralAnnounceResponse
+			});
+		});
+
+		it('rejects with an ApiError carrying the node message when the node rejects the transaction', async () => {
+			// Arrange:
+			const makeRequest = createMakeRequestMock({ [announceUrl]: failureAnnounceResponse });
+			const api = new Api({ makeRequest });
+			const expectedError = new ApiError('Failed to announce transaction: FAILURE_INSUFFICIENT_BALANCE');
+
+			// Act & Assert:
+			await expect(api.transaction.announceTransaction(networkProperties, signedTransaction)).rejects.toStrictEqual(expectedError);
+		});
 
 		it('wraps node failures in an ApiError', async () => {
 			// Arrange:

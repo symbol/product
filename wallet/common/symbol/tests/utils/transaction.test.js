@@ -593,7 +593,7 @@ describe('utils/transaction', () => {
 			};
 
 			// Act:
-			const result = cosignTransaction(transaction, privateKey);
+			const result = cosignTransaction(networkProperties, transaction, privateKey);
 
 			// Assert:
 			expect(result).toStrictEqual(expectedResult);

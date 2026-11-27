@@ -69,6 +69,7 @@
  * @callback FetchTransactionStatusFn
  * @param {NetworkProperties} networkProperties - The network properties.
  * @param {string} transactionHash - The hash of the transaction to fetch status for.
+ * @param {PublicAccount} currentAccount - The account whose transactions are searched.
  * @returns {Promise<object>} A promise that resolves to the transaction status.
  * @throws {Error} If the transaction status cannot be fetched.
  */

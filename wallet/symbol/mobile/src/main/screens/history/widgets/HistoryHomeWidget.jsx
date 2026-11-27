@@ -36,6 +36,7 @@ export const HistoryHomeWidget = ({ refreshController }) => {
 					ticker={historyWidget.props.ticker}
 					currentAccount={historyWidget.props.currentAccount}
 					isCurrentAccountMultisig={historyWidget.props.isCurrentAccountMultisig}
+					multisigAddresses={historyWidget.props.multisigAddresses}
 					walletAccounts={historyWidget.props.walletAccounts}
 					addressBook={historyWidget.props.addressBook}
 				/>

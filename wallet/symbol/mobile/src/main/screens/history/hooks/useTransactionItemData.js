@@ -25,6 +25,7 @@ import { useMemo } from 'react';
  * @param {string} options.group - Transaction group (confirmed, unconfirmed, partial).
  * @param {WalletAccount} options.currentAccount - Current account.
  * @param {boolean} [options.isCurrentAccountMultisig=false] - Whether the current account is a multisig account.
+ * @param {string[]} [options.multisigAddresses] - List of multisig account addresses which the account is cosignatory of.
  * @param {WalletAccount[]} options.walletAccounts - Wallet accounts for the network.
  * @param {object} options.addressBook - Address book instance.
  * @param {ChainName} options.chainName - Chain name (e.g., 'symbol').
@@ -37,6 +38,7 @@ export const useTransactionItemData = ({
 	group,
 	currentAccount,
 	isCurrentAccountMultisig = false,
+	multisigAddresses,
 	walletAccounts,
 	addressBook,
 	chainName,
@@ -58,7 +60,11 @@ export const useTransactionItemData = ({
 
 		const isPartial = group === TransactionGroup.PARTIAL;
 		const isAwaitingAccountSignature = isPartial
-			&& isTransactionAwaitingSignatureByAccount(transaction, currentAccount, { isCurrentAccountMultisig });
+			&& isTransactionAwaitingSignatureByAccount(transaction, currentAccount, {
+				chainName,
+				isCurrentAccountMultisig,
+				multisigAddresses
+			});
 
 		return {
 			iconName,
@@ -72,6 +78,7 @@ export const useTransactionItemData = ({
 		group,
 		currentAccount,
 		isCurrentAccountMultisig,
+		multisigAddresses,
 		walletAccounts,
 		addressBook,
 		chainName,

@@ -4,6 +4,7 @@ export * from './namespace';
 export * from './token';
 export * from './network';
 export * from './transaction';
+export * from './transaction-dto-to-nem';
 export * from './transaction-from-dto';
 export * from './transaction-from-nem';
 export * from './transaction-to-nem';

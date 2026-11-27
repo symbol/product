@@ -103,8 +103,10 @@ export const TransactionDetails = ({ route }) => {
 	// Cosignature
 	const isCurrentAccountMultisig = currentAccountInfo?.isMultisig ?? false;
 	const cosignStatus = getTransactionCosignStatus(transaction, {
+		chainName,
 		currentAccount,
 		isCurrentAccountMultisig,
+		multisigAddresses: currentAccountInfo?.multisigAddresses,
 		addressBook,
 		walletAccounts,
 		transactionGroup: status.group

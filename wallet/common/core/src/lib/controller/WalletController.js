@@ -759,7 +759,7 @@ export class WalletController {
 	fetchTransactionStatus = async transactionHash => {
 		const { networkProperties } = this._state;
 
-		return this._api.transaction.fetchTransactionStatus(networkProperties, transactionHash);
+		return this._api.transaction.fetchTransactionStatus(networkProperties, transactionHash, this.currentAccount);
 	};
 
 	/**
@@ -823,7 +823,7 @@ export class WalletController {
 	cosignTransaction = async transaction => {
 		const keystore = this.#accessKeystore(this.currentAccount.accountType);
 
-		return keystore.cosignTransaction(transaction, this.currentAccount);
+		return keystore.cosignTransaction(this.networkProperties, transaction, this.currentAccount);
 	};
 
 	/**

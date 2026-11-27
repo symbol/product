@@ -28,7 +28,7 @@ import { useAsyncManager, useTimer } from '@/app/hooks';
 
 /**
  * React hook for fetching and auto-refreshing transaction information.
- * Polls for transaction status updates at regular intervals.
+ * Polls for transaction status updates at regular intervals until the transaction is confirmed.
  * @param {WalletController} walletController - Wallet controller instance.
  * @param {Transaction} preloadedData - Initial transaction data.
  * @param {string} preloadedGroup - Initial transaction group.
@@ -53,10 +53,15 @@ export const useLiveTransactionInfo = (walletController, preloadedData, preloade
 			transaction: preloadedData
 		}
 	});
+	const isConfirmed = transactionManager.data.status.group === TransactionGroup.CONFIRMED;
+	const refresh = () => {
+		if (!isConfirmed)
+			transactionManager.call();
+	};
 
 	useTimer({
-		isActive: isWalletReady,
-		callback: transactionManager.call,
+		isActive: isWalletReady && !isConfirmed,
+		callback: refresh,
 		interval: REFRESH_TRANSACTION_DETAILS_INTERVAL,
 		hasImmediateExecution: true
 	});
@@ -65,6 +70,6 @@ export const useLiveTransactionInfo = (walletController, preloadedData, preloade
 		data: transactionManager.data,
 		isLoading: transactionManager.isLoading,
 		error: transactionManager.error,
-		refresh: transactionManager.call
+		refresh
 	};
 };
