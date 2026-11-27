@@ -5,6 +5,7 @@ const { CacheMode, HttpMethod } = constants;
 export const CacheScope = {
 	SYMBOL_BLOCK: 'symbol:block',
 	SYMBOL_STATIC: 'symbol:static',
+	NEM_BLOCK: 'nem:block',
 	ETHEREUM_BLOCK: 'ethereum:block',
 	ETHEREUM_STATIC: 'ethereum:static',
 	MARKET: 'market'
@@ -12,6 +13,7 @@ export const CacheScope = {
 
 export const CacheTtl = {
 	SYMBOL_BLOCK: 30_000,
+	NEM_BLOCK: 60_000,
 	ETHEREUM_BLOCK: 12_000,
 	MINUTE: 60_000,
 	TEN_MINUTES: 600_000,
@@ -25,6 +27,8 @@ export const CacheTtl = {
  *
  * Deliberately not listed:
  * - "/transactionStatus/:hash" — polled during transaction announcement to await confirmation.
+ * - "/account/unconfirmedTransactions" and "/account/transfers/all" — the NEM transaction status
+ *   is resolved from these lists.
  * - "/node/info" and "/chain/info" — connection health probes; deduplicated only, so that node
  *   failure detection keeps reaching the network.
  * - all write requests — structurally uncacheable (only GET and listed POST requests can match).
@@ -124,6 +128,13 @@ export const cacheEntries = [
 		path: '/transactions/:group',
 		ttl: CacheTtl.HOUR,
 		scopes: [CacheScope.SYMBOL_STATIC]
+	}),
+
+	// NEM NIS: block-scoped data, changes with new blocks or account transactions.
+	createUrlCacheEntry({
+		path: '/account/get',
+		ttl: CacheTtl.NEM_BLOCK,
+		scopes: [CacheScope.NEM_BLOCK]
 	}),
 
 	// Connection health probes: collapse concurrent bursts, but every settled probe hits the network.
