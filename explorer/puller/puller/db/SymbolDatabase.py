@@ -683,12 +683,12 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		''')
 		cursor.execute('''
 			CREATE INDEX IF NOT EXISTS idx_symbol_transaction_mosaics_mosaic_role_list_order
-			ON symbol_transaction_mosaics(mosaic_id, role, height DESC, transaction_id DESC)
+			ON symbol_transaction_mosaics(mosaic_id, role, height DESC, transaction_id DESC) INCLUDE (position)
 		''')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transaction_mosaics_height ON symbol_transaction_mosaics(height)')
 		cursor.execute('''
 			CREATE INDEX IF NOT EXISTS idx_symbol_transaction_addresses_address_list_order
-			ON symbol_transaction_addresses(address, height DESC, transaction_id DESC)
+			ON symbol_transaction_addresses(address, height DESC, transaction_id DESC) INCLUDE (role)
 		''')
 		cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_transaction_addresses_height ON symbol_transaction_addresses(height)')
 		for index_sql in SYMBOL_RECEIPT_INDEXES:

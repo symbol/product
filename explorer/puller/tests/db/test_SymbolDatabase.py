@@ -84,12 +84,12 @@ ACCOUNT_REFRESH_HEIGHT_INDEX = (
 TRANSACTION_ADDRESS_LIST_ORDER_INDEX = (
 	'idx_symbol_transaction_addresses_address_list_order',
 	'CREATE INDEX idx_symbol_transaction_addresses_address_list_order ON public.symbol_transaction_addresses USING btree '
-	'(address, height DESC, transaction_id DESC)'
+	'(address, height DESC, transaction_id DESC) INCLUDE (role)'
 )
 TRANSACTION_MOSAIC_LIST_ORDER_INDEX = (
 	'idx_symbol_transaction_mosaics_mosaic_role_list_order',
 	'CREATE INDEX idx_symbol_transaction_mosaics_mosaic_role_list_order ON public.symbol_transaction_mosaics USING btree '
-	'(mosaic_id, role, height DESC, transaction_id DESC)'
+	'(mosaic_id, role, height DESC, transaction_id DESC) INCLUDE ("position")'
 )
 
 
