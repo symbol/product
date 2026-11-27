@@ -18,6 +18,7 @@ import React, { useMemo } from 'react';
  * @param {Transaction[]} props.unconfirmed - Unconfirmed transactions.
  * @param {WalletAccount} props.currentAccount - Current user account.
  * @param {boolean} [props.isCurrentAccountMultisig=false] - Whether the current account is a multisig account.
+ * @param {string[]} [props.multisigAddresses] - List of multisig account addresses which the account is cosignatory of.
  * @param {WalletAccount[]} props.walletAccounts - Wallet accounts for the network.
  * @param {object} props.addressBook - Address book instance.
  * @param {NetworkIdentifier} props.networkIdentifier - Network identifier (e.g., 'mainnet').
@@ -30,6 +31,7 @@ export const HistoryWidget = ({
 	unconfirmed,
 	currentAccount,
 	isCurrentAccountMultisig = false,
+	multisigAddresses,
 	walletAccounts,
 	addressBook,
 	networkIdentifier,
@@ -63,6 +65,7 @@ export const HistoryWidget = ({
 							transaction={item.transaction}
 							currentAccount={currentAccount}
 							isCurrentAccountMultisig={isCurrentAccountMultisig}
+							multisigAddresses={multisigAddresses}
 							walletAccounts={walletAccounts}
 							addressBook={addressBook}
 							networkIdentifier={networkIdentifier}

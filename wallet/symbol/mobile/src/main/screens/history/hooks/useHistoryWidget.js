@@ -20,6 +20,7 @@ const PAGE_SIZE = 15;
  * @property {string} ticker - Ticker symbol for the network currency.
  * @property {WalletAccount} currentAccount - Current user account.
  * @property {boolean} isCurrentAccountMultisig - Whether the current account is a multisig account.
+ * @property {string[]} [multisigAddresses] - List of multisig account addresses which the account is cosignatory of.
  * @property {WalletAccount[]} walletAccounts - Wallet accounts for the network.
  * @property {object} addressBook - Address book instance.
  */
@@ -93,6 +94,7 @@ export const useHistoryWidget = (walletController, refreshController) => {
 			ticker: walletController.ticker,
 			currentAccount: walletController.currentAccount,
 			isCurrentAccountMultisig: walletController.currentAccountInfo?.isMultisig ?? false,
+			multisigAddresses: walletController.currentAccountInfo?.multisigAddresses,
 			walletAccounts: walletController.accounts[walletController.networkIdentifier],
 			addressBook: walletController.modules.addressBook
 		}
