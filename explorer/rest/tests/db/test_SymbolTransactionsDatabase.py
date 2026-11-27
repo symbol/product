@@ -298,6 +298,143 @@ class SymbolDatabaseTransactionsTest(TestCase):  # pylint: disable=too-many-publ
 			(transaction.transaction_hash, transaction.transaction_type.value, transaction.embedded_index)
 			for transaction in result])
 
+	def test_get_transactions_merges_requested_types_by_height_and_id(self):
+		transfer_type = TransactionType.TRANSFER.value
+		supply_change_type = TransactionType.MOSAIC_SUPPLY_CHANGE.value
+		self._assert_transaction_page(
+			[
+				create_symbol_transaction(4, 1, type=supply_change_type),
+				create_symbol_transaction(3, 2),
+				create_symbol_transaction(3, 3, type=supply_change_type),
+				create_symbol_transaction(2, 4, type=TransactionType.NAMESPACE_REGISTRATION.value),
+				create_symbol_transaction(1, 5)
+			],
+			TransactionQuery(transaction_types=(transfer_type, supply_change_type)),
+			[(4, 1, supply_change_type), (3, 3, supply_change_type), (3, 2, transfer_type), (1, 5, transfer_type)])
+
+	def test_get_transactions_applies_offset_after_merging_types(self):
+		transfer_type = TransactionType.TRANSFER.value
+		supply_change_type = TransactionType.MOSAIC_SUPPLY_CHANGE.value
+		self._assert_transaction_page(
+			[
+				create_symbol_transaction(4, 1),
+				create_symbol_transaction(3, 2, type=supply_change_type),
+				create_symbol_transaction(2, 3),
+				create_symbol_transaction(1, 4, type=supply_change_type)
+			],
+			TransactionQuery(limit=2, offset=1, transaction_types=(transfer_type, supply_change_type)),
+			[(3, 2, supply_change_type), (2, 3, transfer_type)])
+
+	def test_get_transactions_returns_empty_when_offset_exceeds_merged_count(self):
+		supply_change_type = TransactionType.MOSAIC_SUPPLY_CHANGE.value
+		self._assert_transaction_page(
+			[create_symbol_transaction(4, 1), create_symbol_transaction(3, 2, type=supply_change_type)],
+			TransactionQuery(limit=2, offset=3, transaction_types=(TransactionType.TRANSFER.value, supply_change_type)),
+			[])
+
+	def test_get_transactions_keeps_rows_needed_for_offset_within_one_type(self):
+		transfer_type = TransactionType.TRANSFER.value
+		supply_change_type = TransactionType.MOSAIC_SUPPLY_CHANGE.value
+		self._assert_transaction_page(
+			[
+				create_symbol_transaction(4, 1),
+				create_symbol_transaction(3, 2),
+				create_symbol_transaction(2, 3),
+				create_symbol_transaction(1, 4, type=supply_change_type)
+			],
+			TransactionQuery(limit=1, offset=2, transaction_types=(transfer_type, supply_change_type)),
+			[(2, 3, transfer_type)])
+
+	def test_get_transactions_returns_each_row_once_when_one_of_multiple_types_repeats(self):
+		transfer_type = TransactionType.TRANSFER.value
+		supply_change_type = TransactionType.MOSAIC_SUPPLY_CHANGE.value
+		self._assert_transaction_page(
+			[
+				create_symbol_transaction(4, 1),
+				create_symbol_transaction(3, 2, type=supply_change_type),
+				create_symbol_transaction(2, 3)
+			],
+			TransactionQuery(transaction_types=(transfer_type, supply_change_type, transfer_type)),
+			[(4, 1, transfer_type), (3, 2, supply_change_type), (2, 3, transfer_type)])
+
+	def test_get_transactions_returns_only_requested_rows_when_a_single_type_repeats(self):
+		transfer_type = TransactionType.TRANSFER.value
+		self._assert_transaction_page(
+			[
+				create_symbol_transaction(4, 1),
+				create_symbol_transaction(3, 2, type=TransactionType.MOSAIC_SUPPLY_CHANGE.value),
+				create_symbol_transaction(2, 3)
+			],
+			TransactionQuery(transaction_types=(transfer_type, transfer_type)),
+			[(4, 1, transfer_type), (2, 3, transfer_type)])
+
+	def test_get_transactions_returns_other_matches_when_one_requested_type_has_no_rows(self):
+		transfer_type = TransactionType.TRANSFER.value
+		self._assert_transaction_page(
+			[
+				create_symbol_transaction(4, 1),
+				create_symbol_transaction(3, 2),
+				create_symbol_transaction(2, 3, type=TransactionType.NAMESPACE_REGISTRATION.value)
+			],
+			TransactionQuery(transaction_types=(transfer_type, TransactionType.MOSAIC_SUPPLY_CHANGE.value)),
+			[(4, 1, transfer_type), (3, 2, transfer_type)])
+
+	def test_get_transactions_returns_empty_when_requested_types_are_embedded_only(self):
+		account_metadata_type = TransactionType.ACCOUNT_METADATA.value
+		mosaic_metadata_type = TransactionType.MOSAIC_METADATA.value
+		parent_hash = bytes.fromhex('AA' * 32)
+		self._assert_transaction_page(
+			[
+				create_symbol_transaction(4, 1, type=TransactionType.AGGREGATE_COMPLETE.value, hash=parent_hash),
+				create_symbol_transaction(4, 0, is_embedded=True, type=account_metadata_type, aggregate_hash=parent_hash),
+				create_symbol_transaction(4, 1, is_embedded=True, type=mosaic_metadata_type, aggregate_hash=parent_hash)
+			],
+			TransactionQuery(transaction_types=(account_metadata_type, mosaic_metadata_type)),
+			[])
+
+	def test_get_transactions_fills_the_merged_page_from_published_rows(self):
+		transfer_type = TransactionType.TRANSFER.value
+		supply_change_type = TransactionType.MOSAIC_SUPPLY_CHANGE.value
+		self._assert_transaction_page(
+			[
+				create_symbol_transaction(6, 1, type=supply_change_type),
+				create_symbol_transaction(5, 2),
+				create_symbol_transaction(4, 3),
+				create_symbol_transaction(3, 4, type=supply_change_type)
+			],
+			TransactionQuery(limit=2, transaction_types=(transfer_type, supply_change_type)),
+			[(4, 3, transfer_type), (3, 4, supply_change_type)],
+			sync_state=create_symbol_sync_state(last_synced_height=4, finalized_height=3, chain_height=6))
+
+	def test_get_transactions_requires_the_signer_for_each_requested_type(self):
+		transfer_type = TransactionType.TRANSFER.value
+		supply_change_type = TransactionType.MOSAIC_SUPPLY_CHANGE.value
+		other_public_key = bytes.fromhex('02' * 32)
+		self._assert_transaction_page(
+			[
+				create_symbol_transaction(4, 1, signer_public_key=other_public_key),
+				create_symbol_transaction(4, 2, type=supply_change_type, signer_public_key=other_public_key),
+				create_symbol_transaction(3, 3, type=supply_change_type),
+				create_symbol_transaction(2, 4),
+				create_symbol_transaction(1, 5, type=TransactionType.NAMESPACE_REGISTRATION.value)
+			],
+			TransactionQuery(transaction_types=(transfer_type, supply_change_type), signer_public_key=SIGNER_PUBLIC_KEY),
+			[(3, 3, supply_change_type), (2, 4, transfer_type)])
+
+	def _assert_transaction_page(self, transactions, query, expected_page, *, sync_state=None):
+		# Arrange:
+		sync_state = sync_state or create_symbol_sync_state(last_synced_height=4, finalized_height=3)
+		expected = [(height, f'{number:064X}', transaction_type, None) for height, number, transaction_type in expected_page]
+
+		# Act:
+		result = _query_symbol_transactions(transactions, sync_state, query)
+
+		# Assert:
+		self.assertEqual(expected, [
+			(transaction.height, transaction.transaction_hash, transaction.transaction_type.value, transaction.embedded_index)
+			for transaction in result
+		])
+
 	def test_get_transactions_sender_address_matches_only_signer_column(self):
 		# Arrange:
 		sender_address = bytes.fromhex('03' * 24)

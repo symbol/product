@@ -1022,16 +1022,30 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 				''',
 				(relation_value, last_synced_height, query.limit, query.offset))
 		else:
-			where_clauses, parameters = SymbolDatabase._create_transaction_filter(query, last_synced_height)
-			cursor.execute(
-				f'''
+			transaction_types = sorted(set(query.transaction_types))
+			where_clauses, parameters = SymbolDatabase._create_transaction_filter(query, last_synced_height, transaction_types)
+			ordered_transactions_query = f'''
 				SELECT {TRANSACTION_COLUMNS}
 				FROM symbol_transactions AS transactions
 				WHERE {' AND '.join(where_clauses)}
 				ORDER BY transactions.height DESC, transactions.id DESC
-				LIMIT %s OFFSET %s
-				''',
-				(*parameters, query.limit, query.offset))
+			'''
+			if len(transaction_types) <= 1:
+				cursor.execute(
+					f'{ordered_transactions_query} LIMIT %s OFFSET %s',
+					(*parameters, query.limit, query.offset))
+			else:
+				# Each branch walks one type's (type, height, id) index in list order.
+				# With = ANY, PostgreSQL walks the height index instead.
+				cursor.execute(
+					f'''
+					SELECT page.*
+					FROM unnest(%s::integer[]) AS requested(type)
+					CROSS JOIN LATERAL ({ordered_transactions_query} LIMIT %s) AS page
+					ORDER BY page.height DESC, page.id DESC
+					LIMIT %s OFFSET %s
+					''',
+					(transaction_types, *parameters, query.limit + query.offset, query.limit, query.offset))
 
 		transaction_rows = cursor.fetchall()
 		if any(not row[2] and row[9] is None for row in transaction_rows):
@@ -1057,7 +1071,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 		return cursor.fetchall()
 
 	@staticmethod
-	def _create_transaction_filter(query, last_synced_height):
+	def _create_transaction_filter(query, last_synced_height, transaction_types):
 		# Binding the height from the current snapshot makes the range visible to the planner.
 		where_clauses = ['transactions.height <= %s', 'transactions.is_embedded = false']
 		parameters = [last_synced_height]
@@ -1080,13 +1094,12 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 				where_clauses.append(clause)
 				parameters.append(value)
 
-		# Equality for a single type lets the (type, height, id) index supply the list order.
-		if 1 == len(query.transaction_types):
+		# Match either the single bound type or one type from the current LATERAL branch.
+		if 1 == len(transaction_types):
 			where_clauses.append('transactions.type = %s')
-			parameters.append(query.transaction_types[0])
-		elif query.transaction_types:
-			where_clauses.append('transactions.type = ANY(%s::integer[])')
-			parameters.append(list(query.transaction_types))
+			parameters.append(transaction_types[0])
+		elif transaction_types:
+			where_clauses.append('transactions.type = requested.type')
 
 		return where_clauses, parameters
 
