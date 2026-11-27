@@ -1003,17 +1003,50 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 			raise SymbolDataUnavailable(
 				'Symbol transaction data is unavailable: generic transaction page crosses an unsafe boundary')
 
-		where_clauses, parameters = SymbolDatabase._create_transaction_filter(query)
-		cursor.execute(
-			f'''
-			SELECT {TRANSACTION_COLUMNS}
-			FROM symbol_transactions AS transactions
-			JOIN symbol_sync_state AS sync_state ON sync_state.id = 1
-			WHERE {' AND '.join(where_clauses)}
-			ORDER BY transactions.height DESC, transactions.id DESC
-			LIMIT %s OFFSET %s
-			''',
-			(*parameters, query.limit, query.offset))
+		last_synced_height = sync_state['last_synced_height']
+		relation_filter = SymbolDatabase._create_transaction_relation_filter(query)
+		if relation_filter:
+			relation_table, relation_clause, duplicate_clause, relation_value = relation_filter
+			# Walk the relation's (key, height) index and keep one relation row per transaction.
+			# NOT EXISTS keeps the index order; DISTINCT ON sorts every row of the key on PostgreSQL 15.
+			# Relation rows store their transaction's height, so ordering by them keeps the list order.
+			cursor.execute(
+				f'''
+				SELECT {TRANSACTION_COLUMNS}
+				FROM {relation_table} AS relations
+				JOIN symbol_transactions AS transactions ON transactions.id = relations.transaction_id
+				WHERE {relation_clause} AND relations.height <= %s AND transactions.is_embedded = false
+					AND NOT EXISTS (SELECT 1 FROM {relation_table} AS duplicates WHERE {duplicate_clause})
+				ORDER BY relations.height DESC, relations.transaction_id DESC
+				LIMIT %s OFFSET %s
+				''',
+				(relation_value, last_synced_height, query.limit, query.offset))
+		else:
+			transaction_types = sorted(set(query.transaction_types))
+			where_clauses, parameters = SymbolDatabase._create_transaction_filter(query, last_synced_height, transaction_types)
+			ordered_transactions_query = f'''
+				SELECT {TRANSACTION_COLUMNS}
+				FROM symbol_transactions AS transactions
+				WHERE {' AND '.join(where_clauses)}
+				ORDER BY transactions.height DESC, transactions.id DESC
+			'''
+			if len(transaction_types) <= 1:
+				cursor.execute(
+					f'{ordered_transactions_query} LIMIT %s OFFSET %s',
+					(*parameters, query.limit, query.offset))
+			else:
+				# Each branch walks one type's (type, height, id) index in list order.
+				# With = ANY, PostgreSQL walks the height index instead.
+				cursor.execute(
+					f'''
+					SELECT page.*
+					FROM unnest(%s::integer[]) AS requested(type)
+					CROSS JOIN LATERAL ({ordered_transactions_query} LIMIT %s) AS page
+					ORDER BY page.height DESC, page.id DESC
+					LIMIT %s OFFSET %s
+					''',
+					(transaction_types, *parameters, query.limit + query.offset, query.limit, query.offset))
+
 		transaction_rows = cursor.fetchall()
 		if any(not row[2] and row[9] is None for row in transaction_rows):
 			raise SymbolDataUnavailable(
@@ -1038,9 +1071,10 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 		return cursor.fetchall()
 
 	@staticmethod
-	def _create_transaction_filter(query):
-		where_clauses = ['transactions.height <= sync_state.last_synced_height', 'transactions.is_embedded = false']
-		parameters = []
+	def _create_transaction_filter(query, last_synced_height, transaction_types):
+		# Binding the height from the current snapshot makes the range visible to the planner.
+		where_clauses = ['transactions.height <= %s', 'transactions.is_embedded = false']
+		parameters = [last_synced_height]
 		filters = [
 			(query.height, 'transactions.height = %s'),
 			(query.address, '''EXISTS (
@@ -1060,11 +1094,41 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 				where_clauses.append(clause)
 				parameters.append(value)
 
-		if query.transaction_types:
-			where_clauses.append('transactions.type = ANY(%s::integer[])')
-			parameters.append(list(query.transaction_types))
+		# Match either the single bound type or one type from the current LATERAL branch.
+		if 1 == len(transaction_types):
+			where_clauses.append('transactions.type = %s')
+			parameters.append(transaction_types[0])
+		elif transaction_types:
+			where_clauses.append('transactions.type = requested.type')
 
 		return where_clauses, parameters
+
+	@staticmethod
+	def _create_transaction_relation_filter(query):
+		"""Returns the relation table, key clause, duplicate clause and key value when an address or transfer Mosaic is the only filter."""
+
+		# With another filter, EXISTS lets PostgreSQL start from whichever index is more selective.
+		other_filters = (query.height, query.sender_address, query.signer_public_key, query.recipient_address)
+		if query.transaction_types or any(value is not None for value in other_filters):
+			return None
+
+		if query.address is not None and query.transfer_mosaic_id is None:
+			return (
+				'symbol_transaction_addresses',
+				'relations.address = %s',
+				'duplicates.transaction_id = relations.transaction_id AND duplicates.address = relations.address'
+				' AND duplicates.role < relations.role',
+				query.address)
+
+		if query.transfer_mosaic_id is not None and query.address is None:
+			return (
+				'symbol_transaction_mosaics',
+				"relations.mosaic_id = %s AND relations.role = 'transfer'::symbol_transaction_mosaic_role",
+				'duplicates.transaction_id = relations.transaction_id AND duplicates.mosaic_id = relations.mosaic_id'
+				' AND duplicates.role = relations.role AND duplicates.position < relations.position',
+				query.transfer_mosaic_id)
+
+		return None
 
 	def _fetch_transaction_mosaics(self, cursor, transaction_ids, sync_state):
 		"""Loads confirmed transfer amounts and display metadata in one snapshot query."""
