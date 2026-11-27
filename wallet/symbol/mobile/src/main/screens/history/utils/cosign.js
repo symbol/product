@@ -2,12 +2,16 @@ import { TransactionGroup } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { CosignStatus } from '@/app/screens/history/types/Cosignature';
 import { SemanticRoleColorVariant } from '@/app/types/ColorVariants';
-import { 
-	isTransactionAwaitingSignatureByAccount as isTransactionAwaitingSignatureByAccountSdk 
+import {
+	isTransactionAwaitingSignatureByAccount as isNemTransactionAwaitingSignatureByAccount
+} from 'wallet-common-nem/src/utils/transaction';
+import {
+	isTransactionAwaitingSignatureByAccount as isSymbolTransactionAwaitingSignatureByAccount
 } from 'wallet-common-symbol/src/utils/transaction';
 
 /** @typedef {import('@/app/types/Transaction').Transaction} Transaction */
 /** @typedef {import('@/app/types/Account').WalletAccount} WalletAccount */
+/** @typedef {import('@/app/types/Network').ChainName} ChainName */
 /** @typedef {import('@/app/screens/history/types/Cosignature').CosignStatusValue} CosignStatusValue */
 /** @typedef {import('@/app/types/ColorVariants').SemanticRoleColorVariants} SemanticRoleColorVariants */
 
@@ -23,18 +27,35 @@ import {
 /**
  * Options for determining transaction cosign status.
  * @typedef {object} CosignStatusOptions
+ * @property {ChainName} chainName - Chain the transaction belongs to.
  * @property {string} transactionGroup - Transaction group from TransactionGroup enum.
  * @property {WalletAccount} currentAccount - Current wallet account.
  * @property {boolean} [isCurrentAccountMultisig=false] - Whether the current account is a multisig account.
+ * @property {string[]} [multisigAddresses] - List of multisig account addresses which the account is cosignatory of.
  * @property {object} addressBook - Address book instance with whitelist and blacklist.
  * @property {WalletAccount[]} [walletAccounts] - All wallet accounts.
  * @property {WalletAccount[]} [multisigCosigners] - Multisig cosigner accounts.
  */
 
 /**
- * Re-export of SDK function that checks if transaction awaits signature by account.
+ * Checks whether a transaction is awaiting the account's signature.
+ * @param {Transaction} transaction - Transaction to check.
+ * @param {WalletAccount} currentAccount - Current wallet account.
+ * @param {object} options - Options.
+ * @param {ChainName} options.chainName - Chain the transaction belongs to.
+ * @param {boolean} [options.isCurrentAccountMultisig=false] - Whether the current account is a multisig account.
+ * @param {string[]} [options.multisigAddresses] - List of multisig account addresses which the account is cosignatory of.
+ * @returns {boolean} Whether the transaction awaits the account's signature.
  */
-export const isTransactionAwaitingSignatureByAccount = isTransactionAwaitingSignatureByAccountSdk;
+export const isTransactionAwaitingSignatureByAccount = (transaction, currentAccount, options) => {
+	if (options.chainName === 'nem')
+		return isNemTransactionAwaitingSignatureByAccount(transaction, currentAccount, options);
+
+	if (options.chainName === 'symbol')
+		return isSymbolTransactionAwaitingSignatureByAccount(transaction, currentAccount, options);
+
+	return false;
+};
 
 /**
  * Determines the cosign status of a transaction for the current account.
@@ -43,7 +64,7 @@ export const isTransactionAwaitingSignatureByAccount = isTransactionAwaitingSign
  * @returns {CosignStatusValue} Cosign status value.
  */
 export const getTransactionCosignStatus = (transaction, options) => {
-	const { transactionGroup, currentAccount, isCurrentAccountMultisig, addressBook, walletAccounts, multisigCosigners } = options;
+	const { transactionGroup, currentAccount, addressBook, walletAccounts, multisigCosigners } = options;
 
 	if (transactionGroup !== TransactionGroup.PARTIAL)
 		return CosignStatus.NOT_AWAITING;
@@ -54,9 +75,7 @@ export const getTransactionCosignStatus = (transaction, options) => {
 	if (isSignedByCurrentAccount)
 		return CosignStatus.SIGNED_AND_AWAITING_OTHER_ACCOUNT;
 
-	const isAwaitingCurrentAccountSignature = isTransactionAwaitingSignatureByAccount(transaction, currentAccount, {
-		isCurrentAccountMultisig
-	});
+	const isAwaitingCurrentAccountSignature = isTransactionAwaitingSignatureByAccount(transaction, currentAccount, options);
 
 	if (!isAwaitingCurrentAccountSignature) 
 		return CosignStatus.AWAITING_OTHER_ACCOUNT;
