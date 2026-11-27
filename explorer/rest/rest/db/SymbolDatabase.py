@@ -1006,21 +1006,18 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 		last_synced_height = sync_state['last_synced_height']
 		relation_filter = SymbolDatabase._create_transaction_relation_filter(query)
 		if relation_filter:
-			relation_table, relation_clause, relation_value = relation_filter
-			# Page the relation's (key, height) index and count each transaction once.
+			relation_table, relation_clause, duplicate_clause, relation_value = relation_filter
+			# Walk the relation's (key, height) index and keep one relation row per transaction.
+			# NOT EXISTS keeps the index order; DISTINCT ON sorts every row of the key on PostgreSQL 15.
 			# Relation rows store their transaction's height, so ordering by them keeps the list order.
 			cursor.execute(
 				f'''
 				SELECT {TRANSACTION_COLUMNS}
-				FROM (
-					SELECT DISTINCT ON (relations.height, relations.transaction_id) relations.height, relations.transaction_id
-					FROM {relation_table} AS relations
-					WHERE {relation_clause} AND relations.height <= %s
-					ORDER BY relations.height DESC, relations.transaction_id DESC
-				) AS matches
-				JOIN symbol_transactions AS transactions ON transactions.id = matches.transaction_id
-				WHERE transactions.is_embedded = false
-				ORDER BY matches.height DESC, matches.transaction_id DESC
+				FROM {relation_table} AS relations
+				JOIN symbol_transactions AS transactions ON transactions.id = relations.transaction_id
+				WHERE {relation_clause} AND relations.height <= %s AND transactions.is_embedded = false
+					AND NOT EXISTS (SELECT 1 FROM {relation_table} AS duplicates WHERE {duplicate_clause})
+				ORDER BY relations.height DESC, relations.transaction_id DESC
 				LIMIT %s OFFSET %s
 				''',
 				(relation_value, last_synced_height, query.limit, query.offset))
@@ -1095,7 +1092,7 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 
 	@staticmethod
 	def _create_transaction_relation_filter(query):
-		"""Returns the relation table, clause and value when an address or transfer Mosaic is the only filter."""
+		"""Returns the relation table, key clause, duplicate clause and key value when an address or transfer Mosaic is the only filter."""
 
 		# With another filter, EXISTS lets PostgreSQL start from whichever index is more selective.
 		other_filters = (query.height, query.sender_address, query.signer_public_key, query.recipient_address)
@@ -1103,12 +1100,19 @@ class SymbolDatabase(SymbolTransactionDetailMixin, DatabaseConnectionPool):  # p
 			return None
 
 		if query.address is not None and query.transfer_mosaic_id is None:
-			return 'symbol_transaction_addresses', 'relations.address = %s', query.address
+			return (
+				'symbol_transaction_addresses',
+				'relations.address = %s',
+				'duplicates.transaction_id = relations.transaction_id AND duplicates.address = relations.address'
+				' AND duplicates.role < relations.role',
+				query.address)
 
 		if query.transfer_mosaic_id is not None and query.address is None:
 			return (
 				'symbol_transaction_mosaics',
 				"relations.mosaic_id = %s AND relations.role = 'transfer'::symbol_transaction_mosaic_role",
+				'duplicates.transaction_id = relations.transaction_id AND duplicates.mosaic_id = relations.mosaic_id'
+				' AND duplicates.role = relations.role AND duplicates.position < relations.position',
 				query.transfer_mosaic_id)
 
 		return None
