@@ -151,6 +151,10 @@ SYMBOL_BLOCK_DEFINITIONS = [
 	'created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
 	'updated_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP'
 ]
+SYMBOL_BLOCK_STORAGE_PARAMETERS = [
+	'autovacuum_vacuum_insert_threshold = 20000',
+	'autovacuum_vacuum_insert_scale_factor = 0'
+]
 SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS = [
 	'id int PRIMARY KEY DEFAULT 1',
 	'last_successful_run_id varchar',
@@ -528,8 +532,9 @@ def _create_enum_type(cursor, name, values):
 	)
 
 
-def _create_table(cursor, name, definitions):
-	cursor.execute(f'CREATE TABLE IF NOT EXISTS {name} ({", ".join(definitions)})')
+def _create_table(cursor, name, definitions, storage_parameters=None):
+	with_clause = f' WITH ({", ".join(storage_parameters)})' if storage_parameters else ''
+	cursor.execute(f'CREATE TABLE IF NOT EXISTS {name} ({", ".join(definitions)}){with_clause}')
 
 
 class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-methods
@@ -601,7 +606,7 @@ class SymbolDatabase(DatabaseConnection):  # pylint: disable=too-many-public-met
 		_create_enum_type(cursor, 'symbol_lock_status', SYMBOL_LOCK_STATUS_VALUES)
 		_create_enum_type(cursor, 'symbol_lock_hash_algorithm', SYMBOL_LOCK_HASH_ALGORITHM_VALUES)
 		_create_table(cursor, 'symbol_sync_state', SYMBOL_SYNC_STATE_DEFINITIONS)
-		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS)
+		_create_table(cursor, 'symbol_blocks', SYMBOL_BLOCK_DEFINITIONS, SYMBOL_BLOCK_STORAGE_PARAMETERS)
 		# These definitions initialize new tables; upgrade existing account refresh tables with
 		# puller.workflows.migrate_account_refresh before starting the new Puller.
 		_create_table(cursor, 'symbol_account_refresh_state', SYMBOL_ACCOUNT_REFRESH_STATE_DEFINITIONS)

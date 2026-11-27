@@ -81,6 +81,7 @@ ACCOUNT_REFRESH_HEIGHT_INDEX = (
 	'CREATE INDEX idx_symbol_account_refresh_accounts_address_height_desc ON public.symbol_account_refresh_accounts '
 	'USING btree (refresh_run_id, address_height DESC NULLS LAST, address)'
 )
+BLOCK_STORAGE_PARAMETERS = ['autovacuum_vacuum_insert_threshold=20000', 'autovacuum_vacuum_insert_scale_factor=0']
 
 
 def _expected_account_refresh_state(**overrides):
@@ -3465,6 +3466,54 @@ class SymbolDatabaseTest(TestCase):  # pylint: disable=too-many-public-methods
 		self.assertIn('idx_symbol_blocks_height_desc', indexes)
 		self.assertIn('idx_symbol_blocks_signer_address', indexes)
 		self.assertIn('idx_symbol_blocks_timestamp', indexes)
+
+	def test_create_tables_declares_block_autovacuum_insert_settings(self):
+		# Arrange:
+		database = self._create_uninitialized_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([('symbol_blocks', BLOCK_STORAGE_PARAMETERS)], self._fetch_table_storage_parameters(database))
+
+	def test_create_tables_preserves_existing_block_storage_parameters(self):
+		# Arrange:
+		database = self._create_database()
+		cursor = database.connection.cursor()
+		cursor.execute('ALTER TABLE symbol_blocks RESET (autovacuum_vacuum_insert_threshold, autovacuum_vacuum_insert_scale_factor)')
+		database.connection.commit()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([], self._fetch_table_storage_parameters(database))
+
+	def test_create_tables_keeps_block_autovacuum_insert_settings_when_run_again(self):
+		# Arrange:
+		database = self._create_database()
+
+		# Act:
+		database.create_tables()
+
+		# Assert:
+		self.assertEqual([('symbol_blocks', BLOCK_STORAGE_PARAMETERS)], self._fetch_table_storage_parameters(database))
+
+	@staticmethod
+	def _fetch_table_storage_parameters(database):
+		cursor = database.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT table_class.relname, table_class.reloptions
+			FROM pg_class AS table_class
+			JOIN pg_namespace AS table_namespace ON table_namespace.oid = table_class.relnamespace
+			WHERE table_namespace.nspname = 'public' AND table_class.relkind = 'r'
+				AND table_class.reloptions IS NOT NULL
+			ORDER BY table_class.relname
+			''')
+
+		return cursor.fetchall()
 
 	def test_create_tables_creates_symbol_receipt_indexes(self):
 		# Arrange:
