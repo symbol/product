@@ -353,7 +353,7 @@ describe('screens/history/TransactionDetails', () => {
 		it('fetches transaction status after refresh interval', async () => {
 			// Arrange:
 			const walletControllerMock = setupMocks();
-			const props = createRouteProps(transferTransaction);
+			const props = createRouteProps(transferTransaction, TransactionGroup.UNCONFIRMED);
 
 			// Act:
 			const screenTester = new ScreenTester(TransactionDetails, props);
@@ -364,6 +364,19 @@ describe('screens/history/TransactionDetails', () => {
 
 			// Assert:
 			expect(walletControllerMock.fetchTransactionStatus).toHaveBeenCalledWith(TRANSACTION_HASH);
+		});
+
+		it('does not fetch transaction status when the transaction is confirmed', async () => {
+			// Arrange:
+			const walletControllerMock = setupMocks();
+			const props = createRouteProps(transferTransaction, TransactionGroup.CONFIRMED);
+
+			// Act:
+			const screenTester = new ScreenTester(TransactionDetails, props);
+			await screenTester.waitForTimer(10000); // pass the refresh interval
+
+			// Assert:
+			expect(walletControllerMock.fetchTransactionStatus).not.toHaveBeenCalled();
 		});
 	});
 
@@ -402,8 +415,7 @@ describe('screens/history/TransactionDetails', () => {
 				modules: {
 					addressBook: addressBookWithContacts,
 					transfer: { getDecryptedMessageText }
-				},
-				fetchAccountTransaction: jest.fn().mockResolvedValue(encryptedTransferTransaction)
+				}
 			});
 			const props = createRouteProps(encryptedTransferTransaction);
 
@@ -425,8 +437,7 @@ describe('screens/history/TransactionDetails', () => {
 				modules: {
 					addressBook: addressBookWithContacts,
 					transfer: { getDecryptedMessageText }
-				},
-				fetchAccountTransaction: jest.fn().mockResolvedValue(encryptedTransferTransaction)
+				}
 			});
 			const props = createRouteProps(encryptedTransferTransaction);
 
